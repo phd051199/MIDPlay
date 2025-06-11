@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- *** GENERATED FROM project.xml - DO NOT EDIT *** -->
-<project name="MusicApp-impl" default="jar" basedir="..">
+<project name="MIDPlay-impl" default="jar" basedir="..">
     <!--load-properties-->
     <target name="pre-load-properties">
         <property file="nbproject/private/private.properties"/>
@@ -761,7 +761,7 @@
     <!--build-->
     <target name="pre-build"/>
     <target name="post-build"/>
-    <target name="build" depends="jar,pre-build,override-jad,semc-sis,increment-app-version,post-build" description="Builds final distribution of the application."/>
+    <target name="build" depends="jar,pre-build,override-jad,semc-sis,increment-app-version,post-build,-post-compile-proguard" description="Builds final distribution of the application."/>
     <!--open-netmon-->
     <target name="netmon.check">
         <condition property="netmon.allowed">
