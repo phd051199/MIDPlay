@@ -85,11 +85,11 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     }
 
     private void initComponents() {
-        // this.createImages();
+
         this.deleteAll();
         for (int i = 0; i < this.songItems.size(); ++i) {
             Song song = (Song) this.songItems.elementAt(i);
-            // Image imagePart = this.getImage(i);
+
             this.append(song.getSongName(), null);
         }
         this.setSelectedIndex(0, true);

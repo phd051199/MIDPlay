@@ -17,7 +17,7 @@ import musicapp.constants.APIConstants;
 import musicapp.model.Song;
 import musicapp.utils.Utils;
 
-public class MusicApp extends MIDlet implements CommandListener, Utils.BreadCrumbTrail, SplashObserver {
+public class MusicApp extends MIDlet implements CommandListener, Utils.BreadCrumbTrail {
 
     private final Stack history = new Stack();
     private Displayable currDisplayable;
@@ -26,7 +26,6 @@ public class MusicApp extends MIDlet implements CommandListener, Utils.BreadCrum
     Command cancelCommand = new Command("Không", 3, 0);
     String messUpdate = "";
     String linkUpdate = "";
-    private boolean firstTime = true;
     CommandListener updateListener = new CommandListener() {
         public void commandAction(Command c, Displayable d) {
             if (c == MusicApp.this.okCommand) {
@@ -46,22 +45,11 @@ public class MusicApp extends MIDlet implements CommandListener, Utils.BreadCrum
     public MusicApp() {
         this.history.setSize(0);
         String imei = DeviceInfo.getDeviceImei();
-        APIConstants.DEVICE_INFOR = "{\"DeviceID\":\"" + imei + "\",\"OsName\":\"Nokia\",\"OsVersion\":\"J2ME\",\"AppName\":\"NhacCuaTui\",\"AppVersion\":\"2.0\",\"UserInfo\":\"\",\"LocationInfo\":\"\"}";
+        APIConstants.DEVICE_INFOR = "{\"DeviceID\":\"" + imei + "\",\"OsName\":\"Nokia\",\"OsVersion\":\"J2ME\",\"AppName\":\"MusicApp\",\"AppVersion\":\"2.0\",\"UserInfo\":\"\",\"LocationInfo\":\"\"}";
     }
 
     public void startApp() {
-        if (this.firstTime) {
-            SplashScreen spS = new SplashScreen();
-            spS.setObserver(this);
-            this.getDisplay().setCurrent(spS);
-            this.firstTime = false;
-        } else {
-            Displayable curr = this.getCurrentDisplayable();
-            if (curr instanceof Utils.Interruptable) {
-                ((Utils.Interruptable) curr).resumeApp();
-            }
-        }
-
+        this.setMainScreen();
     }
 
     public void pauseApp() {
@@ -77,13 +65,13 @@ public class MusicApp extends MIDlet implements CommandListener, Utils.BreadCrum
         Image[] images = null;
         try {
             images = new Image[]{
-                Image.createImage("/images/icon_search.png"),
-                Image.createImage("/images/theloai.png"),
-                Image.createImage("/images/playlist_hot.png"),
-                Image.createImage("/images/playlist_new.png"),
-                Image.createImage("/images/login.png"),
-                Image.createImage("/images/icon_info.png"),
-                Image.createImage("/images/icon_info.png")
+                Image.createImage("/images/Magnifier.png"),
+                Image.createImage("/images/Album.png"),
+                Image.createImage("/images/MusicNotes.png"),
+                Image.createImage("/images/MusicDoubleNote.png"),
+                Image.createImage("/images/MusicArtist.png"),
+                Image.createImage("/images/Mail.png"),
+                Image.createImage("/images/Help.png")
             };
         } catch (Exception var4) {
             System.out.println(var4.getMessage());
@@ -94,7 +82,7 @@ public class MusicApp extends MIDlet implements CommandListener, Utils.BreadCrum
             "Thể loại",
             "Playlist Hot",
             "Playlist New",
-            "NhacCuaTui",
+            "MusicApp",
             "Thông tin",
             "Privacy Policy"
         };
@@ -175,11 +163,5 @@ public class MusicApp extends MIDlet implements CommandListener, Utils.BreadCrum
         }
     }
 
-    public void dismiss() {
-        this.init();
-    }
 
-    private void init() {
-        this.setMainScreen();
-    }
 }

@@ -54,7 +54,7 @@ public class Playlist implements JSONAble {
                 String listName = Utils.convertString(json.getString("Name"));
                 this.setName(listName);
             } else {
-                this.setName("NhacCuaTui");
+                this.setName("MusicApp");
             }
 
             this.setImageUrl(json.getString("Image"));

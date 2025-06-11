@@ -336,7 +336,7 @@ public class PlayerGUI implements PlayerListener {
             PlayerGUI.this.parent.updateDisplay();
         }
 
-        // $FF: synthetic method
+
         SPTimerTask(Object x1) {
             this();
         }

@@ -94,7 +94,7 @@ public class LoginForm extends Form implements CommandListener, LoadDataObserver
             var4.printStackTrace();
         }
 
-        String[] mainItems = new String[]{"Nghe NhacCuaTui", "Playlist của Tui", "Playlist Tui thích"};
+        String[] mainItems = new String[]{"Nghe Nhạc", "Playlist của Tôi", "Playlist Yêu thích"};
         CuaTuiCanvasList myCanvas = new CuaTuiCanvasList(this.userName.getString(), mainItems, images, this.defaultlistkey);
         myCanvas.setObserver(this.observer);
         this.observer.replaceCurrent(myCanvas);

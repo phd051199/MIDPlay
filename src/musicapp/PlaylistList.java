@@ -43,7 +43,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     private void initCommands() {
         this.selectCommand = new Command("Chọn", Command.OK, 1);
         this.nowPlayingCommand = new Command("Đang chơi", Command.SCREEN, 2);
-        this.exitCommand = new Command("Trở lại", Command.BACK, 0); // Use Command.BACK
+        this.exitCommand = new Command("Trở lại", Command.BACK, 0);
         this.searchCommand = new Command("Tìm kiếm", Command.SCREEN, 3);
 
         this.addCommand(this.selectCommand);
@@ -56,7 +56,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     public void commandAction(Command c, Displayable d) {
         if (c == this.exitCommand) {
             this.observer.goBack();
-        } else if (c == this.selectCommand || c == List.SELECT_COMMAND) { // Handle implicit select
+        } else if (c == this.selectCommand || c == List.SELECT_COMMAND) {
             int selectedItemIndex = getSelectedIndex();
             if (selectedItemIndex >= 0 && selectedItemIndex < this.playlistItems.size()) {
                 Playlist playlist = (Playlist) this.playlistItems.elementAt(selectedItemIndex);
@@ -89,7 +89,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
 
                 if (listItems != null) {
                     PlaylistList.this.addMorePlaylists(listItems);
-                    PlaylistList.this.repaintList(); // Call a method to refresh the List
+                    PlaylistList.this.repaintList();
                 }
             }
         });
@@ -126,9 +126,9 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
 
     private void createImages() {
         try {
-            this.images.removeAllElements(); // Clear existing images
+            this.images.removeAllElements();
             for (int i = 0; i < this.playlistItems.size(); ++i) {
-                Image image = Image.createImage("/images/playlist_hot.png");
+                Image image = Image.createImage("/images/MusicPlaylist.png");
                 this.images.addElement(image);
             }
         } catch (Exception var3) {
@@ -140,7 +140,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
         for (int i = 0; i < playlists.size(); ++i) {
             this.playlistItems.addElement(playlists.elementAt(i));
             try {
-                Image image = Image.createImage("/images/playlist_hot.png");
+                Image image = Image.createImage("/images/MusicPlaylist.png");
                 this.images.addElement(image);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -165,7 +165,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     }
 
     private void gotoSongByPlaylist() {
-        final Playlist playlist = (Playlist) this.playlistItems.elementAt(this.getSelectedIndex()); // Use
+        final Playlist playlist = (Playlist) this.playlistItems.elementAt(this.getSelectedIndex());
         // getSelectedIndex
         this.displayMessage(playlist.getName(), "Đang tải dữ liệu...", "loading");
         this.mLoaDataThread = new Thread(new Runnable() {
@@ -196,7 +196,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
 
     public void quit() {
         try {
-            if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) { // Check for null before isAlive()
+            if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
                 this.mLoaDataThread.join();
             }
         } catch (InterruptedException var2) {
@@ -204,9 +204,9 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
         }
     }
 
-    // getImage helper method, previously in Canvas, now needs to be defined here.
-    // Also removed the original getImage in the class since it used 'selectedItem'
-    // which is not the list index for 'images'
+
+
+
     public Image getImage(int index) {
         return (Image) (this.images != null && this.images.size() > index ? this.images.elementAt(index) : null);
     }

@@ -54,12 +54,12 @@ public final class CuaTuiCanvasList extends Canvas implements CommandListener, L
         this.itemsTop = new int[this.itemLines.length];
         this.itemsHeight = new int[this.itemLines.length];
 
-      // for(int i = 0; i < this.itemLines.length; ++i) {
-        // Image imagePart = this.getImage(i);
-        // int w = this.getItemWidth() - (imagePart != null ? imagePart.getWidth() +
-        // this.padding : 0);
-        // this.itemLines[i] = MainCanvasList.getTextRows(items[i], this.font, w);
-        // }
+
+
+
+
+
+
     }
 
     protected void paint(Graphics g) {
@@ -154,7 +154,7 @@ public final class CuaTuiCanvasList extends Canvas implements CommandListener, L
             int ofset = (y + image.getHeight()) / 4;
             this.font = Font.getFont(0, 1, 16);
             g.setFont(this.font);
-            g.drawString("NhacCuaTui", (x + image.getWidth()) / 4, ofset, 20);
+            g.drawString("MusicApp", (x + image.getWidth()) / 4, ofset, 20);
         } catch (IOException var6) {
             var6.printStackTrace();
         }

@@ -9,7 +9,7 @@ public class ReadWriteRecordStore {
 
     public void openRecStore() {
         try {
-            this.rs = RecordStore.openRecordStore("nct", true);
+            this.rs = RecordStore.openRecordStore("musicapp", true);
         } catch (Exception var2) {
             var2.printStackTrace();
         }
@@ -28,7 +28,7 @@ public class ReadWriteRecordStore {
     public void deleteRecStore() {
         if (RecordStore.listRecordStores() != null) {
             try {
-                RecordStore.deleteRecordStore("nct");
+                RecordStore.deleteRecordStore("musicapp");
             } catch (Exception var2) {
                 var2.printStackTrace();
             }
