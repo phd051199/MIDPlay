@@ -1,0 +1,182 @@
+package musicapp;
+
+import java.util.Vector;
+import javax.microedition.lcdui.Command;
+import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.List;
+import musicapp.common.ParseData;
+import musicapp.model.Playlist;
+import musicapp.model.Song;
+import musicapp.utils.Utils;
+
+public class SongList extends List implements CommandListener, LoadDataObserver {
+
+    private Command nowPlayingCommand;
+    private Command exitCommand;
+    private Command selectCommand;
+    private Command searchCommand;
+
+    private Vector images;
+    private Vector songItems;
+    private Utils.BreadCrumbTrail observer;
+    int curPage = 1;
+    int perPage = 10;
+    public static PlayerCanvas playerCanvas = null;
+    private Playlist playlist;
+    Thread mLoaDataThread;
+
+    public SongList(String title, Vector items, Playlist _playlist) {
+        super(title, List.IMPLICIT);
+        this.playlist = _playlist;
+        this.curPage = 1;
+        this.perPage = 10;
+        this.initCommands();
+        this.songItems = new Vector();
+        this.images = new Vector();
+        this.songItems = items;
+        this.initComponents();
+        this.setCommandListener(this);
+    }
+
+    private void initCommands() {
+        this.selectCommand = new Command("Chọn", Command.OK, 1);
+        this.nowPlayingCommand = new Command("Đang chơi", Command.SCREEN, 2);
+        this.exitCommand = new Command("Trở lại", Command.BACK, 0);
+        this.searchCommand = new Command("Tìm kiếm", Command.SCREEN, 3);
+        this.addCommand(this.selectCommand);
+        this.addCommand(this.exitCommand);
+        this.addCommand(this.searchCommand);
+        this.addCommand(this.nowPlayingCommand);
+    }
+
+    public void commandAction(Command c, Displayable d) {
+        if (c == this.exitCommand) {
+            this.observer.goBack();
+        } else if (c == this.selectCommand || c == List.SELECT_COMMAND) {
+            int selectedItemIndex = getSelectedIndex();
+            if (selectedItemIndex >= 0 && selectedItemIndex < this.songItems.size()) {
+                Song song = (Song) this.songItems.elementAt(selectedItemIndex);
+                if (song.getSongName().equals("xem thêm ...")) {
+                    this.doLoadMoreAction(song);
+                } else {
+                    this.gotoPlaySong();
+                }
+            }
+        } else if (c == this.nowPlayingCommand) {
+            MainList.gotoNowPlaying(this.observer);
+        } else if (c == this.searchCommand) {
+            MainList.gotoSearch(this.observer);
+        }
+    }
+
+    private void loadMoreSongs(final String genKey, final int curPage, final int perPage) {
+        this.mLoaDataThread = new Thread(new Runnable() {
+            public void run() {
+                Vector listItems = ParseData.parseSongsInPlaylist(genKey, "", curPage, perPage);
+                if (listItems != null) {
+                    SongList.this.addMorePlaylists(listItems);
+                    SongList.this.repaintList();
+                }
+            }
+        });
+        this.mLoaDataThread.start();
+    }
+
+    private void initComponents() {
+        // this.createImages();
+        this.deleteAll();
+        for (int i = 0; i < this.songItems.size(); ++i) {
+            Song song = (Song) this.songItems.elementAt(i);
+            // Image imagePart = this.getImage(i);
+            this.append(song.getSongName(), null);
+        }
+        this.setSelectedIndex(0, true);
+    }
+
+    private void repaintList() {
+        int currentIndex = this.getSelectedIndex();
+        this.deleteAll();
+        for (int i = 0; i < this.songItems.size(); ++i) {
+            Song song = (Song) this.songItems.elementAt(i);
+            Image imagePart = this.getImage(i);
+            this.append(song.getSongName(), imagePart);
+        }
+        if (currentIndex >= 0 && currentIndex < this.songItems.size()) {
+            this.setSelectedIndex(currentIndex, true);
+        } else if (this.songItems.size() > 0) {
+            this.setSelectedIndex(0, true);
+        }
+    }
+
+    private void createImages() {
+        try {
+            this.images.removeAllElements();
+            for (int i = 0; i < this.songItems.size(); ++i) {
+                Image image = Image.createImage("/images/icon_theloai.png");
+                this.images.addElement(image);
+            }
+        } catch (Exception var3) {
+            var3.printStackTrace();
+        }
+    }
+
+    private void addMorePlaylists(Vector playlists) {
+        for (int i = 0; i < playlists.size(); ++i) {
+            this.songItems.addElement(playlists.elementAt(i));
+        }
+    }
+
+    private void doLoadMoreAction(Song song) {
+        this.curPage++;
+        if (this.songItems.size() > 0) {
+            Song lastSong = (Song) this.songItems.elementAt(this.songItems.size() - 1);
+            if (lastSong.getSongName().equals("xem thêm ...")) {
+                this.songItems.removeElementAt(this.songItems.size() - 1);
+            }
+        }
+        this.loadMoreSongs(this.playlist.getId(), this.curPage, this.perPage);
+    }
+
+    public void setObserver(Utils.BreadCrumbTrail _observer) {
+        this.observer = _observer;
+    }
+
+    private void gotoPlaySong() {
+        if (playerCanvas == null) {
+            playerCanvas = new PlayerCanvas(this.playlist.getName(), this.songItems, this.getSelectedIndex(),
+                    this.playlist);
+        } else {
+            playerCanvas.change(this.playlist.getName(), this.songItems, this.getSelectedIndex(), this.playlist);
+        }
+        this.play();
+    }
+
+    void play() {
+        playerCanvas.setObserver(this.observer);
+        this.observer.go(playerCanvas);
+    }
+
+    private void displayMessage(String title, String message, String messageType) {
+        MainList.displayMessage(title, message, messageType, this.observer, this);
+    }
+
+    public void cancel() {
+        this.quit();
+    }
+
+    public void quit() {
+        try {
+            if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
+                this.mLoaDataThread.join();
+            }
+        } catch (InterruptedException var2) {
+            var2.printStackTrace();
+        }
+    }
+
+    public Image getImage(int index) {
+        return (Image) (this.images != null && this.images.size() > index ? this.images.elementAt(index) : null);
+    }
+}
