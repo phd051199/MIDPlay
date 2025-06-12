@@ -19,7 +19,6 @@ public class ParseData {
         try {
             return client.get(URLProvider.getCategory(type));
         } catch (IOException var3) {
-            System.out.println(var3.getMessage());
             return "";
         }
     }
@@ -40,7 +39,7 @@ public class ParseData {
                     cateItems.addElement(cate);
                 }
             } catch (JSONException var9) {
-                System.out.println(var9.getMessage());
+                return null;
             }
 
             return cateItems;
@@ -56,7 +55,6 @@ public class ParseData {
             String url = URLProvider.getSearchData(2, keyword, key, curpage, pagesize);
             return client.get(url);
         } catch (IOException var6) {
-            System.out.println(var6.getMessage());
             return "";
         }
     }
@@ -78,14 +76,13 @@ public class ParseData {
 
             if ("yes".equals(json.getString("GetMore"))) {
                 Playlist more = new Playlist();
-                more.setName("xem thêm ...");
+                more.setName("Xem thêm ...");
                 more.setId(key);
                 playlistItems.addElement(more);
             }
 
             return playlistItems;
         } catch (JSONException var9) {
-            System.out.println(var9.getMessage());
             return null;
         }
     }
@@ -106,7 +103,6 @@ public class ParseData {
         try {
             return client.get(URLProvider.getTopHotPlaylist(curPare, pageSize));
         } catch (IOException var4) {
-            System.out.println(var4.getMessage());
             return "";
         }
     }
@@ -148,7 +144,6 @@ public class ParseData {
         try {
             return client.get(URLProvider.getSongByPlaylist(listkey, username));
         } catch (IOException var6) {
-            System.out.println(var6.getMessage());
             return "";
         }
     }
@@ -180,7 +175,6 @@ public class ParseData {
 
             return songItems;
         } catch (JSONException var9) {
-            System.out.println(var9.getMessage());
             return null;
         }
     }

@@ -7,6 +7,7 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
 import app.common.ParseData;
+import app.constants.Constants;
 import app.utils.Utils;
 
 public class MainList extends List implements CommandListener, LoadDataObserver {
@@ -33,7 +34,10 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
                     text += "\nCập nhật mới nhất";
                     break;
                 case 3:
-                    text += "\nNgôn ngữ, chất lượng âm thanh";
+                    text += "\nChất lượng âm thanh";
+                    break;
+                case 4:
+                    text += "\nPhiên bản: " + Constants.VERSION;
                     break;
 
                 default:
@@ -140,11 +144,6 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         observer.go(aboutForm);
     }
 
-    public static void gotoHelp(Utils.BreadCrumbTrail observer) {
-        HelpForm helpForm = new HelpForm("Privacy Policy", observer);
-        observer.go(helpForm);
-    }
-
     private void itemAction() {
         int selectedItem = this.getSelectedIndex();
         switch (selectedItem) {
@@ -164,9 +163,6 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
                 break;
             case 4:
                 gotoAbout(this.observer);
-                break;
-            case 5:
-                gotoHelp(this.observer);
                 break;
             default:
                 break;

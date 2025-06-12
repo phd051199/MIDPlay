@@ -42,8 +42,6 @@ public class RestClient {
         ByteArrayOutputStream baos = null;
         String data = null;
 
-        System.out.println(url);
-
         try {
             int redirectTimes = 0;
 
@@ -92,7 +90,6 @@ public class RestClient {
                 throw new IOException("Too much redirects");
             }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
         } finally {
             try {
                 if (hcon != null) {
@@ -103,7 +100,6 @@ public class RestClient {
                     inputStream.close();
                 }
             } catch (IOException e) {
-                System.out.println(e.getMessage());
             }
         }
 

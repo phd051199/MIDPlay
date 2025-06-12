@@ -33,7 +33,6 @@ public class Category implements JSONAble {
             this.setId(json.getString("Key"));
             this.setName(json.getString("Name"));
         } catch (Exception var3) {
-            System.out.println(var3.getMessage());
         }
 
     }

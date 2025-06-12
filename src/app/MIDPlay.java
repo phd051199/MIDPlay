@@ -19,8 +19,8 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
     private final Stack history = new Stack();
     private Displayable currDisplayable;
     private Form mainForm;
-    Command okCommand = new Command("Có", 4, 0);
-    Command cancelCommand = new Command("Không", 3, 0);
+    Command okCommand = new Command("Có", Command.OK, 0);
+    Command cancelCommand = new Command("Không", Command.CANCEL, 0);
     String messUpdate = "";
     String linkUpdate = "";
     CommandListener updateListener = new CommandListener() {
@@ -64,11 +64,9 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
                 Image.createImage("/images/Album.png"),
                 Image.createImage("/images/MusicNotes.png"),
                 Image.createImage("/images/Setting.png"),
-                Image.createImage("/images/Mail.png"),
-                Image.createImage("/images/Help.png")
+                Image.createImage("/images/Information.png")
             };
         } catch (Exception var4) {
-            System.out.println(var4.getMessage());
         }
 
         String[] mainItems = new String[]{
@@ -76,8 +74,7 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
             "Thể loại",
             "Playlist Hot",
             "Cài đặt",
-            "Thông tin ứng dụng",
-            "Chính sách bảo mật"
+            "Thông tin ứng dụng"
         };
 
         MainList mainMenu = new MainList("MIDPlay", mainItems, images);
@@ -88,7 +85,6 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
     public Displayable go(Displayable d) {
         Displayable curr = this.getCurrentDisplayable();
         if (curr != null && !(curr instanceof Observer) && !this.history.contains(curr) && curr.getClass().toString().compareTo(curr.getClass().toString()) == 0) {
-            System.out.println(curr.getClass());
             this.history.push(curr);
         }
         return this.replaceCurrent(d);

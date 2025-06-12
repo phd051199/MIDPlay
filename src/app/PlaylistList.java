@@ -60,7 +60,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
             int selectedItemIndex = getSelectedIndex();
             if (selectedItemIndex >= 0 && selectedItemIndex < this.playlistItems.size()) {
                 Playlist playlist = (Playlist) this.playlistItems.elementAt(selectedItemIndex);
-                if (playlist.getName().equals("xem thêm ...")) {
+                if (playlist.getName().equals("Xem thêm ...")) {
                     this.doLoadMoreAction(playlist);
                 } else {
                     this.gotoSongByPlaylist();
@@ -105,7 +105,6 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
             this.append(playlist.getName(), imagePart);
         }
         this.setSelectedIndex(0, true);
-
     }
 
     private void repaintList() {
@@ -128,7 +127,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
         try {
             this.images.removeAllElements();
             for (int i = 0; i < this.playlistItems.size(); ++i) {
-                Image image = Image.createImage("/images/MusicPlaylist.png");
+                Image image = Image.createImage("/images/FolderSound.png");
                 this.images.addElement(image);
             }
         } catch (Exception var3) {
@@ -140,7 +139,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
         for (int i = 0; i < playlists.size(); ++i) {
             this.playlistItems.addElement(playlists.elementAt(i));
             try {
-                Image image = Image.createImage("/images/MusicPlaylist.png");
+                Image image = Image.createImage("/images/FolderSound.png");
                 this.images.addElement(image);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -152,7 +151,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
         this.curPage++;
         if (this.playlistItems.size() > 0) {
             Playlist lastPlaylist = (Playlist) this.playlistItems.elementAt(this.playlistItems.size() - 1);
-            if (lastPlaylist.getName().equals("xem thêm ...")) {
+            if (lastPlaylist.getName().equals("Xem thêm ...")) {
                 this.playlistItems.removeElementAt(this.playlistItems.size() - 1);
             }
         }
@@ -166,7 +165,6 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
 
     private void gotoSongByPlaylist() {
         final Playlist playlist = (Playlist) this.playlistItems.elementAt(this.getSelectedIndex());
-        // getSelectedIndex
         this.displayMessage(playlist.getName(), "Đang tải dữ liệu...", "loading");
         this.mLoaDataThread = new Thread(new Runnable() {
             public void run() {

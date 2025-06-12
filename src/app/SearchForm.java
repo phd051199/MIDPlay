@@ -53,6 +53,12 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
 
     }
 
+    protected void keyPressed(int keycode) {
+        if (keycode == -5) {
+            this.commandAction(this.getGetCommand(), this);
+        }
+    }
+
     private void gotoSearchPlaylist(String keyword, final int curPage, final int perPage) {
         this.displayMessage("Từ khoá: " + keyword, "Đang tải dữ liệu...", "loading");
         this.mLoaDataThread = new Thread(new Runnable() {
@@ -79,9 +85,9 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
     }
 
     private void initMenu() {
-        this.searchCommand = new Command("Tìm", 8, 0);
-        this.nowPlayingCommand = new Command("Đang chơi...", 8, 1);
-        this.exitCommand = new Command("Trở lại", 7, 0);
+        this.searchCommand = new Command("Tìm", Command.OK, 0);
+        this.nowPlayingCommand = new Command("Đang chơi...", Command.SCREEN, 1);
+        this.exitCommand = new Command("Trở lại", Command.BACK, 0);
         this.addCommand(this.searchCommand);
         this.addCommand(this.exitCommand);
         this.addCommand(this.nowPlayingCommand);

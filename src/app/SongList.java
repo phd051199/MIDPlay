@@ -58,7 +58,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
             int selectedItemIndex = getSelectedIndex();
             if (selectedItemIndex >= 0 && selectedItemIndex < this.songItems.size()) {
                 Song song = (Song) this.songItems.elementAt(selectedItemIndex);
-                if (song.getSongName().equals("xem thêm ...")) {
+                if (song.getSongName().equals("Xem thêm ...")) {
                     this.doLoadMoreAction(song);
                 } else {
                     this.gotoPlaySong();
@@ -85,12 +85,12 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     }
 
     private void initComponents() {
-
+        this.createImages();
         this.deleteAll();
         for (int i = 0; i < this.songItems.size(); ++i) {
             Song song = (Song) this.songItems.elementAt(i);
-
-            this.append(song.getSongName(), null);
+            Image imagePart = this.getImage(i);
+            this.append(song.getSongName() + "\n" + song.getArtistName(), imagePart);
         }
         this.setSelectedIndex(0, true);
     }
@@ -101,7 +101,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
         for (int i = 0; i < this.songItems.size(); ++i) {
             Song song = (Song) this.songItems.elementAt(i);
             Image imagePart = this.getImage(i);
-            this.append(song.getSongName(), imagePart);
+            this.append(song.getSongName() + "\n" + song.getArtistName(), imagePart);
         }
         if (currentIndex >= 0 && currentIndex < this.songItems.size()) {
             this.setSelectedIndex(currentIndex, true);
@@ -114,7 +114,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
         try {
             this.images.removeAllElements();
             for (int i = 0; i < this.songItems.size(); ++i) {
-                Image image = Image.createImage("/images/icon_theloai.png");
+                Image image = Image.createImage("/images/MusicDoubleNote.png");
                 this.images.addElement(image);
             }
         } catch (Exception var3) {
@@ -132,7 +132,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
         this.curPage++;
         if (this.songItems.size() > 0) {
             Song lastSong = (Song) this.songItems.elementAt(this.songItems.size() - 1);
-            if (lastSong.getSongName().equals("xem thêm ...")) {
+            if (lastSong.getSongName().equals("Xem thêm ...")) {
                 this.songItems.removeElementAt(this.songItems.size() - 1);
             }
         }

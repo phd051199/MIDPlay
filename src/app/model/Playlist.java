@@ -57,7 +57,6 @@ public class Playlist implements JSONAble {
                 this.setName("MIDPlay");
             }
         } catch (Exception var4) {
-            System.out.println(var4.getMessage());
         }
 
     }

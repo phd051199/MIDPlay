@@ -12,16 +12,16 @@ import app.utils.Utils;
 
 public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObserver {
 
-    private Command backCommand = new Command("Trở lại", 2, 1);
-    private Command playCommand = new Command("Toggle Play", 8, 1);
-    private Command pauseCommand = new Command("Pause", 8, 1);
-    private Command stopCommand = new Command("Stop", 8, 1);
-    private Command nextCommand = new Command("Next Song", 8, 5);
-    private Command prevCommand = new Command("Prev Song", 8, 5);
+    private Command backCommand = new Command("Trở lại", Command.BACK, 1);
+    private Command playCommand = new Command("Toggle Play", Command.OK, 5);
+    private Command pauseCommand = new Command("Pause", Command.SCREEN, 1);
+    private Command stopCommand = new Command("Stop", Command.SCREEN, 1);
+    private Command nextCommand = new Command("Next Song", Command.SCREEN, 5);
+    private Command prevCommand = new Command("Prev Song", Command.SCREEN, 5);
 
     private static int PLAYER_STATUS_TOP = 2;
-    private static int SONG_TITLE_GAP = 2;
-    private static int TIME_GAP = 5;
+    private static int SONG_TITLE_GAP = 5;
+    private static int TIME_GAP = 10;
     private String title;
     private PlayerGUI gui;
     private Utils.BreadCrumbTrail parent;
@@ -129,41 +129,38 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
 
     protected void keyPressed(int keycode) {
         try {
-            switch (keycode) {
-                case 53:
+            int action = this.getGameAction(keycode);
+            switch (action) {
+                case Canvas.FIRE:
                     if (!this.isLoading()) {
-                        this.gui.pausePlayer();
-                        this.gui.setMediaTime(0L);
+                        this.gui.togglePlayer();
                     }
                     break;
-                default:
-                    int code = this.getGameAction(keycode);
-                    if (code == 5) {
-                        if (!this.isLoading()) {
-                            this.goNext = true;
-                            this.timeNext = System.currentTimeMillis();
-                            this.gui.getNextSong();
-                        }
-                    } else if (code == 2) {
-                        if (!this.isLoading()) {
-                            this.goBack = true;
-                            this.timeBack = System.currentTimeMillis();
-                            this.gui.getPrevSong();
-                        }
-                    } else if (code == 1) {
-                        this.gui.changeVolume(false);
-                    } else if (code == 6) {
-                        this.gui.changeVolume(true);
-                    } else if (code == 8) {
-                        if (!this.isLoading()) {
-                            this.gui.togglePlayer();
-                        }
+                case Canvas.RIGHT:
+                    if (!this.isLoading()) {
+                        this.goNext = true;
+                        this.timeNext = System.currentTimeMillis();
+                        this.gui.getNextSong();
                     }
+                    break;
+                case Canvas.LEFT:
+                    if (!this.isLoading()) {
+                        this.goBack = true;
+                        this.timeBack = System.currentTimeMillis();
+                        this.gui.getPrevSong();
+                    }
+                    break;
+                case Canvas.UP:
+                    this.gui.changeVolume(false);
+                    break;
+                case Canvas.DOWN:
+                    this.gui.changeVolume(true);
+                    break;
+
             }
         } catch (Throwable var3) {
             Utils.error(var3, this.parent);
         }
-
     }
 
     private boolean intersects(int clipY, int clipHeight, int y, int h) {
@@ -270,7 +267,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
                 this.displayHeight = this.getHeight();
                 this.textHeight = g.getFont().getHeight();
                 this.statusBarHeight = this.textHeight + 5;
-                clipX = PLAYER_STATUS_TOP + this.statusBarHeight;
+                clipX = PLAYER_STATUS_TOP + this.statusBarHeight + 5;
                 this.songNameTop = clipX;
                 clipX += SONG_TITLE_GAP + this.textHeight;
                 this.SignerNameTop = clipX;
@@ -289,27 +286,35 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
             int clipY = g.getClipY();
             int clipWidth = g.getClipWidth();
             int clipHeight = g.getClipHeight();
-            g.setColor(232, 232, 232);
+
+            g.setColor(245, 245, 245);
             g.fillRect(0, 0, this.displayWidth, this.displayHeight);
-            g.setColor(19, 118, 159);
+
+            g.setColor(65, 10, 74);
             g.fillRect(0, 0, this.displayWidth, this.statusBarHeight);
+
+            g.setColor(80, 80, 80);
+            g.drawLine(0, this.statusBarHeight, this.displayWidth, this.statusBarHeight);
+            
             if (this.intersects(clipY, clipHeight, PLAYER_STATUS_TOP, this.textHeight)) {
-                g.setColor(16777215);
+                g.setColor(255, 255, 255);
                 g.drawString(this.status, this.displayWidth >> 1, PLAYER_STATUS_TOP, 17);
             }
 
             if (this.gui != null) {
+                
                 if (this.intersects(clipY, clipHeight, this.songNameTop, this.textHeight)) {
-                    g.setColor(16, 102, 137);
+                    g.setColor(65, 10, 74);
                     g.drawString(this.gui.getSongName(), this.displayWidth >> 1, this.songNameTop, 17);
                 }
 
+                
                 if (this.intersects(clipY, clipHeight, this.SignerNameTop, this.textHeight)) {
-                    g.setColor(101, 101, 101);
+                    g.setColor(140, 140, 140);
                     g.drawString(this.gui.getSinger(), this.displayWidth >> 1, this.SignerNameTop, 17);
                 }
 
-                g.setColor(101, 101, 101);
+                g.setColor(210, 210, 210);
                 g.drawLine(0, this.timeRateTop - 3, this.displayWidth, this.timeRateTop - 3);
                 long duration = this.gui.getDuration();
                 long current = this.gui.getCurrentTime();
@@ -318,14 +323,15 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
                 this.slidervalue = (float) this.sliderWidth * ((float) current / (float) duration);
                 if (this.intersects(clipY, clipHeight, this.timeRateTop, this.textHeight)
                         && this.intersects(clipX, clipWidth, 0, this.timeWidth)) {
-                    g.setColor(101, 101, 101);
-                    g.drawString(strCurrent, 0, this.timeRateTop, 20);
-                    g.drawString(strDuration, this.displayWidth, this.timeRateTop, 24);
+                    g.setColor(140, 140, 140);
+                    g.drawString(strCurrent, this.sliderLeft, this.timeRateTop, 20);
+                    g.drawString(strDuration, this.sliderLeft + this.sliderWidth, this.timeRateTop, 24);
                 }
 
-                g.setColor(49, 84, 112);
+                g.setColor(220, 220, 220);
                 g.fillRect(this.sliderLeft, this.sliderTop, this.sliderWidth, this.sliderHeight);
-                g.setColor(1, 137, 199);
+                
+                g.setColor(65, 10, 74);
                 g.fillRect(this.sliderLeft, this.sliderTop, (int) this.slidervalue, this.sliderHeight);
                 if (!this.gui.getIsPlaying() && this.imgPlay() != null) {
                     g.drawImage(this._imgPlay, this.displayWidth >> 1, this.playtop, 3);
@@ -346,20 +352,24 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
                     }
                 }
 
+                int buttonWidth = 40;
+                int playButtonX = this.displayWidth >> 1;
+                int buttonGap = 40;
+
                 if (this.goBack && this.imgBack() != null) {
-                    g.drawImage(this._imgBack, 20, this.playtop, 6);
+                    g.drawImage(this._imgBack, playButtonX - buttonWidth - buttonGap, this.playtop, 6);
                 }
 
                 if (!this.goBack && this.imgBackActive() != null) {
-                    g.drawImage(this._imgBackActive, 20, this.playtop, 6);
+                    g.drawImage(this._imgBackActive, playButtonX - buttonWidth - buttonGap, this.playtop, 6);
                 }
 
                 if (this.goNext && this.imgNext() != null) {
-                    g.drawImage(this._imgNext, this.displayWidth - 20, this.playtop, 10);
+                    g.drawImage(this._imgNext, playButtonX + buttonWidth + buttonGap, this.playtop, 10);
                 }
 
                 if (!this.goNext && this.imgNextActive() != null) {
-                    g.drawImage(this._imgNextActive, this.displayWidth - 20, this.playtop, 10);
+                    g.drawImage(this._imgNextActive, playButtonX + buttonWidth + buttonGap, this.playtop, 10);
                 }
             }
         } catch (Throwable var14) {

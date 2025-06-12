@@ -1,7 +1,7 @@
 package app.constants;
 
-public class APIConstants {
+public class Constants {
 
     public static final String SERVICE_URL = "http://nct-api.dph.workers.dev";
-    public static String DEVICE_INFOR = "";
+    public static final String VERSION = "0.1.0-beta1";
 }

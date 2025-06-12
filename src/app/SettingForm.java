@@ -112,7 +112,6 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
         return AUDIO_QUALITIES[audioQualityChoice.getSelectedIndex()];
     }
 
-    // Implement Utils.BreadCrumbTrail methods
     public Displayable go(Displayable d) {
         return parent.go(d);
     }

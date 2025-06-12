@@ -130,7 +130,6 @@ public class Song implements JSONAble {
             this.setArtistName(json.getString("Singer"));
             this.setDuration(json.getInt("Duration"));
         } catch (Exception var3) {
-            System.out.println(var3.getMessage());
         }
 
     }

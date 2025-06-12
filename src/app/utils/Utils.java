@@ -219,7 +219,6 @@ public class Utils {
             ext = sURL[4].substring(lastDot + 1).toLowerCase();
         }
 
-        System.out.println(ext);
         if (url.equals("avi")) {
             ct = "video/mpeg";
         } else {
@@ -318,8 +317,8 @@ public class Utils {
 
     public static class QueryTask implements CommandListener, Runnable {
 
-        private static Command cancelCommand = new Command("Cancel", 3, 1);
-        private static Command OKCommand = new Command("OK", 4, 1);
+        private static Command cancelCommand = new Command("Cancel", Command.CANCEL, 1);
+        private static Command OKCommand = new Command("OK", Command.OK, 1);
         private Utils.QueryListener queryListener;
         private Utils.BreadCrumbTrail queryBCT;
         private static String queryText = "";
@@ -364,7 +363,6 @@ public class Utils {
 
         }
 
-        // $FF: synthetic method
         QueryTask(Utils.QueryListener x0, Utils.BreadCrumbTrail x1, Object x2) {
             this(x0, x1);
         }

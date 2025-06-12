@@ -70,13 +70,14 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
             Image imagePart = this.getImage(i);
             this.append(cate.getName(), imagePart);
         }
+        this.setSelectedIndex(0, true);
     }
 
     private void createImages() {
         try {
             this.images.removeAllElements();
             for (int i = 0; i < this.cateItems.size(); ++i) {
-                Image image = Image.createImage("/images/icon_theloai.png");
+                Image image = Image.createImage("/images/Album.png");
                 this.images.addElement(image);
             }
         } catch (Exception var3) {

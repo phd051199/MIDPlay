@@ -25,7 +25,6 @@ public class SettingsManager {
             e.printStackTrace();
         }
         
-        // Return default quality if not found
-        return AUDIO_QUALITIES[0]; // Default to 128kbps
+        return AUDIO_QUALITIES[0];
     }
 }

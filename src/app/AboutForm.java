@@ -10,10 +10,9 @@ import app.utils.Utils;
 
 public class AboutForm extends Form implements Utils.BreadCrumbTrail, CommandListener {
 
-    public static final String APPLICATION = "Ứng dụng: Music\n";
-
+    public static final String APPLICATION = "The data is collected about a user is your device's IMEI.\nWe don't share these information with 3rd parties.\nMusicApp will get your device's IMEI to statistic the functionalities of application which you used. So, we can update the next version better.\nAnd Your account is secret and safe.";
     protected Command backCommand = new Command("Trở lại", Command.BACK, 1);
-    private Utils.BreadCrumbTrail parent;
+    private final Utils.BreadCrumbTrail parent;
 
     public AboutForm(String title, Utils.BreadCrumbTrail parent) {
         super(title);
