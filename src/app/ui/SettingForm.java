@@ -1,0 +1,176 @@
+package app.ui;
+
+import app.MIDPlay;
+import app.common.SettingManager;
+import app.model.Song;
+import app.utils.I18N;
+import app.utils.Utils;
+import javax.microedition.lcdui.*;
+
+public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandListener {
+
+  private static final SettingManager settingManager = SettingManager.getInstance();
+  private static ChoiceGroup languageChoice;
+  private static ChoiceGroup audioQualityChoice;
+  private Command backCommand;
+  private Command saveCommand;
+  private final Utils.BreadCrumbTrail parent;
+
+  public SettingForm(String title, Utils.BreadCrumbTrail parent) {
+    super(title);
+    this.parent = parent;
+    initUI();
+  }
+
+  private void initUI() {
+    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
+    this.saveCommand = new Command(I18N.tr("save"), Command.SCREEN, 2);
+
+    languageChoice = new ChoiceGroup(I18N.tr("language"), Choice.EXCLUSIVE);
+    String[] languages = I18N.getLanguages();
+    for (int i = 0; i < languages.length; i++) {
+      languageChoice.append(I18N.getLanguageName(languages[i]), null);
+      if (languages[i].equals(I18N.getLanguage())) {
+        languageChoice.setSelectedIndex(i, true);
+      }
+    }
+
+    audioQualityChoice = new ChoiceGroup(I18N.tr("audio_quality"), Choice.EXCLUSIVE);
+    String[] audioQualities = settingManager.getAudioQualities();
+    for (int i = 0; i < audioQualities.length; i++) {
+      audioQualityChoice.append(audioQualities[i], null);
+    }
+
+    append(languageChoice);
+    append(audioQualityChoice);
+
+    addCommand(backCommand);
+    addCommand(saveCommand);
+    setCommandListener(this);
+  }
+
+  private void saveSettings() {
+    try {
+      String[] languages = I18N.getLanguages();
+      int selectedLangIndex = languageChoice.getSelectedIndex();
+      String previousLanguage = I18N.getLanguage();
+      boolean languageChanged = false;
+      String selectedLanguage = languages[selectedLangIndex];
+
+      if (!selectedLanguage.equals(previousLanguage)) {
+        I18N.setLanguage(selectedLanguage);
+        languageChanged = true;
+      }
+
+      settingManager.saveSettings(selectedLanguage, getSelectedAudioQuality());
+
+      if (languageChanged) {
+        MainList mainList = Utils.createMainMenu(parent);
+        if (parent instanceof MIDPlay) {
+          ((MIDPlay) parent).clearHistory();
+        }
+        parent.replaceCurrent(mainList);
+      } else {
+        parent.goBack();
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public static void loadSettings() {
+    try {
+      String[] settings = settingManager.loadSettings();
+
+      String savedLanguage = settings[0];
+      I18N.setLanguage(savedLanguage);
+
+      String[] languages = I18N.getLanguages();
+      if (languageChoice != null) {
+        for (int i = 0; i < languages.length; i++) {
+          if (languages[i].equals(savedLanguage)) {
+            languageChoice.setSelectedIndex(i, true);
+            break;
+          }
+        }
+      }
+
+      String savedQuality = settings[1];
+      String[] audioQualities = settingManager.getAudioQualities();
+      if (audioQualityChoice != null) {
+        for (int i = 0; i < audioQualities.length; i++) {
+          if (audioQualities[i].equals(savedQuality)) {
+            audioQualityChoice.setSelectedIndex(i, true);
+            break;
+          }
+        }
+      }
+    } catch (Exception e) {
+      setDefaultSettings();
+    }
+  }
+
+  private static void setDefaultSettings() {
+    try {
+
+      String defaultLanguage = I18N.getLanguage();
+      String[] languages = I18N.getLanguages();
+      if (languageChoice != null) {
+        for (int i = 0; i < languages.length; i++) {
+          if (languages[i].equals(defaultLanguage)) {
+            languageChoice.setSelectedIndex(i, true);
+            break;
+          }
+        }
+      }
+
+      if (audioQualityChoice != null) {
+        audioQualityChoice.setSelectedIndex(0, true);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void commandAction(Command c, Displayable d) {
+    if (d == this) {
+      if (c == backCommand) {
+        goBack();
+      } else if (c == saveCommand) {
+        saveSettings();
+      }
+    }
+  }
+
+  public String getSelectedLanguage() {
+    String[] languages = I18N.getLanguages();
+    int index = languageChoice.getSelectedIndex();
+    if (index >= 0 && index < languages.length) {
+      return languages[index];
+    }
+    return languages[0];
+  }
+
+  public String getSelectedAudioQuality() {
+    String[] audioQualities = settingManager.getAudioQualities();
+    return audioQualities[audioQualityChoice.getSelectedIndex()];
+  }
+
+  public Displayable go(Displayable d) {
+    return parent.go(d);
+  }
+
+  public Displayable goBack() {
+    return parent.goBack();
+  }
+
+  public void handle(Song song) {}
+
+  public Displayable replaceCurrent(Displayable d) {
+    return parent.replaceCurrent(d);
+  }
+
+  public Displayable getCurrentDisplayable() {
+    return parent.getCurrentDisplayable();
+  }
+}

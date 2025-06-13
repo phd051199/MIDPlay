@@ -1,182 +1,196 @@
 package app.common;
 
+import app.model.Category;
+import app.model.Playlist;
+import app.model.Song;
+import app.network.URLProvider;
+import app.utils.I18N;
 import java.io.IOException;
 import java.util.Vector;
 import org.json.me.JSONArray;
 import org.json.me.JSONException;
 import org.json.me.JSONObject;
-import app.model.Category;
-import app.model.Playlist;
-import app.model.Song;
-import app.network.URLProvider;
 
 public class ParseData {
 
+  private static final RestClient client = RestClient.getInstance();
 
-    private static String getCate(int type) {
-        RestClient client = new RestClient();
-
-        try {
-            return client.get(URLProvider.getCategory(type));
-        } catch (IOException var3) {
-            return "";
-        }
+  private static String getCate(int type) {
+    try {
+      return client.get(URLProvider.getCategory(type));
+    } catch (IOException var3) {
+      return "";
     }
+  }
 
-    public static Vector parseCate(int type) {
-        Vector cateItems = new Vector();
-        String result = getCate(type);
-        if (result != null && !"".equals(result)) {
-            try {
-                JSONObject json = new JSONObject(result);
-                JSONArray jsonArray = json.getJSONArray("Items");
-                int total = jsonArray.length();
+  public static Vector parseCate(int type) {
+    Vector cateItems = new Vector();
+    String result = getCate(type);
+    if (result != null && !"".equals(result)) {
+      try {
+        JSONObject json = new JSONObject(result);
+        JSONArray jsonArray = json.getJSONArray("Items");
+        int totalGroups = jsonArray.length();
 
-                for (int i = 0; i < total; ++i) {
-                    String threadsJSON = jsonArray.getString(i);
-                    Category cate = new Category();
-                    cate.fromJSON(threadsJSON);
-                    cateItems.addElement(cate);
-                }
-            } catch (JSONException var9) {
-                return null;
+        for (int gi = 0; gi < totalGroups; ++gi) {
+          JSONObject groupObj = new JSONObject(jsonArray.getString(gi));
+
+          Vector subVec = new Vector();
+          if (groupObj.has("SubItems")) {
+            JSONArray subs = groupObj.getJSONArray("SubItems");
+            int totalSubs = subs.length();
+            for (int si = 0; si < totalSubs; ++si) {
+              JSONObject subObj = subs.getJSONObject(si);
+              Category subCate = new Category();
+              subCate.setId(subObj.getString("Key"));
+              subCate.setName(subObj.getString("Name"));
+              subVec.addElement(subCate);
             }
+          }
 
-            return cateItems;
-        } else {
-            return null;
-        }
-    }
-
-    private static String getSearchPlaylists(String key, String keyword, int curpage, int pagesize) {
-        RestClient client = new RestClient();
-
-        try {
-            String url = URLProvider.getSearchData(2, keyword, key, curpage, pagesize);
-            return client.get(url);
-        } catch (IOException var6) {
-            return "";
-        }
-    }
-
-    private static Vector parsePlaylists(String key, String jsonResult) {
-        Vector playlistItems = new Vector();
-
-        try {
-            JSONObject json = new JSONObject(jsonResult);
-            JSONArray jsonArray = json.getJSONArray("Items");
-            int total = jsonArray.length();
-
-            for (int i = 0; i < total; ++i) {
-                String threadsJSON = jsonArray.getString(i);
-                Playlist playlist = new Playlist();
-                playlist.fromJSON(threadsJSON);
-                playlistItems.addElement(playlist);
+          if (groupObj.has("Key") && groupObj.has("Name")) {
+            Category groupCate = new Category();
+            groupCate.setId(groupObj.getString("Key"));
+            groupCate.setName(groupObj.getString("Name"));
+            groupCate.setSubItems(subVec);
+            cateItems.addElement(groupCate);
+          } else {
+            for (int si = 0; si < subVec.size(); si++) {
+              cateItems.addElement(subVec.elementAt(si));
             }
-
-            if ("yes".equals(json.getString("GetMore"))) {
-                Playlist more = new Playlist();
-                more.setName("Xem thêm ...");
-                more.setId(key);
-                playlistItems.addElement(more);
-            }
-
-            return playlistItems;
-        } catch (JSONException var9) {
-            return null;
+          }
         }
+      } catch (JSONException var9) {
+        return null;
+      }
+
+      return cateItems;
+    } else {
+      return null;
     }
+  }
 
-    public static Vector parseSearch(String genrekey, String keyword, int curpage, int pagesize) {
-        String result = getSearchPlaylists(genrekey, keyword, curpage, pagesize);
-        if (result != null && !"".equals(result)) {
-            Vector playlistItems = parsePlaylists(genrekey, result);
-            return playlistItems;
-        } else {
-            return null;
-        }
+  private static String getSearchPlaylists(String key, String keyword, int curpage, int pagesize) {
+    try {
+      String url = URLProvider.getSearchData(2, keyword, key, curpage, pagesize);
+      return client.get(url);
+    } catch (IOException var6) {
+      return "";
     }
+  }
 
-    private static String getTopHotPlaylist(int curPare, int pageSize) {
-        RestClient client = new RestClient();
+  private static Vector parsePlaylists(String key, String jsonResult) {
+    Vector playlistItems = new Vector();
 
-        try {
-            return client.get(URLProvider.getTopHotPlaylist(curPare, pageSize));
-        } catch (IOException var4) {
-            return "";
-        }
+    try {
+      JSONObject json = new JSONObject(jsonResult);
+      JSONArray jsonArray = json.getJSONArray("Items");
+      int total = jsonArray.length();
+
+      for (int i = 0; i < total; ++i) {
+        String threadsJSON = jsonArray.getString(i);
+        Playlist playlist = new Playlist();
+        playlist.fromJSON(threadsJSON);
+        playlistItems.addElement(playlist);
+      }
+
+      if ("yes".equals(json.getString("GetMore"))) {
+        Playlist more = new Playlist();
+        more.setName(I18N.tr("load_more"));
+        more.setId(key);
+        playlistItems.addElement(more);
+      }
+
+      return playlistItems;
+    } catch (JSONException var9) {
+      return null;
     }
+  }
 
-    public static Vector parseHotPlaylist(int curpage, int pagesize) {
-        String result = getTopHotPlaylist(curpage, pagesize);
-        if (result != null && !"".equals(result)) {
-            Vector playlistItems = parsePlaylists("tophot", result);
-            return playlistItems;
-        } else {
-            return null;
-        }
+  public static Vector parseSearch(String genrekey, String keyword, int curpage, int pagesize) {
+    String result = getSearchPlaylists(genrekey, keyword, curpage, pagesize);
+    if (result != null && !"".equals(result)) {
+      Vector playlistItems = parsePlaylists(genrekey, result);
+      return playlistItems;
+    } else {
+      return null;
     }
+  }
 
-    private static String getTopNewPlaylist(int curPare, int pageSize) {
-        RestClient client = new RestClient();
-
-        try {
-            return client.get(URLProvider.getTopNewsPlaylist(curPare, pageSize));
-        } catch (IOException var4) {
-            var4.printStackTrace();
-            return "";
-        }
+  private static String getResolvePlaylist(String key, int curPage) {
+    try {
+      return client.get(URLProvider.resolvePlaylist(key, curPage));
+    } catch (IOException e) {
+      return "";
     }
+  }
 
-    public static Vector parseNewPlaylist(int curpage, int pagesize) {
-        String result = getTopNewPlaylist(curpage, pagesize);
-        if (result != null && !"".equals(result)) {
-            Vector playlistItems = parsePlaylists("topnew", result);
-            return playlistItems;
-        } else {
-            return null;
-        }
+  public static Vector parseResolvePlaylist(String key, int curPage, int pageSize) {
+    String result = getResolvePlaylist(key, curPage);
+    if (result != null && !"".equals(result)) {
+      Vector playlistItems = parsePlaylists(key, result);
+      return playlistItems;
+    } else {
+      return null;
     }
+  }
 
-    public static String getSongsInPlaylist(String listkey, String username, int curPare, int pageSize) {
-        RestClient client = new RestClient();
-
-        try {
-            return client.get(URLProvider.getSongByPlaylist(listkey, username));
-        } catch (IOException var6) {
-            return "";
-        }
+  private static String getTopHotPlaylist(int curPare, int pageSize) {
+    try {
+      return client.get(URLProvider.getTopHotPlaylist(curPare, pageSize));
+    } catch (IOException var4) {
+      return "";
     }
+  }
 
-    public static Vector parseSongsInPlaylist(String listkey, String username, int curPare, int pageSize) {
-        String result = getSongsInPlaylist(listkey, username, curPare, pageSize);
-        if (result != null && !"".equals(result)) {
-            Vector songItems = parseSongOfPlaylist(listkey, result);
-            return songItems;
-        } else {
-            return null;
-        }
+  public static Vector parseHotPlaylist(int curpage, int pagesize) {
+    String result = getTopHotPlaylist(curpage, pagesize);
+    if (result != null && !"".equals(result)) {
+      Vector playlistItems = parsePlaylists("tophot", result);
+      return playlistItems;
+    } else {
+      return null;
     }
+  }
 
-    private static Vector parseSongOfPlaylist(String key, String jsonResult) {
-        Vector songItems = new Vector();
-
-        try {
-            JSONObject json = new JSONObject(jsonResult);
-            JSONArray jsonArray = json.getJSONArray("Items");
-            int total = jsonArray.length();
-
-            for (int i = 0; i < total; ++i) {
-                String threadsJSON = jsonArray.getString(i);
-                Song song = new Song();
-                song.fromJSON(threadsJSON);
-                songItems.addElement(song);
-            }
-
-            return songItems;
-        } catch (JSONException var9) {
-            return null;
-        }
+  public static String getSongsInPlaylist(
+      String listkey, String username, int curPare, int pageSize) {
+    try {
+      return client.get(URLProvider.getSongByPlaylist(listkey, username));
+    } catch (IOException var6) {
+      return "";
     }
+  }
 
+  public static Vector parseSongsInPlaylist(
+      String listkey, String username, int curPare, int pageSize) {
+    String result = getSongsInPlaylist(listkey, username, curPare, pageSize);
+    if (result != null && !"".equals(result)) {
+      Vector songItems = parseSongOfPlaylist(listkey, result);
+      return songItems;
+    } else {
+      return null;
+    }
+  }
+
+  private static Vector parseSongOfPlaylist(String key, String jsonResult) {
+    Vector songItems = new Vector();
+
+    try {
+      JSONObject json = new JSONObject(jsonResult);
+      JSONArray jsonArray = json.getJSONArray("Items");
+      int total = jsonArray.length();
+
+      for (int i = 0; i < total; ++i) {
+        String threadsJSON = jsonArray.getString(i);
+        Song song = new Song();
+        song.fromJSON(threadsJSON);
+        songItems.addElement(song);
+      }
+
+      return songItems;
+    } catch (JSONException var9) {
+      return null;
+    }
+  }
 }
