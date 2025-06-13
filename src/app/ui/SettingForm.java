@@ -20,6 +20,7 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
     super(title);
     this.parent = parent;
     initUI();
+    loadSettings();
   }
 
   private void initUI() {
@@ -30,9 +31,6 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
     String[] languages = I18N.getLanguages();
     for (int i = 0; i < languages.length; i++) {
       languageChoice.append(I18N.getLanguageName(languages[i]), null);
-      if (languages[i].equals(I18N.getLanguage())) {
-        languageChoice.setSelectedIndex(i, true);
-      }
     }
 
     audioQualityChoice = new ChoiceGroup(I18N.tr("audio_quality"), Choice.EXCLUSIVE);
