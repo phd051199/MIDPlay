@@ -1,5 +1,6 @@
 package app.ui.player;
 
+import app.common.RestClient;
 import app.model.Song;
 import app.utils.I18N;
 import java.util.Timer;
@@ -22,10 +23,84 @@ public class PlayerGUI implements PlayerListener {
   int index = 0;
   private boolean restartOnResume = false;
 
+  private int playerHttpMethod = 1; // 0 - pass url, 1 - pass connection stream
+  // platform
+  private boolean symbianJrt;
+  private boolean symbian;
+
   public PlayerGUI(PlayerCanvas parent) {
     this.parent = parent;
     this.setStatus("");
     this.guiTimer = new Timer();
+    this.setPlayerHttpMethod();
+  }
+
+  // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
+  public void setPlayerHttpMethod() {
+    String p, v;
+    if ((p = System.getProperty("microedition.platform")) != null) {
+      if ((symbianJrt = p.indexOf("platform=S60") != -1)) {
+        int i;
+        v = p.substring(i = p.indexOf("platform_version=") + 17, i = p.indexOf(';', i));
+      }
+
+      try {
+        Class.forName("emulator.custom.CustomMethod");
+        p = "KEmulator";
+        if ((v = System.getProperty("kemulator.mod.version")) != null) {
+          p = p.concat(" ".concat(v));
+        }
+      } catch (Exception e) {
+        int i;
+
+        if ((i = p.indexOf('/')) != -1 || (i = p.indexOf(' ')) != -1) {
+          p = p.substring(0, i);
+        }
+      }
+    }
+    this.symbian =
+        this.symbianJrt
+            || System.getProperty("com.symbian.midp.serversocket.support") != null
+            || System.getProperty("com.symbian.default.to.suite.icon") != null
+            || checkClass("com.symbian.midp.io.protocol.http.Protocol")
+            || checkClass("com.symbian.lcdjava.io.File");
+
+    // check media capabilities
+    try {
+      // s40 check
+      Class.forName("com.nokia.mid.impl.isa.jam.Jam");
+      try {
+        Class.forName("com.sun.mmedia.protocol.CommonDS");
+        // s40v1 uses sun impl for media and i/o so it should work fine
+        this.playerHttpMethod = 0;
+      } catch (Exception e) {
+        // s40v2+ breaks http locator parsing
+        this.playerHttpMethod = 1;
+      }
+    } catch (Exception e) {
+      this.playerHttpMethod = 0;
+      if (this.symbian) {
+        if (this.symbianJrt
+            && (p.indexOf("java_build_version=2.") != -1
+                || p.indexOf("java_build_version=1.4") != -1)) {
+          // emc (s60v5+), supports mp3 streaming
+        } else if (checkClass("com.symbian.mmapi.PlayerImpl")) {
+          // uiq
+        } else {
+          // mmf (s60v3.2-)
+          this.playerHttpMethod = 1;
+        }
+      }
+    }
+  }
+
+  private static boolean checkClass(String s) {
+    try {
+      Class.forName(s);
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
   }
 
   public void setListSong(Vector lst, int index) {
@@ -114,7 +189,15 @@ public class PlayerGUI implements PlayerListener {
     try {
       this.setStatus(I18N.tr("loading"));
       Song s = (Song) this.listSong.elementAt(this.index);
-      this.player = Manager.createPlayer(s.getStreamUrl());
+
+      if (this.playerHttpMethod == 1) {
+        this.player =
+            Manager.createPlayer(
+                RestClient.getInstance().getConnection(s.getStreamUrl()).openInputStream(),
+                "audio/mpeg");
+      } else {
+        this.player = Manager.createPlayer(s.getStreamUrl());
+      }
       this.player.addPlayerListener(this);
       this.player.realize();
       this.player.prefetch();
@@ -194,9 +277,13 @@ public class PlayerGUI implements PlayerListener {
       this.setStatus(I18N.tr("paused"));
       this.player = null;
       this.setStatus("");
-      if (this.guiTimer == null) {
-        this.guiTimer = new Timer();
-      }
+    }
+
+    this.stopDisplayTimer();
+
+    if (this.guiTimer != null) {
+      this.guiTimer.cancel();
+      this.guiTimer = null;
     }
   }
 
@@ -250,8 +337,11 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private synchronized void startDisplayTimer() {
+    if (this.guiTimer == null) {
+      this.guiTimer = new Timer();
+    }
     if (this.timeDisplayTask == null) {
-      this.timeDisplayTask = new PlayerGUI.SPTimerTask();
+      this.timeDisplayTask = new SPTimerTask();
       this.guiTimer.scheduleAtFixedRate(this.timeDisplayTask, 0L, (long) this.timerInterval);
     }
   }
@@ -266,37 +356,40 @@ public class PlayerGUI implements PlayerListener {
 
   public void playerUpdate(Player plyr, String evt, Object evtData) {
     try {
-      if (evt == "endOfMedia" && plyr.getState() == 400) {
+      if ("endOfMedia".equals(evt) && plyr.getState() == 400) {
         return;
       }
 
-      if (evt == "closed"
-          || evt == "error"
-          || evt == "endOfMedia"
-          || evt == "stoppedAtTime"
-          || evt == "stopped") {
+      if ("closed".equals(evt)
+          || "error".equals(evt)
+          || "endOfMedia".equals(evt)
+          || "stoppedAtTime".equals(evt)
+          || "stopped".equals(evt)) {
         this.stopDisplayTimer();
       }
 
-      if (evt == "endOfMedia" || evt == "stoppedAtTime" || evt == "stopped" || evt == "error") {
+      if (evt.equals("endOfMedia")
+          || evt.equals("stoppedAtTime")
+          || evt.equals("stopped")
+          || evt.equals("error")) {
         this.parent.updateDisplay();
       }
 
       if (evt.equals("started")) {
         this.startDisplayTimer();
       } else if (!evt.equals("deviceUnavailable")
-          && evt != "bufferingStarted"
-          && evt != "bufferingStopped"
-          && evt != "closed") {
-        if (evt == "durationUpdated") {
+          && !evt.equals("bufferingStarted")
+          && !evt.equals("bufferingStopped")
+          && !evt.equals("closed")) {
+        if (evt.equals("durationUpdated")) {
           this.parent.updateDisplay();
-        } else if (evt == "endOfMedia") {
+        } else if (evt.equals("endOfMedia")) {
           this.setStatus(I18N.tr("end_of_media"));
           this.getNextSong();
-        } else if (evt != "error") {
-          if (evt == "stoppedAtTime") {
+        } else if (!evt.equals("error")) {
+          if (evt.equals("stoppedAtTime")) {
             this.setStatus(I18N.tr("stopped_at_time"));
-          } else if (evt == "volumeChanged") {
+          } else if (evt.equals("volumeChanged")) {
           }
         }
       }
