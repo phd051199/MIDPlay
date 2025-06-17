@@ -86,8 +86,8 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
   private void createImages() {
     try {
       this.images.removeAllElements();
+      Image image = Image.createImage("/images/Album.png");
       for (int i = 0; i < this.cateItems.size(); ++i) {
-        Image image = Image.createImage("/images/Album.png");
         this.images.addElement(image);
       }
     } catch (Exception var3) {
@@ -110,14 +110,14 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
         new Thread(
             new Runnable() {
               public void run() {
-                Vector listItems = ParseData.parseResolvePlaylist(genKey, curPage, perPage);
+                Vector listItems = ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
                 if (listItems == null) {
                   CategoryList.this.displayMessage(I18N.tr("connection_error"), "error");
                 } else if (listItems.size() == 0) {
                   CategoryList.this.displayMessage(I18N.tr("no_data"), "error");
                 } else {
                   PlaylistList playlistList =
-                      new PlaylistList(I18N.tr("genres"), listItems, "genre", "");
+                      new PlaylistList(I18N.tr("genres"), listItems, "genre", "", "playlist");
 
                   playlistList.setObserver(CategoryList.this.observer);
                   CategoryList.this.observer.replaceCurrent(playlistList);

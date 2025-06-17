@@ -6,12 +6,13 @@ import app.utils.I18N;
 import app.utils.TextUtil;
 
 public class URLProvider {
-
-  public static String getTopHotPlaylist(int pageIndex, int pageSize) {
-    String client = Constants.SERVICE_URL + "/hot-playlist?";
+  public static String getBillboard(int pageIndex, int pageSize) {
+    String client = Constants.SERVICE_URL + "/charts?";
     if (client != null) {
       try {
         client = client + "page=" + pageIndex;
+        client = client + "&pageSize=" + pageSize;
+        client = client + "&lang=" + I18N.getLanguage();
         return client;
       } catch (Exception var6) {
       }
@@ -20,12 +21,15 @@ public class URLProvider {
     return null;
   }
 
-  public static String resolvePlaylist(String playlistKey, int pageIndex) {
-    String client = Constants.SERVICE_URL + "/resolve-playlist?";
+  public static String getPlaylist(int pageIndex, int pageSize, String type, String genreKey) {
+    String client = Constants.SERVICE_URL + "/playlist?";
     if (client != null) {
       try {
-        client = client + "key=" + playlistKey;
-        client = client + "&page=" + pageIndex;
+        client = client + "page=" + pageIndex;
+        client = client + "&pageSize=" + pageSize;
+        client = client + "&type=" + type;
+        client = client + "&key=" + genreKey;
+        client = client + "&lang=" + I18N.getLanguage();
         return client;
       } catch (Exception var6) {
       }
@@ -34,12 +38,14 @@ public class URLProvider {
     return null;
   }
 
-  public static String getSongByPlaylist(String listKey, String userName) {
+  public static String getSongByPlaylist(String listKey, String userName, String type) {
     String client = Constants.SERVICE_URL + "/tracks?";
     if (client != null) {
       try {
         client = client + "listkey=" + listKey;
         client = client + "&quality=" + SettingManager.getInstance().getCurrentAudioQuality();
+        client = client + "&type=" + type;
+        client = client + "&lang=" + I18N.getLanguage();
         return client;
       } catch (Exception var6) {
       }
@@ -52,8 +58,7 @@ public class URLProvider {
     String client = Constants.SERVICE_URL + "/genre?";
     if (client != null) {
       try {
-        client = client + "type=" + type;
-        client = client + "&lang=" + I18N.getLanguage();
+        client = client + "lang=" + I18N.getLanguage();
         return client;
       } catch (Exception var5) {
       }
@@ -63,13 +68,14 @@ public class URLProvider {
   }
 
   public static String getSearchData(
-      int type, String keyword, String genreKey, int pageIndex, int pageSize) {
+      String type, String keyword, String genreKey, int pageIndex, int pageSize) {
     String client = Constants.SERVICE_URL + "/search?";
     if (client != null) {
       try {
         client = client + "q=" + TextUtil.urlEncodeUTF8(keyword);
         client = client + "&page=" + pageIndex;
         client = client + "&type=" + type;
+        client = client + "&lang=" + I18N.getLanguage();
         return client;
       } catch (Exception var9) {
       }

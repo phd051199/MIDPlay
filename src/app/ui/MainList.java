@@ -1,7 +1,6 @@
 package app.ui;
 
 import app.common.ParseData;
-import app.constants.Constants;
 import app.interfaces.LoadDataObserver;
 import app.ui.category.CategoryList;
 import app.utils.I18N;
@@ -26,26 +25,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     for (int i = 0; i < items.length; ++i) {
       Image imagePart = getImage(i, imageElements);
       String text = items[i];
-      switch (i) {
-        case 0:
-          text += "\n" + I18N.tr("search_playlist");
-          break;
-        case 1:
-          text += "\n" + I18N.tr("latest_updates");
-          break;
-        case 2:
-          text += "\n" + I18N.tr("music_genres");
-          break;
-        case 3:
-          text += "\n" + I18N.tr("language") + ", " + I18N.tr("audio_quality");
-          break;
-        case 4:
-          text += "\n" + I18N.tr("version") + ": " + Constants.APP_VERSION;
-          break;
 
-        default:
-          break;
-      }
       this.append(text, imagePart);
     }
     this.initCommands();
@@ -90,33 +70,21 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void gotoCate() {
-    this.mLoaDataThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
-                Vector cateItems = ParseData.parseCate(2);
-                if (cateItems == null) {
-                  MainList.displayMessage(
-                      I18N.tr("app_name"),
-                      I18N.tr("connection_error"),
-                      "error",
-                      MainList.this.observer,
-                      MainList.this);
-                } else if (cateItems.size() == 0) {
-                  MainList.displayMessage(
-                      I18N.tr("app_name"),
-                      I18N.tr("no_data"),
-                      "error",
-                      MainList.this.observer,
-                      MainList.this);
-                } else {
-                  CategoryList cateCanvas = new CategoryList(I18N.tr("genres"), cateItems);
-                  cateCanvas.setObserver(MainList.this.observer);
-                  MainList.this.observer.replaceCurrent(cateCanvas);
-                }
-              }
-            });
-    this.mLoaDataThread.start();
+    loadDataAsync(
+        new DataLoader() {
+          public Vector load() throws Exception {
+            return ParseData.parseCate(2);
+          }
+        },
+        I18N.tr("genres"),
+        "category",
+        "category");
+  }
+
+  private void showCategoryList(String title, Vector items, String from, String itemType) {
+    CategoryList cateCanvas = new CategoryList(title, items);
+    cateCanvas.setObserver(this.observer);
+    this.observer.replaceCurrent(cateCanvas);
   }
 
   private void gotoSetting() {
@@ -124,35 +92,16 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     observer.go(settingForm);
   }
 
-  private void gotoHotPlaylist() {
-    this.mLoaDataThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
-                Vector playlistItems = ParseData.parseHotPlaylist(1, 10);
-                if (playlistItems == null) {
-                  MainList.displayMessage(
-                      I18N.tr("app_name"),
-                      I18N.tr("connection_error"),
-                      "error",
-                      MainList.this.observer,
-                      MainList.this);
-                } else if (playlistItems.size() == 0) {
-                  MainList.displayMessage(
-                      I18N.tr("app_name"),
-                      I18N.tr("no_data"),
-                      "error",
-                      MainList.this.observer,
-                      MainList.this);
-                } else {
-                  PlaylistList playlistList =
-                      new PlaylistList(I18N.tr("hot_playlists"), playlistItems, "hot", "");
-                  playlistList.setObserver(MainList.this.observer);
-                  MainList.this.observer.replaceCurrent(playlistList);
-                }
-              }
-            });
-    this.mLoaDataThread.start();
+  private void gotoPlaylist(final String type) {
+    loadDataAsync(
+        new DataLoader() {
+          public Vector load() throws Exception {
+            return ParseData.parsePlaylist(1, 30, type, "0");
+          }
+        },
+        I18N.tr("hot_playlists"),
+        "hot",
+        "playlist");
   }
 
   public static void gotoSearch(Utils.BreadCrumbTrail observer) {
@@ -166,25 +115,86 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     observer.go(aboutForm);
   }
 
+  private void gotoBillboard() {
+    loadDataAsync(
+        new DataLoader() {
+          public Vector load() throws Exception {
+            return ParseData.parseBillboard(1, 10);
+          }
+        },
+        I18N.tr("billboard"),
+        "billboard",
+        "chart");
+  }
+
+  private interface DataLoader {
+    Vector load() throws Exception;
+  }
+
+  private void loadDataAsync(
+      final DataLoader loader, final String title, final String from, final String itemType) {
+    this.mLoaDataThread =
+        new Thread(
+            new Runnable() {
+              public void run() {
+                try {
+                  Vector items = loader.load();
+                  if (items == null) {
+                    showErrorMessage(I18N.tr("connection_error"));
+                  } else if (items.isEmpty()) {
+                    showErrorMessage(I18N.tr("no_data"));
+                  } else {
+                    if ("category".equals(from)) {
+                      showCategoryList(title, items, from, itemType);
+                    } else {
+                      showPlaylistList(title, items, from, itemType);
+                    }
+                  }
+                } catch (Exception e) {
+                  showErrorMessage(I18N.tr("connection_error"));
+                }
+              }
+            });
+    this.mLoaDataThread.start();
+  }
+
+  private void showErrorMessage(String message) {
+    displayMessage(I18N.tr("app_name"), message, "error", this.observer, this);
+  }
+
+  private void showPlaylistList(String title, Vector items, String from, String itemType) {
+    PlaylistList playlistList = new PlaylistList(title, items, from, "", itemType);
+    playlistList.setObserver(this.observer);
+    this.observer.replaceCurrent(playlistList);
+  }
+
   private void itemAction() {
     int selectedIndex = this.getSelectedIndex();
     switch (selectedIndex) {
       case 0:
-        MainList.gotoSearch(this.observer);
+        this.gotoSearch(this.observer);
         break;
       case 1:
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoHotPlaylist();
+        this.gotoBillboard();
         break;
       case 2:
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoCate();
+        this.gotoPlaylist("new");
         break;
       case 3:
-        this.gotoSetting();
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        this.gotoPlaylist("hot");
         break;
       case 4:
-        MainList.gotoAbout(this.observer);
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        this.gotoCate();
+        break;
+      case 5:
+        this.gotoSetting();
+        break;
+      case 6:
+        this.gotoAbout(this.observer);
         break;
       default:
         break;

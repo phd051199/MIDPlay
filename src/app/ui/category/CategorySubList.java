@@ -49,9 +49,9 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
     try {
       this.images.removeAllElements();
       this.deleteAll();
+      Image folderIcon = Image.createImage("/images/FolderSound.png");
       for (int i = 0; i < this.subItems.size(); ++i) {
         Category cate = (Category) this.subItems.elementAt(i);
-        Image folderIcon = Image.createImage("/images/FolderSound.png");
         this.images.addElement(folderIcon);
         this.append(cate.getName(), folderIcon);
       }
@@ -92,7 +92,7 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
         new Thread(
             new Runnable() {
               public void run() {
-                Vector listItems = ParseData.parseResolvePlaylist(genKey, curPage, perPage);
+                Vector listItems = ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
                 if (listItems == null) {
                   MainList.displayMessage(
                       I18N.tr("genres"),
@@ -109,7 +109,7 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
                       CategorySubList.this);
                 } else {
                   PlaylistList playlistList =
-                      new PlaylistList(I18N.tr("genres"), listItems, "genre", "");
+                      new PlaylistList(I18N.tr("genres"), listItems, "genre", "", "playlist");
                   playlistList.setObserver(observer);
                   observer.replaceCurrent(playlistList);
                 }

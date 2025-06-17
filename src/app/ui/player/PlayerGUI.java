@@ -22,6 +22,7 @@ public class PlayerGUI implements PlayerListener {
   Vector listSong = null;
   int index = 0;
   private boolean restartOnResume = false;
+  private boolean isTransitioning = false;
 
   private int playerHttpMethod = 1; // 0 - pass url, 1 - pass connection stream
   // platform
@@ -124,8 +125,10 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public long getDuration() {
+    Song s = (Song) this.listSong.elementAt(this.index);
+
     try {
-      if (player != null) {
+      if (player != null && s.getDuration() <= 0) {
         long duration = player.getDuration();
         if (duration > 0) {
           return duration;
@@ -135,7 +138,6 @@ public class PlayerGUI implements PlayerListener {
     }
 
     if (this.listSong != null && this.index >= 0 && this.index < this.listSong.size()) {
-      Song s = (Song) this.listSong.elementAt(this.index);
       if (s != null) {
         return (long) s.getDuration() * 1000000L;
       }
@@ -208,24 +210,44 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
-  public void getNextSong() throws Throwable {
-    if (++this.index >= this.listSong.size()) {
-      this.index = 0;
+  public synchronized void getNextSong() throws Throwable {
+    if (isTransitioning) {
+      return;
     }
 
-    this.closePlayer();
-    this.startPlayer();
-    this.setStatus(I18N.tr("playing"));
+    try {
+      isTransitioning = true;
+
+      if (++this.index >= this.listSong.size()) {
+        this.index = 0;
+      }
+
+      this.closePlayer();
+      this.startPlayer();
+      this.setStatus(I18N.tr("playing"));
+    } finally {
+      isTransitioning = false;
+    }
   }
 
-  public void getPrevSong() throws Throwable {
-    if (--this.index < 0) {
-      this.index = this.listSong.size() - 1;
+  public synchronized void getPrevSong() throws Throwable {
+    if (isTransitioning) {
+      return;
     }
 
-    this.closePlayer();
-    this.startPlayer();
-    this.setStatus(I18N.tr("playing"));
+    try {
+      isTransitioning = true;
+
+      if (--this.index < 0) {
+        this.index = this.listSong.size() - 1;
+      }
+
+      this.closePlayer();
+      this.startPlayer();
+      this.setStatus(I18N.tr("playing"));
+    } finally {
+      isTransitioning = false;
+    }
   }
 
   public void startPlayer() {
@@ -264,25 +286,39 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void closePlayer() {
+    this.stopDisplayTimer();
+
     if (this.player != null) {
       this.setStatus(I18N.tr("stopping"));
 
       try {
-        this.player.stop();
-      } catch (Exception var2) {
-        var2.printStackTrace();
+        if (this.player.getState() != Player.CLOSED) {
+          this.player.removePlayerListener(this);
+
+          if (this.player.getState() != Player.CLOSED) {
+            try {
+              this.player.stop();
+            } catch (MediaException e) {
+            }
+          }
+
+          this.player.close();
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      } finally {
+        this.player = null;
       }
 
-      this.player.close();
-      this.setStatus(I18N.tr("paused"));
-      this.player = null;
       this.setStatus("");
     }
 
-    this.stopDisplayTimer();
-
     if (this.guiTimer != null) {
-      this.guiTimer.cancel();
+      try {
+        this.guiTimer.cancel();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       this.guiTimer = null;
     }
   }
@@ -356,45 +392,46 @@ public class PlayerGUI implements PlayerListener {
 
   public void playerUpdate(Player plyr, String evt, Object evtData) {
     try {
-      if ("endOfMedia".equals(evt) && plyr.getState() == 400) {
+      if (this.player != plyr) {
         return;
       }
 
-      if ("closed".equals(evt)
-          || "error".equals(evt)
-          || "endOfMedia".equals(evt)
-          || "stoppedAtTime".equals(evt)
-          || "stopped".equals(evt)) {
+      if ("closed".equals(evt) || "error".equals(evt) || "stopped".equals(evt)) {
         this.stopDisplayTimer();
-      }
-
-      if (evt.equals("endOfMedia")
-          || evt.equals("stoppedAtTime")
-          || evt.equals("stopped")
-          || evt.equals("error")) {
         this.parent.updateDisplay();
-      }
-
-      if (evt.equals("started")) {
-        this.startDisplayTimer();
-      } else if (!evt.equals("deviceUnavailable")
-          && !evt.equals("bufferingStarted")
-          && !evt.equals("bufferingStopped")
-          && !evt.equals("closed")) {
-        if (evt.equals("durationUpdated")) {
+      } else if ("endOfMedia".equals(evt)) {
+        if (plyr.getState() == Player.PREFETCHED || plyr.getState() == Player.STARTED) {
+          this.stopDisplayTimer();
           this.parent.updateDisplay();
-        } else if (evt.equals("endOfMedia")) {
-          this.setStatus(I18N.tr("end_of_media"));
-          this.getNextSong();
-        } else if (!evt.equals("error")) {
-          if (evt.equals("stoppedAtTime")) {
-            this.setStatus(I18N.tr("stopped_at_time"));
-          } else if (evt.equals("volumeChanged")) {
+
+          if (!isTransitioning) {
+            isTransitioning = true;
+            try {
+              this.setStatus(I18N.tr("end_of_media"));
+              new Thread(
+                      new Runnable() {
+                        public void run() {
+                          try {
+                            getNextSong();
+                          } catch (Throwable t) {
+                            t.printStackTrace();
+                          }
+                        }
+                      })
+                  .start();
+            } finally {
+              isTransitioning = false;
+            }
           }
         }
+        return;
+      } else if ("started".equals(evt)) {
+        this.startDisplayTimer();
+      } else if ("durationUpdated".equals(evt)) {
+        this.parent.updateDisplay();
+      } else if ("volumeChanged".equals(evt)) {
       }
-    } catch (Throwable var5) {
-      var5.printStackTrace();
+    } catch (Throwable var2) {
     }
   }
 

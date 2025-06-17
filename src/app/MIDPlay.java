@@ -1,6 +1,6 @@
 package app;
 
-import app.common.Observer;
+import app.interfaces.Observer;
 import app.model.Song;
 import app.ui.MainList;
 import app.ui.SettingForm;

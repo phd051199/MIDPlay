@@ -6,8 +6,8 @@
     <description>Builds, tests, and runs the project .</description>
     <import file="nbproject/build-impl.xml"/>
     <target name="-post-compile-proguard">
-        <taskdef resource="proguard/ant/task.properties" classpath="${basedir}/proguard/proguard-ant.jar"/>
-        <proguard configuration="${basedir}/proguard.pro"/>
+        <taskdef resource="proguard/ant/task.properties" classpath="${basedir}/lib/proguard-ant.jar"/>
+        <proguard configuration="${basedir}/midlets.pro"/>
     </target>
     <!--
 

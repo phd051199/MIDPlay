@@ -5,6 +5,7 @@ import app.interfaces.LoadDataObserver;
 import app.utils.I18N;
 import app.utils.Utils;
 import java.util.Vector;
+import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
@@ -14,16 +15,23 @@ import javax.microedition.lcdui.TextField;
 public class SearchForm extends Form implements CommandListener, LoadDataObserver {
 
   private TextField symbolField = new TextField(I18N.tr("search_hint"), "", 300, 0);
+  private ChoiceGroup searchTypeGroup =
+      new ChoiceGroup(I18N.tr("search_type"), ChoiceGroup.EXCLUSIVE);
   private Command exitCommand;
   private Command searchCommand;
   private Command nowPlayingCommand;
   private String keyWord = "";
+  private String searchType = "playlist";
   private Utils.BreadCrumbTrail observer;
   Thread mLoaDataThread;
 
   public SearchForm(String title) {
     super(title);
     this.append(this.symbolField);
+    this.searchTypeGroup.append(I18N.tr("album"), null);
+    this.searchTypeGroup.append(I18N.tr("playlist"), null);
+    this.searchTypeGroup.setSelectedIndex(0, true);
+    this.append(this.searchTypeGroup);
     this.initMenu();
   }
 
@@ -55,13 +63,15 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   private void gotoSearchPlaylist(String keyword, final int curPage, final int perPage) {
+    this.searchType = this.searchTypeGroup.isSelected(0) ? "album" : "playlist";
     this.displayMessage(I18N.tr("search_hint") + ": " + keyword, I18N.tr("loading"), "loading");
     this.mLoaDataThread =
         new Thread(
             new Runnable() {
               public void run() {
                 Vector listItems =
-                    ParseData.parseSearch("", SearchForm.this.keyWord, curPage, perPage);
+                    ParseData.parseSearch(
+                        "", SearchForm.this.keyWord, curPage, perPage, searchType);
                 if (listItems == null) {
                   SearchForm.this.displayMessage("", I18N.tr("connection_error"), "error");
                 } else if (listItems.isEmpty()) {
@@ -76,7 +86,11 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
                       I18N.tr("search_results") + ": " + SearchForm.this.keyWord;
                   PlaylistList cateCanvas =
                       new PlaylistList(
-                          searchResultsTitle, listItems, "search", SearchForm.this.keyWord);
+                          searchResultsTitle,
+                          listItems,
+                          "search",
+                          SearchForm.this.keyWord,
+                          SearchForm.this.searchType);
                   cateCanvas.setObserver(SearchForm.this.observer);
                   SearchForm.this.observer.replaceCurrent(cateCanvas);
                 }

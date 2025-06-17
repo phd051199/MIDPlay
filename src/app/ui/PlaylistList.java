@@ -22,13 +22,14 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   private Vector images;
   private Vector playlistItems;
   private Utils.BreadCrumbTrail observer;
+  String type = "";
   int curPage = 1;
   int perPage = 10;
   String from = "";
   String keyWord = "";
   Thread mLoaDataThread;
 
-  public PlaylistList(String title, Vector items, String _from, String keySearh) {
+  public PlaylistList(String title, Vector items, String _from, String keySearh, String type) {
     super(title, List.IMPLICIT);
 
     this.from = _from;
@@ -39,6 +40,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     this.playlistItems = new Vector();
     this.images = new Vector();
     this.playlistItems = items;
+    this.type = type;
     this.initComponents();
   }
 
@@ -83,13 +85,16 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
               public void run() {
                 Vector listItems = null;
                 if (PlaylistList.this.from.equals("genre")) {
-                  listItems = ParseData.parseResolvePlaylist(genKey, curPage, perPage);
+                  listItems = ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
 
                 } else if (PlaylistList.this.from.equals("search")) {
-                  listItems = ParseData.parseSearch("", keyword, curPage, perPage);
+                  listItems =
+                      ParseData.parseSearch("", keyword, curPage, perPage, PlaylistList.this.type);
 
-                } else if (PlaylistList.this.from.equals("hot")) {
-                  listItems = ParseData.parseHotPlaylist(curPage, perPage);
+                } else if (PlaylistList.this.from.equals("hot")
+                    || PlaylistList.this.from.equals("new")) {
+                  listItems =
+                      ParseData.parsePlaylist(curPage, perPage, PlaylistList.this.type, "0");
                 }
 
                 if (listItems != null) {
@@ -130,8 +135,8 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   private void createImages() {
     try {
       this.images.removeAllElements();
+      Image image = Image.createImage("/images/FolderSound.png");
       for (int i = 0; i < this.playlistItems.size(); ++i) {
-        Image image = Image.createImage("/images/FolderSound.png");
         this.images.addElement(image);
       }
     } catch (Exception var3) {
@@ -140,14 +145,18 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   }
 
   private void addMorePlaylists(Vector playlists) {
-    for (int i = 0; i < playlists.size(); ++i) {
-      this.playlistItems.addElement(playlists.elementAt(i));
-      try {
-        Image image = Image.createImage("/images/FolderSound.png");
-        this.images.addElement(image);
-      } catch (Exception e) {
-        e.printStackTrace();
+    try {
+      Image image = Image.createImage("/images/FolderSound.png");
+      for (int i = 0; i < playlists.size(); ++i) {
+        this.playlistItems.addElement(playlists.elementAt(i));
+        try {
+          this.images.addElement(image);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       }
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 
@@ -175,7 +184,9 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
         new Thread(
             new Runnable() {
               public void run() {
-                Vector songItems = ParseData.parseSongsInPlaylist(playlist.getId(), "", 1, 10);
+                Vector songItems =
+                    ParseData.parseSongsInPlaylist(
+                        playlist.getId(), "", 1, 30, PlaylistList.this.type);
                 if (songItems == null) {
                   PlaylistList.this.displayMessage(
                       playlist.getName(), I18N.tr("connection_error"), "error");

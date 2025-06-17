@@ -1,5 +1,6 @@
 package app.common;
 
+import app.interfaces.Observer;
 import java.util.Vector;
 
 public class Observable {

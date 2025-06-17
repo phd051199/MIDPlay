@@ -70,9 +70,10 @@ public class ParseData {
     }
   }
 
-  private static String getSearchPlaylists(String key, String keyword, int curpage, int pagesize) {
+  private static String getSearchPlaylists(
+      String key, String keyword, int curpage, int pagesize, String type) {
     try {
-      String url = URLProvider.getSearchData(2, keyword, key, curpage, pagesize);
+      String url = URLProvider.getSearchData(type, keyword, key, curpage, pagesize);
       return client.get(url);
     } catch (IOException var6) {
       return "";
@@ -107,8 +108,9 @@ public class ParseData {
     }
   }
 
-  public static Vector parseSearch(String genrekey, String keyword, int curpage, int pagesize) {
-    String result = getSearchPlaylists(genrekey, keyword, curpage, pagesize);
+  public static Vector parseSearch(
+      String genrekey, String keyword, int curpage, int pagesize, String type) {
+    String result = getSearchPlaylists(genrekey, keyword, curpage, pagesize, type);
     if (result != null && !"".equals(result)) {
       Vector playlistItems = parsePlaylists(genrekey, result);
       return playlistItems;
@@ -117,34 +119,34 @@ public class ParseData {
     }
   }
 
-  private static String getResolvePlaylist(String key, int curPage) {
-    try {
-      return client.get(URLProvider.resolvePlaylist(key, curPage));
-    } catch (IOException e) {
-      return "";
-    }
-  }
+  // private static String getResolvePlaylist(String key, int curPage) {
+  //   try {
+  //     return client.get(URLProvider.resolvePlaylist(key, curPage));
+  //   } catch (IOException e) {
+  //     return "";
+  //   }
+  // }
 
-  public static Vector parseResolvePlaylist(String key, int curPage, int pageSize) {
-    String result = getResolvePlaylist(key, curPage);
-    if (result != null && !"".equals(result)) {
-      Vector playlistItems = parsePlaylists(key, result);
-      return playlistItems;
-    } else {
-      return null;
-    }
-  }
+  // public static Vector parseResolvePlaylist(String key, int curPage, int pageSize) {
+  //   String result = getResolvePlaylist(key, curPage);
+  //   if (result != null && !"".equals(result)) {
+  //     Vector playlistItems = parsePlaylists(key, result);
+  //     return playlistItems;
+  //   } else {
+  //     return null;
+  //   }
+  // }
 
-  private static String getTopHotPlaylist(int curPare, int pageSize) {
+  private static String getPlaylist(int curPare, int pageSize, String type, String genreKey) {
     try {
-      return client.get(URLProvider.getTopHotPlaylist(curPare, pageSize));
+      return client.get(URLProvider.getPlaylist(curPare, pageSize, type, genreKey));
     } catch (IOException var4) {
       return "";
     }
   }
 
-  public static Vector parseHotPlaylist(int curpage, int pagesize) {
-    String result = getTopHotPlaylist(curpage, pagesize);
+  public static Vector parsePlaylist(int curpage, int pagesize, String type, String genreKey) {
+    String result = getPlaylist(curpage, pagesize, type, genreKey);
     if (result != null && !"".equals(result)) {
       Vector playlistItems = parsePlaylists("tophot", result);
       return playlistItems;
@@ -154,17 +156,17 @@ public class ParseData {
   }
 
   public static String getSongsInPlaylist(
-      String listkey, String username, int curPare, int pageSize) {
+      String listkey, String username, int curPare, int pageSize, String type) {
     try {
-      return client.get(URLProvider.getSongByPlaylist(listkey, username));
+      return client.get(URLProvider.getSongByPlaylist(listkey, username, type));
     } catch (IOException var6) {
       return "";
     }
   }
 
   public static Vector parseSongsInPlaylist(
-      String listkey, String username, int curPare, int pageSize) {
-    String result = getSongsInPlaylist(listkey, username, curPare, pageSize);
+      String listkey, String username, int curPare, int pageSize, String type) {
+    String result = getSongsInPlaylist(listkey, username, curPare, pageSize, type);
     if (result != null && !"".equals(result)) {
       Vector songItems = parseSongOfPlaylist(listkey, result);
       return songItems;
@@ -190,6 +192,24 @@ public class ParseData {
 
       return songItems;
     } catch (JSONException var9) {
+      return null;
+    }
+  }
+
+  public static String getBillboard(int curPage, int pageSize) {
+    try {
+      return client.get(URLProvider.getBillboard(curPage, pageSize));
+    } catch (IOException var6) {
+      return "";
+    }
+  }
+
+  public static Vector parseBillboard(int curPage, int pageSize) {
+    String result = getBillboard(curPage, pageSize);
+    if (result != null && !"".equals(result)) {
+      Vector playlistItems = parsePlaylists("billboard", result);
+      return playlistItems;
+    } else {
       return null;
     }
   }

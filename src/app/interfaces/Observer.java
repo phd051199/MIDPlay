@@ -1,4 +1,6 @@
-package app.common;
+package app.interfaces;
+
+import app.common.Observable;
 
 public interface Observer {
 

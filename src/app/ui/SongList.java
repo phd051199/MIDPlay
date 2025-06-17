@@ -79,7 +79,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
         new Thread(
             new Runnable() {
               public void run() {
-                Vector listItems = ParseData.parseSongsInPlaylist(genKey, "", curPage, perPage);
+                Vector listItems = ParseData.parseSongsInPlaylist(genKey, "", curPage, perPage, "");
                 if (listItems != null) {
                   SongList.this.addMorePlaylists(listItems);
                   SongList.this.repaintList();
@@ -95,7 +95,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     for (int i = 0; i < this.songItems.size(); ++i) {
       Song song = (Song) this.songItems.elementAt(i);
       Image imagePart = this.getImage(i);
-      this.append(song.getSongName() + "\n" + song.getArtistName(), imagePart);
+      this.append(song.getSongName() + " \n" + song.getArtistName(), imagePart);
     }
     this.setSelectedIndex(0, true);
   }
@@ -106,7 +106,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     for (int i = 0; i < this.songItems.size(); ++i) {
       Song song = (Song) this.songItems.elementAt(i);
       Image imagePart = this.getImage(i);
-      this.append(song.getSongName() + "\n" + song.getArtistName(), imagePart);
+      this.append(song.getSongName() + " \n" + song.getArtistName(), imagePart);
     }
     if (currentIndex >= 0 && currentIndex < this.songItems.size()) {
       this.setSelectedIndex(currentIndex, true);
@@ -118,8 +118,8 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   private void createImages() {
     try {
       this.images.removeAllElements();
+      Image image = Image.createImage("/images/MusicDoubleNote.png");
       for (int i = 0; i < this.songItems.size(); ++i) {
-        Image image = Image.createImage("/images/MusicDoubleNote.png");
         this.images.addElement(image);
       }
     } catch (Exception var3) {
