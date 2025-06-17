@@ -1,16 +1,16 @@
 package app.ui.player;
 
 import app.common.RestClient;
+import app.common.TempFile;
 import app.model.Song;
 import app.utils.I18N;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
-import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
-import javax.microedition.io.file.FileConnection;
 import javax.microedition.media.Manager;
 import javax.microedition.media.MediaException;
 import javax.microedition.media.Player;
@@ -34,12 +34,13 @@ public class PlayerGUI implements PlayerListener {
   private static boolean symbianJrt;
   private static boolean symbian;
 
-  private String tempFilePath = null;
+  private TempFile tempFile;
 
   public PlayerGUI(PlayerCanvas parent) {
     this.parent = parent;
     this.setStatus("");
     this.guiTimer = new Timer();
+    this.tempFile = TempFile.getInstance();
     setPlayerHttpMethod();
   }
 
@@ -208,29 +209,15 @@ public class PlayerGUI implements PlayerListener {
 
         HttpConnection httpConn = null;
         InputStream inputStream = null;
-        FileConnection fileConn = null;
         OutputStream outputStream = null;
 
         try {
-          String privateDir = System.getProperty("fileconn.dir.private");
-          this.tempFilePath = privateDir + "file.mp3";
-          FileConnection tempDir =
-              (FileConnection) Connector.open(privateDir, Connector.READ_WRITE);
-          if (!tempDir.exists()) {
-            tempDir.mkdir();
-          }
-          tempDir.close();
-
           httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
           totalLength = (int) httpConn.getLength();
           inputStream = httpConn.openInputStream();
 
-          fileConn = (FileConnection) Connector.open(this.tempFilePath, Connector.READ_WRITE);
-          if (fileConn.exists()) {
-            fileConn.delete();
-          }
-          fileConn.create();
-          outputStream = fileConn.openOutputStream();
+          tempFile.clear();
+          outputStream = tempFile.openOutputStream();
 
           byte[] buffer = new byte[4096];
           int bytesRead;
@@ -244,14 +231,19 @@ public class PlayerGUI implements PlayerListener {
             }
             outputStream.write(buffer, 0, bytesRead);
           }
+          outputStream.close();
+          outputStream = null;
 
-          playUrl = this.tempFilePath;
+          playUrl = tempFile.getFilePath();
 
         } finally {
-          if (outputStream != null) outputStream.close();
-          if (fileConn != null) fileConn.close();
-          if (inputStream != null) inputStream.close();
-          if (httpConn != null) httpConn.close();
+          try {
+            if (outputStream != null) outputStream.close();
+            if (inputStream != null) inputStream.close();
+            if (httpConn != null) httpConn.close();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
           System.gc();
         }
 
@@ -379,18 +371,8 @@ public class PlayerGUI implements PlayerListener {
       this.guiTimer = null;
     }
 
-    if (this.tempFilePath != null) {
-      try {
-        FileConnection fc =
-            (FileConnection) Connector.open(this.tempFilePath, Connector.READ_WRITE);
-        if (fc.exists()) {
-          fc.delete();
-        }
-        fc.close();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      this.tempFilePath = null;
+    if (tempFile != null) {
+      tempFile.cleanup();
     }
 
     System.gc();

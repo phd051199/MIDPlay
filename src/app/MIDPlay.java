@@ -1,5 +1,6 @@
 package app;
 
+import app.common.TempFile;
 import app.interfaces.Observer;
 import app.model.Song;
 import app.ui.MainList;
@@ -21,8 +22,13 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
 
   public MIDPlay() {
     this.history.setSize(0);
-    I18N.initialize(this);
-    SettingForm.loadSettings();
+    try {
+      I18N.initialize(this);
+      SettingForm.loadSettings();
+      TempFile.getInstance().initialize();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   public void startApp() {
