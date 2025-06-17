@@ -904,7 +904,7 @@
                 <arg value="-Xdebug"/>
                 <arg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=${jpda.port}"/>
                 <arg value="-jar"/>
-                <arg path="C:/microemulator.jar"/>
+                <arg path="C:/kemnnmod/KEmulator.jar"/>
                 <arg path="${dist.dir}/${dist.jad}"/>
             </exec>
             <sequential>

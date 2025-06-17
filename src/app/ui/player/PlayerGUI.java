@@ -3,9 +3,14 @@ package app.ui.player;
 import app.common.RestClient;
 import app.model.Song;
 import app.utils.I18N;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
+import javax.microedition.io.Connector;
+import javax.microedition.io.HttpConnection;
+import javax.microedition.io.file.FileConnection;
 import javax.microedition.media.Manager;
 import javax.microedition.media.MediaException;
 import javax.microedition.media.Player;
@@ -24,20 +29,22 @@ public class PlayerGUI implements PlayerListener {
   private boolean restartOnResume = false;
   private boolean isTransitioning = false;
 
-  private int playerHttpMethod = 1; // 0 - pass url, 1 - pass connection stream
+  private static int playerHttpMethod = 1; // 0 - pass url, 1 - pass connection stream
   // platform
-  private boolean symbianJrt;
-  private boolean symbian;
+  private static boolean symbianJrt;
+  private static boolean symbian;
+
+  private String tempFilePath = null;
 
   public PlayerGUI(PlayerCanvas parent) {
     this.parent = parent;
     this.setStatus("");
     this.guiTimer = new Timer();
-    this.setPlayerHttpMethod();
+    setPlayerHttpMethod();
   }
 
   // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
-  public void setPlayerHttpMethod() {
+  public static void setPlayerHttpMethod() {
     String p, v;
     if ((p = System.getProperty("microedition.platform")) != null) {
       if ((symbianJrt = p.indexOf("platform=S60") != -1)) {
@@ -59,8 +66,8 @@ public class PlayerGUI implements PlayerListener {
         }
       }
     }
-    this.symbian =
-        this.symbianJrt
+    symbian =
+        symbianJrt
             || System.getProperty("com.symbian.midp.serversocket.support") != null
             || System.getProperty("com.symbian.default.to.suite.icon") != null
             || checkClass("com.symbian.midp.io.protocol.http.Protocol")
@@ -73,15 +80,15 @@ public class PlayerGUI implements PlayerListener {
       try {
         Class.forName("com.sun.mmedia.protocol.CommonDS");
         // s40v1 uses sun impl for media and i/o so it should work fine
-        this.playerHttpMethod = 0;
+        playerHttpMethod = 0;
       } catch (Exception e) {
         // s40v2+ breaks http locator parsing
-        this.playerHttpMethod = 1;
+        playerHttpMethod = 1;
       }
     } catch (Exception e) {
-      this.playerHttpMethod = 0;
-      if (this.symbian) {
-        if (this.symbianJrt
+      playerHttpMethod = 0;
+      if (symbian) {
+        if (symbianJrt
             && (p.indexOf("java_build_version=2.") != -1
                 || p.indexOf("java_build_version=1.4") != -1)) {
           // emc (s60v5+), supports mp3 streaming
@@ -89,7 +96,7 @@ public class PlayerGUI implements PlayerListener {
           // uiq
         } else {
           // mmf (s60v3.2-)
-          this.playerHttpMethod = 1;
+          playerHttpMethod = 1;
         }
       }
     }
@@ -189,16 +196,69 @@ public class PlayerGUI implements PlayerListener {
 
   private void assertPlayer() throws Throwable {
     try {
+      int totalLength = 0;
+      int curLength = 0;
+      String playUrl;
+
       this.setStatus(I18N.tr("loading"));
       Song s = (Song) this.listSong.elementAt(this.index);
 
-      if (this.playerHttpMethod == 1) {
-        this.player =
-            Manager.createPlayer(
-                RestClient.getInstance().getConnection(s.getStreamUrl()).openInputStream(),
-                "audio/mpeg");
+      if (playerHttpMethod == 1) {
+        System.gc();
+
+        HttpConnection httpConn = null;
+        InputStream inputStream = null;
+        FileConnection fileConn = null;
+        OutputStream outputStream = null;
+
+        try {
+          String privateDir = System.getProperty("fileconn.dir.private");
+          this.tempFilePath = privateDir + "file.mp3";
+          FileConnection tempDir =
+              (FileConnection) Connector.open(privateDir, Connector.READ_WRITE);
+          if (!tempDir.exists()) {
+            tempDir.mkdir();
+          }
+          tempDir.close();
+
+          httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
+          totalLength = (int) httpConn.getLength();
+          inputStream = httpConn.openInputStream();
+
+          fileConn = (FileConnection) Connector.open(this.tempFilePath, Connector.READ_WRITE);
+          if (fileConn.exists()) {
+            fileConn.delete();
+          }
+          fileConn.create();
+          outputStream = fileConn.openOutputStream();
+
+          byte[] buffer = new byte[4096];
+          int bytesRead;
+          int oldPerc = 0;
+          while ((bytesRead = inputStream.read(buffer)) != -1) {
+            curLength += bytesRead;
+            int perc = (int) (curLength * 100L / totalLength);
+            if (perc - oldPerc >= 10) {
+              this.setStatus(I18N.tr("loading") + " (" + perc + "%)");
+              oldPerc = perc;
+            }
+            outputStream.write(buffer, 0, bytesRead);
+          }
+
+          playUrl = this.tempFilePath;
+
+        } finally {
+          if (outputStream != null) outputStream.close();
+          if (fileConn != null) fileConn.close();
+          if (inputStream != null) inputStream.close();
+          if (httpConn != null) httpConn.close();
+          System.gc();
+        }
+
+        this.player = Manager.createPlayer(playUrl);
       } else {
-        this.player = Manager.createPlayer(s.getStreamUrl());
+        playUrl = s.getStreamUrl();
+        this.player = Manager.createPlayer(playUrl);
       }
       this.player.addPlayerListener(this);
       this.player.realize();
@@ -206,6 +266,7 @@ public class PlayerGUI implements PlayerListener {
       this.parent.setupDisplay();
     } catch (Throwable var2) {
       this.player = null;
+      this.setStatus(var2.toString());
       var2.printStackTrace();
     }
   }
@@ -314,13 +375,25 @@ public class PlayerGUI implements PlayerListener {
     }
 
     if (this.guiTimer != null) {
+      this.guiTimer.cancel();
+      this.guiTimer = null;
+    }
+
+    if (this.tempFilePath != null) {
       try {
-        this.guiTimer.cancel();
+        FileConnection fc =
+            (FileConnection) Connector.open(this.tempFilePath, Connector.READ_WRITE);
+        if (fc.exists()) {
+          fc.delete();
+        }
+        fc.close();
       } catch (Exception e) {
         e.printStackTrace();
       }
-      this.guiTimer = null;
+      this.tempFilePath = null;
     }
+
+    System.gc();
   }
 
   public void pausePlayer() {
