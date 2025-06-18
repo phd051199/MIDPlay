@@ -72,7 +72,7 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
       int selected = this.getSelectedIndex();
       if (selected >= 0 && selected < this.subItems.size()) {
         Category cate = (Category) this.subItems.elementAt(selected);
-        this.gotoPlaylistByCate(cate.getId(), 1, 10);
+        this.gotoPlaylistByCate(cate.getId(), 1, 10, cate.getName());
       }
     } else if (c == this.nowPlayingCommand) {
       MainList.gotoNowPlaying(this.observer);
@@ -85,8 +85,9 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
 
   public void quit() {}
 
-  private void gotoPlaylistByCate(final String genKey, final int curPage, final int perPage) {
-    MainList.displayMessage(I18N.tr("genres"), I18N.tr("loading"), "loading", this.observer, this);
+  private void gotoPlaylistByCate(
+      final String genKey, final int curPage, final int perPage, final String title) {
+    MainList.displayMessage(title, I18N.tr("loading"), "loading", this.observer, this);
 
     Thread loader =
         new Thread(
@@ -95,21 +96,13 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
                 Vector listItems = ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
                 if (listItems == null) {
                   MainList.displayMessage(
-                      I18N.tr("genres"),
-                      I18N.tr("connection_error"),
-                      "error",
-                      observer,
-                      CategorySubList.this);
+                      title, I18N.tr("connection_error"), "error", observer, CategorySubList.this);
                 } else if (listItems.size() == 0) {
                   MainList.displayMessage(
-                      I18N.tr("genres"),
-                      I18N.tr("no_data"),
-                      "error",
-                      observer,
-                      CategorySubList.this);
+                      title, I18N.tr("no_data"), "error", observer, CategorySubList.this);
                 } else {
                   PlaylistList playlistList =
-                      new PlaylistList(I18N.tr("genres"), listItems, "genre", "", "playlist");
+                      new PlaylistList(title, listItems, "genre", "", "playlist");
                   playlistList.setObserver(observer);
                   observer.replaceCurrent(playlistList);
                 }

@@ -5,17 +5,17 @@ import java.io.OutputStream;
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
-public class TempFile {
-  private static TempFile instance;
+public class AudioFileConnector {
+  private static AudioFileConnector instance;
   private FileConnection fileConn;
   private String filePath;
   private boolean initialized = false;
 
-  private TempFile() {}
+  private AudioFileConnector() {}
 
-  public static synchronized TempFile getInstance() {
+  public static synchronized AudioFileConnector getInstance() {
     if (instance == null) {
-      instance = new TempFile();
+      instance = new AudioFileConnector();
     }
     return instance;
   }
@@ -56,32 +56,5 @@ public class TempFile {
 
   public synchronized String getFilePath() {
     return filePath;
-  }
-
-  public synchronized void close() {
-    if (fileConn != null) {
-      try {
-        fileConn.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      } finally {
-        fileConn = null;
-        initialized = false;
-      }
-    }
-  }
-
-  public synchronized void cleanup() {
-    if (fileConn != null) {
-      try {
-        if (fileConn.exists()) {
-          fileConn.delete();
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
-      } finally {
-        close();
-      }
-    }
   }
 }

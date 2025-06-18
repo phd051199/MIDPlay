@@ -1,10 +1,9 @@
 package app.ui.player;
 
+import app.common.AudioFileConnector;
 import app.common.RestClient;
-import app.common.TempFile;
 import app.model.Song;
 import app.utils.I18N;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Timer;
@@ -34,13 +33,13 @@ public class PlayerGUI implements PlayerListener {
   private static boolean symbianJrt;
   private static boolean symbian;
 
-  private TempFile tempFile;
+  private AudioFileConnector tempFile;
 
   public PlayerGUI(PlayerCanvas parent) {
     this.parent = parent;
     this.setStatus("");
     this.guiTimer = new Timer();
-    this.tempFile = TempFile.getInstance();
+    this.tempFile = AudioFileConnector.getInstance();
     setPlayerHttpMethod();
   }
 
@@ -196,17 +195,16 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void assertPlayer() throws Throwable {
+    this.setStatus(I18N.tr("loading"));
+
     try {
       int totalLength = 0;
       int curLength = 0;
       String playUrl;
 
-      this.setStatus(I18N.tr("loading"));
       Song s = (Song) this.listSong.elementAt(this.index);
 
       if (playerHttpMethod == 1) {
-        System.gc();
-
         HttpConnection httpConn = null;
         InputStream inputStream = null;
         OutputStream outputStream = null;
@@ -216,10 +214,10 @@ public class PlayerGUI implements PlayerListener {
           totalLength = (int) httpConn.getLength();
           inputStream = httpConn.openInputStream();
 
-          tempFile.clear();
-          outputStream = tempFile.openOutputStream();
+          this.tempFile.clear();
+          outputStream = this.tempFile.openOutputStream();
 
-          byte[] buffer = new byte[4096];
+          byte[] buffer = new byte[8192];
           int bytesRead;
           int oldPerc = 0;
           while ((bytesRead = inputStream.read(buffer)) != -1) {
@@ -231,27 +229,18 @@ public class PlayerGUI implements PlayerListener {
             }
             outputStream.write(buffer, 0, bytesRead);
           }
-          outputStream.close();
-          outputStream = null;
 
-          playUrl = tempFile.getFilePath();
+          playUrl = this.tempFile.getFilePath();
 
         } finally {
-          try {
-            if (outputStream != null) outputStream.close();
-            if (inputStream != null) inputStream.close();
-            if (httpConn != null) httpConn.close();
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-          System.gc();
+          if (outputStream != null) outputStream.close();
+          if (inputStream != null) inputStream.close();
+          if (httpConn != null) httpConn.close();
         }
-
-        this.player = Manager.createPlayer(playUrl);
       } else {
         playUrl = s.getStreamUrl();
-        this.player = Manager.createPlayer(playUrl);
       }
+      this.player = Manager.createPlayer(playUrl);
       this.player.addPlayerListener(this);
       this.player.realize();
       this.player.prefetch();
@@ -304,6 +293,8 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void startPlayer() {
+    this.setStatus(I18N.tr("loading"));
+
     (new Thread(
             new Runnable() {
               public void run() {
@@ -325,7 +316,6 @@ public class PlayerGUI implements PlayerListener {
                     var3.printStackTrace();
                   }
 
-                  PlayerGUI.this.setStatus(I18N.tr("start"));
                   PlayerGUI.this.player.start();
                   if (PlayerGUI.this.player.getState() >= 400) {
                     PlayerGUI.this.setStatus(I18N.tr("playing"));
@@ -342,7 +332,6 @@ public class PlayerGUI implements PlayerListener {
     this.stopDisplayTimer();
 
     if (this.player != null) {
-      this.setStatus(I18N.tr("stopping"));
 
       try {
         if (this.player.getState() != Player.CLOSED) {
@@ -370,17 +359,10 @@ public class PlayerGUI implements PlayerListener {
       this.guiTimer.cancel();
       this.guiTimer = null;
     }
-
-    if (tempFile != null) {
-      tempFile.cleanup();
-    }
-
-    System.gc();
   }
 
   public void pausePlayer() {
     if (this.player != null) {
-      this.setStatus(I18N.tr("stopping"));
 
       try {
         this.player.stop();
@@ -462,7 +444,6 @@ public class PlayerGUI implements PlayerListener {
           if (!isTransitioning) {
             isTransitioning = true;
             try {
-              this.setStatus(I18N.tr("end_of_media"));
               new Thread(
                       new Runnable() {
                         public void run() {

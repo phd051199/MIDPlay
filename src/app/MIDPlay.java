@@ -1,6 +1,6 @@
 package app;
 
-import app.common.TempFile;
+import app.common.AudioFileConnector;
 import app.interfaces.Observer;
 import app.model.Song;
 import app.ui.MainList;
@@ -25,7 +25,7 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
     try {
       I18N.initialize(this);
       SettingForm.loadSettings();
-      TempFile.getInstance().initialize();
+      AudioFileConnector.getInstance().initialize();
     } catch (Exception e) {
       e.printStackTrace();
     }
