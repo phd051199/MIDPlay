@@ -119,24 +119,6 @@ public class ParseData {
     }
   }
 
-  // private static String getResolvePlaylist(String key, int curPage) {
-  //   try {
-  //     return client.get(URLProvider.resolvePlaylist(key, curPage));
-  //   } catch (IOException e) {
-  //     return "";
-  //   }
-  // }
-
-  // public static Vector parseResolvePlaylist(String key, int curPage, int pageSize) {
-  //   String result = getResolvePlaylist(key, curPage);
-  //   if (result != null && !"".equals(result)) {
-  //     Vector playlistItems = parsePlaylists(key, result);
-  //     return playlistItems;
-  //   } else {
-  //     return null;
-  //   }
-  // }
-
   private static String getPlaylist(int curPare, int pageSize, String type, String genreKey) {
     try {
       return client.get(URLProvider.getPlaylist(curPare, pageSize, type, genreKey));

@@ -81,6 +81,11 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         "category");
   }
 
+  private void gotoFavorites() {
+    FavoritesList favoritesList = new FavoritesList(this.observer);
+    this.observer.go(favoritesList);
+  }
+
   private void showCategoryList(String title, Vector items, String from, String itemType) {
     CategoryList cateCanvas = new CategoryList(title, items);
     cateCanvas.setObserver(this.observer);
@@ -163,7 +168,9 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void showPlaylistList(String title, Vector items, String from, String itemType) {
-    PlaylistList playlistList = new PlaylistList(title, items, from, "", itemType);
+    boolean showAddToFavorites = !"billboard".equals(from);
+    PlaylistList playlistList =
+        new PlaylistList(title, items, from, "", itemType, showAddToFavorites);
     playlistList.setObserver(this.observer);
     this.observer.replaceCurrent(playlistList);
   }
@@ -179,21 +186,24 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         this.gotoBillboard();
         break;
       case 2:
-        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoPlaylist("new");
+        this.gotoFavorites();
         break;
       case 3:
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoPlaylist("hot");
+        this.gotoPlaylist("new");
         break;
       case 4:
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoCate();
+        this.gotoPlaylist("hot");
         break;
       case 5:
-        this.gotoSetting();
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        this.gotoCate();
         break;
       case 6:
+        this.gotoSetting();
+        break;
+      case 7:
         this.gotoAbout(this.observer);
         break;
       default:
@@ -226,7 +236,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   public synchronized void quit() {
     try {
-      if (this.mLoaDataThread != null) {
+      if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
         this.mLoaDataThread.interrupt();
       }
     } catch (Exception var2) {

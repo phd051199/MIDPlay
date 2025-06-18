@@ -17,10 +17,16 @@ import javax.microedition.midlet.MIDlet;
 
 public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumbTrail {
 
+  private static MIDPlay instance;
   private final Stack history = new Stack();
   private Displayable currDisplayable;
 
+  public static MIDPlay getInstance() {
+    return instance;
+  }
+
   public MIDPlay() {
+    instance = this;
     this.history.setSize(0);
     try {
       I18N.initialize(this);

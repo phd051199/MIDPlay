@@ -17,7 +17,7 @@ public class Song implements JSONAble {
   private String liked = "0";
   private int downloadStatus = -1;
   private String filePath = "";
-  private int duration;
+  private int duration = 0;
 
   public void setSongId(String songId) {
     this.songId = songId;
@@ -118,8 +118,22 @@ public class Song implements JSONAble {
     return result;
   }
 
-  public String toJSON() {
-    throw new UnsupportedOperationException("Not supported yet.");
+  public JSONObject toJSON() {
+    JSONObject json = new JSONObject();
+    try {
+      json.put("songId", this.songId);
+      json.put("songName", this.songName);
+      json.put("artistName", this.artistName);
+      json.put("streamUrl", this.streamUrl);
+      json.put("kbit", this.kbit);
+      json.put("genreID", this.genreID);
+      json.put("genreName", this.genreName);
+      json.put("filePath", this.filePath);
+      json.put("duration", this.duration);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return json;
   }
 
   public void fromJSON(String jsonString) {

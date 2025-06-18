@@ -1,8 +1,10 @@
 package app.interfaces;
 
+import org.json.me.JSONObject;
+
 public interface JSONAble {
 
-  String toJSON();
+  JSONObject toJSON();
 
   void fromJSON(String var1);
 }

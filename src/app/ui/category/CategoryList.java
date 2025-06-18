@@ -80,7 +80,9 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
       Image imagePart = this.getImage(i);
       this.append(cate.getName(), imagePart);
     }
-    this.setSelectedIndex(0, true);
+    if (this.size() > 0) {
+      this.setSelectedIndex(0, true);
+    }
   }
 
   private void createImages() {

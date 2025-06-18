@@ -183,6 +183,13 @@ public class PlayerGUI implements PlayerListener {
     this.parent.setStatus(s);
   }
 
+  public Song getCurrentSong() {
+    if (listSong != null && index >= 0 && index < listSong.size()) {
+      return (Song) listSong.elementAt(index);
+    }
+    return null;
+  }
+
   private VolumeControl getVolumeControl() {
     try {
       if (this.player != null) {
@@ -293,8 +300,6 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void startPlayer() {
-    this.setStatus(I18N.tr("loading"));
-
     (new Thread(
             new Runnable() {
               public void run() {

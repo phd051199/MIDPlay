@@ -24,6 +24,7 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
   private Vector subItems;
   private Vector images;
   private Utils.BreadCrumbTrail observer;
+  private Thread mLoaDataThread;
 
   public CategorySubList(String title, Vector subs) {
     super(title, List.IMPLICIT);
@@ -55,7 +56,9 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
         this.images.addElement(folderIcon);
         this.append(cate.getName(), folderIcon);
       }
-      if (this.subItems.size() > 0) this.setSelectedIndex(0, true);
+      if (this.size() > 0) {
+        this.setSelectedIndex(0, true);
+      }
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -81,15 +84,25 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
     }
   }
 
-  public void cancel() {}
+  public void cancel() {
+    this.quit();
+  }
 
-  public void quit() {}
+  public void quit() {
+    try {
+      if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
+        this.mLoaDataThread.join();
+      }
+    } catch (InterruptedException var2) {
+      var2.printStackTrace();
+    }
+  }
 
   private void gotoPlaylistByCate(
       final String genKey, final int curPage, final int perPage, final String title) {
     MainList.displayMessage(title, I18N.tr("loading"), "loading", this.observer, this);
 
-    Thread loader =
+    this.mLoaDataThread =
         new Thread(
             new Runnable() {
               public void run() {
@@ -108,6 +121,6 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
                 }
               }
             });
-    loader.start();
+    this.mLoaDataThread.start();
   }
 }

@@ -19,6 +19,7 @@ public class Utils {
   private static final String[] MAIN_MENU_ICONS = {
     "/images/Magnifier.png",
     "/images/MusicPlaylist.png",
+    "/images/Heart.png",
     "/images/MusicNoteBlue.png",
     "/images/MusicNote.png",
     "/images/Album.png",
@@ -27,7 +28,14 @@ public class Utils {
   };
 
   private static final String[] MAIN_MENU_ITEMS = {
-    "search_title", "billboard", "new_playlists", "hot_playlists", "genres", "settings", "app_info"
+    "search_title",
+    "billboard",
+    "favorites",
+    "new_playlists",
+    "hot_playlists",
+    "genres",
+    "settings",
+    "app_info"
   };
 
   private Utils() {}

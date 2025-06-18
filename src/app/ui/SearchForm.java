@@ -119,7 +119,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
 
   public void quit() {
     try {
-      if (this.mLoaDataThread.isAlive()) {
+      if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
         this.mLoaDataThread.join();
       }
     } catch (InterruptedException var2) {

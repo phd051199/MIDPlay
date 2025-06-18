@@ -6,10 +6,15 @@ import javax.microedition.rms.RecordStore;
 public class ReadWriteRecordStore {
 
   private RecordStore rs = null;
+  private String name;
+
+  public ReadWriteRecordStore(String name) {
+    this.name = name;
+  }
 
   public void openRecStore() {
     try {
-      this.rs = RecordStore.openRecordStore("musicapp", true);
+      this.rs = RecordStore.openRecordStore(this.name, true);
     } catch (Exception var2) {
       var2.printStackTrace();
     }
@@ -28,8 +33,8 @@ public class ReadWriteRecordStore {
       String[] stores = RecordStore.listRecordStores();
       if (stores != null) {
         for (int i = 0; i < stores.length; i++) {
-          if ("musicapp".equals(stores[i])) {
-            RecordStore.deleteRecordStore("musicapp");
+          if (this.name.equals(stores[i])) {
+            RecordStore.deleteRecordStore(this.name);
             break;
           }
         }
@@ -40,12 +45,12 @@ public class ReadWriteRecordStore {
   }
 
   public void writeRecord(String str) {
-    byte[] rec = str.getBytes();
-
     try {
+
+      byte[] rec = str.getBytes("UTF-8");
       this.rs.addRecord(rec, 0, rec.length);
-    } catch (Exception var4) {
-      var4.printStackTrace();
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 
@@ -53,23 +58,35 @@ public class ReadWriteRecordStore {
     Vector recordItems = new Vector();
 
     try {
-      if (rs == null) {
+      if (this.rs == null) {
         return recordItems;
       }
-      byte[] recData = new byte[5];
-      for (int i = 1; i <= rs.getNumRecords(); i++) {
-        if (rs.getRecordSize(i) > recData.length) {
-          recData = new byte[rs.getRecordSize(i)];
-        }
 
-        int len = rs.getRecord(i, recData, 0);
-        recordItems.addElement(new String(recData, 0, len));
+      for (int i = 1; i <= this.rs.getNumRecords(); i++) {
+        byte[] recData = new byte[this.rs.getRecordSize(i)];
+        int len = this.rs.getRecord(i, recData, 0);
+
+        String record = new String(recData, 0, len, "UTF-8");
+        recordItems.addElement(record);
       }
-
-      return recordItems;
     } catch (Exception e) {
       e.printStackTrace();
-      return recordItems;
     }
+
+    return recordItems;
+  }
+
+  public boolean deleteRecord(int index) {
+    try {
+      if (this.rs != null && index >= 0 && index < this.rs.getNumRecords()) {
+
+        int recordId = index + 1;
+        this.rs.deleteRecord(recordId);
+        return true;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return false;
   }
 }

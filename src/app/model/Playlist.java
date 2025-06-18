@@ -8,7 +8,6 @@ public class Playlist implements JSONAble {
 
   private String id = "";
   private String name = "";
-  private String desc = "";
   private String imageUrl = "";
 
   public void setId(String _id) {
@@ -27,14 +26,6 @@ public class Playlist implements JSONAble {
     return this.name;
   }
 
-  public void setDesc(String _desc) {
-    this.desc = _desc;
-  }
-
-  public String getDesc() {
-    return this.desc;
-  }
-
   public void setImageUrl(String _imageUrl) {
     this.imageUrl = _imageUrl;
   }
@@ -43,7 +34,7 @@ public class Playlist implements JSONAble {
     return this.imageUrl;
   }
 
-  public String toJSON() {
+  public JSONObject toJSON() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 

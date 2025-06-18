@@ -94,24 +94,38 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     this.deleteAll();
     for (int i = 0; i < this.songItems.size(); ++i) {
       Song song = (Song) this.songItems.elementAt(i);
-      Image imagePart = this.getImage(i);
-      this.append(song.getSongName() + " \n" + song.getArtistName(), imagePart);
+      if (song != null) {
+        Image imagePart = this.getImage(i);
+        this.append(song.getSongName() + " \n" + song.getArtistName(), imagePart);
+      }
     }
-    this.setSelectedIndex(0, true);
+
+    if (this.size() > 0) {
+      this.setSelectedIndex(0, true);
+    }
   }
 
   private void repaintList() {
     int currentIndex = this.getSelectedIndex();
-    this.deleteAll();
-    for (int i = 0; i < this.songItems.size(); ++i) {
-      Song song = (Song) this.songItems.elementAt(i);
-      Image imagePart = this.getImage(i);
-      this.append(song.getSongName() + " \n" + song.getArtistName(), imagePart);
-    }
-    if (currentIndex >= 0 && currentIndex < this.songItems.size()) {
-      this.setSelectedIndex(currentIndex, true);
-    } else if (this.songItems.size() > 0) {
-      this.setSelectedIndex(0, true);
+
+    try {
+      this.deleteAll();
+      Image imagePart = Image.createImage("/images/MusicDoubleNote.png");
+
+      if (this.songItems != null && this.songItems.size() > 0) {
+        for (int i = 0; i < this.songItems.size(); ++i) {
+          Song song = (Song) this.songItems.elementAt(i);
+          this.append(song.getSongName() + " \n" + song.getArtistName(), imagePart);
+        }
+
+        if (currentIndex >= 0 && currentIndex < this.songItems.size()) {
+          this.setSelectedIndex(currentIndex, true);
+        } else {
+          this.setSelectedIndex(0, true);
+        }
+      }
+    } catch (Exception var3) {
+      var3.printStackTrace();
     }
   }
 

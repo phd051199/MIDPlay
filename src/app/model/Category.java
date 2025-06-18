@@ -7,24 +7,24 @@ import org.json.me.JSONObject;
 
 public class Category implements JSONAble {
 
-  private String Id;
-  private String Name;
+  private String id;
+  private String name;
   private Vector subItems = new Vector();
 
-  public void setId(String id) {
-    this.Id = id;
+  public void setId(String _id) {
+    this.id = _id;
   }
 
   public String getId() {
-    return this.Id;
+    return this.id;
   }
 
-  public void setName(String name) {
-    this.Name = name;
+  public void setName(String _name) {
+    this.name = _name;
   }
 
   public String getName() {
-    return this.Name;
+    return this.name;
   }
 
   public Vector getSubItems() {
@@ -35,7 +35,7 @@ public class Category implements JSONAble {
     this.subItems = v;
   }
 
-  public String toJSON() {
+  public JSONObject toJSON() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
