@@ -1,6 +1,7 @@
 package app.ui;
 
 import app.common.ParseData;
+import app.common.SettingManager;
 import app.interfaces.LoadDataObserver;
 import app.ui.category.CategoryList;
 import app.utils.I18N;
@@ -48,7 +49,11 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   public void commandAction(Command c, Displayable d) {
     if (c == this.selectCommand || c == List.SELECT_COMMAND) {
-      this.itemAction();
+      if (SettingManager.getInstance().getCurrentService().equals("nct")) {
+        this.itemActionNCT();
+      } else {
+        this.itemActionSoundCloud();
+      }
     } else if (c == this.exitCommand) {
       if (this.observer != null) {
         this.observer.goBack();
@@ -98,13 +103,20 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void gotoPlaylist(final String type) {
+    String title = I18N.tr("discover_playlists");
+
+    if (type.equals("new")) {
+      title = I18N.tr("new_playlists");
+    } else if (type.equals("hot")) {
+      title = I18N.tr("hot_playlists");
+    }
     loadDataAsync(
         new DataLoader() {
           public Vector load() throws Exception {
             return ParseData.parsePlaylist(1, 30, type, "0");
           }
         },
-        I18N.tr("hot_playlists"),
+        title,
         "hot",
         "playlist");
   }
@@ -175,7 +187,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     this.observer.replaceCurrent(playlistList);
   }
 
-  private void itemAction() {
+  private void itemActionNCT() {
     int selectedIndex = this.getSelectedIndex();
     switch (selectedIndex) {
       case 0:
@@ -204,6 +216,30 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         this.gotoSetting();
         break;
       case 7:
+        this.gotoAbout(this.observer);
+        break;
+      default:
+        break;
+    }
+  }
+
+  private void itemActionSoundCloud() {
+    int selectedIndex = this.getSelectedIndex();
+    switch (selectedIndex) {
+      case 0:
+        this.gotoSearch(this.observer);
+        break;
+      case 1:
+        this.gotoFavorites();
+        break;
+      case 2:
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        this.gotoPlaylist("discover");
+        break;
+      case 3:
+        this.gotoSetting();
+        break;
+      case 4:
         this.gotoAbout(this.observer);
         break;
       default:

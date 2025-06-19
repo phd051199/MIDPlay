@@ -205,10 +205,7 @@ public class PlayerGUI implements PlayerListener {
     this.setStatus(I18N.tr("loading"));
 
     try {
-      int totalLength = 0;
-      int curLength = 0;
       String playUrl;
-
       Song s = (Song) this.listSong.elementAt(this.index);
 
       if (playerHttpMethod == 1) {
@@ -218,7 +215,6 @@ public class PlayerGUI implements PlayerListener {
 
         try {
           httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
-          totalLength = (int) httpConn.getLength();
           inputStream = httpConn.openInputStream();
 
           this.tempFile.clear();
@@ -226,14 +222,7 @@ public class PlayerGUI implements PlayerListener {
 
           byte[] buffer = new byte[8192];
           int bytesRead;
-          int oldPerc = 0;
           while ((bytesRead = inputStream.read(buffer)) != -1) {
-            curLength += bytesRead;
-            int perc = (int) (curLength * 100L / totalLength);
-            if (perc - oldPerc >= 10) {
-              this.setStatus(I18N.tr("loading") + " (" + perc + "%)");
-              oldPerc = perc;
-            }
             outputStream.write(buffer, 0, bytesRead);
           }
 
@@ -358,6 +347,10 @@ public class PlayerGUI implements PlayerListener {
       }
 
       this.setStatus("");
+    }
+
+    if (this.tempFile != null) {
+      this.tempFile.close();
     }
 
     if (this.guiTimer != null) {

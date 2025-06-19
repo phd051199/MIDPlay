@@ -7,6 +7,7 @@ import org.json.me.JSONObject;
 
 public class SettingManager {
   private static final String[] AUDIO_QUALITIES = {"128kbps", "320kbps"};
+  private static final String[] AVAILABLE_SERVICES = {"nct", "soundcloud"};
   private static SettingManager instance;
   private ReadWriteRecordStore recordStore;
 
@@ -25,7 +26,11 @@ public class SettingManager {
     return AUDIO_QUALITIES;
   }
 
-  public void saveSettings(String language, String audioQuality) throws Exception {
+  public String[] getAvailableServices() {
+    return AVAILABLE_SERVICES;
+  }
+
+  public void saveSettings(String language, String audioQuality, String service) throws Exception {
     try {
       recordStore.deleteRecStore();
       recordStore.openRecStore();
@@ -33,6 +38,7 @@ public class SettingManager {
       JSONObject settings = new JSONObject();
       settings.put("language", language);
       settings.put("audioQuality", audioQuality);
+      settings.put("service", service);
 
       recordStore.writeRecord(settings.toString());
     } finally {
@@ -41,7 +47,7 @@ public class SettingManager {
   }
 
   public String[] loadSettings() throws Exception {
-    String[] result = new String[2];
+    String[] result = new String[3];
 
     try {
       recordStore.openRecStore();
@@ -62,6 +68,11 @@ public class SettingManager {
           } catch (JSONException e) {
             result[1] = null;
           }
+          try {
+            result[2] = settings.getString("service");
+          } catch (JSONException e) {
+            result[2] = null;
+          }
         } catch (JSONException e) {
 
           result[0] = null;
@@ -78,6 +89,9 @@ public class SettingManager {
     if (result[1] == null || result[1].length() == 0) {
       result[1] = AUDIO_QUALITIES[0];
     }
+    if (result[2] == null || result[2].length() == 0) {
+      result[2] = AVAILABLE_SERVICES[0];
+    }
 
     return result;
   }
@@ -88,6 +102,15 @@ public class SettingManager {
       return settings[1];
     } catch (Exception e) {
       return AUDIO_QUALITIES[0];
+    }
+  }
+
+  public String getCurrentService() {
+    try {
+      String[] settings = loadSettings();
+      return settings[2];
+    } catch (Exception e) {
+      return AVAILABLE_SERVICES[0];
     }
   }
 }

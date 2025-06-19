@@ -28,8 +28,8 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   public SearchForm(String title) {
     super(title);
     this.append(this.symbolField);
-    this.searchTypeGroup.append(I18N.tr("album"), null);
     this.searchTypeGroup.append(I18N.tr("playlist"), null);
+    this.searchTypeGroup.append(I18N.tr("album"), null);
     this.searchTypeGroup.setSelectedIndex(0, true);
     this.append(this.searchTypeGroup);
     this.initMenu();
@@ -63,7 +63,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   private void gotoSearchPlaylist(String keyword, final int curPage, final int perPage) {
-    this.searchType = this.searchTypeGroup.isSelected(0) ? "album" : "playlist";
+    this.searchType = this.searchTypeGroup.isSelected(0) ? "playlist" : "album";
     this.displayMessage(I18N.tr("search_hint") + ": " + keyword, I18N.tr("loading"), "loading");
     this.mLoaDataThread =
         new Thread(

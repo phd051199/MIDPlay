@@ -1,6 +1,7 @@
 package app;
 
 import app.common.AudioFileConnector;
+import app.common.SettingManager;
 import app.interfaces.Observer;
 import app.model.Song;
 import app.ui.MainList;
@@ -48,7 +49,8 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
   public void commandAction(Command c, Displayable s) {}
 
   private void setMainScreen() {
-    MainList mainMenu = Utils.createMainMenu(this);
+    MainList mainMenu =
+        Utils.createMainMenu(this, SettingManager.getInstance().getCurrentService());
     this.go(mainMenu);
   }
 

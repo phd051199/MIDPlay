@@ -12,6 +12,7 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
   private static final SettingManager settingManager = SettingManager.getInstance();
   private static ChoiceGroup languageChoice;
   private static ChoiceGroup audioQualityChoice;
+  private static ChoiceGroup serviceChoice;
   private Command backCommand;
   private Command saveCommand;
   private final Utils.BreadCrumbTrail parent;
@@ -39,8 +40,15 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
       audioQualityChoice.append(audioQualities[i], null);
     }
 
+    serviceChoice = new ChoiceGroup(I18N.tr("service"), Choice.EXCLUSIVE);
+    String[] services = settingManager.getAvailableServices();
+    for (int i = 0; i < services.length; i++) {
+      serviceChoice.append(services[i], null);
+    }
+
     append(languageChoice);
     append(audioQualityChoice);
+    append(serviceChoice);
 
     addCommand(backCommand);
     addCommand(saveCommand);
@@ -53,6 +61,7 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
       int selectedLangIndex = languageChoice.getSelectedIndex();
       String previousLanguage = I18N.getLanguage();
       boolean languageChanged = false;
+      boolean serviceChanged = false;
       String selectedLanguage = languages[selectedLangIndex];
 
       if (!selectedLanguage.equals(previousLanguage)) {
@@ -60,10 +69,16 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
         languageChanged = true;
       }
 
-      settingManager.saveSettings(selectedLanguage, getSelectedAudioQuality());
+      if (!getSelectedService().equals(settingManager.getCurrentService())) {
+        serviceChanged = true;
+      }
 
-      if (languageChanged) {
-        MainList mainList = Utils.createMainMenu(parent);
+      settingManager.saveSettings(
+          selectedLanguage, getSelectedAudioQuality(), getSelectedService());
+
+      if (languageChanged || serviceChanged) {
+        MainList mainList = Utils.createMainMenu(parent, getSelectedService());
+
         if (parent instanceof MIDPlay) {
           ((MIDPlay) parent).clearHistory();
         }
@@ -103,6 +118,19 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
           }
         }
       }
+
+      if (settings.length > 2) {
+        String savedService = settings[2];
+        String[] services = settingManager.getAvailableServices();
+        if (serviceChoice != null) {
+          for (int i = 0; i < services.length; i++) {
+            if (services[i].equals(savedService)) {
+              serviceChoice.setSelectedIndex(i, true);
+              break;
+            }
+          }
+        }
+      }
     } catch (Exception e) {
       setDefaultSettings();
     }
@@ -124,6 +152,9 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
 
       if (audioQualityChoice != null) {
         audioQualityChoice.setSelectedIndex(0, true);
+      }
+      if (serviceChoice != null) {
+        serviceChoice.setSelectedIndex(0, true);
       }
     } catch (Exception e) {
       e.printStackTrace();
@@ -152,6 +183,11 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
   public String getSelectedAudioQuality() {
     String[] audioQualities = settingManager.getAudioQualities();
     return audioQualities[audioQualityChoice.getSelectedIndex()];
+  }
+
+  public String getSelectedService() {
+    String[] services = settingManager.getAvailableServices();
+    return services[serviceChoice.getSelectedIndex()];
   }
 
   public Displayable go(Displayable d) {

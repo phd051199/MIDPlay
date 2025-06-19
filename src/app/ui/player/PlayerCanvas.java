@@ -115,7 +115,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   }
 
   private boolean isLoading() {
-    return this.status.startsWith(I18N.tr("loading"));
+    return this.status.indexOf(I18N.tr("loading")) != -1;
   }
 
   private synchronized PlayerGUI getGUI() {
@@ -310,6 +310,8 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
           g.drawString(this.gui.getSinger(), this.displayWidth >> 1, this.SignerNameTop, 17);
         }
 
+        g.setColor(210, 210, 210);
+        g.drawLine(0, this.timeRateTop - 3, this.displayWidth, this.timeRateTop - 3);
         long duration = this.gui.getDuration();
         long current = this.gui.getCurrentTime();
         String strDuration = this.timeDisplay(duration);

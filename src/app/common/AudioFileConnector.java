@@ -7,6 +7,7 @@ import javax.microedition.io.file.FileConnection;
 
 public class AudioFileConnector {
   private static AudioFileConnector instance;
+
   private FileConnection fileConn;
   private String filePath;
   private boolean initialized = false;
@@ -21,18 +22,17 @@ public class AudioFileConnector {
   }
 
   public synchronized void initialize() throws IOException {
-    if (!initialized) {
-      String privateDir = System.getProperty("fileconn.dir.private");
-      this.filePath = privateDir + "temp_audio.mp3";
-      this.fileConn = (FileConnection) Connector.open(filePath, Connector.READ_WRITE);
+    if (initialized) return;
 
-      if (fileConn.exists()) {
-        fileConn.delete();
-      }
-      fileConn.create();
+    String privateDir = System.getProperty("fileconn.dir.private");
+    filePath = privateDir + "temp_audio.mp3";
+    fileConn = (FileConnection) Connector.open(filePath, Connector.READ_WRITE);
 
-      initialized = true;
+    if (fileConn.exists()) {
+      fileConn.delete();
     }
+    fileConn.create();
+    initialized = true;
   }
 
   public synchronized OutputStream openOutputStream() throws IOException {
@@ -43,7 +43,7 @@ public class AudioFileConnector {
   }
 
   public synchronized void clear() {
-    if (fileConn != null) {
+    if (fileConn != null && initialized) {
       try {
         if (fileConn.exists()) {
           fileConn.truncate(0);
@@ -51,6 +51,18 @@ public class AudioFileConnector {
       } catch (IOException e) {
         e.printStackTrace();
       }
+    }
+  }
+
+  public synchronized void close() {
+    if (fileConn != null) {
+      try {
+        fileConn.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      fileConn = null;
+      initialized = false;
     }
   }
 

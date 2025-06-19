@@ -30,6 +30,7 @@ public class URLProvider {
         client = client + "&type=" + type;
         client = client + "&key=" + genreKey;
         client = client + "&lang=" + I18N.getLanguage();
+        client = client + "&service=" + SettingManager.getInstance().getCurrentService();
         return client;
       } catch (Exception var6) {
       }
@@ -46,6 +47,7 @@ public class URLProvider {
         client = client + "&quality=" + SettingManager.getInstance().getCurrentAudioQuality();
         client = client + "&type=" + type;
         client = client + "&lang=" + I18N.getLanguage();
+        client = client + "&service=" + SettingManager.getInstance().getCurrentService();
         return client;
       } catch (Exception var6) {
       }
@@ -76,6 +78,7 @@ public class URLProvider {
         client = client + "&page=" + pageIndex;
         client = client + "&type=" + type;
         client = client + "&lang=" + I18N.getLanguage();
+        client = client + "&service=" + SettingManager.getInstance().getCurrentService();
         return client;
       } catch (Exception var9) {
       }
