@@ -52,7 +52,6 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     this.perPage = 10;
     this.showAddToFavorites = showAddToFavorites;
     this.initCommands();
-    this.playlistItems = new Vector();
     this.images = new Vector();
     this.playlistItems = items;
     this.type = type;

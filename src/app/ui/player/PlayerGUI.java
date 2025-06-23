@@ -96,7 +96,7 @@ public class PlayerGUI implements PlayerListener {
           // uiq
         } else {
           // mmf (s60v3.2-)
-          playerHttpMethod = 1;
+          // playerHttpMethod = 1;
         }
       }
     }
