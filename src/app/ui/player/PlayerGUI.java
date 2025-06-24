@@ -2,6 +2,7 @@ package app.ui.player;
 
 import app.common.AudioFileConnector;
 import app.common.RestClient;
+import app.common.SettingManager;
 import app.model.Song;
 import app.utils.I18N;
 import java.io.InputStream;
@@ -96,7 +97,7 @@ public class PlayerGUI implements PlayerListener {
           // uiq
         } else {
           // mmf (s60v3.2-)
-          // playerHttpMethod = 1;
+          playerHttpMethod = 1;
         }
       }
     }
@@ -203,6 +204,9 @@ public class PlayerGUI implements PlayerListener {
 
   private void assertPlayer() throws Throwable {
     this.setStatus(I18N.tr("loading"));
+    if (SettingManager.getInstance().getCurrentService().equals("soundcloud")) {
+      playerHttpMethod = 1;
+    }
 
     try {
       String playUrl;

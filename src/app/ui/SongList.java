@@ -29,14 +29,15 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   public static PlayerCanvas playerCanvas = null;
   private Playlist playlist;
   Thread mLoaDataThread;
+  private Image defaultImage;
 
   public SongList(String title, Vector items, Playlist _playlist) {
     super(title, List.IMPLICIT);
     this.playlist = _playlist;
     this.curPage = 1;
     this.perPage = 10;
+    this.loadDefaultImage();
     this.initCommands();
-    this.songItems = new Vector();
     this.images = new Vector();
     this.songItems = items;
     this.initComponents();
@@ -71,6 +72,14 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
       MainList.gotoNowPlaying(this.observer);
     } else if (c == this.searchCommand) {
       MainList.gotoSearch(this.observer);
+    }
+  }
+
+  private void loadDefaultImage() {
+    try {
+      this.defaultImage = Image.createImage("/images/MusicDoubleNote.png");
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 
@@ -110,12 +119,11 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
 
     try {
       this.deleteAll();
-      Image imagePart = Image.createImage("/images/MusicDoubleNote.png");
 
       if (this.songItems != null && this.songItems.size() > 0) {
         for (int i = 0; i < this.songItems.size(); ++i) {
           Song song = (Song) this.songItems.elementAt(i);
-          this.append(song.getSongName() + " \n" + song.getArtistName(), imagePart);
+          this.append(song.getSongName() + " \n" + song.getArtistName(), this.defaultImage);
         }
 
         if (currentIndex >= 0 && currentIndex < this.songItems.size()) {
@@ -132,9 +140,8 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   private void createImages() {
     try {
       this.images.removeAllElements();
-      Image image = Image.createImage("/images/MusicDoubleNote.png");
       for (int i = 0; i < this.songItems.size(); ++i) {
-        this.images.addElement(image);
+        this.images.addElement(this.defaultImage);
       }
     } catch (Exception var3) {
       var3.printStackTrace();

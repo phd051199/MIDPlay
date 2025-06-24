@@ -119,6 +119,25 @@ public class ParseData {
     }
   }
 
+  private static String getSearchTracks(String keyword) {
+    try {
+      String url = URLProvider.getSearchTracks(keyword);
+      return client.get(url);
+    } catch (IOException var6) {
+      return "";
+    }
+  }
+
+  public static Vector parseSearchTracks(String keyword) {
+    String result = getSearchTracks(keyword);
+    if (result != null && !"".equals(result)) {
+      Vector items = parseSongOfPlaylist(result);
+      return items;
+    } else {
+      return null;
+    }
+  }
+
   private static String getPlaylist(int curPare, int pageSize, String type, String genreKey) {
     try {
       return client.get(URLProvider.getPlaylist(curPare, pageSize, type, genreKey));
@@ -150,14 +169,14 @@ public class ParseData {
       String listkey, String username, int curPare, int pageSize, String type) {
     String result = getSongsInPlaylist(listkey, username, curPare, pageSize, type);
     if (result != null && !"".equals(result)) {
-      Vector songItems = parseSongOfPlaylist(listkey, result);
+      Vector songItems = parseSongOfPlaylist(result);
       return songItems;
     } else {
       return null;
     }
   }
 
-  private static Vector parseSongOfPlaylist(String key, String jsonResult) {
+  private static Vector parseSongOfPlaylist(String jsonResult) {
     Vector songItems = new Vector();
 
     try {

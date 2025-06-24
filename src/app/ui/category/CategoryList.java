@@ -26,15 +26,16 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
   Vector cateItems;
   private Utils.BreadCrumbTrail observer;
   Thread mLoaDataThread;
+  private Image defaultImage;
 
   public CategoryList(String title, Vector items) {
     super(title, List.IMPLICIT);
 
+    this.loadDefaultImage();
     this.initCommands();
     this.cateItems = new Vector();
     this.images = new Vector();
     this.cateItems = items;
-
     this.initComponents();
     this.setCommandListener(this);
   }
@@ -85,12 +86,19 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
     }
   }
 
+  private void loadDefaultImage() {
+    try {
+      this.defaultImage = Image.createImage("/images/Album.png");
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   private void createImages() {
     try {
       this.images.removeAllElements();
-      Image image = Image.createImage("/images/Album.png");
       for (int i = 0; i < this.cateItems.size(); ++i) {
-        this.images.addElement(image);
+        this.images.addElement(this.defaultImage);
       }
     } catch (Exception var3) {
       var3.printStackTrace();

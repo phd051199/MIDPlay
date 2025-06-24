@@ -1,14 +1,17 @@
 package app.ui;
 
+import app.MIDPlay;
 import app.common.ParseData;
 import app.common.ReadWriteRecordStore;
 import app.interfaces.LoadDataObserver;
 import app.model.Playlist;
 import app.utils.I18N;
+import app.utils.ImageUtils;
 import app.utils.Utils;
 import java.util.Vector;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
@@ -26,12 +29,15 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   private Vector playlistItems;
   private Utils.BreadCrumbTrail observer;
   private boolean showAddToFavorites;
+  private Image defaultImage;
+
   String type = "";
   int curPage = 1;
   int perPage = 10;
   String from = "";
   String keyWord = "";
   Thread mLoaDataThread;
+  private boolean isDestroyed = false;
 
   public PlaylistList(String title, Vector items, String _from, String keySearh, String type) {
     this(title, items, _from, keySearh, type, true);
@@ -51,6 +57,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     this.curPage = 1;
     this.perPage = 10;
     this.showAddToFavorites = showAddToFavorites;
+    this.loadDefaultImage();
     this.initCommands();
     this.images = new Vector();
     this.playlistItems = items;
@@ -99,6 +106,14 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     }
   }
 
+  private void loadDefaultImage() {
+    try {
+      this.defaultImage = Image.createImage("/images/FolderSound.png");
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   private void loadMorePlaylists(
       final String keyword, final String genKey, final int curPage, final int perPage) {
     this.mLoaDataThread =
@@ -142,41 +157,117 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   }
 
   private void repaintList() {
-    int currentIndex = this.getSelectedIndex();
-    this.deleteAll();
-    for (int i = 0; i < this.playlistItems.size(); ++i) {
-      Playlist playlist = (Playlist) this.playlistItems.elementAt(i);
-      Image imagePart = this.getImage(i);
-      this.append(playlist.getName(), imagePart);
-    }
-    if (currentIndex >= 0 && currentIndex < this.playlistItems.size()) {
-      this.setSelectedIndex(currentIndex, true);
-    } else if (this.playlistItems.size() > 0) {
-      this.setSelectedIndex(0, true);
-    }
+    Display.getDisplay(MIDPlay.getInstance())
+        .callSerially(
+            new Runnable() {
+              public void run() {
+                if (isDestroyed) return;
+
+                try {
+                  if (size() == 0) {
+                    int currentIndex = getSelectedIndex();
+
+                    for (int i = 0; i < playlistItems.size(); ++i) {
+                      Playlist playlist = (Playlist) playlistItems.elementAt(i);
+                      Image imagePart = getImage(i);
+                      append(playlist.getName(), imagePart);
+                    }
+
+                    if (currentIndex >= 0 && currentIndex < playlistItems.size()) {
+                      setSelectedIndex(currentIndex, true);
+                    } else if (playlistItems.size() > 0) {
+                      setSelectedIndex(0, true);
+                    }
+                  }
+                } catch (Exception e) {
+                  System.err.println("Error repainting list: " + e.getMessage());
+                }
+              }
+            });
   }
 
   private void createImages() {
     try {
       this.images.removeAllElements();
-      Image image = Image.createImage("/images/FolderSound.png");
       for (int i = 0; i < this.playlistItems.size(); ++i) {
-        this.images.addElement(image);
+        this.images.addElement(this.defaultImage);
       }
-    } catch (Exception var3) {
-      var3.printStackTrace();
+      new Thread(
+              new Runnable() {
+                public void run() {
+                  PlaylistList.this.loadAndUpdateImage();
+                }
+              })
+          .start();
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 
-  private void addMorePlaylists(Vector playlists) {
+  private void loadAndUpdateImage() {
+    int size = this.playlistItems.size();
+    int batchSize = 3;
+
     try {
-      Image image = Image.createImage("/images/FolderSound.png");
-      for (int i = 0; i < playlists.size(); ++i) {
-        this.playlistItems.addElement(playlists.elementAt(i));
+      for (int i = 0; i < size; i += batchSize) {
+        if (isDestroyed) break;
+
+        int endIndex = Math.min(i + batchSize, size);
+
+        final Vector batchImages = new Vector();
+        final Vector batchIndexes = new Vector();
+
+        for (int j = i; j < endIndex; j++) {
+          try {
+            Playlist playlist = (Playlist) this.playlistItems.elementAt(j);
+            if (playlist.getImageUrl() != null && !playlist.getImageUrl().equals("")) {
+              Image img = ImageUtils.getImage(playlist.getImageUrl(), 48);
+              if (img != null) {
+                batchImages.addElement(img);
+                batchIndexes.addElement(String.valueOf(j));
+              }
+            }
+          } catch (Exception e) {
+
+            continue;
+          }
+        }
+
+        if (batchImages.size() > 0) {
+          final int selected = getSelectedIndex();
+
+          Display.getDisplay(MIDPlay.getInstance())
+              .callSerially(
+                  new Runnable() {
+                    public void run() {
+                      if (isDestroyed) return;
+
+                      try {
+                        for (int k = 0; k < batchImages.size(); k++) {
+                          int index = Integer.parseInt((String) batchIndexes.elementAt(k));
+                          Image img = (Image) batchImages.elementAt(k);
+
+                          if (index < images.size() && index < playlistItems.size()) {
+                            images.setElementAt(img, index);
+                            Playlist playlist = (Playlist) playlistItems.elementAt(index);
+                            set(index, playlist.getName(), img);
+                          }
+                        }
+
+                        if (selected >= 0 && selected < size()) {
+                          setSelectedIndex(selected, true);
+                        }
+                      } catch (Exception e) {
+                        System.err.println("Error updating batch images: " + e.getMessage());
+                      }
+                    }
+                  });
+        }
+
         try {
-          this.images.addElement(image);
-        } catch (Exception e) {
-          e.printStackTrace();
+          Thread.sleep(200);
+        } catch (InterruptedException e) {
+          break;
         }
       }
     } catch (Exception e) {
@@ -184,13 +275,106 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     }
   }
 
+  private void addMorePlaylists(Vector playlists) {
+    try {
+      int startIndex = this.playlistItems.size();
+
+      for (int i = 0; i < playlists.size(); ++i) {
+        Playlist playlist = (Playlist) playlists.elementAt(i);
+        this.playlistItems.addElement(playlist);
+        this.images.addElement(this.defaultImage);
+        this.append(playlist.getName(), this.defaultImage);
+      }
+
+      loadMoreImages(startIndex);
+
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void loadMoreImages(final int startIndex) {
+    new Thread(
+            new Runnable() {
+              public void run() {
+                int batchSize = 3;
+                int totalSize = playlistItems.size();
+
+                for (int i = startIndex; i < totalSize; i += batchSize) {
+                  if (isDestroyed) break;
+
+                  int endIndex = Math.min(i + batchSize, totalSize);
+                  final Vector batchImages = new Vector();
+                  final Vector batchIndexes = new Vector();
+
+                  for (int j = i; j < endIndex; j++) {
+                    try {
+                      Playlist playlist = (Playlist) playlistItems.elementAt(j);
+                      if (playlist.getImageUrl() != null && !playlist.getImageUrl().equals("")) {
+                        Image img = ImageUtils.getImage(playlist.getImageUrl(), 48);
+                        if (img != null) {
+                          batchImages.addElement(img);
+                          batchIndexes.addElement(String.valueOf(j));
+                        }
+                      }
+                    } catch (Exception e) {
+                      continue;
+                    }
+                  }
+
+                  if (batchImages.size() > 0) {
+                    final int selected = getSelectedIndex();
+
+                    Display.getDisplay(MIDPlay.getInstance())
+                        .callSerially(
+                            new Runnable() {
+                              public void run() {
+                                if (isDestroyed) return;
+
+                                try {
+                                  for (int k = 0; k < batchImages.size(); k++) {
+                                    int index =
+                                        Integer.parseInt((String) batchIndexes.elementAt(k));
+                                    Image img = (Image) batchImages.elementAt(k);
+
+                                    if (index < images.size()) {
+                                      images.setElementAt(img, index);
+                                      Playlist playlist = (Playlist) playlistItems.elementAt(index);
+                                      set(index, playlist.getName(), img);
+                                    }
+                                  }
+
+                                  if (selected >= 0 && selected < size()) {
+                                    setSelectedIndex(selected, true);
+                                  }
+                                } catch (Exception e) {
+                                  System.err.println(
+                                      "Error updating more images: " + e.getMessage());
+                                }
+                              }
+                            });
+                  }
+
+                  try {
+                    Thread.sleep(200);
+                  } catch (InterruptedException e) {
+                    break;
+                  }
+                }
+              }
+            })
+        .start();
+  }
+
   private void doLoadMoreAction(Playlist playlist) {
     this.curPage++;
     if (this.playlistItems.size() > 0) {
-      Playlist lastPlaylist =
-          (Playlist) this.playlistItems.elementAt(this.playlistItems.size() - 1);
+      int lastIndex = this.playlistItems.size() - 1;
+      Playlist lastPlaylist = (Playlist) this.playlistItems.elementAt(lastIndex);
       if (lastPlaylist.getName().equals(I18N.tr("load_more"))) {
-        this.playlistItems.removeElementAt(this.playlistItems.size() - 1);
+        this.playlistItems.removeElementAt(lastIndex);
+        this.images.removeElementAt(lastIndex);
+        this.delete(lastIndex);
       }
     }
 
@@ -235,6 +419,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   }
 
   public void quit() {
+    this.isDestroyed = true;
     try {
       if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
         this.mLoaDataThread.join();
@@ -245,8 +430,18 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   }
 
   public Image getImage(int index) {
-    return (Image)
-        (this.images != null && this.images.size() > index ? this.images.elementAt(index) : null);
+    try {
+      if (this.images != null && index >= 0 && index < this.images.size()) {
+        return (Image) this.images.elementAt(index);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    try {
+      return this.defaultImage;
+    } catch (Exception e) {
+      return null;
+    }
   }
 
   private void addToFavorites() {

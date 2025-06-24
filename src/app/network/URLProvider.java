@@ -86,4 +86,20 @@ public class URLProvider {
 
     return null;
   }
+
+  public static String getSearchTracks(String keyword) {
+    String client = Constants.SERVICE_URL + "/tracks/search?";
+    if (client != null) {
+      try {
+        client = client + "q=" + TextUtil.urlEncodeUTF8(keyword);
+        client = client + "&lang=" + I18N.getLanguage();
+        client = client + "&service=" + SettingManager.getInstance().getCurrentService();
+        client = client + "&quality=" + SettingManager.getInstance().getCurrentAudioQuality();
+        return client;
+      } catch (Exception var9) {
+      }
+    }
+
+    return null;
+  }
 }

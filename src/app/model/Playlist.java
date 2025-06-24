@@ -48,6 +48,7 @@ public class Playlist implements JSONAble {
       } else {
         this.setName("MIDPlay");
       }
+      this.setImageUrl(json.getString("Image"));
     } catch (Exception var4) {
     }
   }

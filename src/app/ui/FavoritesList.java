@@ -1,14 +1,17 @@
 package app.ui;
 
+import app.MIDPlay;
 import app.common.ParseData;
 import app.common.ReadWriteRecordStore;
 import app.interfaces.LoadDataObserver;
 import app.model.Playlist;
 import app.utils.I18N;
+import app.utils.ImageUtils;
 import app.utils.Utils;
 import java.util.Vector;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
@@ -24,11 +27,14 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   private Vector images;
   private Thread mLoaDataThread;
   private String type = "playlist";
+  private Image defaultImage;
+  private boolean isDestroyed = false;
 
   public FavoritesList(Utils.BreadCrumbTrail observer) {
     super(I18N.tr("favorites"), List.IMPLICIT);
     this.observer = observer;
     this.images = new Vector();
+    this.loadDefaultImage();
     initCommands();
     initComponents();
   }
@@ -53,6 +59,14 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
     }
   }
 
+  private void loadDefaultImage() {
+    try {
+      this.defaultImage = Image.createImage("/images/FolderSound.png");
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   private void loadFavorites() {
     this.favorites = new Vector();
     this.images.removeAllElements();
@@ -62,7 +76,6 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
     try {
       recordStore.openRecStore();
       Vector records = recordStore.readRecords();
-      Image defaultImage = Image.createImage("/images/FolderSound.png");
 
       for (int i = 0; i < records.size(); i++) {
         try {
@@ -83,6 +96,10 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
         }
       }
 
+      if (favorites.size() > 0) {
+        loadFavoriteImages();
+      }
+
     } catch (Exception e) {
       e.printStackTrace();
 
@@ -92,6 +109,90 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
       } catch (Exception e) {
         e.printStackTrace();
       }
+    }
+  }
+
+  private void loadFavoriteImages() {
+    new Thread(
+            new Runnable() {
+              public void run() {
+                loadAndUpdateImages();
+              }
+            })
+        .start();
+  }
+
+  private void loadAndUpdateImages() {
+    int size = this.favorites.size();
+    int batchSize = 3;
+
+    try {
+      for (int i = 0; i < size; i += batchSize) {
+        if (isDestroyed) break;
+
+        int endIndex = Math.min(i + batchSize, size);
+
+        final Vector batchImages = new Vector();
+        final Vector batchIndexes = new Vector();
+
+        for (int j = i; j < endIndex; j++) {
+          try {
+            JSONObject favorite = (JSONObject) this.favorites.elementAt(j);
+            if (favorite.has("imageUrl")) {
+              String imageUrl = favorite.getString("imageUrl");
+              if (imageUrl != null && !imageUrl.equals("")) {
+                Image img = ImageUtils.getImage(imageUrl, 48);
+                if (img != null) {
+                  batchImages.addElement(img);
+                  batchIndexes.addElement(String.valueOf(j));
+                }
+              }
+            }
+          } catch (Exception e) {
+
+            continue;
+          }
+        }
+
+        if (batchImages.size() > 0) {
+          final int selected = getSelectedIndex();
+
+          Display.getDisplay(MIDPlay.getInstance())
+              .callSerially(
+                  new Runnable() {
+                    public void run() {
+                      if (isDestroyed) return;
+
+                      try {
+                        for (int k = 0; k < batchImages.size(); k++) {
+                          int index = Integer.parseInt((String) batchIndexes.elementAt(k));
+                          Image img = (Image) batchImages.elementAt(k);
+
+                          if (index < images.size() && index < favorites.size()) {
+                            images.setElementAt(img, index);
+                            JSONObject favorite = (JSONObject) favorites.elementAt(index);
+                            set(index, favorite.getString("name"), img);
+                          }
+                        }
+
+                        if (selected >= 0 && selected < size()) {
+                          setSelectedIndex(selected, true);
+                        }
+                      } catch (Exception e) {
+                        System.err.println("Error updating batch images: " + e.getMessage());
+                      }
+                    }
+                  });
+        }
+
+        try {
+          Thread.sleep(200);
+        } catch (InterruptedException e) {
+          break;
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 
@@ -173,19 +274,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
           }
         }
 
-        this.deleteAll();
-        this.images.removeAllElements();
-        Image defaultImage = Image.createImage("/images/FolderSound.png");
-
-        for (int i = 0; i < favorites.size(); i++) {
-          JSONObject fav = (JSONObject) favorites.elementAt(i);
-          try {
-            this.append(fav.getString("name"), defaultImage);
-            this.images.addElement(defaultImage);
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }
+        refreshFavoritesList();
 
       } catch (Exception e) {
         e.printStackTrace();
@@ -193,8 +282,26 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
     }
   }
 
-  private void removeFromFavorites(String id) {
+  private void refreshFavoritesList() {
+    this.deleteAll();
+    this.images.removeAllElements();
 
+    for (int i = 0; i < favorites.size(); i++) {
+      JSONObject fav = (JSONObject) favorites.elementAt(i);
+      try {
+        this.append(fav.getString("name"), defaultImage);
+        this.images.addElement(defaultImage);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+
+    if (favorites.size() > 0) {
+      loadFavoriteImages();
+    }
+  }
+
+  private void removeFromFavorites(String id) {
     int scrollPosition = this.getSelectedIndex();
     if (scrollPosition < 0) scrollPosition = 0;
 
@@ -227,7 +334,6 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
       }
 
       if (found) {
-
         recordStore.closeRecStore();
         recordStore.deleteRecStore();
 
@@ -244,7 +350,6 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
         this.images.removeAllElements();
 
         Vector records = recordStore.readRecords();
-        Image defaultImage = Image.createImage("/images/FolderSound.png");
 
         for (int i = 0; i < records.size(); i++) {
           try {
@@ -264,10 +369,13 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
           }
         }
 
+        if (favorites.size() > 0) {
+          loadFavoriteImages();
+        }
+
         if (scrollPosition >= 0 && scrollPosition < this.size()) {
           this.setSelectedIndex(scrollPosition, true);
         } else if (this.size() > 0) {
-
           this.setSelectedIndex(this.size() - 1, true);
         }
       }
@@ -294,6 +402,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   }
 
   public void quit() {
+    this.isDestroyed = true;
     try {
       if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
         this.mLoaDataThread.join();

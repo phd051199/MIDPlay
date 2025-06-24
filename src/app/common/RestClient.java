@@ -1,6 +1,6 @@
 package app.common;
 
-import java.io.ByteArrayOutputStream;
+import app.utils.Utils;
 import java.io.IOException;
 import java.io.InputStream;
 import javax.microedition.io.Connector;
@@ -60,43 +60,35 @@ public class RestClient {
     throw new IOException("Too many redirects");
   }
 
-  public String get(String url) throws IOException {
+  public byte[] getBytes(String url) throws IOException {
     HttpConnection hcon = null;
     InputStream inputStream = null;
-    ByteArrayOutputStream baos = null;
 
     try {
       hcon = getStreamConnection(url);
+      int responseCode = hcon.getResponseCode();
+      if (responseCode >= 400) {
+        throw new IOException("HTTP " + responseCode);
+      }
 
       inputStream = hcon.openInputStream();
-      baos = new ByteArrayOutputStream();
-      byte[] buffer = new byte[1024];
-      int len;
-      while ((len = inputStream.read(buffer)) != -1) {
-        baos.write(buffer, 0, len);
-      }
-      byte[] responseData = baos.toByteArray();
-      return new String(responseData, "UTF-8");
+      int contentLength = (int) hcon.getLength();
+      return Utils.readBytes(inputStream, contentLength, 1024, 2048);
 
     } finally {
-      if (inputStream != null) {
-        try {
-          inputStream.close();
-        } catch (IOException e) {
-        }
+      try {
+        if (inputStream != null) inputStream.close();
+      } catch (IOException e) {
       }
-      if (baos != null) {
-        try {
-          baos.close();
-        } catch (IOException e) {
-        }
-      }
-      if (hcon != null) {
-        try {
-          hcon.close();
-        } catch (IOException e) {
-        }
+      try {
+        if (hcon != null) hcon.close();
+      } catch (IOException e) {
       }
     }
+  }
+
+  public String get(String url) throws IOException {
+    byte[] data = getBytes(url);
+    return new String(data, "UTF-8");
   }
 }

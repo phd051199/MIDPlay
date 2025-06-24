@@ -25,11 +25,13 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
   private Vector images;
   private Utils.BreadCrumbTrail observer;
   private Thread mLoaDataThread;
+  private Image defaultImage;
 
   public CategorySubList(String title, Vector subs) {
     super(title, List.IMPLICIT);
     this.subItems = subs;
     this.images = new Vector();
+    this.loadDefaultImage();
     this.initCommands();
     this.initComponents();
     this.setCommandListener(this);
@@ -50,15 +52,22 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
     try {
       this.images.removeAllElements();
       this.deleteAll();
-      Image folderIcon = Image.createImage("/images/FolderSound.png");
       for (int i = 0; i < this.subItems.size(); ++i) {
         Category cate = (Category) this.subItems.elementAt(i);
-        this.images.addElement(folderIcon);
-        this.append(cate.getName(), folderIcon);
+        this.images.addElement(this.defaultImage);
+        this.append(cate.getName(), this.defaultImage);
       }
       if (this.size() > 0) {
         this.setSelectedIndex(0, true);
       }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void loadDefaultImage() {
+    try {
+      this.defaultImage = Image.createImage("/images/FolderSound.png");
     } catch (Exception e) {
       e.printStackTrace();
     }

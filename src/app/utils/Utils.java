@@ -3,6 +3,8 @@ package app.utils;
 import app.model.Song;
 import app.ui.MainList;
 import app.utils.Utils.BreadCrumbTrail;
+import java.io.IOException;
+import java.io.InputStream;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
@@ -158,6 +160,33 @@ public class Utils {
     MainList mainMenu = new MainList(I18N.tr("app_name"), labels, images);
     mainMenu.setObserver(observer);
     return mainMenu;
+  }
+
+  public static byte[] readBytes(
+      InputStream inputStream, int initialSize, int bufferSize, int expandSize) throws IOException {
+    if (initialSize <= 0) initialSize = bufferSize;
+    byte[] buf = new byte[initialSize];
+    int count = 0;
+    byte[] readBuf = new byte[bufferSize];
+    int readLen;
+
+    while ((readLen = inputStream.read(readBuf)) != -1) {
+      if (count + readLen > buf.length) {
+        byte[] newbuf = new byte[count + expandSize];
+        System.arraycopy(buf, 0, newbuf, 0, count);
+        buf = newbuf;
+      }
+      System.arraycopy(readBuf, 0, buf, count, readLen);
+      count += readLen;
+    }
+
+    if (buf.length == count) {
+      return buf;
+    }
+
+    byte[] res = new byte[count];
+    System.arraycopy(buf, 0, res, 0, count);
+    return res;
   }
 
   public interface Interruptable {
