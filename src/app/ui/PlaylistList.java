@@ -31,12 +31,17 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   private boolean showAddToFavorites;
   private Image defaultImage;
 
+  private final int batchSize = 6;
+
   String type = "";
   int curPage = 1;
   int perPage = 10;
   String from = "";
   String keyWord = "";
+
   Thread mLoaDataThread;
+  Thread imageLoaderThread;
+
   private boolean isDestroyed = false;
 
   public PlaylistList(String title, Vector items, String _from, String keySearh, String type) {
@@ -86,6 +91,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
 
   public void commandAction(Command c, Displayable d) {
     if (c == this.exitCommand) {
+      this.cancel();
       this.observer.goBack();
     } else if (c == this.selectCommand || c == List.SELECT_COMMAND) {
       int selectedItemIndex = getSelectedIndex();
@@ -192,13 +198,14 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
       for (int i = 0; i < this.playlistItems.size(); ++i) {
         this.images.addElement(this.defaultImage);
       }
-      new Thread(
+      this.imageLoaderThread =
+          new Thread(
               new Runnable() {
                 public void run() {
                   PlaylistList.this.loadAndUpdateImage();
                 }
-              })
-          .start();
+              });
+      this.imageLoaderThread.start();
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -206,7 +213,6 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
 
   private void loadAndUpdateImage() {
     int size = this.playlistItems.size();
-    int batchSize = 3;
 
     try {
       for (int i = 0; i < size; i += batchSize) {
@@ -265,7 +271,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
         }
 
         try {
-          Thread.sleep(200);
+          Thread.sleep(100);
         } catch (InterruptedException e) {
           break;
         }
@@ -294,10 +300,10 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   }
 
   private void loadMoreImages(final int startIndex) {
-    new Thread(
+    this.imageLoaderThread =
+        new Thread(
             new Runnable() {
               public void run() {
-                int batchSize = 3;
                 int totalSize = playlistItems.size();
 
                 for (int i = startIndex; i < totalSize; i += batchSize) {
@@ -356,14 +362,14 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
                   }
 
                   try {
-                    Thread.sleep(200);
+                    Thread.sleep(100);
                   } catch (InterruptedException e) {
                     break;
                   }
                 }
               }
-            })
-        .start();
+            });
+    this.imageLoaderThread.start();
   }
 
   private void doLoadMoreAction(Playlist playlist) {
@@ -423,6 +429,9 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     try {
       if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
         this.mLoaDataThread.join();
+      }
+      if (this.imageLoaderThread != null && this.imageLoaderThread.isAlive()) {
+        this.imageLoaderThread.join();
       }
     } catch (InterruptedException var2) {
       var2.printStackTrace();

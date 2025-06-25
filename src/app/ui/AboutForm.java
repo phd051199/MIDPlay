@@ -20,10 +20,9 @@ public class AboutForm extends Form implements Utils.BreadCrumbTrail, CommandLis
     super(title);
     this.parent = parent;
 
-    append(new StringItem(null, I18N.tr("about")));
-    append(new StringItem(null, "\n" + "Version: " + Constants.APP_VERSION));
-    append(new StringItem(null, "\n" + "Author: " + Constants.APP_AUTHOR));
-    append(new StringItem(null, "\n" + "Open Source: " + Constants.APP_OPEN_SOURCE));
+    append(new StringItem(null, "Version: " + Constants.APP_VERSION + "\n"));
+    append(new StringItem(null, "Author: " + Constants.APP_AUTHOR + "\n"));
+    append(new StringItem(null, "Open Source: " + Constants.APP_OPEN_SOURCE + "\n"));
 
     this.addCommand(this.backCommand);
     this.setCommandListener(this);

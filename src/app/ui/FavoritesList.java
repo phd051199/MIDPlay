@@ -26,6 +26,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   private final Utils.BreadCrumbTrail observer;
   private Vector images;
   private Thread mLoaDataThread;
+  private Thread imageLoaderThread;
   private String type = "playlist";
   private Image defaultImage;
   private boolean isDestroyed = false;
@@ -113,13 +114,14 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   }
 
   private void loadFavoriteImages() {
-    new Thread(
+    this.imageLoaderThread =
+        new Thread(
             new Runnable() {
               public void run() {
                 loadAndUpdateImages();
               }
-            })
-        .start();
+            });
+    this.imageLoaderThread.start();
   }
 
   private void loadAndUpdateImages() {
@@ -198,7 +200,8 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
 
   public void commandAction(Command c, Displayable d) {
     if (c == backCommand) {
-      observer.goBack();
+      this.cancel();
+      this.observer.goBack();
     } else if (c == selectCommand || c == List.SELECT_COMMAND) {
       openSelectedPlaylist();
     } else if (c == removeCommand) {
@@ -406,6 +409,9 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
     try {
       if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
         this.mLoaDataThread.join();
+      }
+      if (this.imageLoaderThread != null && this.imageLoaderThread.isAlive()) {
+        this.imageLoaderThread.join();
       }
     } catch (InterruptedException var2) {
       var2.printStackTrace();

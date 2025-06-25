@@ -194,11 +194,11 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         this.gotoSearch(this.observer);
         break;
       case 1:
-        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoBillboard();
+        this.gotoFavorites();
         break;
       case 2:
-        this.gotoFavorites();
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        this.gotoCate();
         break;
       case 3:
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
@@ -210,7 +210,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         break;
       case 5:
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoCate();
+        this.gotoBillboard();
         break;
       case 6:
         this.gotoSetting();

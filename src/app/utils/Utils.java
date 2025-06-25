@@ -20,22 +20,22 @@ public class Utils {
 
   private static final String[] MAIN_MENU_ICONS_NCT = {
     "/images/Magnifier.png",
-    "/images/MusicPlaylist.png",
     "/images/Heart.png",
+    "/images/Album.png",
     "/images/MusicNoteBlue.png",
     "/images/MusicNote.png",
-    "/images/Album.png",
+    "/images/MusicPlaylist.png",
     "/images/Setting.png",
     "/images/Information.png"
   };
 
   private static final String[] MAIN_MENU_ITEMS_NCT = {
     "search_title",
-    "billboard",
     "favorites",
+    "genres",
     "new_playlists",
     "hot_playlists",
-    "genres",
+    "billboard",
     "settings",
     "app_info"
   };
