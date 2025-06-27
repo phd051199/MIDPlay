@@ -14,16 +14,16 @@ import javax.microedition.lcdui.Image;
 
 public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObserver {
 
-  private Command backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
-  private Command playCommand = new Command(I18N.tr("play"), Command.OK, 5);
-  private Command pauseCommand = new Command(I18N.tr("pause"), Command.SCREEN, 1);
-  private Command stopCommand = new Command(I18N.tr("stop"), Command.SCREEN, 1);
-  private Command nextCommand = new Command(I18N.tr("next"), Command.SCREEN, 5);
-  private Command prevCommand = new Command(I18N.tr("previous"), Command.SCREEN, 5);
+  private static final int PLAYER_STATUS_TOP = 2;
+  private static final int SONG_TITLE_GAP = 5;
+  private static final int TIME_GAP = 10;
 
-  private static int PLAYER_STATUS_TOP = 2;
-  private static int SONG_TITLE_GAP = 5;
-  private static int TIME_GAP = 10;
+  private final Command backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
+  private final Command playCommand = new Command(I18N.tr("play"), Command.OK, 5);
+  private final Command pauseCommand = new Command(I18N.tr("pause"), Command.SCREEN, 1);
+  private final Command stopCommand = new Command(I18N.tr("stop"), Command.SCREEN, 1);
+  private final Command nextCommand = new Command(I18N.tr("next"), Command.SCREEN, 5);
+  private final Command prevCommand = new Command(I18N.tr("previous"), Command.SCREEN, 5);
   private String title;
   private PlayerGUI gui;
   private Utils.BreadCrumbTrail parent;
@@ -369,7 +369,6 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
         }
       }
     } catch (Throwable var14) {
-      var14.printStackTrace();
     }
 
     if (this._play) {
@@ -393,7 +392,6 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
           this.timeNext = System.currentTimeMillis();
           this.getGUI().getNextSong();
         } catch (Throwable var5) {
-          var5.printStackTrace();
         }
       }
     } else if (c == this.prevCommand) {
@@ -403,7 +401,6 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
           this.timeBack = System.currentTimeMillis();
           this.getGUI().getPrevSong();
         } catch (Throwable var4) {
-          var4.printStackTrace();
         }
       }
     } else if (c == this.playCommand || c == this.pauseCommand) {

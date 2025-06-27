@@ -17,10 +17,6 @@ public class MessageForm extends Form implements CommandListener {
   StringItem message = new StringItem("", "");
   private Utils.BreadCrumbTrail observer;
 
-  public void setLoadDataOberserver(LoadDataObserver observer) {
-    this.loadDataObserver = observer;
-  }
-
   public MessageForm(String title, String dataMessage, String messageType) {
     super(title);
     Font font = Font.getFont(0, 1, 0);
@@ -31,6 +27,10 @@ public class MessageForm extends Form implements CommandListener {
       this.addCommand(this.exitCommand);
       this.setCommandListener(this);
     }
+  }
+
+  public void setLoadDataOberserver(LoadDataObserver observer) {
+    this.loadDataObserver = observer;
   }
 
   public void commandAction(Command c, Displayable d) {

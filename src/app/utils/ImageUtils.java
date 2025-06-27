@@ -22,4 +22,6 @@ public class ImageUtils {
 
     return null;
   }
+
+  private ImageUtils() {}
 }

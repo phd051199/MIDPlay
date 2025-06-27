@@ -6,12 +6,10 @@ import java.util.Vector;
 import javax.microedition.midlet.MIDlet;
 
 public class I18N {
-  private static Hashtable resources = new Hashtable();
+  private static final Hashtable resources = new Hashtable();
   private static String currentLanguage =
       System.getProperty("microedition.locale").startsWith("vi") ? "vi" : "en";
   private static MIDlet midlet;
-
-  private I18N() {}
 
   public static void initialize(MIDlet midlet) {
     I18N.midlet = midlet;
@@ -65,9 +63,7 @@ public class I18N {
           is.close();
         }
       }
-
     } catch (Exception e) {
-      System.err.println("Error loading language: " + e);
     }
   }
 
@@ -111,4 +107,6 @@ public class I18N {
     }
     return tr("language_en");
   }
+
+  private I18N() {}
 }

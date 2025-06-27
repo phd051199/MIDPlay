@@ -1,12 +1,23 @@
 package app.utils;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Random;
 
 public class TextUtil {
 
   static final String HEX_DIGITS = "0123456789ABCDEF";
+  private static final String CHARS =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-  private TextUtil() {}
+  public static String generateRandomId(int length) {
+    Random rand = new Random();
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < length; i++) {
+      int index = Math.abs(rand.nextInt()) % CHARS.length();
+      sb.append(CHARS.charAt(index));
+    }
+    return sb.toString();
+  }
 
   protected static String urlEncode(byte[] rs) {
     StringBuffer result = new StringBuffer(rs.length * 2);
@@ -129,4 +140,6 @@ public class TextUtil {
       }
     }
   }
+
+  private TextUtil() {}
 }

@@ -15,19 +15,19 @@ import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
 
 public class SongList extends List implements CommandListener, LoadDataObserver {
+  public static PlayerCanvas playerCanvas = null;
 
   private Command nowPlayingCommand;
   private Command exitCommand;
   private Command selectCommand;
   private Command searchCommand;
 
-  private Vector images;
-  private Vector songItems;
+  private final Vector images;
+  private final Vector songItems;
   private Utils.BreadCrumbTrail observer;
   int curPage = 1;
   int perPage = 10;
-  public static PlayerCanvas playerCanvas = null;
-  private Playlist playlist;
+  private final Playlist playlist;
   Thread mLoaDataThread;
   private Image defaultImage;
 
@@ -79,7 +79,6 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     try {
       this.defaultImage = Image.createImage("/images/MusicDoubleNote.png");
     } catch (Exception e) {
-      e.printStackTrace();
     }
   }
 
@@ -133,7 +132,6 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
         }
       }
     } catch (Exception var3) {
-      var3.printStackTrace();
     }
   }
 
@@ -144,7 +142,6 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
         this.images.addElement(this.defaultImage);
       }
     } catch (Exception var3) {
-      var3.printStackTrace();
     }
   }
 
@@ -200,7 +197,6 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
         this.mLoaDataThread.join();
       }
     } catch (InterruptedException var2) {
-      var2.printStackTrace();
     }
   }
 

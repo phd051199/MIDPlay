@@ -15,8 +15,8 @@ import javax.microedition.lcdui.TextField;
 
 public class SearchForm extends Form implements CommandListener, LoadDataObserver {
 
-  private TextField symbolField = new TextField(I18N.tr("search_hint"), "", 300, 0);
-  private ChoiceGroup searchTypeGroup =
+  private final TextField symbolField = new TextField(I18N.tr("search_hint"), "", 300, 0);
+  private final ChoiceGroup searchTypeGroup =
       new ChoiceGroup(I18N.tr("search_type"), ChoiceGroup.EXCLUSIVE);
   private Command exitCommand;
   private Command searchCommand;
@@ -82,7 +82,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
             new Runnable() {
               public void run() {
 
-                if (SearchForm.this.searchType == "track") {
+                if (SearchForm.this.searchType.equals("track")) {
                   Vector listItems = ParseData.parseSearchTracks(SearchForm.this.keyWord);
 
                   if (listItems == null) {
@@ -161,7 +161,6 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
         this.mLoaDataThread.join();
       }
     } catch (InterruptedException var2) {
-      var2.printStackTrace();
     }
   }
 }

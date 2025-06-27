@@ -42,7 +42,7 @@ public class Playlist implements JSONAble {
     try {
       JSONObject json = new JSONObject(jsonString);
       this.setId(json.getString("ListKey"));
-      if (!json.getString("Name").equals("")) {
+      if (json.getString("Name").length() != 0) {
         String listName = Utils.convertString(json.getString("Name"));
         this.setName(listName);
       } else {

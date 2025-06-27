@@ -9,12 +9,14 @@ import app.utils.I18N;
 import app.utils.ImageUtils;
 import app.utils.Utils;
 import java.util.Vector;
+import javax.microedition.lcdui.Alert;
+import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
-import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
+import javax.microedition.rms.RecordEnumeration;
 import org.json.me.JSONObject;
 
 public class FavoritesList extends List implements CommandListener, LoadDataObserver {
@@ -22,18 +24,19 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   private Command backCommand;
   private Command selectCommand;
   private Command removeCommand;
-  private Vector favorites;
+  private final Vector favorites;
   private final Utils.BreadCrumbTrail observer;
-  private Vector images;
+  private final Vector images;
   private Thread mLoaDataThread;
   private Thread imageLoaderThread;
-  private String type = "playlist";
+  private final String type = "playlist";
   private Image defaultImage;
   private boolean isDestroyed = false;
 
   public FavoritesList(Utils.BreadCrumbTrail observer) {
     super(I18N.tr("favorites"), List.IMPLICIT);
     this.observer = observer;
+    this.favorites = new Vector();
     this.images = new Vector();
     this.loadDefaultImage();
     initCommands();
@@ -52,9 +55,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   }
 
   private void initComponents() {
-    this.deleteAll();
     this.loadFavorites();
-
     if (this.size() > 0) {
       this.setSelectedIndex(0, true);
     }
@@ -64,52 +65,50 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
     try {
       this.defaultImage = Image.createImage("/images/FolderSound.png");
     } catch (Exception e) {
-      e.printStackTrace();
     }
   }
 
   private void loadFavorites() {
-    this.favorites = new Vector();
+    this.favorites.removeAllElements();
     this.images.removeAllElements();
     this.deleteAll();
 
     ReadWriteRecordStore recordStore = new ReadWriteRecordStore("favorites");
+    RecordEnumeration re = null;
     try {
       recordStore.openRecStore();
-      Vector records = recordStore.readRecords();
+      re = recordStore.enumerateRecords(null, null, false);
 
-      for (int i = 0; i < records.size(); i++) {
-        try {
-          String record = (String) records.elementAt(i);
-          if (record == null || record.trim().length() == 0) {
-            continue;
-          }
+      while (re.hasNextElement()) {
+        int recordId = re.nextRecordId();
+        String record = recordStore.getRecord(recordId);
 
-          JSONObject favorite = new JSONObject(record);
+        if (record.trim().length() == 0) {
+          continue;
+        }
 
-          if (favorite.has("id") && favorite.has("name")) {
-            favorites.addElement(favorite);
-            this.append(favorite.getString("name"), defaultImage);
-            this.images.addElement(defaultImage);
-          }
-        } catch (Exception e) {
-          e.printStackTrace();
+        JSONObject favoriteJson = new JSONObject(record);
+        if (favoriteJson.has("id") && favoriteJson.has("name")) {
+          FavoriteItem item = new FavoriteItem(recordId, favoriteJson);
+          favorites.addElement(item);
+          this.append(favoriteJson.getString("name"), defaultImage);
+          this.images.addElement(defaultImage);
         }
       }
-
-      if (favorites.size() > 0) {
-        loadFavoriteImages();
-      }
-
     } catch (Exception e) {
-      e.printStackTrace();
 
     } finally {
+      if (re != null) {
+        re.destroy();
+      }
       try {
         recordStore.closeRecStore();
       } catch (Exception e) {
-        e.printStackTrace();
       }
+    }
+
+    if (favorites.size() > 0) {
+      loadFavoriteImages();
     }
   }
 
@@ -130,19 +129,21 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
 
     try {
       for (int i = 0; i < size; i += batchSize) {
-        if (isDestroyed) break;
+        if (isDestroyed) {
+          break;
+        }
 
         int endIndex = Math.min(i + batchSize, size);
-
         final Vector batchImages = new Vector();
         final Vector batchIndexes = new Vector();
 
         for (int j = i; j < endIndex; j++) {
           try {
-            JSONObject favorite = (JSONObject) this.favorites.elementAt(j);
+            FavoriteItem item = (FavoriteItem) this.favorites.elementAt(j);
+            JSONObject favorite = item.data;
             if (favorite.has("imageUrl")) {
               String imageUrl = favorite.getString("imageUrl");
-              if (imageUrl != null && !imageUrl.equals("")) {
+              if (imageUrl != null && imageUrl.length() != 0) {
                 Image img = ImageUtils.getImage(imageUrl, 48);
                 if (img != null) {
                   batchImages.addElement(img);
@@ -151,42 +152,37 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
               }
             }
           } catch (Exception e) {
-
-            continue;
           }
         }
 
         if (batchImages.size() > 0) {
           final int selected = getSelectedIndex();
-
-          Display.getDisplay(MIDPlay.getInstance())
+          MIDPlay.getInstance()
+              .getDisplay()
               .callSerially(
                   new Runnable() {
                     public void run() {
-                      if (isDestroyed) return;
-
+                      if (isDestroyed) {
+                        return;
+                      }
                       try {
                         for (int k = 0; k < batchImages.size(); k++) {
                           int index = Integer.parseInt((String) batchIndexes.elementAt(k));
                           Image img = (Image) batchImages.elementAt(k);
-
                           if (index < images.size() && index < favorites.size()) {
                             images.setElementAt(img, index);
-                            JSONObject favorite = (JSONObject) favorites.elementAt(index);
-                            set(index, favorite.getString("name"), img);
+                            FavoriteItem item = (FavoriteItem) favorites.elementAt(index);
+                            set(index, item.data.getString("name"), img);
                           }
                         }
-
                         if (selected >= 0 && selected < size()) {
                           setSelectedIndex(selected, true);
                         }
                       } catch (Exception e) {
-                        System.err.println("Error updating batch images: " + e.getMessage());
                       }
                     }
                   });
         }
-
         try {
           Thread.sleep(200);
         } catch (InterruptedException e) {
@@ -194,7 +190,6 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
     }
   }
 
@@ -217,7 +212,8 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
     int selectedIndex = this.getSelectedIndex();
     if (selectedIndex >= 0 && selectedIndex < favorites.size()) {
       try {
-        JSONObject selected = (JSONObject) favorites.elementAt(selectedIndex);
+        FavoriteItem selectedItem = (FavoriteItem) favorites.elementAt(selectedIndex);
+        JSONObject selected = selectedItem.data;
 
         if (!selected.has("id") || !selected.has("name")) {
           this.displayMessage(I18N.tr("error"), I18N.tr("invalid_playlist_data"), "error");
@@ -239,7 +235,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
                               playlist.getId(), "", 1, 30, FavoritesList.this.type);
                       if (songItems == null) {
                         displayMessage(playlist.getName(), I18N.tr("connection_error"), "error");
-                      } else if (songItems.size() == 0) {
+                      } else if (songItems.isEmpty()) {
                         displayMessage(playlist.getName(), I18N.tr("no_data"), "error");
                       } else {
                         SongList songList = new SongList(playlist.getName(), songItems, playlist);
@@ -247,14 +243,12 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
                         FavoritesList.this.observer.replaceCurrent(songList);
                       }
                     } catch (Exception e) {
-                      e.printStackTrace();
                       displayMessage(I18N.tr("error"), I18N.tr("error_loading_playlist"), "error");
                     }
                   }
                 });
         this.mLoaDataThread.start();
       } catch (Exception e) {
-        e.printStackTrace();
         this.displayMessage(I18N.tr("error"), I18N.tr("error_loading_playlist"), "error");
       }
     }
@@ -262,137 +256,39 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
 
   private void removeSelectedFavorite() {
     int selectedIndex = this.getSelectedIndex();
-    if (selectedIndex >= 0 && selectedIndex < favorites.size()) {
-      try {
-        JSONObject selected = (JSONObject) favorites.elementAt(selectedIndex);
-        String idToRemove = selected.getString("id");
-
-        removeFromFavorites(idToRemove);
-
-        for (int i = 0; i < favorites.size(); i++) {
-          JSONObject fav = (JSONObject) favorites.elementAt(i);
-          if (fav.getString("id").equals(idToRemove)) {
-            favorites.removeElementAt(i);
-            break;
-          }
-        }
-
-        refreshFavoritesList();
-
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    }
-  }
-
-  private void refreshFavoritesList() {
-    this.deleteAll();
-    this.images.removeAllElements();
-
-    for (int i = 0; i < favorites.size(); i++) {
-      JSONObject fav = (JSONObject) favorites.elementAt(i);
-      try {
-        this.append(fav.getString("name"), defaultImage);
-        this.images.addElement(defaultImage);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+    if (selectedIndex < 0) {
+      return;
     }
 
-    if (favorites.size() > 0) {
-      loadFavoriteImages();
-    }
-  }
-
-  private void removeFromFavorites(String id) {
-    int scrollPosition = this.getSelectedIndex();
-    if (scrollPosition < 0) scrollPosition = 0;
-
-    ReadWriteRecordStore recordStore = new ReadWriteRecordStore("favorites");
     try {
-      recordStore.openRecStore();
-      Vector allRecords = recordStore.readRecords();
-      boolean found = false;
+      FavoriteItem itemToRemove = (FavoriteItem) favorites.elementAt(selectedIndex);
 
-      for (int i = 0; i < allRecords.size(); i++) {
-        try {
-          String record = (String) allRecords.elementAt(i);
-          if (record == null || record.trim().length() == 0) {
-            continue;
-          }
-
-          JSONObject favorite = new JSONObject(record);
-          if (favorite.has("id") && favorite.getString("id").equals(id)) {
-            found = true;
-            allRecords.removeElementAt(i);
-
-            if (i < scrollPosition) {
-              scrollPosition--;
-            }
-            break;
-          }
-        } catch (Exception e) {
-          continue;
-        }
-      }
-
-      if (found) {
-        recordStore.closeRecStore();
-        recordStore.deleteRecStore();
-
+      ReadWriteRecordStore recordStore = new ReadWriteRecordStore("favorites");
+      try {
         recordStore.openRecStore();
-        for (int i = 0; i < allRecords.size(); i++) {
-          String record = (String) allRecords.elementAt(i);
-          if (record != null && record.trim().length() > 0) {
-            recordStore.writeRecord(record);
-          }
-        }
-
-        favorites.removeAllElements();
-        this.deleteAll();
-        this.images.removeAllElements();
-
-        Vector records = recordStore.readRecords();
-
-        for (int i = 0; i < records.size(); i++) {
-          try {
-            String record = (String) records.elementAt(i);
-            if (record == null || record.trim().length() == 0) {
-              continue;
-            }
-
-            JSONObject favorite = new JSONObject(record);
-            if (favorite.has("name")) {
-              favorites.addElement(favorite);
-              this.append(favorite.getString("name"), defaultImage);
-              this.images.addElement(defaultImage);
-            }
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }
-
-        if (favorites.size() > 0) {
-          loadFavoriteImages();
-        }
-
-        if (scrollPosition >= 0 && scrollPosition < this.size()) {
-          this.setSelectedIndex(scrollPosition, true);
-        } else if (this.size() > 0) {
-          this.setSelectedIndex(this.size() - 1, true);
+        recordStore.deleteRecord(itemToRemove.recordId);
+      } finally {
+        try {
+          recordStore.closeRecStore();
+        } catch (Exception e) {
         }
       }
+
+      favorites.removeElementAt(selectedIndex);
+      images.removeElementAt(selectedIndex);
+
+      this.delete(selectedIndex);
+
+      displayAlert(I18N.tr("alert_removed_from_favorites"), AlertType.CONFIRMATION);
 
     } catch (Exception e) {
-      e.printStackTrace();
-
-    } finally {
-      try {
-        recordStore.closeRecStore();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+      displayAlert(I18N.tr("alert_error_adding_to_favorites"), AlertType.ERROR);
     }
+  }
+
+  private void displayAlert(String message, AlertType messageType) {
+    Alert alert = new Alert("", message, null, messageType);
+    MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
   }
 
   public Image getImage(int index) {
@@ -414,7 +310,16 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
         this.imageLoaderThread.join();
       }
     } catch (InterruptedException var2) {
-      var2.printStackTrace();
+    }
+  }
+
+  private class FavoriteItem {
+    public int recordId;
+    public JSONObject data;
+
+    FavoriteItem(int recordId, JSONObject data) {
+      this.recordId = recordId;
+      this.data = data;
     }
   }
 }

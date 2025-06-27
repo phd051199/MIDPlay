@@ -5,7 +5,12 @@ import app.common.SettingManager;
 import app.model.Song;
 import app.utils.I18N;
 import app.utils.Utils;
-import javax.microedition.lcdui.*;
+import javax.microedition.lcdui.Choice;
+import javax.microedition.lcdui.ChoiceGroup;
+import javax.microedition.lcdui.Command;
+import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Form;
 
 public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandListener {
 
@@ -13,87 +18,10 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
   private static ChoiceGroup languageChoice;
   private static ChoiceGroup audioQualityChoice;
   private static ChoiceGroup serviceChoice;
-  private Command backCommand;
-  private Command saveCommand;
-  private final Utils.BreadCrumbTrail parent;
 
-  public SettingForm(String title, Utils.BreadCrumbTrail parent) {
-    super(title);
-    this.parent = parent;
-    initUI();
-    loadSettings();
-  }
-
-  private void initUI() {
-    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
-    this.saveCommand = new Command(I18N.tr("save"), Command.SCREEN, 2);
-
-    languageChoice = new ChoiceGroup(I18N.tr("language"), Choice.EXCLUSIVE);
-    String[] languages = I18N.getLanguages();
-    for (int i = 0; i < languages.length; i++) {
-      languageChoice.append(I18N.getLanguageName(languages[i]), null);
-    }
-
-    audioQualityChoice = new ChoiceGroup(I18N.tr("audio_quality"), Choice.EXCLUSIVE);
-    String[] audioQualities = settingManager.getAudioQualities();
-    for (int i = 0; i < audioQualities.length; i++) {
-      audioQualityChoice.append(audioQualities[i], null);
-    }
-
-    serviceChoice = new ChoiceGroup(I18N.tr("service"), Choice.EXCLUSIVE);
-    String[] services = settingManager.getAvailableServices();
-    for (int i = 0; i < services.length; i++) {
-      serviceChoice.append(services[i], null);
-    }
-
-    append(languageChoice);
-    append(audioQualityChoice);
-    append(serviceChoice);
-
-    addCommand(backCommand);
-    addCommand(saveCommand);
-    setCommandListener(this);
-  }
-
-  private void saveSettings() {
+  public static void populateFormWithSettings() {
     try {
-      String[] languages = I18N.getLanguages();
-      int selectedLangIndex = languageChoice.getSelectedIndex();
-      String previousLanguage = I18N.getLanguage();
-      boolean languageChanged = false;
-      boolean serviceChanged = false;
-      String selectedLanguage = languages[selectedLangIndex];
-
-      if (!selectedLanguage.equals(previousLanguage)) {
-        I18N.setLanguage(selectedLanguage);
-        languageChanged = true;
-      }
-
-      if (!getSelectedService().equals(settingManager.getCurrentService())) {
-        serviceChanged = true;
-      }
-
-      settingManager.saveSettings(
-          selectedLanguage, getSelectedAudioQuality(), getSelectedService());
-
-      if (languageChanged || serviceChanged) {
-        MainList mainList = Utils.createMainMenu(parent, getSelectedService());
-
-        if (parent instanceof MIDPlay) {
-          ((MIDPlay) parent).clearHistory();
-        }
-        parent.replaceCurrent(mainList);
-      } else {
-        parent.goBack();
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
-
-  public static void loadSettings() {
-    try {
-      String[] settings = settingManager.loadSettings();
+      String[] settings = settingManager.getAllCurrentSettings();
 
       String savedLanguage = settings[0];
       I18N.setLanguage(savedLanguage);
@@ -157,7 +85,79 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
         serviceChoice.setSelectedIndex(0, true);
       }
     } catch (Exception e) {
-      e.printStackTrace();
+    }
+  }
+
+  private Command backCommand;
+  private Command saveCommand;
+  private final Utils.BreadCrumbTrail parent;
+
+  public SettingForm(String title, Utils.BreadCrumbTrail parent) {
+    super(title);
+    this.parent = parent;
+    initUI();
+
+    populateFormWithSettings();
+  }
+
+  private void initUI() {
+    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
+    this.saveCommand = new Command(I18N.tr("save"), Command.SCREEN, 2);
+
+    languageChoice = new ChoiceGroup(I18N.tr("language"), Choice.EXCLUSIVE);
+    String[] languages = I18N.getLanguages();
+    for (int i = 0; i < languages.length; i++) {
+      languageChoice.append(I18N.getLanguageName(languages[i]), null);
+    }
+
+    audioQualityChoice = new ChoiceGroup(I18N.tr("audio_quality"), Choice.EXCLUSIVE);
+    String[] audioQualities = settingManager.getAudioQualities();
+    for (int i = 0; i < audioQualities.length; i++) {
+      audioQualityChoice.append(audioQualities[i], null);
+    }
+
+    serviceChoice = new ChoiceGroup(I18N.tr("service"), Choice.EXCLUSIVE);
+    String[] services = settingManager.getAvailableServices();
+    for (int i = 0; i < services.length; i++) {
+      serviceChoice.append(services[i], null);
+    }
+
+    append(languageChoice);
+    append(audioQualityChoice);
+    append(serviceChoice);
+
+    addCommand(backCommand);
+    addCommand(saveCommand);
+    setCommandListener(this);
+  }
+
+  private void saveSettings() {
+    try {
+      String selectedLanguage = getSelectedLanguage();
+      String currentLanguage = settingManager.getCurrentLanguage();
+      String currentService = settingManager.getCurrentService();
+
+      boolean languageChanged = !selectedLanguage.equals(currentLanguage);
+      boolean serviceChanged = !getSelectedService().equals(currentService);
+
+      settingManager.saveSettings(
+          selectedLanguage, getSelectedAudioQuality(), getSelectedService());
+
+      if (languageChanged) {
+        I18N.setLanguage(selectedLanguage);
+      }
+
+      if (languageChanged || serviceChanged) {
+        MainList mainList = Utils.createMainMenu(parent, getSelectedService());
+        if (parent instanceof MIDPlay) {
+          ((MIDPlay) parent).clearHistory();
+        }
+        parent.replaceCurrent(mainList);
+      } else {
+        parent.goBack();
+      }
+    } catch (Exception e) {
+
     }
   }
 

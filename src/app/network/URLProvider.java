@@ -39,6 +39,21 @@ public class URLProvider {
     return null;
   }
 
+  public static String getChatEndpoint(String message, String sessionId) {
+    String client = Constants.SERVICE_URL + "/chat?";
+    if (client != null) {
+      try {
+        client = client + "lang=" + I18N.getLanguage();
+        client = client + "&m=" + TextUtil.urlEncodeUTF8(message);
+        client = client + "&sessionId=" + sessionId;
+        return client;
+      } catch (Exception var5) {
+      }
+    }
+
+    return null;
+  }
+
   public static String getSongByPlaylist(String listKey, String userName, String type) {
     String client = Constants.SERVICE_URL + "/tracks?";
     if (client != null) {
@@ -102,4 +117,6 @@ public class URLProvider {
 
     return null;
   }
+
+  private URLProvider() {}
 }

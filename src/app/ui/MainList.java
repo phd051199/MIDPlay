@@ -15,6 +15,38 @@ import javax.microedition.lcdui.List;
 
 public class MainList extends List implements CommandListener, LoadDataObserver {
 
+  public static void gotoNowPlaying(Utils.BreadCrumbTrail observer) {
+    if (SongList.playerCanvas != null) {
+      SongList.playerCanvas.setObserver(observer);
+      observer.go(SongList.playerCanvas);
+    }
+  }
+
+  public static void gotoSearch(Utils.BreadCrumbTrail observer) {
+    SearchForm searchForm = new SearchForm(I18N.tr("search_title"));
+    searchForm.setObserver(observer);
+    observer.go(searchForm);
+  }
+
+  public static void displayMessage(
+      String title,
+      String message,
+      String messageType,
+      Utils.BreadCrumbTrail observer,
+      LoadDataObserver loadDataOberserver) {
+    MessageForm messageForm = new MessageForm(title, message, messageType);
+    messageForm.setObserver(observer);
+    if (loadDataOberserver != null) {
+      messageForm.setLoadDataOberserver(loadDataOberserver);
+    }
+
+    if (messageType.equals("error")) {
+      observer.replaceCurrent(messageForm);
+    } else {
+      observer.go(messageForm);
+    }
+  }
+
   private Command nowPlayingCommand;
   private Command selectCommand;
   private Command exitCommand;
@@ -31,6 +63,11 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     }
     this.initCommands();
     this.setCommandListener(this);
+  }
+
+  public void gotoAbout() {
+    AboutForm aboutForm = new AboutForm(I18N.tr("about"), this.observer);
+    this.observer.go(aboutForm);
   }
 
   private Image getImage(int index, Image[] imageElements) {
@@ -63,13 +100,6 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     }
   }
 
-  public static void gotoNowPlaying(Utils.BreadCrumbTrail observer) {
-    if (SongList.playerCanvas != null) {
-      SongList.playerCanvas.setObserver(observer);
-      observer.go(SongList.playerCanvas);
-    }
-  }
-
   public void setObserver(Utils.BreadCrumbTrail mObserver) {
     this.observer = mObserver;
   }
@@ -88,7 +118,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   private void gotoFavorites() {
     FavoritesList favoritesList = new FavoritesList(this.observer);
-    this.observer.go(favoritesList);
+    this.observer.replaceCurrent(favoritesList);
   }
 
   private void showCategoryList(String title, Vector items, String from, String itemType) {
@@ -98,8 +128,13 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void gotoSetting() {
-    SettingForm settingForm = new SettingForm(I18N.tr("settings"), observer);
-    observer.go(settingForm);
+    SettingForm settingForm = new SettingForm(I18N.tr("settings"), this.observer);
+    this.observer.go(settingForm);
+  }
+
+  private void gotoChat() {
+    ChatCanvas chatCanvas = new ChatCanvas(I18N.tr("chat"), this.observer);
+    this.observer.go(chatCanvas);
   }
 
   private void gotoPlaylist(final String type) {
@@ -121,17 +156,6 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         "playlist");
   }
 
-  public static void gotoSearch(Utils.BreadCrumbTrail observer) {
-    SearchForm searchForm = new SearchForm(I18N.tr("search_title"));
-    searchForm.setObserver(observer);
-    observer.go(searchForm);
-  }
-
-  public static void gotoAbout(Utils.BreadCrumbTrail observer) {
-    AboutForm aboutForm = new AboutForm(I18N.tr("about"), observer);
-    observer.go(aboutForm);
-  }
-
   private void gotoBillboard() {
     loadDataAsync(
         new DataLoader() {
@@ -142,10 +166,6 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         I18N.tr("billboard"),
         "billboard",
         "chart");
-  }
-
-  private interface DataLoader {
-    Vector load() throws Exception;
   }
 
   private void loadDataAsync(
@@ -191,32 +211,36 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     int selectedIndex = this.getSelectedIndex();
     switch (selectedIndex) {
       case 0:
-        this.gotoSearch(this.observer);
+        MainList.gotoSearch(this.observer);
         break;
       case 1:
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoFavorites();
         break;
       case 2:
-        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoCate();
+        this.gotoChat();
         break;
       case 3:
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoPlaylist("new");
+        this.gotoCate();
         break;
       case 4:
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoPlaylist("hot");
+        this.gotoPlaylist("new");
         break;
       case 5:
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoBillboard();
+        this.gotoPlaylist("hot");
         break;
       case 6:
-        this.gotoSetting();
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        this.gotoBillboard();
         break;
       case 7:
-        this.gotoAbout(this.observer);
+        this.gotoSetting();
+        break;
+      case 8:
+        this.gotoAbout();
         break;
       default:
         break;
@@ -227,42 +251,27 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     int selectedIndex = this.getSelectedIndex();
     switch (selectedIndex) {
       case 0:
-        this.gotoSearch(this.observer);
+        MainList.gotoSearch(this.observer);
         break;
       case 1:
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoFavorites();
         break;
       case 2:
+        this.gotoChat();
+        break;
+      case 3:
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoPlaylist("discover");
         break;
-      case 3:
+      case 4:
         this.gotoSetting();
         break;
-      case 4:
-        this.gotoAbout(this.observer);
+      case 5:
+        this.gotoAbout();
         break;
       default:
         break;
-    }
-  }
-
-  public static void displayMessage(
-      String title,
-      String message,
-      String messageType,
-      Utils.BreadCrumbTrail observer,
-      LoadDataObserver loadDataOberserver) {
-    MessageForm messageForm = new MessageForm(title, message, messageType);
-    messageForm.setObserver(observer);
-    if (loadDataOberserver != null) {
-      messageForm.setLoadDataOberserver(loadDataOberserver);
-    }
-
-    if (messageType.equals("error")) {
-      observer.replaceCurrent(messageForm);
-    } else {
-      observer.go(messageForm);
     }
   }
 
@@ -276,7 +285,10 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         this.mLoaDataThread.interrupt();
       }
     } catch (Exception var2) {
-      var2.printStackTrace();
     }
+  }
+
+  private interface DataLoader {
+    Vector load() throws Exception;
   }
 }

@@ -11,8 +11,6 @@ public class RestClient {
   private static final int MAX_REDIRECT_TIMES = 5;
   private static RestClient instance;
 
-  private RestClient() {}
-
   public static RestClient getInstance() {
     if (instance == null) {
       instance = new RestClient();
@@ -28,6 +26,8 @@ public class RestClient {
     String userAgent = platform + "/1.0 (MIDP-2.0; CLDC-1.1)";
     conn.setRequestProperty("User-Agent", userAgent);
   }
+
+  private RestClient() {}
 
   public HttpConnection getStreamConnection(String url) throws IOException {
     HttpConnection conn = null;
@@ -77,11 +77,15 @@ public class RestClient {
 
     } finally {
       try {
-        if (inputStream != null) inputStream.close();
+        if (inputStream != null) {
+          inputStream.close();
+        }
       } catch (IOException e) {
       }
       try {
-        if (hcon != null) hcon.close();
+        if (hcon != null) {
+          hcon.close();
+        }
       } catch (IOException e) {
       }
     }

@@ -6,7 +6,7 @@ import java.util.Vector;
 public class Observable {
 
   private boolean changed = false;
-  private Vector obs = new Vector();
+  private final Vector obs = new Vector();
 
   public synchronized void addObserver(Observer o) {
     if (o == null) {

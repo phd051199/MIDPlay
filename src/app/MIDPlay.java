@@ -19,22 +19,22 @@ import javax.microedition.midlet.MIDlet;
 public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumbTrail {
 
   private static MIDPlay instance;
-  private final Stack history = new Stack();
-  private Displayable currDisplayable;
 
   public static MIDPlay getInstance() {
     return instance;
   }
+
+  private final Stack history = new Stack();
+  private Displayable currDisplayable;
 
   public MIDPlay() {
     instance = this;
     this.history.setSize(0);
     try {
       I18N.initialize(this);
-      SettingForm.loadSettings();
+      SettingForm.populateFormWithSettings();
       AudioFileConnector.getInstance().initialize();
     } catch (Exception e) {
-      e.printStackTrace();
     }
   }
 
@@ -96,7 +96,7 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
     return this.currDisplayable;
   }
 
-  public final void exit() {
+  public void exit() {
     this.destroyApp(false);
     this.notifyDestroyed();
   }
@@ -105,7 +105,7 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
     this.history.removeAllElements();
   }
 
-  private Display getDisplay() {
+  public Display getDisplay() {
     return Display.getDisplay(this);
   }
 }

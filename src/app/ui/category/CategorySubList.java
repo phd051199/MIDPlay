@@ -21,8 +21,8 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
   private Command nowPlayingCommand;
   private Command searchCommand;
 
-  private Vector subItems;
-  private Vector images;
+  private final Vector subItems;
+  private final Vector images;
   private Utils.BreadCrumbTrail observer;
   private Thread mLoaDataThread;
   private Image defaultImage;
@@ -61,7 +61,6 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
         this.setSelectedIndex(0, true);
       }
     } catch (Exception e) {
-      e.printStackTrace();
     }
   }
 
@@ -69,7 +68,6 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
     try {
       this.defaultImage = Image.createImage("/images/FolderSound.png");
     } catch (Exception e) {
-      e.printStackTrace();
     }
   }
 
@@ -103,7 +101,6 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
         this.mLoaDataThread.join();
       }
     } catch (InterruptedException var2) {
-      var2.printStackTrace();
     }
   }
 
@@ -119,7 +116,7 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
                 if (listItems == null) {
                   MainList.displayMessage(
                       title, I18N.tr("connection_error"), "error", observer, CategorySubList.this);
-                } else if (listItems.size() == 0) {
+                } else if (listItems.isEmpty()) {
                   MainList.displayMessage(
                       title, I18N.tr("no_data"), "error", observer, CategorySubList.this);
                 } else {

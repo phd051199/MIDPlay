@@ -15,6 +15,23 @@ public class ParseData {
 
   private static final RestClient client = RestClient.getInstance();
 
+  public static String sendChatMessage(String message, String sessionId) {
+    try {
+      String url = URLProvider.getChatEndpoint(message, sessionId);
+      if (url == null) {
+        return I18N.tr("error_connect");
+      }
+      String response = client.get(url);
+      if (response.length() == 0) {
+        return I18N.tr("error_connect");
+      }
+      JSONObject json = new JSONObject(response);
+      return json.optString("message", I18N.tr("error_occurred"));
+    } catch (Exception e) {
+      return I18N.tr("error_connect");
+    }
+  }
+
   private static String getCate(int type) {
     try {
       return client.get(URLProvider.getCategory(type));
@@ -214,4 +231,6 @@ public class ParseData {
       return null;
     }
   }
+
+  private ParseData() {}
 }

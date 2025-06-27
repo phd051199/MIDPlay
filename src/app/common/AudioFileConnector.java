@@ -8,12 +8,6 @@ import javax.microedition.io.file.FileConnection;
 public class AudioFileConnector {
   private static AudioFileConnector instance;
 
-  private FileConnection fileConn;
-  private String filePath;
-  private boolean initialized = false;
-
-  private AudioFileConnector() {}
-
   public static synchronized AudioFileConnector getInstance() {
     if (instance == null) {
       instance = new AudioFileConnector();
@@ -21,13 +15,19 @@ public class AudioFileConnector {
     return instance;
   }
 
-  public synchronized void initialize() throws IOException {
-    if (initialized) return;
+  private FileConnection fileConn;
+  private String filePath;
+  private boolean initialized = false;
 
+  private AudioFileConnector() {}
+
+  public synchronized void initialize() throws IOException {
+    if (initialized) {
+      return;
+    }
     String privateDir = System.getProperty("fileconn.dir.private");
     filePath = privateDir + "temp_audio.mp3";
     fileConn = (FileConnection) Connector.open(filePath, Connector.READ_WRITE);
-
     if (fileConn.exists()) {
       fileConn.delete();
     }
@@ -49,7 +49,6 @@ public class AudioFileConnector {
           fileConn.truncate(0);
         }
       } catch (IOException e) {
-        e.printStackTrace();
       }
     }
   }
@@ -59,7 +58,6 @@ public class AudioFileConnector {
       try {
         fileConn.close();
       } catch (IOException e) {
-        e.printStackTrace();
       }
       fileConn = null;
       initialized = false;

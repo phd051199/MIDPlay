@@ -90,7 +90,6 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
     try {
       this.defaultImage = Image.createImage("/images/Album.png");
     } catch (Exception e) {
-      e.printStackTrace();
     }
   }
 
@@ -101,7 +100,6 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
         this.images.addElement(this.defaultImage);
       }
     } catch (Exception var3) {
-      var3.printStackTrace();
     }
   }
 
@@ -123,7 +121,7 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
                 Vector listItems = ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
                 if (listItems == null) {
                   CategoryList.this.displayMessage(I18N.tr("connection_error"), "error");
-                } else if (listItems.size() == 0) {
+                } else if (listItems.isEmpty()) {
                   CategoryList.this.displayMessage(I18N.tr("no_data"), "error");
                 } else {
                   PlaylistList playlistList =
@@ -151,7 +149,6 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
         this.mLoaDataThread.join();
       }
     } catch (InterruptedException var2) {
-      var2.printStackTrace();
     }
   }
 }

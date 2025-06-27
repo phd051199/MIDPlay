@@ -13,8 +13,8 @@ public class Song implements JSONAble {
   private String kbit = "";
   private String genreID = "";
   private String genreName = "";
-  private String listened = "0";
-  private String liked = "0";
+  private final String listened = "0";
+  private final String liked = "0";
   private int downloadStatus = -1;
   private String filePath = "";
   private int duration = 0;
@@ -131,7 +131,6 @@ public class Song implements JSONAble {
       json.put("filePath", this.filePath);
       json.put("duration", this.duration);
     } catch (Exception e) {
-      e.printStackTrace();
     }
     return json;
   }
