@@ -1,6 +1,9 @@
 package app.ui.category;
 
+import app.common.Common;
 import app.common.ParseData;
+import app.interfaces.DataLoader;
+import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
 import app.model.Category;
 import app.ui.MainList;
@@ -24,7 +27,7 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
   private final Vector subItems;
   private final Vector images;
   private Utils.BreadCrumbTrail observer;
-  private Thread mLoaDataThread;
+  private Thread mLoadDataThread;
   private Image defaultImage;
 
   public CategorySubList(String title, Vector subs) {
@@ -97,8 +100,8 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
 
   public void quit() {
     try {
-      if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
-        this.mLoaDataThread.join();
+      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
+        this.mLoadDataThread.join();
       }
     } catch (InterruptedException var2) {
     }
@@ -108,25 +111,29 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
       final String genKey, final int curPage, final int perPage, final String title) {
     MainList.displayMessage(title, I18N.tr("loading"), "loading", this.observer, this);
 
-    this.mLoaDataThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
-                Vector listItems = ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
-                if (listItems == null) {
-                  MainList.displayMessage(
-                      title, I18N.tr("connection_error"), "error", observer, CategorySubList.this);
-                } else if (listItems.isEmpty()) {
-                  MainList.displayMessage(
-                      title, I18N.tr("no_data"), "error", observer, CategorySubList.this);
-                } else {
-                  PlaylistList playlistList =
-                      new PlaylistList(title, listItems, "genre", "", "playlist");
-                  playlistList.setObserver(observer);
-                  observer.replaceCurrent(playlistList);
-                }
-              }
-            });
-    this.mLoaDataThread.start();
+    Common.loadDataAsync(
+        new DataLoader() {
+          public Vector load() throws Exception {
+            return ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
+          }
+        },
+        new LoadDataListener() {
+          public void loadDataCompleted(Vector listItems) {
+            PlaylistList playlistList = new PlaylistList(title, listItems, "genre", "", "playlist");
+            playlistList.setObserver(observer);
+            observer.replaceCurrent(playlistList);
+          }
+
+          public void loadError() {
+            MainList.displayMessage(
+                title, I18N.tr("connection_error"), "error", observer, CategorySubList.this);
+          }
+
+          public void noData() {
+            MainList.displayMessage(
+                title, I18N.tr("no_data"), "error", observer, CategorySubList.this);
+          }
+        },
+        this.mLoadDataThread);
   }
 }

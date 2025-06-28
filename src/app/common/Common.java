@@ -1,5 +1,7 @@
 package app.common;
 
+import app.interfaces.DataLoader;
+import app.interfaces.LoadDataListener;
 import java.util.Vector;
 
 public class Common {
@@ -28,6 +30,29 @@ public class Common {
     }
 
     return result;
+  }
+
+  public static void loadDataAsync(
+      final DataLoader loader, final LoadDataListener loadDataListener, Thread mLoadDataThread) {
+    mLoadDataThread =
+        new Thread(
+            new Runnable() {
+              public void run() {
+                try {
+                  Vector items = loader.load();
+                  if (items == null) {
+                    loadDataListener.loadError();
+                  } else if (items.isEmpty()) {
+                    loadDataListener.noData();
+                  } else {
+                    loadDataListener.loadDataCompleted(items);
+                  }
+                } catch (Exception e) {
+                  loadDataListener.loadError();
+                }
+              }
+            });
+    mLoadDataThread.start();
   }
 
   private Common() {}

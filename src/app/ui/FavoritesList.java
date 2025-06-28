@@ -1,8 +1,11 @@
 package app.ui;
 
 import app.MIDPlay;
+import app.common.Common;
 import app.common.ParseData;
 import app.common.ReadWriteRecordStore;
+import app.interfaces.DataLoader;
+import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
 import app.model.Playlist;
 import app.utils.I18N;
@@ -27,7 +30,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   private final Vector favorites;
   private final Utils.BreadCrumbTrail observer;
   private final Vector images;
-  private Thread mLoaDataThread;
+  private Thread mLoadDataThread;
   private Thread imageLoaderThread;
   private final String type = "playlist";
   private Image defaultImage;
@@ -225,29 +228,31 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
         playlist.setName(selected.getString("name"));
 
         this.displayMessage(playlist.getName(), I18N.tr("loading"), "loading");
-        this.mLoaDataThread =
-            new Thread(
-                new Runnable() {
-                  public void run() {
-                    try {
-                      Vector songItems =
-                          ParseData.parseSongsInPlaylist(
-                              playlist.getId(), "", 1, 30, FavoritesList.this.type);
-                      if (songItems == null) {
-                        displayMessage(playlist.getName(), I18N.tr("connection_error"), "error");
-                      } else if (songItems.isEmpty()) {
-                        displayMessage(playlist.getName(), I18N.tr("no_data"), "error");
-                      } else {
-                        SongList songList = new SongList(playlist.getName(), songItems, playlist);
-                        songList.setObserver(FavoritesList.this.observer);
-                        FavoritesList.this.observer.replaceCurrent(songList);
-                      }
-                    } catch (Exception e) {
-                      displayMessage(I18N.tr("error"), I18N.tr("error_loading_playlist"), "error");
-                    }
-                  }
-                });
-        this.mLoaDataThread.start();
+
+        Common.loadDataAsync(
+            new DataLoader() {
+              public Vector load() throws Exception {
+                return ParseData.parseSongsInPlaylist(
+                    playlist.getId(), "", 1, 30, FavoritesList.this.type);
+              }
+            },
+            new LoadDataListener() {
+              public void loadDataCompleted(Vector data) {
+                SongList songList = new SongList(playlist.getName(), data, playlist);
+                songList.setObserver(FavoritesList.this.observer);
+                FavoritesList.this.observer.replaceCurrent(songList);
+              }
+
+              public void loadError() {
+                displayMessage(playlist.getName(), I18N.tr("connection_error"), "error");
+              }
+
+              public void noData() {
+                displayMessage(playlist.getName(), I18N.tr("no_data"), "error");
+              }
+            },
+            this.mLoadDataThread);
+
       } catch (Exception e) {
         this.displayMessage(I18N.tr("error"), I18N.tr("error_loading_playlist"), "error");
       }
@@ -303,8 +308,8 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   public void quit() {
     this.isDestroyed = true;
     try {
-      if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
-        this.mLoaDataThread.join();
+      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
+        this.mLoadDataThread.join();
       }
       if (this.imageLoaderThread != null && this.imageLoaderThread.isAlive()) {
         this.imageLoaderThread.join();

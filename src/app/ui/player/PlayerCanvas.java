@@ -421,7 +421,5 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     this.addCommand(this.prevCommand);
   }
 
-  public void cancel() {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
+  public void cancel() {}
 }

@@ -1,7 +1,10 @@
 package app.ui;
 
+import app.common.Common;
 import app.common.ParseData;
 import app.common.SettingManager;
+import app.interfaces.DataLoader;
+import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
 import app.ui.category.CategoryList;
 import app.utils.I18N;
@@ -51,7 +54,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   private Command selectCommand;
   private Command exitCommand;
   private Utils.BreadCrumbTrail observer;
-  Thread mLoaDataThread;
+  Thread mLoadDataThread;
 
   public MainList(String title, String[] items, Image[] imageElements) {
     super(title, List.IMPLICIT);
@@ -118,7 +121,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   private void gotoFavorites() {
     FavoritesList favoritesList = new FavoritesList(this.observer);
-    this.observer.replaceCurrent(favoritesList);
+    this.observer.go(favoritesList);
   }
 
   private void showCategoryList(String title, Vector items, String from, String itemType) {
@@ -170,29 +173,26 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   private void loadDataAsync(
       final DataLoader loader, final String title, final String from, final String itemType) {
-    this.mLoaDataThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
-                try {
-                  Vector items = loader.load();
-                  if (items == null) {
-                    showErrorMessage(I18N.tr("connection_error"));
-                  } else if (items.isEmpty()) {
-                    showErrorMessage(I18N.tr("no_data"));
-                  } else {
-                    if ("category".equals(from)) {
-                      showCategoryList(title, items, from, itemType);
-                    } else {
-                      showPlaylistList(title, items, from, itemType);
-                    }
-                  }
-                } catch (Exception e) {
-                  showErrorMessage(I18N.tr("connection_error"));
-                }
-              }
-            });
-    this.mLoaDataThread.start();
+    Common.loadDataAsync(
+        loader,
+        new LoadDataListener() {
+          public void loadDataCompleted(Vector items) {
+            if ("category".equals(from)) {
+              showCategoryList(title, items, from, itemType);
+            } else {
+              showPlaylistList(title, items, from, itemType);
+            }
+          }
+
+          public void loadError() {
+            showErrorMessage(I18N.tr("connection_error"));
+          }
+
+          public void noData() {
+            showErrorMessage(I18N.tr("no_data"));
+          }
+        },
+        this.mLoadDataThread);
   }
 
   private void showErrorMessage(String message) {
@@ -214,7 +214,6 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         MainList.gotoSearch(this.observer);
         break;
       case 1:
-        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoFavorites();
         break;
       case 2:
@@ -254,7 +253,6 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         MainList.gotoSearch(this.observer);
         break;
       case 1:
-        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoFavorites();
         break;
       case 2:
@@ -281,14 +279,10 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   public synchronized void quit() {
     try {
-      if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
-        this.mLoaDataThread.interrupt();
+      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
+        this.mLoadDataThread.interrupt();
       }
     } catch (Exception var2) {
     }
-  }
-
-  private interface DataLoader {
-    Vector load() throws Exception;
   }
 }

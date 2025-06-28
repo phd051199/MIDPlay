@@ -28,7 +28,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   int curPage = 1;
   int perPage = 10;
   private final Playlist playlist;
-  Thread mLoaDataThread;
+  Thread mLoadDataThread;
   private Image defaultImage;
 
   public SongList(String title, Vector items, Playlist _playlist) {
@@ -83,7 +83,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void loadMoreSongs(final String genKey, final int curPage, final int perPage) {
-    this.mLoaDataThread =
+    this.mLoadDataThread =
         new Thread(
             new Runnable() {
               public void run() {
@@ -94,7 +94,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
                 }
               }
             });
-    this.mLoaDataThread.start();
+    this.mLoadDataThread.start();
   }
 
   private void initComponents() {
@@ -193,8 +193,8 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
 
   public void quit() {
     try {
-      if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
-        this.mLoaDataThread.join();
+      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
+        this.mLoadDataThread.join();
       }
     } catch (InterruptedException var2) {
     }

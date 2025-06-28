@@ -1,8 +1,11 @@
 package app.ui;
 
 import app.MIDPlay;
+import app.common.Common;
 import app.common.ParseData;
 import app.common.ReadWriteRecordStore;
+import app.interfaces.DataLoader;
+import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
 import app.model.Playlist;
 import app.utils.I18N;
@@ -41,7 +44,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   String from = "";
   String keyWord = "";
 
-  Thread mLoaDataThread;
+  Thread mLoadDataThread;
   Thread imageLoaderThread;
 
   private boolean isDestroyed = false;
@@ -136,52 +139,59 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
 
   private void loadMorePlaylists(
       final String keyword, final String genKey, final int curPage, final int perPage) {
-    this.mLoaDataThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
-                final Vector listItems;
-                if (PlaylistList.this.from.equals("genre")) {
-                  listItems = ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
-                } else if (PlaylistList.this.from.equals("search")) {
-                  listItems =
-                      ParseData.parseSearch("", keyword, curPage, perPage, PlaylistList.this.type);
-                } else if (PlaylistList.this.from.equals("hot")
-                    || PlaylistList.this.from.equals("new")) {
-                  listItems =
-                      ParseData.parsePlaylist(curPage, perPage, PlaylistList.this.type, "0");
-                } else {
-                  listItems = null;
-                }
+    Common.loadDataAsync(
+        new DataLoader() {
+          public Vector load() {
+            if (PlaylistList.this.from.equals("genre")) {
+              return ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
+            } else if (PlaylistList.this.from.equals("search")) {
+              return ParseData.parseSearch("", keyword, curPage, perPage, PlaylistList.this.type);
+            } else if (PlaylistList.this.from.equals("hot")
+                || PlaylistList.this.from.equals("new")) {
+              return ParseData.parsePlaylist(curPage, perPage, PlaylistList.this.type, "0");
+            } else {
+              return null;
+            }
+          }
+        },
+        new LoadDataListener() {
+          public void loadDataCompleted(final Vector var1) {
+            if (var1 != null && !var1.isEmpty()) {
+              final int startIndex = playlistItems.size();
 
-                if (listItems != null && !listItems.isEmpty()) {
-                  final int startIndex = playlistItems.size();
-
-                  for (int i = 0; i < listItems.size(); ++i) {
-                    playlistItems.addElement(listItems.elementAt(i));
-                    images.addElement(defaultImage);
-                  }
-
-                  MIDPlay.getInstance()
-                      .getDisplay()
-                      .callSerially(
-                          new Runnable() {
-                            public void run() {
-                              if (isDestroyed) {
-                                return;
-                              }
-                              for (int i = 0; i < listItems.size(); ++i) {
-                                Playlist p = (Playlist) listItems.elementAt(i);
-                                append(p.getName(), defaultImage);
-                              }
-                            }
-                          });
-
-                  processImageBatchLoading(startIndex);
-                }
+              for (int i = 0; i < var1.size(); ++i) {
+                playlistItems.addElement(var1.elementAt(i));
+                images.addElement(defaultImage);
               }
-            });
-    this.mLoaDataThread.start();
+
+              MIDPlay.getInstance()
+                  .getDisplay()
+                  .callSerially(
+                      new Runnable() {
+                        public void run() {
+                          if (isDestroyed) {
+                            return;
+                          }
+                          for (int i = 0; i < var1.size(); ++i) {
+                            Playlist p = (Playlist) var1.elementAt(i);
+                            append(p.getName(), defaultImage);
+                          }
+                        }
+                      });
+
+              processImageBatchLoading(startIndex);
+            }
+          }
+
+          public void loadError() {
+            displayAlert(I18N.tr("connection_error"), AlertType.ERROR);
+          }
+
+          public void noData() {
+            displayAlert(I18N.tr("no_results"), AlertType.ERROR);
+          }
+        },
+        this.mLoadDataThread);
   }
 
   private void processImageBatchLoading(final int startIndex) {
@@ -323,26 +333,30 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   private void gotoSongByPlaylist() {
     final Playlist playlist = (Playlist) this.playlistItems.elementAt(this.getSelectedIndex());
     this.displayMessage(playlist.getName(), I18N.tr("loading"), "loading");
-    this.mLoaDataThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
-                Vector songItems =
-                    ParseData.parseSongsInPlaylist(
-                        playlist.getId(), "", 1, 30, PlaylistList.this.type);
-                if (songItems == null) {
-                  PlaylistList.this.displayMessage(
-                      playlist.getName(), I18N.tr("connection_error"), "error");
-                } else if (songItems.isEmpty()) {
-                  PlaylistList.this.displayMessage(playlist.getName(), I18N.tr("no_data"), "error");
-                } else {
-                  SongList songList = new SongList(playlist.getName(), songItems, playlist);
-                  songList.setObserver(PlaylistList.this.observer);
-                  PlaylistList.this.observer.replaceCurrent(songList);
-                }
-              }
-            });
-    this.mLoaDataThread.start();
+    Common.loadDataAsync(
+        new DataLoader() {
+          public Vector load() {
+            return ParseData.parseSongsInPlaylist(
+                playlist.getId(), "", 1, 30, PlaylistList.this.type);
+          }
+        },
+        new LoadDataListener() {
+          public void loadDataCompleted(Vector data) {
+            SongList songList = new SongList(playlist.getName(), data, playlist);
+            songList.setObserver(PlaylistList.this.observer);
+            PlaylistList.this.observer.replaceCurrent(songList);
+          }
+
+          public void loadError() {
+            PlaylistList.this.displayMessage(
+                playlist.getName(), I18N.tr("connection_error"), "error");
+          }
+
+          public void noData() {
+            PlaylistList.this.displayMessage(playlist.getName(), I18N.tr("no_data"), "error");
+          }
+        },
+        this.mLoadDataThread);
   }
 
   private void displayMessage(String title, String message, String messageType) {
@@ -356,8 +370,8 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   public void quit() {
     this.isDestroyed = true;
     try {
-      if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
-        this.mLoaDataThread.join();
+      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
+        this.mLoadDataThread.join();
       }
       if (this.imageLoaderThread != null && this.imageLoaderThread.isAlive()) {
         this.imageLoaderThread.join();

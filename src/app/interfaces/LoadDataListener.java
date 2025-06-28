@@ -4,7 +4,7 @@ import java.util.Vector;
 
 public interface LoadDataListener {
 
-  void loadDataCompleted(Vector var1);
+  void loadDataCompleted(Vector data);
 
   void loadError();
 

@@ -1,7 +1,10 @@
 package app.ui;
 
 import app.MIDPlay;
+import app.common.Common;
 import app.common.ParseData;
+import app.interfaces.DataLoader;
+import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
 import app.model.Playlist;
 import app.utils.I18N;
@@ -48,7 +51,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   private boolean isWaitingForResponse = false;
   private Displayable previousDisplay;
   private final Vector pendingMessages = new Vector();
-  private Thread mLoaDataThread;
+  private Thread mLoadDataThread;
   private int firstVisibleMessage = 0;
   private int lastVisibleMessage = 0;
 
@@ -647,23 +650,35 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
             displayText = displayText.substring(0, displayText.length() - 1);
           }
 
-          Vector listItems = ParseData.parseSearchTracks(displayText);
+          final String finalDisplayText = displayText;
 
-          if (listItems == null) {
-            displayAlert(I18N.tr("connection_error"), AlertType.ERROR);
-          } else if (listItems.isEmpty()) {
-            displayAlert(I18N.tr("no_results"), AlertType.ERROR);
-          } else {
-            String searchResultsTitle = I18N.tr("search_results") + ": " + displayText;
-            Playlist searchPlaylist = new Playlist();
-            searchPlaylist.setName(searchResultsTitle);
-            searchPlaylist.setId("search");
+          Common.loadDataAsync(
+              new DataLoader() {
+                public Vector load() {
+                  return ParseData.parseSearchTracks(finalDisplayText);
+                }
+              },
+              new LoadDataListener() {
+                public void loadDataCompleted(Vector data) {
+                  String searchResultsTitle = I18N.tr("search_results") + ": " + finalDisplayText;
+                  Playlist searchPlaylist = new Playlist();
+                  searchPlaylist.setName(searchResultsTitle);
+                  searchPlaylist.setId("search");
 
-            SongList songList = new SongList(searchResultsTitle, listItems, searchPlaylist);
-            songList.setObserver(observer);
-            observer.go(songList);
-          }
-          return;
+                  SongList songList = new SongList(searchResultsTitle, data, searchPlaylist);
+                  songList.setObserver(observer);
+                  observer.go(songList);
+                }
+
+                public void loadError() {
+                  displayAlert(I18N.tr("connection_error"), AlertType.ERROR);
+                }
+
+                public void noData() {
+                  displayAlert(I18N.tr("no_results"), AlertType.ERROR);
+                }
+              },
+              this.mLoadDataThread);
         }
       }
     }
@@ -692,8 +707,8 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
 
   private void ensureFocusVisible() {
     if (focusedClickableIndex == -1) {
-        return;
-        }
+      return;
+    }
     int width = getWidth();
     Font f =
         (font != null)
@@ -766,25 +781,34 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
         addAIMessage("...");
 
         isWaitingForResponse = true;
-        this.mLoaDataThread =
-            new Thread(
-                new Runnable() {
-                  public void run() {
-                    try {
+        Common.loadDataAsync(
+            new DataLoader() {
+              public Vector load() throws Exception {
+                Vector v = new Vector();
+                v.addElement(ParseData.sendChatMessage(text, sessionId));
+                return v;
+              }
+            },
+            new LoadDataListener() {
+              public void loadDataCompleted(Vector data) {
+                String response = (String) data.elementAt(0);
+                addAIResponseMessages(response);
+                isWaitingForResponse = false;
+              }
 
-                      String response = ParseData.sendChatMessage(text, sessionId);
+              public void loadError() {
+                messages.removeElementAt(messages.size() - 1);
+                addAIMessage(I18N.tr("error_connect"));
+                isWaitingForResponse = false;
+              }
 
-                      addAIResponseMessages(response);
-                    } catch (Exception e) {
-
-                      messages.removeElementAt(messages.size() - 1);
-                      addAIMessage(I18N.tr("error_connect"));
-                    } finally {
-                      isWaitingForResponse = false;
-                    }
-                  }
-                });
-        this.mLoaDataThread.start();
+              public void noData() {
+                messages.removeElementAt(messages.size() - 1);
+                addAIMessage(I18N.tr("error_connect"));
+                isWaitingForResponse = false;
+              }
+            },
+            this.mLoadDataThread);
       }
       MIDPlay.getInstance().getDisplay().setCurrent(previousDisplay);
     } else if (d == inputBox && c.getCommandType() == Command.CANCEL) {
@@ -806,8 +830,8 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
 
   public void quit() {
     try {
-      if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
-        this.mLoaDataThread.join();
+      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
+        this.mLoadDataThread.join();
       }
       this.sessionId = null;
     } catch (InterruptedException var2) {

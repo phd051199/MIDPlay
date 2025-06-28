@@ -1,6 +1,9 @@
 package app.ui;
 
+import app.common.Common;
 import app.common.ParseData;
+import app.interfaces.DataLoader;
+import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
 import app.model.Playlist;
 import app.utils.I18N;
@@ -24,7 +27,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   private String keyWord = "";
   private String searchType = "playlist";
   private Utils.BreadCrumbTrail observer;
-  Thread mLoaDataThread;
+  Thread mLoadDataThread;
 
   public SearchForm(String title) {
     super(title);
@@ -77,64 +80,59 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
         break;
     }
     this.displayMessage(I18N.tr("search_hint") + ": " + keyword, I18N.tr("loading"), "loading");
-    this.mLoaDataThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
+    Common.loadDataAsync(
+        new DataLoader() {
+          public Vector load() throws Exception {
+            if (SearchForm.this.searchType.equals("track")) {
+              return ParseData.parseSearchTracks(SearchForm.this.keyWord);
+            } else {
+              return ParseData.parseSearch(
+                  "", SearchForm.this.keyWord, curPage, perPage, searchType);
+            }
+          }
+        },
+        new LoadDataListener() {
+          public void loadDataCompleted(Vector listItems) {
 
-                if (SearchForm.this.searchType.equals("track")) {
-                  Vector listItems = ParseData.parseSearchTracks(SearchForm.this.keyWord);
+            if (SearchForm.this.searchType.equals("track")) {
+              String searchResultsTitle =
+                  I18N.tr("search_results") + ": " + SearchForm.this.keyWord;
+              Playlist searchPlaylist = new Playlist();
+              searchPlaylist.setName(searchResultsTitle);
+              searchPlaylist.setId("search");
 
-                  if (listItems == null) {
-                    SearchForm.this.displayMessage("", I18N.tr("connection_error"), "error");
-                  } else if (listItems.isEmpty()) {
-                    MainList.displayMessage(
-                        I18N.tr("search"),
-                        I18N.tr("no_results"),
-                        "error",
-                        SearchForm.this.observer,
-                        SearchForm.this);
-                  } else {
-                    String searchResultsTitle =
-                        I18N.tr("search_results") + ": " + SearchForm.this.keyWord;
-                    Playlist searchPlaylist = new Playlist();
-                    searchPlaylist.setName(searchResultsTitle);
-                    searchPlaylist.setId("search");
+              SongList songList = new SongList(searchResultsTitle, listItems, searchPlaylist);
+              songList.setObserver(SearchForm.this.observer);
+              SearchForm.this.observer.replaceCurrent(songList);
+            } else {
+              String searchResultsTitle =
+                  I18N.tr("search_results") + ": " + SearchForm.this.keyWord;
+              PlaylistList playlistList =
+                  new PlaylistList(
+                      searchResultsTitle,
+                      listItems,
+                      "search",
+                      SearchForm.this.keyWord,
+                      SearchForm.this.searchType);
+              playlistList.setObserver(SearchForm.this.observer);
+              SearchForm.this.observer.replaceCurrent(playlistList);
+            }
+          }
 
-                    SongList songList = new SongList(searchResultsTitle, listItems, searchPlaylist);
-                    songList.setObserver(SearchForm.this.observer);
-                    SearchForm.this.observer.replaceCurrent(songList);
-                  }
-                } else {
-                  Vector listItems =
-                      ParseData.parseSearch(
-                          "", SearchForm.this.keyWord, curPage, perPage, searchType);
-                  if (listItems == null) {
-                    SearchForm.this.displayMessage("", I18N.tr("connection_error"), "error");
-                  } else if (listItems.isEmpty()) {
-                    MainList.displayMessage(
-                        I18N.tr("search"),
-                        I18N.tr("no_results"),
-                        "error",
-                        SearchForm.this.observer,
-                        SearchForm.this);
-                  } else {
-                    String searchResultsTitle =
-                        I18N.tr("search_results") + ": " + SearchForm.this.keyWord;
-                    PlaylistList playlistList =
-                        new PlaylistList(
-                            searchResultsTitle,
-                            listItems,
-                            "search",
-                            SearchForm.this.keyWord,
-                            SearchForm.this.searchType);
-                    playlistList.setObserver(SearchForm.this.observer);
-                    SearchForm.this.observer.replaceCurrent(playlistList);
-                  }
-                }
-              }
-            });
-    this.mLoaDataThread.start();
+          public void loadError() {
+            SearchForm.this.displayMessage("", I18N.tr("connection_error"), "error");
+          }
+
+          public void noData() {
+            MainList.displayMessage(
+                I18N.tr("search"),
+                I18N.tr("no_results"),
+                "error",
+                SearchForm.this.observer,
+                SearchForm.this);
+          }
+        },
+        this.mLoadDataThread);
   }
 
   private void displayMessage(String title, String message, String messageType) {
@@ -157,8 +155,8 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
 
   public void quit() {
     try {
-      if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
-        this.mLoaDataThread.join();
+      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
+        this.mLoadDataThread.join();
       }
     } catch (InterruptedException var2) {
     }

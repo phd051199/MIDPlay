@@ -1,6 +1,9 @@
 package app.ui.category;
 
+import app.common.Common;
 import app.common.ParseData;
+import app.interfaces.DataLoader;
+import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
 import app.model.Category;
 import app.ui.MainList;
@@ -25,7 +28,7 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
   public int selectedItem = 0;
   Vector cateItems;
   private Utils.BreadCrumbTrail observer;
-  Thread mLoaDataThread;
+  Thread mLoadDataThread;
   private Image defaultImage;
 
   public CategoryList(String title, Vector items) {
@@ -114,25 +117,29 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
 
   private void gotoPlaylistByCate(final String genKey, final int curPage, final int perPage) {
     this.displayMessage(I18N.tr("loading"), "loading");
-    this.mLoaDataThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
-                Vector listItems = ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
-                if (listItems == null) {
-                  CategoryList.this.displayMessage(I18N.tr("connection_error"), "error");
-                } else if (listItems.isEmpty()) {
-                  CategoryList.this.displayMessage(I18N.tr("no_data"), "error");
-                } else {
-                  PlaylistList playlistList =
-                      new PlaylistList(I18N.tr("genres"), listItems, "genre", "", "playlist");
+    Common.loadDataAsync(
+        new DataLoader() {
+          public Vector load() throws Exception {
+            return ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
+          }
+        },
+        new LoadDataListener() {
+          public void loadDataCompleted(Vector listItems) {
+            PlaylistList playlistList =
+                new PlaylistList(I18N.tr("genres"), listItems, "genre", "", "playlist");
+            playlistList.setObserver(CategoryList.this.observer);
+            CategoryList.this.observer.replaceCurrent(playlistList);
+          }
 
-                  playlistList.setObserver(CategoryList.this.observer);
-                  CategoryList.this.observer.replaceCurrent(playlistList);
-                }
-              }
-            });
-    this.mLoaDataThread.start();
+          public void loadError() {
+            CategoryList.this.displayMessage(I18N.tr("connection_error"), "error");
+          }
+
+          public void noData() {
+            CategoryList.this.displayMessage(I18N.tr("no_data"), "error");
+          }
+        },
+        this.mLoadDataThread);
   }
 
   private void displayMessage(String message, String messageType) {
@@ -145,8 +152,8 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
 
   public void quit() {
     try {
-      if (this.mLoaDataThread != null && this.mLoaDataThread.isAlive()) {
-        this.mLoaDataThread.join();
+      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
+        this.mLoadDataThread.join();
       }
     } catch (InterruptedException var2) {
     }
