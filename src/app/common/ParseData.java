@@ -232,5 +232,13 @@ public class ParseData {
     }
   }
 
+  public static String checkForUpdate() {
+    try {
+      return client.get(URLProvider.checkForUpdate());
+    } catch (IOException var6) {
+      return "";
+    }
+  }
+
   private ParseData() {}
 }

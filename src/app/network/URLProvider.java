@@ -6,6 +6,19 @@ import app.utils.I18N;
 import app.utils.TextUtil;
 
 public class URLProvider {
+  public static String checkForUpdate() {
+    String client = Constants.SERVICE_URL + "/update?";
+    if (client != null) {
+      try {
+        client = client + "version=" + Constants.APP_VERSION;
+        return client;
+      } catch (Exception var5) {
+      }
+    }
+
+    return null;
+  }
+
   public static String getBillboard(int pageIndex, int pageSize) {
     String client = Constants.SERVICE_URL + "/charts?";
     if (client != null) {

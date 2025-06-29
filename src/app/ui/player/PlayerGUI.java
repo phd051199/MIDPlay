@@ -18,8 +18,6 @@ import javax.microedition.media.PlayerListener;
 import javax.microedition.media.control.VolumeControl;
 
 public class PlayerGUI implements PlayerListener {
-
-  private int currentVolumeLevel = -1;
   private static int playerHttpMethod = 1; // 0 - pass url, 1 - pass connection stream
   // platform
   private static boolean symbianJrt;
@@ -93,6 +91,8 @@ public class PlayerGUI implements PlayerListener {
       return false;
     }
   }
+
+  private int currentVolumeLevel = -1;
 
   private int timerInterval = 500;
   private Timer guiTimer = null;
