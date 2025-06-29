@@ -3,16 +3,11 @@ package app.utils;
 import app.model.Song;
 import app.ui.MainList;
 import app.utils.Utils.BreadCrumbTrail;
-import java.io.IOException;
-import java.io.InputStream;
-import javax.microedition.lcdui.Alert;
-import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.TextBox;
-import javax.microedition.media.MediaException;
 
 public class Utils {
 
@@ -73,50 +68,6 @@ public class Utils {
     }
   }
 
-  public static void debugOut(String s) {
-    if (DEBUG) {}
-  }
-
-  public static void debugOut(Throwable t) {
-    if (DEBUG) {}
-    if (DEBUG) {}
-  }
-
-  public static void error(Throwable t, Utils.BreadCrumbTrail bct) {
-
-    if (DEBUG) {}
-    error(friendlyException(t), bct);
-  }
-
-  public static void error(String s, Utils.BreadCrumbTrail bct) {
-    Alert alert = new Alert(I18N.tr("error"), s, null, AlertType.ERROR);
-    alert.setTimeout(-2);
-    bct.replaceCurrent(alert);
-  }
-
-  public static String friendlyException(Throwable t) {
-    if (t instanceof MediaException && t.getMessage().indexOf(' ') > 5) {
-      return t.getMessage();
-    } else {
-      String s = t.toString();
-      while (true) {
-        int dot = s.indexOf('.');
-        int space = s.indexOf(' ');
-        if (space < 0) {
-          space = s.length();
-        }
-        int colon = s.indexOf(':');
-        if (colon < 0) {
-          colon = s.length();
-        }
-        if (dot < 0 || dot >= space || dot >= colon) {
-          return s;
-        }
-        s = s.substring(dot + 1);
-      }
-    }
-  }
-
   public static Image[] loadMainMenuIcons(String service) {
     String[] icons = service.equals("nct") ? MAIN_MENU_ICONS_NCT : MAIN_MENU_ICONS_SOUNDCLOUD;
     Image[] images = new Image[icons.length];
@@ -147,32 +98,6 @@ public class Utils {
     return mainMenu;
   }
 
-  public static byte[] readBytes(
-      InputStream inputStream, int initialSize, int bufferSize, int expandSize) throws IOException {
-    if (initialSize <= 0) {
-      initialSize = bufferSize;
-    }
-    byte[] buf = new byte[initialSize];
-    int count = 0;
-    byte[] readBuf = new byte[bufferSize];
-    int readLen;
-    while ((readLen = inputStream.read(readBuf)) != -1) {
-      if (count + readLen > buf.length) {
-        byte[] newbuf = new byte[count + expandSize];
-        System.arraycopy(buf, 0, newbuf, 0, count);
-        buf = newbuf;
-      }
-      System.arraycopy(readBuf, 0, buf, count, readLen);
-      count += readLen;
-    }
-    if (buf.length == count) {
-      return buf;
-    }
-    byte[] res = new byte[count];
-    System.arraycopy(buf, 0, res, 0, count);
-    return res;
-  }
-
   private Utils() {}
 
   public static class QueryTask implements CommandListener, Runnable {
@@ -193,17 +118,12 @@ public class Utils {
     }
 
     public void commandAction(Command c, Displayable s) {
-      if (this.queryBCT != null) {
-        Utils.debugOut("Utils.commandAction: goBack()");
-      }
 
       if (c == cancelCommand) {
-        Utils.debugOut("Command: cancel");
         if (this.queryListener != null) {
           this.queryListener.queryCancelled();
         }
       } else if (c == OKCommand) {
-        Utils.debugOut("Command: OK");
         if (this.queryListener != null) {
           queryText = "";
           if (s instanceof TextBox) {

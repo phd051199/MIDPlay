@@ -1,6 +1,6 @@
 package app.common;
 
-import app.utils.Utils;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import javax.microedition.io.Connector;
@@ -9,6 +9,7 @@ import javax.microedition.io.HttpConnection;
 public class RestClient {
 
   private static final int MAX_REDIRECT_TIMES = 5;
+  private static String USER_AGENT;
   private static RestClient instance;
 
   public static RestClient getInstance() {
@@ -18,13 +19,43 @@ public class RestClient {
     return instance;
   }
 
-  private static void configureConnection(HttpConnection conn) throws IOException {
-    String platform = System.getProperty("microedition.platform");
-    if (platform == null) {
-      platform = "GenericJ2ME";
+  private static String getUserAgent() {
+    if (USER_AGENT == null) {
+      USER_AGENT = System.getProperty("microedition.platform");
+      if (USER_AGENT == null) {
+        USER_AGENT = "GenericJ2ME";
+      }
+      USER_AGENT += "/1.0 (MIDP-2.0; CLDC-1.1)";
     }
-    String userAgent = platform + "/1.0 (MIDP-2.0; CLDC-1.1)";
-    conn.setRequestProperty("User-Agent", userAgent);
+    return USER_AGENT;
+  }
+
+  private static byte[] readAllBytes(InputStream in, int contentLength) throws IOException {
+    if (contentLength > 0) {
+      byte[] data = new byte[contentLength];
+      int offset = 0;
+      while (offset < contentLength) {
+        int read = in.read(data, offset, contentLength - offset);
+        if (read == -1) {
+          break;
+        }
+        offset += read;
+      }
+      if (offset == contentLength) {
+        return data;
+      }
+      byte[] trimmed = new byte[offset];
+      System.arraycopy(data, 0, trimmed, 0, offset);
+      return trimmed;
+    } else {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream(2048);
+      byte[] buffer = new byte[1024];
+      int read;
+      while ((read = in.read(buffer)) != -1) {
+        baos.write(buffer, 0, read);
+      }
+      return baos.toByteArray();
+    }
   }
 
   private RestClient() {}
@@ -35,9 +66,9 @@ public class RestClient {
 
     while (redirectCount < MAX_REDIRECT_TIMES) {
       conn = (HttpConnection) Connector.open(url, Connector.READ_WRITE);
-      configureConnection(conn);
       conn.setRequestMethod(HttpConnection.GET);
       conn.setRequestProperty("Accept", "*/*");
+      conn.setRequestProperty("User-Agent", getUserAgent());
 
       int status = conn.getResponseCode();
 
@@ -73,7 +104,7 @@ public class RestClient {
 
       inputStream = hcon.openInputStream();
       int contentLength = (int) hcon.getLength();
-      return Utils.readBytes(inputStream, contentLength, 1024, 2048);
+      return readAllBytes(inputStream, contentLength);
 
     } finally {
       try {

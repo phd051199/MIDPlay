@@ -18,6 +18,7 @@ public class Song implements JSONAble {
   private int downloadStatus = -1;
   private String filePath = "";
   private int duration = 0;
+  private String image = "";
 
   public void setSongId(String songId) {
     this.songId = songId;
@@ -118,6 +119,14 @@ public class Song implements JSONAble {
     return result;
   }
 
+  public void setImage(String image) {
+    this.image = image;
+  }
+
+  public String getImage() {
+    return this.image;
+  }
+
   public JSONObject toJSON() {
     JSONObject json = new JSONObject();
     try {
@@ -130,6 +139,7 @@ public class Song implements JSONAble {
       json.put("genreName", this.genreName);
       json.put("filePath", this.filePath);
       json.put("duration", this.duration);
+      json.put("image", this.image);
     } catch (Exception e) {
     }
     return json;
@@ -142,6 +152,7 @@ public class Song implements JSONAble {
       this.setStreamUrl(json.getString("Url"));
       this.setArtistName(json.getString("Singer"));
       this.setDuration(json.getInt("Duration"));
+      this.setImage(json.getString("Image"));
     } catch (Exception var3) {
     }
   }

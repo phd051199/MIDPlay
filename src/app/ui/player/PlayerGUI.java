@@ -19,10 +19,12 @@ import javax.microedition.media.control.VolumeControl;
 
 public class PlayerGUI implements PlayerListener {
 
+  private int currentVolumeLevel = -1;
   private static int playerHttpMethod = 1; // 0 - pass url, 1 - pass connection stream
   // platform
   private static boolean symbianJrt;
   private static boolean symbian;
+  private static String prevStatus;
 
   // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
   public static void setPlayerHttpMethod() {
@@ -95,6 +97,7 @@ public class PlayerGUI implements PlayerListener {
   private int timerInterval = 500;
   private Timer guiTimer = null;
   private TimerTask timeDisplayTask = null;
+  private TimerTask volumeStatusTask = null;
   private PlayerCanvas parent;
   private Player player = null;
   Vector listSong = null;
@@ -209,6 +212,8 @@ public class PlayerGUI implements PlayerListener {
     try {
       String playUrl;
       Song s = (Song) this.listSong.elementAt(this.index);
+      this.parent.setAlbumArtUrl(s.getImage());
+
       if (playerHttpMethod == 1) {
         HttpConnection httpConn = null;
         InputStream inputStream = null;
@@ -246,6 +251,11 @@ public class PlayerGUI implements PlayerListener {
       this.player.realize();
       this.player.prefetch();
       this.parent.setupDisplay();
+
+      VolumeControl vc = getVolumeControl();
+      if (vc != null && currentVolumeLevel >= 0) {
+        vc.setLevel(currentVolumeLevel);
+      }
     } catch (Throwable var2) {
       this.player = null;
       this.setStatus(var2.toString());
@@ -389,11 +399,47 @@ public class PlayerGUI implements PlayerListener {
     }
 
     VolumeControl vc = this.getVolumeControl();
+
     if (vc != null) {
+      if (!this.parent.getStatus().startsWith(I18N.tr("volume"))) {
+        prevStatus = this.parent.getStatus();
+      }
+
       int cv = vc.getLevel();
+      if (!decrease && cv == 100) {
+        this.setVolumeStatus(cv);
+        return;
+      }
+      if (decrease && cv == 0) {
+        this.setVolumeStatus(cv);
+        return;
+      }
+
       cv += diff;
       vc.setLevel(cv);
+      currentVolumeLevel = cv;
+
+      this.setVolumeStatus(cv);
     }
+  }
+
+  private void setVolumeStatus(int cv) {
+    this.parent.setStatus(I18N.tr("volume") + ": " + cv);
+
+    if (volumeStatusTask != null) {
+      volumeStatusTask.cancel();
+      volumeStatusTask = null;
+    }
+    if (this.guiTimer == null) {
+      this.guiTimer = new Timer();
+    }
+    volumeStatusTask =
+        new TimerTask() {
+          public void run() {
+            parent.setStatus(prevStatus);
+          }
+        };
+    this.guiTimer.schedule(volumeStatusTask, 1000);
   }
 
   private synchronized void startDisplayTimer() {

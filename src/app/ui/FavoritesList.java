@@ -187,7 +187,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
                   });
         }
         try {
-          Thread.sleep(200);
+          Thread.sleep(100);
         } catch (InterruptedException e) {
           break;
         }
