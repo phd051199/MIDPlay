@@ -3,10 +3,6 @@ package app.common;
 import app.constants.PlayerHttpMethod;
 
 public class PlayerMethod {
-  private static int playerHttpMethod = PlayerHttpMethod.NONE;
-  // platform
-  private static boolean symbianJrt;
-  private static boolean symbian;
 
   private static boolean checkClass(String s) {
     try {
@@ -18,7 +14,12 @@ public class PlayerMethod {
   }
 
   // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
-  public static void setPlayerHttpMethod() {
+  public static int getPlayerHttpMethod() {
+    int playerHttpMethod = PlayerHttpMethod.NONE;
+    // platform
+    boolean symbianJrt = false;
+    boolean symbian = false;
+
     String p, v;
     if ((p = System.getProperty("microedition.platform")) != null) {
       if ((symbianJrt = p.indexOf("platform=S60") != -1)) {
@@ -75,12 +76,7 @@ public class PlayerMethod {
         }
       }
     }
-  }
 
-  public static int getPlayerHttpMethod() {
-    if (playerHttpMethod == PlayerHttpMethod.NONE) {
-      setPlayerHttpMethod();
-    }
     return playerHttpMethod;
   }
 

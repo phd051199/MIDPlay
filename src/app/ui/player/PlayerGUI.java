@@ -4,8 +4,10 @@ import app.common.AudioFileConnector;
 import app.common.PlayerMethod;
 import app.common.RestClient;
 import app.common.SettingManager;
+import app.constants.PlayerHttpMethod;
 import app.model.Song;
 import app.utils.I18N;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Timer;
@@ -47,8 +49,6 @@ public class PlayerGUI implements PlayerListener {
     this.parent = parent;
     this.setStatus("");
     this.guiTimer = new Timer();
-    this.tempFile = AudioFileConnector.getInstance();
-    this.playerHttpMethod = PlayerMethod.getPlayerHttpMethod();
   }
 
   public void setListSong(Vector lst, int index) {
@@ -142,65 +142,55 @@ public class PlayerGUI implements PlayerListener {
 
   private void assertPlayer() throws Throwable {
     this.setStatus(I18N.tr("loading"));
+    this.playerHttpMethod = PlayerMethod.getPlayerHttpMethod();
 
     if (SettingManager.getInstance().getCurrentService().equals("soundcloud")) {
-      if (playerHttpMethod == 0) {
-        playerHttpMethod = 2;
+      if (this.playerHttpMethod == PlayerHttpMethod.PASS_URL) {
+        this.playerHttpMethod = PlayerHttpMethod.PASS_CONNECTION_STREAM;
       }
     }
 
     Song s = (Song) this.listSong.elementAt(this.index);
 
-    if (inputStream != null) {
-      inputStream.close();
-      inputStream = null;
-    }
-    if (outputStream != null) {
-      outputStream.close();
-      outputStream = null;
-    }
-    if (httpConn != null) {
-      httpConn.close();
-      httpConn = null;
-    }
-    playUrl = null;
-
     try {
       this.parent.setAlbumArtUrl(s.getImage());
 
-      if (playerHttpMethod == 1) {
-        httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
-        inputStream = httpConn.openInputStream();
+      if (this.playerHttpMethod == PlayerHttpMethod.SAVE_TO_FILE) {
+        this.tempFile = AudioFileConnector.getInstance();
+
+        this.httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
+        this.inputStream = this.httpConn.openInputStream();
 
         this.tempFile.clear();
-        outputStream = this.tempFile.openOutputStream();
+        this.outputStream = this.tempFile.openOutputStream();
 
         byte[] buffer = new byte[8192];
         int bytesRead;
-        while ((bytesRead = inputStream.read(buffer)) != -1) {
-          outputStream.write(buffer, 0, bytesRead);
+        while ((bytesRead = this.inputStream.read(buffer)) != -1) {
+          this.outputStream.write(buffer, 0, bytesRead);
         }
 
-        playUrl = this.tempFile.getFilePath();
+        this.outputStream.close();
+        this.playUrl = this.tempFile.getFilePath();
 
-        this.player = Manager.createPlayer(playUrl);
-      } else if (playerHttpMethod == 2) {
-        httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
-        inputStream = httpConn.openInputStream();
+        this.player = Manager.createPlayer(this.playUrl);
+      } else if (this.playerHttpMethod == PlayerHttpMethod.PASS_CONNECTION_STREAM) {
+        this.httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
+        this.inputStream = this.httpConn.openInputStream();
 
-        this.player = Manager.createPlayer(inputStream, "audio/mpeg");
+        this.player = Manager.createPlayer(this.inputStream, "audio/mpeg");
       } else {
-        playUrl = s.getStreamUrl();
-        this.player = Manager.createPlayer(playUrl);
+        this.playUrl = s.getStreamUrl();
+        this.player = Manager.createPlayer(this.playUrl);
       }
       this.player.addPlayerListener(this);
       this.player.realize();
       this.player.prefetch();
       this.parent.setupDisplay();
 
-      VolumeControl vc = getVolumeControl();
-      if (vc != null && currentVolumeLevel >= 0) {
-        vc.setLevel(currentVolumeLevel);
+      VolumeControl vc = this.getVolumeControl();
+      if (vc != null && this.currentVolumeLevel >= 0) {
+        vc.setLevel(this.currentVolumeLevel);
       }
     } catch (Throwable error) {
       this.player = null;
@@ -301,10 +291,33 @@ public class PlayerGUI implements PlayerListener {
     }
     if (this.tempFile != null) {
       this.tempFile.close();
+      this.tempFile = null;
     }
     if (this.guiTimer != null) {
       this.guiTimer.cancel();
       this.guiTimer = null;
+    }
+
+    if (this.inputStream != null) {
+      try {
+        this.inputStream.close();
+      } catch (IOException e) {
+      }
+      this.inputStream = null;
+    }
+    if (this.outputStream != null) {
+      try {
+        this.outputStream.close();
+      } catch (IOException e) {
+      }
+      this.outputStream = null;
+    }
+    if (this.httpConn != null) {
+      try {
+        this.httpConn.close();
+      } catch (IOException e) {
+      }
+      this.httpConn = null;
     }
   }
 
