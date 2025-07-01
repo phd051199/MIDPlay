@@ -26,7 +26,7 @@ public class AudioFileConnector {
       return;
     }
     String privateDir = System.getProperty("fileconn.dir.private");
-    filePath = privateDir + "temp_audio.mp3";
+    filePath = privateDir + "temp.mp3";
     fileConn = (FileConnection) Connector.open(filePath, Connector.READ_WRITE);
     if (fileConn.exists()) {
       fileConn.delete();
