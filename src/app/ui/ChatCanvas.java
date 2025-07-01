@@ -430,14 +430,9 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
 
     String textToRender = text;
     if (isClickable) {
-      if (textToRender.startsWith("[")) {
-        textToRender = textToRender.substring(1);
-      }
-      if (textToRender.endsWith("].")) {
-        textToRender = textToRender.substring(0, textToRender.length() - 2);
-      } else if (textToRender.endsWith("]")) {
-        textToRender = textToRender.substring(0, textToRender.length() - 1);
-      }
+      textToRender = Common.replace(textToRender, "[", "");
+      textToRender = Common.replace(textToRender, "].", "");
+      textToRender = Common.replace(textToRender, "]", "");
     }
 
     Vector wrappedLines =

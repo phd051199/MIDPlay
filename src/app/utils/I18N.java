@@ -7,13 +7,24 @@ import javax.microedition.midlet.MIDlet;
 
 public class I18N {
   private static final Hashtable resources = new Hashtable();
-  private static String currentLanguage =
-      System.getProperty("microedition.locale").startsWith("vi") ? "vi" : "en";
+  private static String currentLanguage;
   private static MIDlet midlet;
 
   public static void initialize(MIDlet midlet) {
     I18N.midlet = midlet;
+    setDefaultLanguage();
     loadLanguage(currentLanguage);
+  }
+
+  public static void setDefaultLanguage() {
+    String locale = System.getProperty("microedition.locale");
+    if (locale.startsWith("vi")) {
+      currentLanguage = "vi";
+    } else if (locale.startsWith("tr")) {
+      currentLanguage = "tr";
+    } else {
+      currentLanguage = "en";
+    }
   }
 
   public static void setLanguage(String language) {
@@ -79,7 +90,7 @@ public class I18N {
 
   public static String[] getLanguages() {
 
-    return new String[] {"en", "vi"};
+    return new String[] {"en", "vi", "tr"};
   }
 
   private static String[] split(String str, char delimiter) {
@@ -104,6 +115,9 @@ public class I18N {
   public static String getLanguageName(String languageCode) {
     if ("vi".equals(languageCode)) {
       return tr("language_vi");
+    }
+    if ("tr".equals(languageCode)) {
+      return tr("language_tr");
     }
     return tr("language_en");
   }

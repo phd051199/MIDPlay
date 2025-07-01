@@ -104,19 +104,19 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
     this.backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
     this.saveCommand = new Command(I18N.tr("save"), Command.SCREEN, 2);
 
-    languageChoice = new ChoiceGroup(I18N.tr("language"), Choice.EXCLUSIVE);
+    languageChoice = new ChoiceGroup(I18N.tr("language"), Choice.POPUP);
     String[] languages = I18N.getLanguages();
     for (int i = 0; i < languages.length; i++) {
       languageChoice.append(I18N.getLanguageName(languages[i]), null);
     }
 
-    audioQualityChoice = new ChoiceGroup(I18N.tr("audio_quality"), Choice.EXCLUSIVE);
+    audioQualityChoice = new ChoiceGroup(I18N.tr("audio_quality"), Choice.POPUP);
     String[] audioQualities = settingManager.getAudioQualities();
     for (int i = 0; i < audioQualities.length; i++) {
       audioQualityChoice.append(audioQualities[i], null);
     }
 
-    serviceChoice = new ChoiceGroup(I18N.tr("service"), Choice.EXCLUSIVE);
+    serviceChoice = new ChoiceGroup(I18N.tr("service"), Choice.POPUP);
     String[] services = settingManager.getAvailableServices();
     for (int i = 0; i < services.length; i++) {
       serviceChoice.append(services[i], null);

@@ -1,6 +1,7 @@
 package app.ui.player;
 
 import app.common.AudioFileConnector;
+import app.common.PlayerMethod;
 import app.common.RestClient;
 import app.common.SettingManager;
 import app.model.Song;
@@ -18,79 +19,8 @@ import javax.microedition.media.PlayerListener;
 import javax.microedition.media.control.VolumeControl;
 
 public class PlayerGUI implements PlayerListener {
-  private static int playerHttpMethod = 1; // 0 - pass url, 1 - pass connection stream
-  // platform
-  private static boolean symbianJrt;
-  private static boolean symbian;
+
   private static String prevStatus;
-
-  // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
-  public static void setPlayerHttpMethod() {
-    String p, v;
-    if ((p = System.getProperty("microedition.platform")) != null) {
-      if ((symbianJrt = p.indexOf("platform=S60") != -1)) {
-        int i;
-        v = p.substring(i = p.indexOf("platform_version=") + 17, i = p.indexOf(';', i));
-      }
-
-      try {
-        Class.forName("emulator.custom.CustomMethod");
-        p = "KEmulator";
-        if ((v = System.getProperty("kemulator.mod.version")) != null) {
-          p = p.concat(" ".concat(v));
-        }
-      } catch (Exception e) {
-        int i;
-
-        if ((i = p.indexOf('/')) != -1 || (i = p.indexOf(' ')) != -1) {
-          p = p.substring(0, i);
-        }
-      }
-    }
-    symbian =
-        symbianJrt
-            || System.getProperty("com.symbian.midp.serversocket.support") != null
-            || System.getProperty("com.symbian.default.to.suite.icon") != null
-            || checkClass("com.symbian.midp.io.protocol.http.Protocol")
-            || checkClass("com.symbian.lcdjava.io.File");
-
-    // check media capabilities
-    try {
-      // s40 check
-      Class.forName("com.nokia.mid.impl.isa.jam.Jam");
-      try {
-        Class.forName("com.sun.mmedia.protocol.CommonDS");
-        // s40v1 uses sun impl for media and i/o so it should work fine
-        playerHttpMethod = 0;
-      } catch (Exception e) {
-        // s40v2+ breaks http locator parsing
-        playerHttpMethod = 1;
-      }
-    } catch (Exception e) {
-      playerHttpMethod = 0;
-      if (symbian) {
-        if (symbianJrt
-            && (p.indexOf("java_build_version=2.") != -1
-                || p.indexOf("java_build_version=1.4") != -1)) {
-          // emc (s60v5+), supports mp3 streaming
-        } else if (checkClass("com.symbian.mmapi.PlayerImpl")) {
-          // uiq
-        } else {
-          // mmf (s60v3.2-)
-          // playerHttpMethod = 1;
-        }
-      }
-    }
-  }
-
-  private static boolean checkClass(String s) {
-    try {
-      Class.forName(s);
-      return true;
-    } catch (Exception e) {
-      return false;
-    }
-  }
 
   private int currentVolumeLevel = -1;
 
@@ -106,13 +36,19 @@ public class PlayerGUI implements PlayerListener {
   private boolean isTransitioning = false;
 
   private AudioFileConnector tempFile;
+  private int playerHttpMethod;
+
+  HttpConnection httpConn = null;
+  InputStream inputStream = null;
+  OutputStream outputStream = null;
+  String playUrl;
 
   public PlayerGUI(PlayerCanvas parent) {
     this.parent = parent;
     this.setStatus("");
     this.guiTimer = new Timer();
     this.tempFile = AudioFileConnector.getInstance();
-    setPlayerHttpMethod();
+    this.playerHttpMethod = PlayerMethod.getPlayerHttpMethod();
   }
 
   public void setListSong(Vector lst, int index) {
@@ -206,47 +142,57 @@ public class PlayerGUI implements PlayerListener {
 
   private void assertPlayer() throws Throwable {
     this.setStatus(I18N.tr("loading"));
+
     if (SettingManager.getInstance().getCurrentService().equals("soundcloud")) {
-      playerHttpMethod = 1;
+      if (playerHttpMethod == 0) {
+        playerHttpMethod = 2;
+      }
     }
+
+    Song s = (Song) this.listSong.elementAt(this.index);
+
+    if (inputStream != null) {
+      inputStream.close();
+      inputStream = null;
+    }
+    if (outputStream != null) {
+      outputStream.close();
+      outputStream = null;
+    }
+    if (httpConn != null) {
+      httpConn.close();
+      httpConn = null;
+    }
+    playUrl = null;
+
     try {
-      String playUrl;
-      Song s = (Song) this.listSong.elementAt(this.index);
       this.parent.setAlbumArtUrl(s.getImage());
 
       if (playerHttpMethod == 1) {
-        HttpConnection httpConn = null;
-        InputStream inputStream = null;
-        OutputStream outputStream = null;
-        try {
-          httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
-          inputStream = httpConn.openInputStream();
+        httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
+        inputStream = httpConn.openInputStream();
 
-          this.tempFile.clear();
-          outputStream = this.tempFile.openOutputStream();
+        this.tempFile.clear();
+        outputStream = this.tempFile.openOutputStream();
 
-          byte[] buffer = new byte[8192];
-          int bytesRead;
-          while ((bytesRead = inputStream.read(buffer)) != -1) {
-            outputStream.write(buffer, 0, bytesRead);
-          }
-
-          playUrl = this.tempFile.getFilePath();
-        } finally {
-          if (outputStream != null) {
-            outputStream.close();
-          }
-          if (inputStream != null) {
-            inputStream.close();
-          }
-          if (httpConn != null) {
-            httpConn.close();
-          }
+        byte[] buffer = new byte[8192];
+        int bytesRead;
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+          outputStream.write(buffer, 0, bytesRead);
         }
+
+        playUrl = this.tempFile.getFilePath();
+
+        this.player = Manager.createPlayer(playUrl);
+      } else if (playerHttpMethod == 2) {
+        httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
+        inputStream = httpConn.openInputStream();
+
+        this.player = Manager.createPlayer(inputStream, "audio/mpeg");
       } else {
         playUrl = s.getStreamUrl();
+        this.player = Manager.createPlayer(playUrl);
       }
-      this.player = Manager.createPlayer(playUrl);
       this.player.addPlayerListener(this);
       this.player.realize();
       this.player.prefetch();
@@ -256,9 +202,9 @@ public class PlayerGUI implements PlayerListener {
       if (vc != null && currentVolumeLevel >= 0) {
         vc.setLevel(currentVolumeLevel);
       }
-    } catch (Throwable var2) {
+    } catch (Throwable error) {
       this.player = null;
-      this.setStatus(var2.toString());
+      this.setStatus(error.toString());
     }
   }
 
