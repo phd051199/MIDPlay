@@ -5,6 +5,7 @@ import app.common.ParseData;
 import app.common.PlayerMethod;
 import app.common.SettingManager;
 import app.constants.Constants;
+import app.constants.PlayerHttpMethod;
 import app.interfaces.Observer;
 import app.model.Song;
 import app.ui.MainList;
@@ -55,7 +56,7 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
       Constants.APP_VERSION = (version != null) ? version : "1.0.0";
       I18N.initialize(this);
       SettingForm.populateFormWithSettings();
-      if (PlayerMethod.getPlayerHttpMethod() == 1) {
+      if (PlayerMethod.getPlayerHttpMethod() == PlayerHttpMethod.SAVE_TO_FILE) {
         AudioFileConnector.getInstance().initialize();
       }
     } catch (Exception e) {

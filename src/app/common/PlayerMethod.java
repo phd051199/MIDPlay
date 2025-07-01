@@ -1,8 +1,9 @@
 package app.common;
 
+import app.constants.PlayerHttpMethod;
+
 public class PlayerMethod {
-  private static int playerHttpMethod =
-      -1; // 0 - pass url, 1 - save to file, 2 - pass connection stream
+  private static int playerHttpMethod = PlayerHttpMethod.NONE;
   // platform
   private static boolean symbianJrt;
   private static boolean symbian;
@@ -53,13 +54,13 @@ public class PlayerMethod {
       try {
         Class.forName("com.sun.mmedia.protocol.CommonDS");
         // s40v1 uses sun impl for media and i/o so it should work fine
-        playerHttpMethod = 0;
+        playerHttpMethod = PlayerHttpMethod.PASS_URL;
       } catch (Exception e) {
         // s40v2+ breaks http locator parsing
-        playerHttpMethod = 1;
+        playerHttpMethod = PlayerHttpMethod.SAVE_TO_FILE;
       }
     } catch (Exception e) {
-      playerHttpMethod = 0;
+      playerHttpMethod = PlayerHttpMethod.PASS_URL;
       if (symbian) {
         if (symbianJrt
             && (p.indexOf("java_build_version=2.") != -1
@@ -67,19 +68,21 @@ public class PlayerMethod {
           // emc (s60v5+), supports mp3 streaming
         } else if (checkClass("com.symbian.mmapi.PlayerImpl")) {
           // uiq
-          playerHttpMethod = 2;
+          playerHttpMethod = PlayerHttpMethod.PASS_CONNECTION_STREAM;
         } else {
           // mmf (s60v3.2-)
-          playerHttpMethod = 2;
+          playerHttpMethod = PlayerHttpMethod.PASS_CONNECTION_STREAM;
         }
       }
     }
   }
 
   public static int getPlayerHttpMethod() {
-    if (playerHttpMethod == -1) {
+    if (playerHttpMethod == PlayerHttpMethod.NONE) {
       setPlayerHttpMethod();
     }
     return playerHttpMethod;
   }
+
+  private PlayerMethod() {}
 }
