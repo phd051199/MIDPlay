@@ -258,7 +258,7 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
     return Display.getDisplay(this);
   }
 
-  private void showErrorAlert(String title, String message) {
+  public void showErrorAlert(String title, String message) {
     Alert alert = new Alert(title, message, null, AlertType.ERROR);
     alert.setTimeout(2000);
     Displayable current = getCurrentDisplayable();

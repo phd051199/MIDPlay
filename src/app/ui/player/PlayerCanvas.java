@@ -14,18 +14,20 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 
-public final class PlayerCanvas extends Canvas implements CommandListener, LoadDataObserver {
+public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObserver {
 
   private static final int PLAYER_STATUS_TOP = 2;
   private static final int SONG_TITLE_GAP = 5;
   private static final int TIME_GAP = 10;
 
   private final Command backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
-  private final Command playCommand = new Command(I18N.tr("play"), Command.OK, 5);
-  private final Command pauseCommand = new Command(I18N.tr("pause"), Command.SCREEN, 1);
-  private final Command stopCommand = new Command(I18N.tr("stop"), Command.SCREEN, 1);
-  private final Command nextCommand = new Command(I18N.tr("next"), Command.SCREEN, 5);
-  private final Command prevCommand = new Command(I18N.tr("previous"), Command.SCREEN, 5);
+  private final Command playCommand = new Command(I18N.tr("play"), Command.OK, 1);
+  private final Command pauseCommand = new Command(I18N.tr("pause"), Command.OK, 2);
+  private final Command nextCommand = new Command(I18N.tr("next"), Command.SCREEN, 3);
+  private final Command prevCommand = new Command(I18N.tr("previous"), Command.SCREEN, 4);
+  private final Command stopCommand = new Command(I18N.tr("stop"), Command.SCREEN, 7);
+  private Command repeatCommand;
+  private Command shuffleCommand;
 
   private String title;
   private PlayerGUI gui;
@@ -65,8 +67,14 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   private int prevButtonY = 0;
   private int nextButtonX = 0;
   private int nextButtonY = 0;
+  private int repeatButtonX = 0;
+  private int repeatButtonY = 0;
+  private int shuffleButtonX = 0;
+  private int shuffleButtonY = 0;
   private final int buttonWidth = 40;
-  private final int buttonHeight = 30;
+  private final int buttonHeight = 40;
+  private final int controlButtonWidth = 40;
+  private final int controlButtonHeight = 40;
 
   private Utils.BreadCrumbTrail observer = null;
   private Playlist playlist;
@@ -78,6 +86,11 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   private Image _imgNext = null;
   private Image _imgBackActive = null;
   private Image _imgNextActive = null;
+  private Image _imgRepeat = null;
+  private Image _imgRepeatOne = null;
+  private Image _imgRepeatOff = null;
+  private Image _imgShuffle = null;
+  private Image _imgShuffleOff = null;
   private Image _albumArt = null;
   private String _albumArtUrl = null;
   private boolean _loadingAlbumArt = false;
@@ -164,6 +177,42 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     return this.gui;
   }
 
+  public void updateRepeatCommand() {
+    if (this.repeatCommand != null) {
+      this.removeCommand(this.repeatCommand);
+    }
+
+    String commandText = "";
+    switch (this.getGUI().getRepeatMode()) {
+      case PlayerGUI.REPEAT_OFF:
+        commandText = I18N.tr("repeat") + ": " + I18N.tr("off");
+        break;
+      case PlayerGUI.REPEAT_ONE:
+        commandText = I18N.tr("repeat") + ": " + I18N.tr("one");
+        break;
+      case PlayerGUI.REPEAT_ALL:
+        commandText = I18N.tr("repeat") + ": " + I18N.tr("all");
+        break;
+    }
+
+    this.repeatCommand = new Command(commandText, Command.SCREEN, 5);
+    this.addCommand(this.repeatCommand);
+  }
+
+  public void updateShuffleCommand() {
+    if (this.shuffleCommand != null) {
+      this.removeCommand(this.shuffleCommand);
+    }
+
+    String commandText =
+        I18N.tr("shuffle")
+            + ": "
+            + (this.getGUI().getShuffleMode() ? I18N.tr("on") : I18N.tr("off"));
+
+    this.shuffleCommand = new Command(commandText, Command.SCREEN, 6);
+    this.addCommand(this.shuffleCommand);
+  }
+
   public void setAlbumArtUrl(String url) {
     if (url != null && !url.equals(this._albumArtUrl)) {
       this._albumArtUrl = url;
@@ -225,6 +274,20 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
 
       if (isPointInButton(x, y, nextButtonX, nextButtonY, buttonWidth, buttonHeight)) {
         handleAction(Canvas.RIGHT);
+        return;
+      }
+
+      if (isPointInButton(
+          x, y, repeatButtonX, repeatButtonY, controlButtonWidth, controlButtonHeight)) {
+        this.gui.toggleRepeatMode();
+        this.updateDisplay();
+        return;
+      }
+
+      if (isPointInButton(
+          x, y, shuffleButtonX, shuffleButtonY, controlButtonWidth, controlButtonHeight)) {
+        this.gui.toggleShuffleMode();
+        this.updateDisplay();
         return;
       }
 
@@ -360,7 +423,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   public Image imgPlay() {
     if (this._imgPlay == null) {
       try {
-        this._imgPlay = Image.createImage("/images/icon-play.png");
+        this._imgPlay = Image.createImage("/images/player/play.png");
       } catch (Exception var2) {
         this._imgPlay = null;
       }
@@ -371,7 +434,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   public Image imgPause() {
     if (this._imgPause == null) {
       try {
-        this._imgPause = Image.createImage("/images/icon-pause.png");
+        this._imgPause = Image.createImage("/images/player/pause.png");
       } catch (Exception var2) {
         this._imgPause = null;
       }
@@ -382,7 +445,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   public Image imgBack() {
     if (this._imgBack == null) {
       try {
-        this._imgBack = Image.createImage("/images/button-back.png");
+        this._imgBack = Image.createImage("/images/player/previous.png");
       } catch (Exception var2) {
         this._imgBack = null;
       }
@@ -393,7 +456,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   public Image imgNext() {
     if (this._imgNext == null) {
       try {
-        this._imgNext = Image.createImage("/images/button-next.png");
+        this._imgNext = Image.createImage("/images/player/next.png");
       } catch (Exception var2) {
         this._imgNext = null;
       }
@@ -404,7 +467,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   public Image imgBackActive() {
     if (this._imgBackActive == null) {
       try {
-        this._imgBackActive = Image.createImage("/images/button-back-active.png");
+        this._imgBackActive = Image.createImage("/images/player/previous.png");
       } catch (Exception var2) {
         this._imgBackActive = null;
       }
@@ -415,12 +478,67 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   public Image imgNextActive() {
     if (this._imgNextActive == null) {
       try {
-        this._imgNextActive = Image.createImage("/images/button-next-active.png");
+        this._imgNextActive = Image.createImage("/images/player/next.png");
       } catch (Exception var2) {
         this._imgNextActive = null;
       }
     }
     return this._imgNextActive;
+  }
+
+  public Image imgRepeat() {
+    if (this._imgRepeat == null) {
+      try {
+        this._imgRepeat = Image.createImage("/images/player/repeat.png");
+      } catch (Exception var2) {
+        this._imgRepeat = null;
+      }
+    }
+    return this._imgRepeat;
+  }
+
+  public Image imgRepeatOne() {
+    if (this._imgRepeatOne == null) {
+      try {
+        this._imgRepeatOne = Image.createImage("/images/player/repeat-one.png");
+      } catch (Exception var2) {
+        this._imgRepeatOne = null;
+      }
+    }
+    return this._imgRepeatOne;
+  }
+
+  public Image imgRepeatOff() {
+    if (this._imgRepeatOff == null) {
+      try {
+        this._imgRepeatOff = Image.createImage("/images/player/repeat-off.png");
+      } catch (Exception var2) {
+        this._imgRepeatOff = null;
+      }
+    }
+    return this._imgRepeatOff;
+  }
+
+  public Image imgShuffle() {
+    if (this._imgShuffle == null) {
+      try {
+        this._imgShuffle = Image.createImage("/images/player/shuffle.png");
+      } catch (Exception var2) {
+        this._imgShuffle = null;
+      }
+    }
+    return this._imgShuffle;
+  }
+
+  public Image imgShuffleOff() {
+    if (this._imgShuffleOff == null) {
+      try {
+        this._imgShuffleOff = Image.createImage("/images/player/shuffle-off.png");
+      } catch (Exception var2) {
+        this._imgShuffleOff = null;
+      }
+    }
+    return this._imgShuffleOff;
   }
 
   public void paint(Graphics g) {
@@ -531,22 +649,30 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
         }
 
         if (this.playButtonX == 0) {
-          int buttonWidth = 40;
-          int buttonGap = 40;
-          this.playButtonX = this.displayWidth >> 1;
+          int screenCenter = this.displayWidth >> 1;
+          int buttonGap = this.displayWidth / 5;
+          int margin = 8;
+
+          this.playButtonX = screenCenter;
           this.playButtonY = this.playtop;
 
-          this.prevButtonX = this.playButtonX - buttonWidth - buttonGap;
+          this.prevButtonX = screenCenter - buttonGap;
           this.prevButtonY = this.playtop;
-          this.nextButtonX = this.playButtonX + buttonWidth + buttonGap;
+
+          this.nextButtonX = screenCenter + buttonGap;
           this.nextButtonY = this.playtop;
+
+          this.repeatButtonX = margin + (this.controlButtonWidth / 2);
+          this.repeatButtonY = this.playtop;
+
+          this.shuffleButtonX = this.displayWidth - margin - (this.controlButtonWidth / 2);
+          this.shuffleButtonY = this.playtop;
         }
 
         boolean isPlaying = this.gui.getIsPlaying();
         Image playPauseImg = isPlaying ? this.imgPause() : this.imgPlay();
 
         if (playPauseImg != null) {
-
           g.drawImage(playPauseImg, this.playButtonX, this.playButtonY, 3);
         }
 
@@ -562,14 +688,35 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
 
         Image prevImg = this.goBack ? this.imgBackActive() : this.imgBack();
         if (prevImg != null) {
-
           g.drawImage(prevImg, this.prevButtonX, this.prevButtonY, 3);
         }
 
         Image nextImg = this.goNext ? this.imgNextActive() : this.imgNext();
         if (nextImg != null) {
-
           g.drawImage(nextImg, this.nextButtonX, this.nextButtonY, 3);
+        }
+
+        Image repeatImg = null;
+        switch (this.getGUI().getRepeatMode()) {
+          case PlayerGUI.REPEAT_ONE:
+            repeatImg = this.imgRepeatOne();
+            break;
+          case PlayerGUI.REPEAT_ALL:
+            repeatImg = this.imgRepeat();
+            break;
+          default:
+            repeatImg = this.imgRepeatOff();
+            break;
+        }
+
+        if (repeatImg != null) {
+          g.drawImage(repeatImg, this.repeatButtonX, this.repeatButtonY, 3);
+        }
+
+        Image shuffleImg =
+            this.getGUI().getShuffleMode() ? this.imgShuffle() : this.imgShuffleOff();
+        if (shuffleImg != null) {
+          g.drawImage(shuffleImg, this.shuffleButtonX, this.shuffleButtonY, 3);
         }
       }
     } catch (Throwable var14) {
@@ -615,14 +762,21 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       this.gui.pausePlayer();
       this.gui.setMediaTime(0L);
       this.setStatus(I18N.tr("paused"));
+    } else if (c == this.repeatCommand) {
+      this.getGUI().toggleRepeatMode();
+    } else if (c == this.shuffleCommand) {
+      this.getGUI().toggleShuffleMode();
     }
   }
 
   private void createCommand() {
     this.addCommand(this.playCommand);
-    this.addCommand(this.stopCommand);
     this.addCommand(this.nextCommand);
     this.addCommand(this.prevCommand);
+    this.addCommand(this.stopCommand);
+
+    updateRepeatCommand();
+    updateShuffleCommand();
   }
 
   public void cancel() {}

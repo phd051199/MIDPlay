@@ -9,6 +9,7 @@ import app.utils.I18N;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
@@ -21,7 +22,17 @@ import javax.microedition.media.control.VolumeControl;
 
 public class PlayerGUI implements PlayerListener {
 
-  private static String prevStatus;
+  public static final int REPEAT_OFF = 0;
+  public static final int REPEAT_ONE = 1;
+  public static final int REPEAT_ALL = 2;
+
+  private static String prevStatus = "";
+
+  private int repeatMode = REPEAT_ALL;
+  private boolean shuffleMode = false;
+  private int[] shuffleIndices = null;
+  private int currentShufflePosition = 0;
+  private final Random random = new Random();
 
   private int currentVolumeLevel = -1;
 
@@ -56,6 +67,79 @@ public class PlayerGUI implements PlayerListener {
     this.closePlayer();
     this.setStatus("");
     this.parent.updateDisplay();
+
+    if (this.shuffleMode) {
+      generateShuffleIndices();
+      updateShufflePosition();
+    }
+  }
+
+  private void generateShuffleIndices() {
+    if (listSong == null || listSong.isEmpty()) {
+      return;
+    }
+
+    int size = listSong.size();
+    shuffleIndices = new int[size];
+
+    for (int i = 0; i < size; i++) {
+      shuffleIndices[i] = i;
+    }
+
+    for (int i = size - 1; i > 0; i--) {
+      int j = random.nextInt(i + 1);
+
+      int temp = shuffleIndices[i];
+      shuffleIndices[i] = shuffleIndices[j];
+      shuffleIndices[j] = temp;
+    }
+  }
+
+  private void updateShufflePosition() {
+    if (shuffleIndices == null || listSong == null || listSong.isEmpty()) {
+      return;
+    }
+
+    for (int i = 0; i < shuffleIndices.length; i++) {
+      if (shuffleIndices[i] == index) {
+        currentShufflePosition = i;
+        return;
+      }
+    }
+
+    currentShufflePosition = 0;
+    index = shuffleIndices[0];
+  }
+
+  public int getRepeatMode() {
+    return this.repeatMode;
+  }
+
+  public void setRepeatMode(int mode) {
+    this.repeatMode = mode;
+  }
+
+  public void toggleRepeatMode() {
+    this.repeatMode = (this.repeatMode + 1) % 3;
+    this.parent.updateRepeatCommand();
+  }
+
+  public boolean getShuffleMode() {
+    return this.shuffleMode;
+  }
+
+  public void setShuffleMode(boolean mode) {
+    this.shuffleMode = mode;
+  }
+
+  public void toggleShuffleMode() {
+    this.shuffleMode = !this.shuffleMode;
+    this.parent.updateShuffleCommand();
+
+    if (this.shuffleMode && this.listSong != null && this.listSong.size() > 0) {
+      generateShuffleIndices();
+      updateShufflePosition();
+    }
   }
 
   public Vector getListSong() {
@@ -231,13 +315,37 @@ public class PlayerGUI implements PlayerListener {
     try {
       isTransitioning = true;
 
-      if (next) {
-        if (++this.index >= this.listSong.size()) {
-          this.index = 0;
+      if (shuffleMode) {
+        if (next) {
+          currentShufflePosition++;
+          if (currentShufflePosition >= shuffleIndices.length) {
+            if (repeatMode == REPEAT_OFF) {
+              currentShufflePosition = shuffleIndices.length - 1;
+              return;
+            }
+            currentShufflePosition = 0;
+          }
+          index = shuffleIndices[currentShufflePosition];
+        } else {
+          currentShufflePosition--;
+          if (currentShufflePosition < 0) {
+            currentShufflePosition = shuffleIndices.length - 1;
+          }
+          index = shuffleIndices[currentShufflePosition];
         }
       } else {
-        if (--this.index < 0) {
-          this.index = this.listSong.size() - 1;
+        if (next) {
+          if (++this.index >= this.listSong.size()) {
+            if (repeatMode == REPEAT_OFF && this.listSong.size() > 0) {
+              this.index = this.listSong.size() - 1;
+              return;
+            }
+            this.index = 0;
+          }
+        } else {
+          if (--this.index < 0) {
+            this.index = this.listSong.size() - 1;
+          }
         }
       }
 
@@ -401,13 +509,11 @@ public class PlayerGUI implements PlayerListener {
     int cv = vc.getLevel();
     int diff = 10;
 
-    // Check volume limits
     if ((!decrease && cv == 100) || (decrease && cv == 0)) {
       this.setVolumeStatus(cv);
       return;
     }
 
-    // Apply volume change
     cv += decrease ? -diff : diff;
     vc.setLevel(cv);
     currentVolumeLevel = cv;
@@ -492,7 +598,34 @@ public class PlayerGUI implements PlayerListener {
               new Runnable() {
                 public void run() {
                   try {
-                    getNextSong();
+                    switch (repeatMode) {
+                      case REPEAT_ONE:
+                        closePlayer();
+                        startPlayer();
+                        break;
+                      case REPEAT_ALL:
+                        getNextSong();
+                        break;
+                      case REPEAT_OFF:
+                      default:
+                        if (shuffleMode) {
+                          currentShufflePosition++;
+                          if (currentShufflePosition >= shuffleIndices.length) {
+                            closePlayer();
+                            setStatus("");
+                          } else {
+                            index = shuffleIndices[currentShufflePosition];
+                            closePlayer();
+                            startPlayer();
+                          }
+                        } else if (index < listSong.size() - 1) {
+                          getNextSong();
+                        } else {
+                          closePlayer();
+                          setStatus("");
+                        }
+                        break;
+                    }
                   } catch (Throwable t) {
 
                   }
