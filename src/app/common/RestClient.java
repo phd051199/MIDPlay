@@ -1,14 +1,20 @@
 package app.common;
 
+import app.interfaces.RestCallback;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
 
 public class RestClient {
 
   private static final int MAX_REDIRECT_TIMES = 5;
+  private static final int DEFAULT_TIMEOUT = 30000;
+  private static final int BUFFER_SIZE = 2048;
+  private static final String CHARSET = "UTF-8";
+
   private static String USER_AGENT;
   private static RestClient instance;
 
@@ -31,99 +37,137 @@ public class RestClient {
   }
 
   private static byte[] readAllBytes(InputStream in, int contentLength) throws IOException {
+    if (in == null) {
+      return new byte[0];
+    }
+
+    ByteArrayOutputStream baos;
+    byte[] buffer;
+
     if (contentLength > 0) {
-      byte[] data = new byte[contentLength];
-      int offset = 0;
-      while (offset < contentLength) {
-        int read = in.read(data, offset, contentLength - offset);
-        if (read == -1) {
-          break;
-        }
-        offset += read;
-      }
-      if (offset == contentLength) {
-        return data;
-      }
-      byte[] trimmed = new byte[offset];
-      System.arraycopy(data, 0, trimmed, 0, offset);
-      return trimmed;
+
+      buffer = new byte[Math.min(contentLength, BUFFER_SIZE)];
+      baos = new ByteArrayOutputStream(contentLength);
     } else {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream(2048);
-      byte[] buffer = new byte[1024];
-      int read;
-      while ((read = in.read(buffer)) != -1) {
-        baos.write(buffer, 0, read);
+
+      buffer = new byte[BUFFER_SIZE];
+      baos = new ByteArrayOutputStream(BUFFER_SIZE);
+    }
+
+    int bytesRead;
+    try {
+      while ((bytesRead = in.read(buffer)) != -1) {
+        baos.write(buffer, 0, bytesRead);
       }
       return baos.toByteArray();
+    } finally {
+      baos.close();
     }
   }
 
   private RestClient() {}
 
+  public HttpConnection createConnection(String url, String method) throws IOException {
+    HttpConnection conn = (HttpConnection) Connector.open(url, Connector.READ_WRITE, true);
+    conn.setRequestMethod(method);
+    conn.setRequestProperty("User-Agent", getUserAgent());
+    return conn;
+  }
+
   public HttpConnection getStreamConnection(String url) throws IOException {
     HttpConnection conn = null;
     int redirectCount = 0;
+    String currentUrl = url;
 
     while (redirectCount < MAX_REDIRECT_TIMES) {
-      conn = (HttpConnection) Connector.open(url, Connector.READ_WRITE);
-      conn.setRequestMethod(HttpConnection.GET);
-      conn.setRequestProperty("Accept", "*/*");
-      conn.setRequestProperty("User-Agent", getUserAgent());
+      try {
+        conn = createConnection(currentUrl, HttpConnection.GET);
+        int status = conn.getResponseCode();
 
-      int status = conn.getResponseCode();
+        if (status == HttpConnection.HTTP_OK) {
+          return conn;
+        } else if (status == HttpConnection.HTTP_MOVED_PERM
+            || status == HttpConnection.HTTP_MOVED_TEMP) {
 
-      if (status == HttpConnection.HTTP_OK) {
-        return conn;
-      } else if (status == HttpConnection.HTTP_MOVED_PERM
-          || status == HttpConnection.HTTP_MOVED_TEMP
-          || status == 307) {
-        url = conn.getHeaderField("Location");
-        conn.close();
+          String location = conn.getHeaderField("Location");
+          conn.close();
+          conn = null;
 
-        if (url == null) {
-          throw new IOException("Redirect location is null");
+          if (location == null) {
+            throw new IOException("Redirect location is null");
+          }
+          currentUrl = location;
+          redirectCount++;
+        } else {
+          throw new IOException("Server response code: " + status);
         }
-        redirectCount++;
-      } else {
-        throw new IOException("Server response code: " + status);
+      } catch (IOException e) {
+        if (conn != null) {
+          try {
+            conn.close();
+          } catch (IOException ignore) {
+          }
+        }
+        throw e;
       }
     }
     throw new IOException("Too many redirects");
   }
 
   public byte[] getBytes(String url) throws IOException {
-    HttpConnection hcon = null;
+    HttpConnection conn = null;
     InputStream inputStream = null;
 
     try {
-      hcon = getStreamConnection(url);
-      int responseCode = hcon.getResponseCode();
+      conn = getStreamConnection(url);
+      int responseCode = conn.getResponseCode();
+
       if (responseCode >= 400) {
-        throw new IOException("HTTP " + responseCode);
+        throw new IOException("HTTP error: " + responseCode + " " + conn.getResponseMessage());
       }
 
-      inputStream = hcon.openInputStream();
-      int contentLength = (int) hcon.getLength();
+      inputStream = conn.openInputStream();
+      int contentLength = (int) conn.getLength();
       return readAllBytes(inputStream, contentLength);
-
     } finally {
-      try {
-        if (inputStream != null) {
-          inputStream.close();
-        }
-      } catch (IOException e) {
-      }
-      try {
-        if (hcon != null) {
-          hcon.close();
-        }
-      } catch (IOException e) {
-      }
+      closeQuietly(inputStream);
+      closeQuietly(conn);
     }
   }
 
   public String get(String url) throws IOException {
     byte[] data = getBytes(url);
-    return new String(data, "UTF-8");
+    return new String(data, CHARSET);
+  }
+
+  public void getAsync(final String url, final RestCallback callback) {
+    new Thread(
+            new Runnable() {
+              public void run() {
+                try {
+                  final String response = get(url);
+                  callback.success(response);
+                } catch (final IOException e) {
+                  callback.error(e);
+                }
+              }
+            })
+        .start();
+  }
+
+  private void closeQuietly(Object closeable) {
+    if (closeable != null) {
+      try {
+        if (closeable instanceof InputStream) {
+          ((InputStream) closeable).close();
+        } else if (closeable instanceof OutputStream) {
+          ((OutputStream) closeable).close();
+        } else if (closeable instanceof HttpConnection) {
+          ((HttpConnection) closeable).close();
+        }
+      } catch (IOException ignore) {
+
+      }
+    }
   }
 }

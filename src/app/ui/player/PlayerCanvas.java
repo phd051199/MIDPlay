@@ -14,7 +14,7 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 
-public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObserver {
+public final class PlayerCanvas extends Canvas implements CommandListener, LoadDataObserver {
 
   private static final int PLAYER_STATUS_TOP = 2;
   private static final int SONG_TITLE_GAP = 5;

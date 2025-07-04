@@ -1,5 +1,6 @@
 package app.network;
 
+import app.MIDPlay;
 import app.common.SettingManager;
 import app.constants.Constants;
 import app.utils.I18N;
@@ -10,7 +11,7 @@ public class URLProvider {
     String client = Constants.SERVICE_URL + "/update?";
     if (client != null) {
       try {
-        client = client + "version=" + Constants.APP_VERSION;
+        client = client + "version=" + MIDPlay.getAppVersion();
         return client;
       } catch (Exception var5) {
       }

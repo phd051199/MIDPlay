@@ -77,6 +77,11 @@ public class PlayerMethod {
       }
     }
 
+    if (SettingManager.getInstance().getCurrentService().equals("soundcloud")
+        && playerHttpMethod == PlayerHttpMethod.PASS_URL) {
+      playerHttpMethod = PlayerHttpMethod.PASS_CONNECTION_STREAM;
+    }
+
     return playerHttpMethod;
   }
 

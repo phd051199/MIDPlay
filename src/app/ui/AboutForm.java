@@ -1,5 +1,6 @@
 package app.ui;
 
+import app.MIDPlay;
 import app.constants.Constants;
 import app.model.Song;
 import app.utils.I18N;
@@ -20,9 +21,8 @@ public class AboutForm extends Form implements Utils.BreadCrumbTrail, CommandLis
     super(title);
     this.parent = parent;
 
-    append(new StringItem(null, "Version: " + Constants.APP_VERSION + "\n"));
-    append(new StringItem(null, "Author: " + Constants.APP_AUTHOR + "\n"));
-    append(new StringItem(null, "Open Source: " + Constants.APP_OPEN_SOURCE + "\n"));
+    append(new StringItem(null, "Version: " + MIDPlay.getAppVersion() + "\n"));
+    append(new StringItem(null, "Developer: " + Constants.APP_AUTHOR + "\n"));
 
     this.addCommand(this.backCommand);
     this.setCommandListener(this);

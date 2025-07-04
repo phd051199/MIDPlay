@@ -3,7 +3,6 @@ package app.ui.player;
 import app.common.AudioFileConnector;
 import app.common.PlayerMethod;
 import app.common.RestClient;
-import app.common.SettingManager;
 import app.constants.PlayerHttpMethod;
 import app.model.Song;
 import app.utils.I18N;
@@ -26,11 +25,11 @@ public class PlayerGUI implements PlayerListener {
 
   private int currentVolumeLevel = -1;
 
-  private int timerInterval = 500;
+  private final int timerInterval = 500;
   private Timer guiTimer = null;
   private TimerTask timeDisplayTask = null;
   private TimerTask volumeStatusTask = null;
-  private PlayerCanvas parent;
+  private final PlayerCanvas parent;
   private Player player = null;
   Vector listSong = null;
   int index = 0;
@@ -64,15 +63,19 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public boolean getIsPlaying() {
-    if (this.player == null) {
-      return false;
-    } else {
-      return this.player.getState() >= 400;
-    }
+    return this.player != null && this.player.getState() >= 400;
   }
 
   public long getDuration() {
+    if (this.listSong == null || this.index < 0 || this.index >= this.listSong.size()) {
+      return 0L;
+    }
+
     Song s = (Song) this.listSong.elementAt(this.index);
+    if (s == null) {
+      return 0L;
+    }
+
     try {
       if (player != null && s.getDuration() <= 0) {
         long duration = player.getDuration();
@@ -81,14 +84,10 @@ public class PlayerGUI implements PlayerListener {
         }
       }
     } catch (IllegalStateException e) {
+
     }
 
-    if (this.listSong != null && this.index >= 0 && this.index < this.listSong.size()) {
-      if (s != null) {
-        return (long) s.getDuration() * 1000000L;
-      }
-    }
-    return 0L;
+    return (long) s.getDuration() * 1000000L;
   }
 
   public long getCurrentTime() {
@@ -96,7 +95,8 @@ public class PlayerGUI implements PlayerListener {
       if (this.player != null) {
         return this.player.getMediaTime();
       }
-    } catch (IllegalStateException var2) {
+    } catch (IllegalStateException e) {
+
     }
 
     return 0L;
@@ -134,7 +134,8 @@ public class PlayerGUI implements PlayerListener {
       if (this.player != null) {
         return (VolumeControl) this.player.getControl("VolumeControl");
       }
-    } catch (IllegalStateException var2) {
+    } catch (IllegalStateException e) {
+
     }
 
     return null;
@@ -142,47 +143,25 @@ public class PlayerGUI implements PlayerListener {
 
   private void assertPlayer() throws Throwable {
     this.setStatus(I18N.tr("loading"));
+
     this.playerHttpMethod = PlayerMethod.getPlayerHttpMethod();
-
-    if (SettingManager.getInstance().getCurrentService().equals("soundcloud")) {
-      if (this.playerHttpMethod == PlayerHttpMethod.PASS_URL) {
-        this.playerHttpMethod = PlayerHttpMethod.PASS_CONNECTION_STREAM;
-      }
-    }
-
     Song s = (Song) this.listSong.elementAt(this.index);
 
     try {
       this.parent.setAlbumArtUrl(s.getImage());
 
-      if (this.playerHttpMethod == PlayerHttpMethod.SAVE_TO_FILE) {
-        this.tempFile = AudioFileConnector.getInstance();
-
-        this.httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
-        this.inputStream = this.httpConn.openInputStream();
-
-        this.tempFile.clear();
-        this.outputStream = this.tempFile.openOutputStream();
-
-        byte[] buffer = new byte[8192];
-        int bytesRead;
-        while ((bytesRead = this.inputStream.read(buffer)) != -1) {
-          this.outputStream.write(buffer, 0, bytesRead);
-        }
-
-        this.outputStream.close();
-        this.playUrl = this.tempFile.getFilePath();
-
-        this.player = Manager.createPlayer(this.playUrl);
-      } else if (this.playerHttpMethod == PlayerHttpMethod.PASS_CONNECTION_STREAM) {
-        this.httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
-        this.inputStream = this.httpConn.openInputStream();
-
-        this.player = Manager.createPlayer(this.inputStream, "audio/mpeg");
-      } else {
-        this.playUrl = s.getStreamUrl();
-        this.player = Manager.createPlayer(this.playUrl);
+      switch (this.playerHttpMethod) {
+        case PlayerHttpMethod.SAVE_TO_FILE:
+          createPlayerFromFile(s);
+          break;
+        case PlayerHttpMethod.PASS_CONNECTION_STREAM:
+          createPlayerFromStream(s);
+          break;
+        default:
+          createPlayerFromUrl(s);
+          break;
       }
+
       this.player.addPlayerListener(this);
       this.player.realize();
       this.player.prefetch();
@@ -195,10 +174,56 @@ public class PlayerGUI implements PlayerListener {
     } catch (Throwable error) {
       this.player = null;
       this.setStatus(error.toString());
+      closeResources();
     }
   }
 
-  public synchronized void getNextSong() throws Throwable {
+  private void createPlayerFromFile(Song s) throws IOException {
+    this.tempFile = AudioFileConnector.getInstance();
+    this.httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
+    this.inputStream = this.httpConn.openInputStream();
+
+    this.tempFile.clear();
+    this.outputStream = this.tempFile.openOutputStream();
+
+    byte[] buffer = new byte[8192];
+    int bytesRead;
+    while ((bytesRead = this.inputStream.read(buffer)) != -1) {
+      this.outputStream.write(buffer, 0, bytesRead);
+    }
+
+    this.outputStream.close();
+    this.outputStream = null;
+    this.playUrl = this.tempFile.getFilePath();
+
+    try {
+      this.player = Manager.createPlayer(this.playUrl);
+    } catch (MediaException me) {
+      throw new IOException(me.toString());
+    }
+  }
+
+  private void createPlayerFromStream(Song s) throws IOException {
+    this.httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
+    this.inputStream = this.httpConn.openInputStream();
+
+    try {
+      this.player = Manager.createPlayer(this.inputStream, "audio/mpeg");
+    } catch (MediaException me) {
+      throw new IOException(me.toString());
+    }
+  }
+
+  private void createPlayerFromUrl(Song s) throws IOException {
+    this.playUrl = s.getStreamUrl();
+    try {
+      this.player = Manager.createPlayer(this.playUrl);
+    } catch (MediaException me) {
+      throw new IOException(me.toString());
+    }
+  }
+
+  public synchronized void changeSong(boolean next) throws Throwable {
     if (isTransitioning) {
       return;
     }
@@ -206,8 +231,14 @@ public class PlayerGUI implements PlayerListener {
     try {
       isTransitioning = true;
 
-      if (++this.index >= this.listSong.size()) {
-        this.index = 0;
+      if (next) {
+        if (++this.index >= this.listSong.size()) {
+          this.index = 0;
+        }
+      } else {
+        if (--this.index < 0) {
+          this.index = this.listSong.size() - 1;
+        }
       }
 
       this.closePlayer();
@@ -218,24 +249,12 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
-  public synchronized void getPrevSong() throws Throwable {
-    if (isTransitioning) {
-      return;
-    }
+  public void getNextSong() throws Throwable {
+    changeSong(true);
+  }
 
-    try {
-      isTransitioning = true;
-
-      if (--this.index < 0) {
-        this.index = this.listSong.size() - 1;
-      }
-
-      this.closePlayer();
-      this.startPlayer();
-      this.setStatus(I18N.tr("playing"));
-    } finally {
-      isTransitioning = false;
-    }
+  public void getPrevSong() throws Throwable {
+    changeSong(false);
   }
 
   public void startPlayer() {
@@ -255,20 +274,57 @@ public class PlayerGUI implements PlayerListener {
                       PlayerGUI.this.player.setMediaTime(0L);
                     }
                   } catch (MediaException var3) {
+
                   }
                   PlayerGUI.this.player.start();
                   if (PlayerGUI.this.player.getState() >= 400) {
                     PlayerGUI.this.setStatus(I18N.tr("playing"));
                   }
                 } catch (Throwable var4) {
+
                 }
               }
             }))
         .start();
   }
 
+  private void closeResources() {
+    if (this.inputStream != null) {
+      try {
+        this.inputStream.close();
+      } catch (IOException e) {
+
+      }
+      this.inputStream = null;
+    }
+
+    if (this.outputStream != null) {
+      try {
+        this.outputStream.close();
+      } catch (IOException e) {
+
+      }
+      this.outputStream = null;
+    }
+
+    if (this.httpConn != null) {
+      try {
+        this.httpConn.close();
+      } catch (IOException e) {
+
+      }
+      this.httpConn = null;
+    }
+
+    if (this.tempFile != null) {
+      this.tempFile.close();
+      this.tempFile = null;
+    }
+  }
+
   public void closePlayer() {
     this.stopDisplayTimer();
+
     if (this.player != null) {
       try {
         if (this.player.getState() != Player.CLOSED) {
@@ -278,46 +334,25 @@ public class PlayerGUI implements PlayerListener {
             try {
               this.player.stop();
             } catch (MediaException e) {
+
             }
           }
 
           this.player.close();
         }
       } catch (Exception e) {
+
       } finally {
         this.player = null;
       }
       this.setStatus("");
     }
-    if (this.tempFile != null) {
-      this.tempFile.close();
-      this.tempFile = null;
-    }
+
+    closeResources();
+
     if (this.guiTimer != null) {
       this.guiTimer.cancel();
-      this.guiTimer = null;
-    }
-
-    if (this.inputStream != null) {
-      try {
-        this.inputStream.close();
-      } catch (IOException e) {
-      }
-      this.inputStream = null;
-    }
-    if (this.outputStream != null) {
-      try {
-        this.outputStream.close();
-      } catch (IOException e) {
-      }
-      this.outputStream = null;
-    }
-    if (this.httpConn != null) {
-      try {
-        this.httpConn.close();
-      } catch (IOException e) {
-      }
-      this.httpConn = null;
+      this.guiTimer = new Timer();
     }
   }
 
@@ -325,7 +360,8 @@ public class PlayerGUI implements PlayerListener {
     if (this.player != null) {
       try {
         this.player.stop();
-      } catch (Exception var2) {
+      } catch (Exception e) {
+
       }
       this.setStatus(I18N.tr("paused"));
     }
@@ -346,40 +382,36 @@ public class PlayerGUI implements PlayerListener {
       try {
         this.player.setMediaTime(time);
         this.parent.updateDisplay();
-      } catch (Exception var4) {
+      } catch (Exception e) {
+
       }
     }
   }
 
   public void changeVolume(boolean decrease) {
-    int diff = 10;
-    if (decrease) {
-      diff = -diff;
-    }
-
     VolumeControl vc = this.getVolumeControl();
-
-    if (vc != null) {
-      if (!this.parent.getStatus().startsWith(I18N.tr("volume"))) {
-        prevStatus = this.parent.getStatus();
-      }
-
-      int cv = vc.getLevel();
-      if (!decrease && cv == 100) {
-        this.setVolumeStatus(cv);
-        return;
-      }
-      if (decrease && cv == 0) {
-        this.setVolumeStatus(cv);
-        return;
-      }
-
-      cv += diff;
-      vc.setLevel(cv);
-      currentVolumeLevel = cv;
-
-      this.setVolumeStatus(cv);
+    if (vc == null) {
+      return;
     }
+
+    if (!this.parent.getStatus().startsWith(I18N.tr("volume"))) {
+      prevStatus = this.parent.getStatus();
+    }
+
+    int cv = vc.getLevel();
+    int diff = 10;
+
+    // Check volume limits
+    if ((!decrease && cv == 100) || (decrease && cv == 0)) {
+      this.setVolumeStatus(cv);
+      return;
+    }
+
+    // Apply volume change
+    cv += decrease ? -diff : diff;
+    vc.setLevel(cv);
+    currentVolumeLevel = cv;
+    this.setVolumeStatus(cv);
   }
 
   private void setVolumeStatus(int cv) {
@@ -387,17 +419,19 @@ public class PlayerGUI implements PlayerListener {
 
     if (volumeStatusTask != null) {
       volumeStatusTask.cancel();
-      volumeStatusTask = null;
     }
+
     if (this.guiTimer == null) {
       this.guiTimer = new Timer();
     }
+
     volumeStatusTask =
         new TimerTask() {
           public void run() {
             parent.setStatus(prevStatus);
           }
         };
+
     this.guiTimer.schedule(volumeStatusTask, 1000);
   }
 
@@ -424,38 +458,49 @@ public class PlayerGUI implements PlayerListener {
       if (this.player != plyr) {
         return;
       }
+
       if ("closed".equals(evt) || "error".equals(evt) || "stopped".equals(evt)) {
         this.stopDisplayTimer();
         this.parent.updateDisplay();
       } else if ("endOfMedia".equals(evt)) {
-        if (plyr.getState() == Player.PREFETCHED || plyr.getState() == Player.STARTED) {
-          this.stopDisplayTimer();
-          this.parent.updateDisplay();
-          if (!isTransitioning) {
-            isTransitioning = true;
-            try {
-              new Thread(
-                      new Runnable() {
-                        public void run() {
-                          try {
-                            getNextSong();
-                          } catch (Throwable t) {
-                          }
-                        }
-                      })
-                  .start();
-            } finally {
-              isTransitioning = false;
-            }
-          }
-        }
+        handleEndOfMedia(plyr);
       } else if ("started".equals(evt)) {
         this.startDisplayTimer();
       } else if ("durationUpdated".equals(evt)) {
         this.parent.updateDisplay();
-      } else if ("volumeChanged".equals(evt)) {
       }
-    } catch (Throwable var2) {
+    } catch (Throwable t) {
+
+    }
+  }
+
+  private void handleEndOfMedia(Player plyr) {
+    if (plyr.getState() != Player.PREFETCHED && plyr.getState() != Player.STARTED) {
+      return;
+    }
+
+    this.stopDisplayTimer();
+    this.parent.updateDisplay();
+
+    if (isTransitioning) {
+      return;
+    }
+
+    isTransitioning = true;
+    try {
+      new Thread(
+              new Runnable() {
+                public void run() {
+                  try {
+                    getNextSong();
+                  } catch (Throwable t) {
+
+                  }
+                }
+              })
+          .start();
+    } finally {
+      isTransitioning = false;
     }
   }
 
@@ -463,7 +508,8 @@ public class PlayerGUI implements PlayerListener {
     if (this.player != null && this.player.getState() >= 400) {
       try {
         this.player.stop();
-      } catch (MediaException var2) {
+      } catch (MediaException e) {
+
       }
 
       this.stopDisplayTimer();
@@ -477,19 +523,15 @@ public class PlayerGUI implements PlayerListener {
     if (this.player != null && this.restartOnResume) {
       try {
         this.player.start();
-      } catch (MediaException var2) {
+      } catch (MediaException e) {
+
       }
     }
     this.restartOnResume = false;
   }
 
   private class SPTimerTask extends TimerTask {
-
     private SPTimerTask() {}
-
-    SPTimerTask(Object x1) {
-      this();
-    }
 
     public void run() {
       PlayerGUI.this.parent.updateDisplay();

@@ -21,6 +21,7 @@ public class SettingManager {
   private String language;
   private String audioQuality;
   private String service;
+  private boolean autoUpdate;
 
   private SettingManager() {
     recordStore = new ReadWriteRecordStore("settings");
@@ -40,6 +41,7 @@ public class SettingManager {
         this.language = settings.optString("language", I18N.getLanguage());
         this.audioQuality = settings.optString("audioQuality", AUDIO_QUALITIES[0]);
         this.service = settings.optString("service", AVAILABLE_SERVICES[0]);
+        this.autoUpdate = settings.optBoolean("autoUpdate", true);
 
         re.destroy();
       } else {
@@ -61,6 +63,7 @@ public class SettingManager {
     this.language = I18N.getLanguage();
     this.audioQuality = AUDIO_QUALITIES[0];
     this.service = AVAILABLE_SERVICES[0];
+    this.autoUpdate = true;
   }
 
   public String[] getAudioQualities() {
@@ -72,15 +75,22 @@ public class SettingManager {
   }
 
   public void saveSettings(String language, String audioQuality, String service) {
+    saveSettings(language, audioQuality, service, "true");
+  }
+
+  public void saveSettings(
+      String language, String audioQuality, String service, String autoUpdate) {
     this.language = language;
     this.audioQuality = audioQuality;
     this.service = service;
+    this.autoUpdate = "true".equals(autoUpdate);
     try {
       recordStore.openRecStore();
       JSONObject settings = new JSONObject();
       settings.put("language", this.language);
       settings.put("audioQuality", this.audioQuality);
       settings.put("service", this.service);
+      settings.put("autoUpdate", this.autoUpdate);
 
       byte[] recordBytes = settings.toString().getBytes("UTF-8");
 
@@ -104,7 +114,9 @@ public class SettingManager {
   }
 
   public String[] getAllCurrentSettings() {
-    return new String[] {this.language, this.audioQuality, this.service};
+    return new String[] {
+      this.language, this.audioQuality, this.service, this.autoUpdate ? "true" : "false"
+    };
   }
 
   public String getCurrentLanguage() {
@@ -117,5 +129,9 @@ public class SettingManager {
 
   public String getCurrentService() {
     return this.service;
+  }
+
+  public boolean isAutoUpdateEnabled() {
+    return this.autoUpdate;
   }
 }

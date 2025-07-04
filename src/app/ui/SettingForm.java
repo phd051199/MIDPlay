@@ -18,6 +18,7 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
   private static ChoiceGroup languageChoice;
   private static ChoiceGroup audioQualityChoice;
   private static ChoiceGroup serviceChoice;
+  private static ChoiceGroup autoUpdateChoice;
 
   public static void populateFormWithSettings() {
     try {
@@ -59,6 +60,13 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
           }
         }
       }
+
+      if (settings.length > 3) {
+        boolean autoUpdate = "true".equals(settings[3]);
+        if (autoUpdateChoice != null) {
+          autoUpdateChoice.setSelectedIndex(0, autoUpdate);
+        }
+      }
     } catch (Exception e) {
       setDefaultSettings();
     }
@@ -83,6 +91,9 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
       }
       if (serviceChoice != null) {
         serviceChoice.setSelectedIndex(0, true);
+      }
+      if (autoUpdateChoice != null) {
+        autoUpdateChoice.setSelectedIndex(0, true);
       }
     } catch (Exception e) {
     }
@@ -122,9 +133,13 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
       serviceChoice.append(services[i], null);
     }
 
+    autoUpdateChoice = new ChoiceGroup(I18N.tr("auto_update"), Choice.MULTIPLE);
+    autoUpdateChoice.append(I18N.tr("check_for_update"), null);
+
     append(languageChoice);
     append(audioQualityChoice);
     append(serviceChoice);
+    append(autoUpdateChoice);
 
     addCommand(backCommand);
     addCommand(saveCommand);
@@ -140,11 +155,22 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
       boolean languageChanged = !selectedLanguage.equals(currentLanguage);
       boolean serviceChanged = !getSelectedService().equals(currentService);
 
+      boolean previousAutoUpdate = settingManager.isAutoUpdateEnabled();
+      boolean currentAutoUpdate = isAutoUpdateEnabled();
+      boolean shouldCheckUpdateNow = !previousAutoUpdate && currentAutoUpdate;
+
       settingManager.saveSettings(
-          selectedLanguage, getSelectedAudioQuality(), getSelectedService());
+          selectedLanguage,
+          getSelectedAudioQuality(),
+          getSelectedService(),
+          isAutoUpdateEnabled() ? "true" : "false");
 
       if (languageChanged) {
         I18N.setLanguage(selectedLanguage);
+      }
+
+      if (shouldCheckUpdateNow && parent instanceof MIDPlay) {
+        ((MIDPlay) parent).checkForUpdate(false);
       }
 
       if (languageChanged || serviceChanged) {
@@ -188,6 +214,10 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
   public String getSelectedService() {
     String[] services = settingManager.getAvailableServices();
     return services[serviceChoice.getSelectedIndex()];
+  }
+
+  public boolean isAutoUpdateEnabled() {
+    return autoUpdateChoice.isSelected(0);
   }
 
   public Displayable go(Displayable d) {

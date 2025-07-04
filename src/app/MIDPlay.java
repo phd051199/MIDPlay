@@ -4,7 +4,6 @@ import app.common.AudioFileConnector;
 import app.common.ParseData;
 import app.common.PlayerMethod;
 import app.common.SettingManager;
-import app.constants.Constants;
 import app.constants.PlayerHttpMethod;
 import app.interfaces.Observer;
 import app.model.Song;
@@ -28,9 +27,14 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
 
   private static final String EMPTY_STRING = "";
   private static final int MAX_HISTORY_SIZE = 10;
+  private static String APP_VERSION = "";
 
   public static MIDPlay getInstance() {
     return instance;
+  }
+
+  public static String getAppVersion() {
+    return APP_VERSION;
   }
 
   private final Vector history = new Vector();
@@ -52,15 +56,15 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
 
   private void initializeApplication() {
     try {
-      String version = getAppProperty("MIDlet-Version");
-      Constants.APP_VERSION = (version != null) ? version : "1.0.0";
       I18N.initialize(this);
       SettingForm.populateFormWithSettings();
+      APP_VERSION = getAppProperty("MIDlet-Version");
+
       if (PlayerMethod.getPlayerHttpMethod() == PlayerHttpMethod.SAVE_TO_FILE) {
         AudioFileConnector.getInstance().initialize();
       }
     } catch (Exception e) {
-      showSimpleAlert("Init Error", "Failed to initialize");
+      showErrorAlert("Init Error", "Failed to initialize");
     }
   }
 
@@ -96,12 +100,28 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
           Utils.createMainMenu(this, SettingManager.getInstance().getCurrentService());
       go(mainMenu);
     } catch (Exception e) {
-      showSimpleAlert("Error", "Cannot create main screen");
+      showErrorAlert("Error", "Cannot create main screen");
     }
   }
 
-  private String checkForUpdate() {
+  public String checkForUpdate() {
     try {
+      if (!SettingManager.getInstance().isAutoUpdateEnabled()) {
+        return EMPTY_STRING;
+      }
+
+      return checkForUpdate(true);
+    } catch (Exception e) {
+    }
+    return EMPTY_STRING;
+  }
+
+  public String checkForUpdate(boolean respectAutoUpdateSetting) {
+    try {
+      if (respectAutoUpdateSetting && !SettingManager.getInstance().isAutoUpdateEnabled()) {
+        return EMPTY_STRING;
+      }
+
       final String updateInfo = ParseData.checkForUpdate();
       if (!EMPTY_STRING.equals(updateInfo)) {
         showUpdateDialog(updateInfo);
@@ -134,7 +154,7 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
           exit();
         }
       } catch (Exception e) {
-        showSimpleAlert("Error", "Cannot open download link");
+        showErrorAlert("Error", "Cannot open download link");
       }
     } else if (command == cancelCmd) {
       Displayable current = getCurrentDisplayable();
@@ -238,7 +258,7 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
     return Display.getDisplay(this);
   }
 
-  private void showSimpleAlert(String title, String message) {
+  private void showErrorAlert(String title, String message) {
     Alert alert = new Alert(title, message, null, AlertType.ERROR);
     alert.setTimeout(2000);
     Displayable current = getCurrentDisplayable();
@@ -247,10 +267,6 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
     } else {
       getDisplay().setCurrent(alert);
     }
-  }
-
-  public String getVersion() {
-    return Constants.APP_VERSION;
   }
 
   public int getHistorySize() {
