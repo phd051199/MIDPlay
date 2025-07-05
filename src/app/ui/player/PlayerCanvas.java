@@ -160,6 +160,19 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   }
 
   public synchronized void close() {
+    if (this.loadAlbumArtThread != null && this.loadAlbumArtThread.isAlive()) {
+      try {
+        this.loadAlbumArtThread.interrupt();
+      } catch (Exception e) {
+
+      }
+      this.loadAlbumArtThread = null;
+    }
+
+    this._albumArt = null;
+    this._albumArtUrl = null;
+    this._loadingAlbumArt = false;
+
     if (this.gui != null) {
       this.gui.closePlayer();
       this.gui = null;
@@ -228,6 +241,14 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     }
 
     this._loadingAlbumArt = true;
+
+    if (this.loadAlbumArtThread != null && this.loadAlbumArtThread.isAlive()) {
+      try {
+        this.loadAlbumArtThread.interrupt();
+      } catch (Exception e) {
+
+      }
+    }
 
     this.loadAlbumArtThread =
         new Thread(

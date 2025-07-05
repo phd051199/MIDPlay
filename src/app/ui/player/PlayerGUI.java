@@ -27,14 +27,15 @@ public class PlayerGUI implements PlayerListener {
   public static final int REPEAT_ALL = 2;
 
   private static String prevStatus = "";
+  private int currentVolumeLevel = 100;
 
   private int repeatMode = REPEAT_ALL;
   private boolean shuffleMode = false;
   private int[] shuffleIndices = null;
   private int currentShufflePosition = 0;
   private final Random random = new Random();
-
-  private int currentVolumeLevel = -1;
+  private boolean[] shufflePlayedIndices = null;
+  private int shufflePlayedCount = 0;
 
   private final int timerInterval = 500;
   private Timer guiTimer = null;
@@ -55,10 +56,12 @@ public class PlayerGUI implements PlayerListener {
   OutputStream outputStream = null;
   String playUrl;
 
+  private Thread playerThread = null;
+  private Thread endOfMediaThread = null;
+
   public PlayerGUI(PlayerCanvas parent) {
     this.parent = parent;
     this.setStatus("");
-    this.guiTimer = new Timer();
   }
 
   public void setListSong(Vector lst, int index) {
@@ -81,9 +84,12 @@ public class PlayerGUI implements PlayerListener {
 
     int size = listSong.size();
     shuffleIndices = new int[size];
+    shufflePlayedIndices = new boolean[size];
+    shufflePlayedCount = 0;
 
     for (int i = 0; i < size; i++) {
       shuffleIndices[i] = i;
+      shufflePlayedIndices[i] = false;
     }
 
     for (int i = size - 1; i > 0; i--) {
@@ -139,6 +145,13 @@ public class PlayerGUI implements PlayerListener {
     if (this.shuffleMode && this.listSong != null && this.listSong.size() > 0) {
       generateShuffleIndices();
       updateShufflePosition();
+
+      if (shufflePlayedIndices != null
+          && currentShufflePosition >= 0
+          && currentShufflePosition < shufflePlayedIndices.length) {
+        shufflePlayedIndices[currentShufflePosition] = true;
+        shufflePlayedCount++;
+      }
     }
   }
 
@@ -252,7 +265,7 @@ public class PlayerGUI implements PlayerListener {
       this.parent.setupDisplay();
 
       VolumeControl vc = this.getVolumeControl();
-      if (vc != null && this.currentVolumeLevel >= 0) {
+      if (vc != null) {
         vc.setLevel(this.currentVolumeLevel);
       }
     } catch (Throwable error) {
@@ -315,17 +328,31 @@ public class PlayerGUI implements PlayerListener {
     try {
       isTransitioning = true;
 
+      if (this.playerThread != null && this.playerThread.isAlive()) {
+        try {
+          this.playerThread.interrupt();
+        } catch (Exception e) {
+
+        }
+        this.playerThread = null;
+      }
+
+      if (this.endOfMediaThread != null && this.endOfMediaThread.isAlive()) {
+        try {
+          this.endOfMediaThread.interrupt();
+        } catch (Exception e) {
+
+        }
+        this.endOfMediaThread = null;
+      }
+
       if (shuffleMode) {
         if (next) {
-          currentShufflePosition++;
-          if (currentShufflePosition >= shuffleIndices.length) {
-            if (repeatMode == REPEAT_OFF) {
-              currentShufflePosition = shuffleIndices.length - 1;
-              return;
-            }
-            currentShufflePosition = 0;
+          if (shufflePlayedCount >= shuffleIndices.length && repeatMode == REPEAT_OFF) {
+            currentShufflePosition = shuffleIndices.length - 1;
+            return;
           }
-          index = shuffleIndices[currentShufflePosition];
+          getNextShuffleSong();
         } else {
           currentShufflePosition--;
           if (currentShufflePosition < 0) {
@@ -366,7 +393,8 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void startPlayer() {
-    (new Thread(
+    this.playerThread =
+        new Thread(
             new Runnable() {
               public void run() {
                 try {
@@ -392,8 +420,8 @@ public class PlayerGUI implements PlayerListener {
 
                 }
               }
-            }))
-        .start();
+            });
+    this.playerThread.start();
   }
 
   private void closeResources() {
@@ -433,6 +461,24 @@ public class PlayerGUI implements PlayerListener {
   public void closePlayer() {
     this.stopDisplayTimer();
 
+    if (this.playerThread != null && this.playerThread.isAlive()) {
+      try {
+        this.playerThread.interrupt();
+      } catch (Exception e) {
+
+      }
+      this.playerThread = null;
+    }
+
+    if (this.endOfMediaThread != null && this.endOfMediaThread.isAlive()) {
+      try {
+        this.endOfMediaThread.interrupt();
+      } catch (Exception e) {
+
+      }
+      this.endOfMediaThread = null;
+    }
+
     if (this.player != null) {
       try {
         if (this.player.getState() != Player.CLOSED) {
@@ -460,7 +506,7 @@ public class PlayerGUI implements PlayerListener {
 
     if (this.guiTimer != null) {
       this.guiTimer.cancel();
-      this.guiTimer = new Timer();
+      this.guiTimer = null;
     }
   }
 
@@ -506,18 +552,14 @@ public class PlayerGUI implements PlayerListener {
       prevStatus = this.parent.getStatus();
     }
 
-    int cv = vc.getLevel();
-    int diff = 10;
-
-    if ((!decrease && cv == 100) || (decrease && cv == 0)) {
-      this.setVolumeStatus(cv);
-      return;
+    if (decrease) {
+      currentVolumeLevel = Math.max(0, currentVolumeLevel - 10);
+    } else {
+      currentVolumeLevel = Math.min(100, currentVolumeLevel + 10);
     }
 
-    cv += decrease ? -diff : diff;
-    vc.setLevel(cv);
-    currentVolumeLevel = cv;
-    this.setVolumeStatus(cv);
+    vc.setLevel(currentVolumeLevel);
+    this.setVolumeStatus(currentVolumeLevel);
   }
 
   private void setVolumeStatus(int cv) {
@@ -594,7 +636,8 @@ public class PlayerGUI implements PlayerListener {
 
     isTransitioning = true;
     try {
-      new Thread(
+      this.endOfMediaThread =
+          new Thread(
               new Runnable() {
                 public void run() {
                   try {
@@ -609,12 +652,11 @@ public class PlayerGUI implements PlayerListener {
                       case REPEAT_OFF:
                       default:
                         if (shuffleMode) {
-                          currentShufflePosition++;
-                          if (currentShufflePosition >= shuffleIndices.length) {
+                          if (shufflePlayedCount >= shuffleIndices.length) {
                             closePlayer();
                             setStatus("");
                           } else {
-                            index = shuffleIndices[currentShufflePosition];
+                            getNextShuffleSong();
                             closePlayer();
                             startPlayer();
                           }
@@ -627,13 +669,42 @@ public class PlayerGUI implements PlayerListener {
                         break;
                     }
                   } catch (Throwable t) {
-
                   }
                 }
-              })
-          .start();
+              });
+      this.endOfMediaThread.start();
     } finally {
       isTransitioning = false;
+    }
+  }
+
+  private void getNextShuffleSong() {
+    if (shuffleIndices == null || shufflePlayedIndices == null) {
+      return;
+    }
+
+    if (currentShufflePosition >= 0 && currentShufflePosition < shufflePlayedIndices.length) {
+      shufflePlayedIndices[currentShufflePosition] = true;
+      shufflePlayedCount++;
+    }
+
+    if (shufflePlayedCount < shuffleIndices.length) {
+      int nextPosition = (currentShufflePosition + 1) % shuffleIndices.length;
+      while (shufflePlayedIndices[nextPosition]) {
+        nextPosition = (nextPosition + 1) % shuffleIndices.length;
+      }
+      currentShufflePosition = nextPosition;
+      index = shuffleIndices[currentShufflePosition];
+    }
+
+    if (shufflePlayedCount >= shuffleIndices.length && repeatMode != REPEAT_OFF) {
+      for (int i = 0; i < shufflePlayedIndices.length; i++) {
+        shufflePlayedIndices[i] = false;
+      }
+      shufflePlayedCount = 0;
+
+      shufflePlayedIndices[currentShufflePosition] = true;
+      shufflePlayedCount = 1;
     }
   }
 
