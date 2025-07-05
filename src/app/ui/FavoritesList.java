@@ -8,6 +8,7 @@ import app.interfaces.DataLoader;
 import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
 import app.model.Playlist;
+import app.model.Song;
 import app.utils.I18N;
 import app.utils.ImageUtils;
 import app.utils.Utils;
@@ -17,8 +18,10 @@ import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
+import javax.microedition.lcdui.TextField;
 import javax.microedition.rms.RecordEnumeration;
 import org.json.me.JSONObject;
 
@@ -27,11 +30,14 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   private Command backCommand;
   private Command selectCommand;
   private Command removeCommand;
+  private Command createPlaylistCommand;
+  private Command renamePlaylistCommand;
   private final Vector favorites;
   private final Utils.BreadCrumbTrail observer;
   private final Vector images;
   private Thread mLoadDataThread;
   private Thread imageLoaderThread;
+  private Thread loadSongListThread;
   private final String type = "playlist";
   private Image defaultImage;
   private boolean isDestroyed = false;
@@ -50,10 +56,14 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
     this.backCommand = new Command(I18N.tr("back"), Command.BACK, 0);
     this.selectCommand = new Command(I18N.tr("select"), Command.OK, 1);
     this.removeCommand = new Command(I18N.tr("remove_from_favorites"), Command.ITEM, 2);
+    this.createPlaylistCommand = new Command(I18N.tr("create_playlist"), Command.ITEM, 3);
+    this.renamePlaylistCommand = new Command(I18N.tr("rename_playlist"), Command.ITEM, 4);
 
     this.addCommand(backCommand);
     this.addCommand(selectCommand);
     this.addCommand(removeCommand);
+    this.addCommand(createPlaylistCommand);
+    this.addCommand(renamePlaylistCommand);
     this.setCommandListener(this);
   }
 
@@ -204,6 +214,10 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
       openSelectedPlaylist();
     } else if (c == removeCommand) {
       removeSelectedFavorite();
+    } else if (c == createPlaylistCommand) {
+      showCreatePlaylistForm();
+    } else if (c == renamePlaylistCommand) {
+      showRenamePlaylistForm();
     }
   }
 
@@ -215,8 +229,8 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
     int selectedIndex = this.getSelectedIndex();
     if (selectedIndex >= 0 && selectedIndex < favorites.size()) {
       try {
-        FavoriteItem selectedItem = (FavoriteItem) favorites.elementAt(selectedIndex);
-        JSONObject selected = selectedItem.data;
+        final FavoriteItem selectedItem = (FavoriteItem) favorites.elementAt(selectedIndex);
+        final JSONObject selected = selectedItem.data;
 
         if (!selected.has("id") || !selected.has("name")) {
           this.displayMessage(I18N.tr("error"), I18N.tr("invalid_playlist_data"), "error");
@@ -226,6 +240,42 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
         final Playlist playlist = new Playlist();
         playlist.setId(selected.getString("id"));
         playlist.setName(selected.getString("name"));
+
+        final boolean isCustomPlaylist =
+            selected.has("isCustom") && selected.getBoolean("isCustom");
+
+        if (isCustomPlaylist) {
+          this.displayMessage(playlist.getName(), I18N.tr("loading"), "loading");
+
+          loadSongListThread =
+              new Thread(
+                  new Runnable() {
+                    public void run() {
+                      try {
+                        final Vector customSongs =
+                            loadSongsFromCustomPlaylist(selected.getString("id"));
+
+                        MIDPlay.getInstance()
+                            .getDisplay()
+                            .callSerially(
+                                new Runnable() {
+                                  public void run() {
+                                    SongList songList =
+                                        new SongList(playlist.getName(), customSongs, playlist);
+                                    songList.setObserver(FavoritesList.this.observer);
+                                    FavoritesList.this.observer.replaceCurrent(songList);
+                                  }
+                                });
+                      } catch (Exception e) {
+                        displayMessage(
+                            I18N.tr("error"), I18N.tr("error_loading_playlist"), "error");
+                      }
+                    }
+                  });
+          loadSongListThread.start();
+
+          return;
+        }
 
         this.displayMessage(playlist.getName(), I18N.tr("loading"), "loading");
 
@@ -259,6 +309,64 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
     }
   }
 
+  private Vector loadSongsFromCustomPlaylist(String playlistId) {
+    Vector customSongs = new Vector();
+    ReadWriteRecordStore songRecordStore = new ReadWriteRecordStore("playlist_songs");
+    RecordEnumeration re = null;
+
+    try {
+      songRecordStore.openRecStore();
+
+      re = songRecordStore.enumerateRecords(null, null, false);
+
+      while (re.hasNextElement()) {
+        try {
+          int recordId = re.nextRecordId();
+          String record = songRecordStore.getRecord(recordId);
+
+          if (record != null && record.trim().length() > 0) {
+            JSONObject relationJson = new JSONObject(record);
+
+            if (relationJson.has("playlistId")
+                && relationJson.getString("playlistId").equals(playlistId)) {
+
+              Song song = new Song();
+              song.setSongId(relationJson.getString("songId"));
+              song.setSongName(relationJson.getString("name"));
+              song.setArtistName(relationJson.getString("artist"));
+              song.setImage(relationJson.getString("image"));
+              song.setStreamUrl(relationJson.getString("streamUrl"));
+              song.setDuration(relationJson.getInt("duration"));
+              customSongs.addElement(song);
+            }
+          }
+        } catch (Exception e) {
+
+        }
+      }
+    } catch (Exception e) {
+
+    } finally {
+      try {
+        if (re != null) {
+          re.destroy();
+        }
+      } catch (Exception e) {
+
+      }
+
+      try {
+        if (songRecordStore != null) {
+          songRecordStore.closeRecStore();
+        }
+      } catch (Exception e) {
+
+      }
+    }
+
+    return customSongs;
+  }
+
   private void removeSelectedFavorite() {
     int selectedIndex = this.getSelectedIndex();
     if (selectedIndex < 0) {
@@ -284,16 +392,152 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
 
       this.delete(selectedIndex);
 
-      displayAlert(I18N.tr("alert_removed_from_favorites"), AlertType.CONFIRMATION);
+      showAlert("", I18N.tr("alert_removed_from_favorites"), AlertType.CONFIRMATION);
 
     } catch (Exception e) {
-      displayAlert(I18N.tr("alert_error_adding_to_favorites"), AlertType.ERROR);
+      showAlert("", I18N.tr("alert_error_removing_from_favorites"), AlertType.ERROR);
     }
   }
 
-  private void displayAlert(String message, AlertType messageType) {
-    Alert alert = new Alert("", message, null, messageType);
-    MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
+  private void showCreatePlaylistForm() {
+    final Form createForm = new Form(I18N.tr("create_playlist"));
+    final TextField nameField = new TextField(I18N.tr("playlist_name"), "", 50, TextField.ANY);
+
+    createForm.append(nameField);
+
+    final Command okCommand = new Command(I18N.tr("ok"), Command.OK, 1);
+    final Command cancelCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
+
+    createForm.addCommand(okCommand);
+    createForm.addCommand(cancelCommand);
+
+    createForm.setCommandListener(
+        new CommandListener() {
+          public void commandAction(Command c, Displayable d) {
+            if (c == okCommand) {
+              String playlistName = nameField.getString().trim();
+              if (playlistName.length() > 0) {
+                createCustomPlaylist(playlistName);
+              }
+            } else if (c == cancelCommand) {
+              MIDPlay.getInstance().getDisplay().setCurrent(FavoritesList.this);
+            }
+          }
+        });
+
+    MIDPlay.getInstance().getDisplay().setCurrent(createForm);
+  }
+
+  private void createCustomPlaylist(String name) {
+    try {
+
+      String customId = "custom_" + System.currentTimeMillis();
+
+      JSONObject playlistJson = new JSONObject();
+      playlistJson.put("id", customId);
+      playlistJson.put("name", name);
+      playlistJson.put("isCustom", true);
+
+      ReadWriteRecordStore recordStore = new ReadWriteRecordStore("favorites");
+      try {
+        recordStore.openRecStore();
+        recordStore.writeRecord(playlistJson.toString());
+
+        loadFavorites();
+
+        showAlert("", I18N.tr("alert_playlist_created"), AlertType.CONFIRMATION);
+      } finally {
+        try {
+          recordStore.closeRecStore();
+        } catch (Exception e) {
+        }
+      }
+    } catch (Exception e) {
+      showAlert("", I18N.tr("alert_error_creating_playlist"), AlertType.ERROR);
+    }
+  }
+
+  private void showRenamePlaylistForm() {
+    int selectedIndex = this.getSelectedIndex();
+    if (selectedIndex < 0) {
+      return;
+    }
+
+    try {
+      final FavoriteItem selectedItem = (FavoriteItem) favorites.elementAt(selectedIndex);
+      final JSONObject selected = selectedItem.data;
+
+      boolean isCustomPlaylist = selected.has("isCustom") && selected.getBoolean("isCustom");
+      if (!isCustomPlaylist) {
+        showAlert("", I18N.tr("alert_cannot_rename_system_playlist"), AlertType.WARNING);
+        return;
+      }
+
+      final Form renameForm = new Form(I18N.tr("rename_playlist"));
+      final TextField nameField =
+          new TextField(I18N.tr("playlist_name"), selected.getString("name"), 50, TextField.ANY);
+
+      renameForm.append(nameField);
+
+      final Command okCommand = new Command(I18N.tr("ok"), Command.OK, 1);
+      final Command cancelCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
+
+      renameForm.addCommand(okCommand);
+      renameForm.addCommand(cancelCommand);
+
+      renameForm.setCommandListener(
+          new CommandListener() {
+            public void commandAction(Command c, Displayable d) {
+              if (c == okCommand) {
+                String newName = nameField.getString().trim();
+                if (newName.length() > 0) {
+                  renameCustomPlaylist(selectedItem, newName);
+                }
+              } else if (c == cancelCommand) {
+                MIDPlay.getInstance().getDisplay().setCurrent(FavoritesList.this);
+              }
+            }
+          });
+
+      MIDPlay.getInstance().getDisplay().setCurrent(renameForm);
+
+    } catch (Exception e) {
+      showAlert("", I18N.tr("alert_error_renaming_playlist"), AlertType.ERROR);
+    }
+  }
+
+  private void renameCustomPlaylist(FavoriteItem item, String newName) {
+    try {
+      JSONObject playlistData = item.data;
+      playlistData.put("name", newName);
+
+      ReadWriteRecordStore recordStore = new ReadWriteRecordStore("favorites");
+      try {
+        recordStore.openRecStore();
+        byte[] data = playlistData.toString().getBytes("UTF-8");
+        recordStore.setRecord(item.recordId, data, 0, data.length);
+
+        int index = favorites.indexOf(item);
+        if (index >= 0) {
+          set(index, newName, (Image) images.elementAt(index));
+        }
+
+        showAlert("", I18N.tr("alert_playlist_renamed"), AlertType.CONFIRMATION);
+      } finally {
+        try {
+          recordStore.closeRecStore();
+        } catch (Exception e) {
+        }
+      }
+    } catch (Exception e) {
+      showAlert("", I18N.tr("alert_error_renaming_playlist"), AlertType.ERROR);
+    }
+  }
+
+  private void showAlert(String title, String message, AlertType type) {
+    Alert alert = new Alert(title, message, null, type);
+    alert.setTimeout(2000);
+    MIDPlay.getInstance().getDisplay().setCurrent(alert, FavoritesList.this);
   }
 
   public Image getImage(int index) {
@@ -314,15 +558,18 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
       if (this.imageLoaderThread != null && this.imageLoaderThread.isAlive()) {
         this.imageLoaderThread.join();
       }
+      if (this.loadSongListThread != null && this.loadSongListThread.isAlive()) {
+        this.loadSongListThread.join();
+      }
     } catch (InterruptedException var2) {
     }
   }
 
-  private class FavoriteItem {
+  public static class FavoriteItem {
     public int recordId;
     public JSONObject data;
 
-    FavoriteItem(int recordId, JSONObject data) {
+    public FavoriteItem(int recordId, JSONObject data) {
       this.recordId = recordId;
       this.data = data;
     }

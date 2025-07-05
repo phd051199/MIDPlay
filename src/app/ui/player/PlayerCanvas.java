@@ -1,18 +1,27 @@
 package app.ui.player;
 
+import app.MIDPlay;
+import app.common.ReadWriteRecordStore;
 import app.interfaces.LoadDataObserver;
 import app.model.Playlist;
+import app.model.Song;
+import app.ui.FavoritesList;
 import app.utils.I18N;
 import app.utils.ImageUtils;
 import app.utils.Utils;
 import java.io.IOException;
 import java.util.Vector;
+import javax.microedition.lcdui.Alert;
+import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.List;
+import javax.microedition.rms.RecordEnumeration;
+import org.json.me.JSONObject;
 
 public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObserver {
 
@@ -26,6 +35,8 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   private final Command nextCommand = new Command(I18N.tr("next"), Command.SCREEN, 3);
   private final Command prevCommand = new Command(I18N.tr("previous"), Command.SCREEN, 4);
   private final Command stopCommand = new Command(I18N.tr("stop"), Command.SCREEN, 7);
+  private final Command addToPlaylistCommand =
+      new Command(I18N.tr("add_to_playlist"), Command.SCREEN, 8);
   private Command repeatCommand;
   private Command shuffleCommand;
 
@@ -101,6 +112,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   public boolean goNext = false;
 
   private Thread loadAlbumArtThread = null;
+  private Thread addSongToPlaylistThread = null;
 
   public PlayerCanvas(String title, Vector lst, int index, Playlist _playlist) {
     this.playlist = _playlist;
@@ -167,6 +179,15 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
 
       }
       this.loadAlbumArtThread = null;
+    }
+
+    if (this.addSongToPlaylistThread != null && this.addSongToPlaylistThread.isAlive()) {
+      try {
+        this.addSongToPlaylistThread.interrupt();
+      } catch (Exception e) {
+
+      }
+      this.addSongToPlaylistThread = null;
     }
 
     this._albumArt = null;
@@ -787,7 +808,160 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
       this.getGUI().toggleRepeatMode();
     } else if (c == this.shuffleCommand) {
       this.getGUI().toggleShuffleMode();
+    } else if (c == this.addToPlaylistCommand) {
+      showAddToPlaylistDialog();
     }
+  }
+
+  private void showAddToPlaylistDialog() {
+    Song currentSong = this.gui.getCurrentSong();
+    if (currentSong == null) {
+      return;
+    }
+
+    final Vector customPlaylists = getCustomPlaylists();
+
+    if (customPlaylists.size() == 0) {
+      showAlert("", I18N.tr("alert_no_custom_playlists"), AlertType.INFO);
+      return;
+    }
+
+    final List playlistList = new List(I18N.tr("select_playlist"), List.IMPLICIT);
+
+    for (int i = 0; i < customPlaylists.size(); i++) {
+      FavoritesList.FavoriteItem item = (FavoritesList.FavoriteItem) customPlaylists.elementAt(i);
+      try {
+        playlistList.append(item.data.getString("name"), null);
+      } catch (Exception e) {
+        playlistList.append(I18N.tr("playlist") + " " + i, null);
+      }
+    }
+
+    final Command selectPlaylistCommand = new Command(I18N.tr("select"), Command.OK, 1);
+    final Command cancelCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
+
+    playlistList.addCommand(selectPlaylistCommand);
+    playlistList.addCommand(cancelCommand);
+
+    final Song finalCurrentSong = currentSong;
+    playlistList.setCommandListener(
+        new CommandListener() {
+          public void commandAction(Command c, Displayable d) {
+            if (c == List.SELECT_COMMAND || c.getCommandType() == Command.OK) {
+              final int selectedIndex = playlistList.getSelectedIndex();
+              if (selectedIndex >= 0 && selectedIndex < customPlaylists.size()) {
+                final FavoritesList.FavoriteItem selectedPlaylist =
+                    (FavoritesList.FavoriteItem) customPlaylists.elementAt(selectedIndex);
+
+                MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
+
+                addSongToPlaylistThread =
+                    new Thread(
+                        new Runnable() {
+                          public void run() {
+                            try {
+                              addSongToCustomPlaylist(finalCurrentSong, selectedPlaylist);
+                            } catch (Exception e) {
+                              showAlert("", e.toString(), AlertType.ERROR);
+                            }
+                          }
+                        });
+                addSongToPlaylistThread.start();
+              } else {
+                MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
+              }
+            } else if (c.getCommandType() == Command.BACK || c.getCommandType() == Command.CANCEL) {
+              MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
+            }
+          }
+        });
+
+    MIDPlay.getInstance().getDisplay().setCurrent(playlistList);
+  }
+
+  private Vector getCustomPlaylists() {
+    Vector customPlaylists = new Vector();
+    ReadWriteRecordStore recordStore = new ReadWriteRecordStore("favorites");
+    RecordEnumeration re = null;
+
+    try {
+      recordStore.openRecStore();
+      re = recordStore.enumerateRecords(null, null, false);
+
+      while (re.hasNextElement()) {
+        int recordId = re.nextRecordId();
+        String record = recordStore.getRecord(recordId);
+
+        if (record.trim().length() == 0) {
+          continue;
+        }
+
+        JSONObject favoriteJson = new JSONObject(record);
+        if (favoriteJson.has("isCustom") && favoriteJson.getBoolean("isCustom")) {
+          FavoritesList.FavoriteItem item = new FavoritesList.FavoriteItem(recordId, favoriteJson);
+          customPlaylists.addElement(item);
+        }
+      }
+    } catch (Exception e) {
+
+    } finally {
+      if (re != null) {
+        re.destroy();
+      }
+      try {
+        recordStore.closeRecStore();
+      } catch (Exception e) {
+      }
+    }
+
+    return customPlaylists;
+  }
+
+  private void addSongToCustomPlaylist(final Song song, final FavoritesList.FavoriteItem playlist) {
+    try {
+      String playlistId = playlist.data.getString("id");
+
+      String songId = song.getSongId();
+      if (songId == null || songId.trim().length() == 0) {
+        songId = song.getSongName() + "_" + String.valueOf(System.currentTimeMillis());
+        song.setSongId(songId);
+      }
+
+      ReadWriteRecordStore songRecordStore = new ReadWriteRecordStore("playlist_songs");
+      try {
+        songRecordStore.openRecStore();
+
+        String relationId = playlistId + "_" + songId;
+
+        JSONObject songJson = new JSONObject();
+        songJson.put("relationId", relationId);
+        songJson.put("playlistId", playlistId);
+        songJson.put("songId", songId);
+        songJson.put("name", song.getSongName());
+        songJson.put("artist", song.getArtistName());
+        songJson.put("image", song.getImage());
+        songJson.put("streamUrl", song.getStreamUrl());
+        songJson.put("duration", new Integer(song.getDuration()));
+
+        songRecordStore.writeRecord(songJson.toString());
+        showAlert("", I18N.tr("alert_song_added_to_playlist"), AlertType.CONFIRMATION);
+      } finally {
+        try {
+          if (songRecordStore != null) {
+            songRecordStore.closeRecStore();
+          }
+        } catch (Exception e) {
+        }
+      }
+    } catch (Exception e) {
+      showAlert("", e.toString(), AlertType.ERROR);
+    }
+  }
+
+  private void showAlert(String title, String message, AlertType type) {
+    Alert alert = new Alert(title, message, null, type);
+    alert.setTimeout(2000);
+    MIDPlay.getInstance().getDisplay().setCurrent(alert, PlayerCanvas.this);
   }
 
   private void createCommand() {
@@ -795,6 +969,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     this.addCommand(this.nextCommand);
     this.addCommand(this.prevCommand);
     this.addCommand(this.stopCommand);
+    this.addCommand(this.addToPlaylistCommand);
 
     updateRepeatCommand();
     updateShuffleCommand();
