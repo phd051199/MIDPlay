@@ -58,7 +58,7 @@ public class PlayerMethod {
         playerHttpMethod = PlayerHttpMethod.PASS_URL;
       } catch (Exception e) {
         // s40v2+ breaks http locator parsing
-        playerHttpMethod = PlayerHttpMethod.SAVE_TO_FILE;
+        playerHttpMethod = PlayerHttpMethod.PASS_CONNECTION_STREAM;
       }
     } catch (Exception e) {
       playerHttpMethod = PlayerHttpMethod.PASS_URL;
