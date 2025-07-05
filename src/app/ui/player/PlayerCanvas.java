@@ -23,7 +23,7 @@ import javax.microedition.lcdui.List;
 import javax.microedition.rms.RecordEnumeration;
 import org.json.me.JSONObject;
 
-public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObserver {
+public final class PlayerCanvas extends Canvas implements CommandListener, LoadDataObserver {
 
   private static final int PLAYER_STATUS_TOP = 2;
   private static final int SONG_TITLE_GAP = 5;
@@ -821,7 +821,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
 
     final Vector customPlaylists = getCustomPlaylists();
 
-    if (customPlaylists.size() == 0) {
+    if (customPlaylists.isEmpty()) {
       showAlert("", I18N.tr("alert_no_custom_playlists"), AlertType.INFO);
       return;
     }
