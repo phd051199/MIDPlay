@@ -1,8 +1,8 @@
 package app.common;
 
-import app.constants.PlayerHttpMethod;
-
 public class PlayerMethod {
+  public static final int PASS_URL = 0;
+  public static final int PASS_CONNECTION_STREAM = 1;
 
   private static boolean checkClass(String s) {
     try {
@@ -15,7 +15,7 @@ public class PlayerMethod {
 
   // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
   public static int getPlayerHttpMethod() {
-    int playerHttpMethod = PlayerHttpMethod.NONE;
+    int playerHttpMethod = PASS_URL;
     // platform
     boolean symbianJrt = false;
     boolean symbian = false;
@@ -55,13 +55,13 @@ public class PlayerMethod {
       try {
         Class.forName("com.sun.mmedia.protocol.CommonDS");
         // s40v1 uses sun impl for media and i/o so it should work fine
-        playerHttpMethod = PlayerHttpMethod.PASS_URL;
+        playerHttpMethod = PASS_URL;
       } catch (Exception e) {
         // s40v2+ breaks http locator parsing
-        playerHttpMethod = PlayerHttpMethod.PASS_CONNECTION_STREAM;
+        playerHttpMethod = PASS_CONNECTION_STREAM;
       }
     } catch (Exception e) {
-      playerHttpMethod = PlayerHttpMethod.PASS_URL;
+      playerHttpMethod = PASS_URL;
       if (symbian) {
         if (symbianJrt
             && (p.indexOf("java_build_version=2.") != -1
@@ -69,17 +69,17 @@ public class PlayerMethod {
           // emc (s60v5+), supports mp3 streaming
         } else if (checkClass("com.symbian.mmapi.PlayerImpl")) {
           // uiq
-          playerHttpMethod = PlayerHttpMethod.PASS_CONNECTION_STREAM;
+          playerHttpMethod = PASS_CONNECTION_STREAM;
         } else {
           // mmf (s60v3.2-)
-          playerHttpMethod = PlayerHttpMethod.PASS_CONNECTION_STREAM;
+          playerHttpMethod = PASS_CONNECTION_STREAM;
         }
       }
     }
 
     if (SettingManager.getInstance().getCurrentService().equals("soundcloud")
-        && playerHttpMethod == PlayerHttpMethod.PASS_URL) {
-      playerHttpMethod = PlayerHttpMethod.PASS_CONNECTION_STREAM;
+        && playerHttpMethod == PASS_URL) {
+      playerHttpMethod = PASS_CONNECTION_STREAM;
     }
 
     return playerHttpMethod;

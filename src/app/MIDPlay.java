@@ -1,10 +1,7 @@
 package app;
 
-import app.common.AudioFileConnector;
 import app.common.ParseData;
-import app.common.PlayerMethod;
 import app.common.SettingManager;
-import app.constants.PlayerHttpMethod;
 import app.interfaces.Observer;
 import app.model.Song;
 import app.ui.MainList;
@@ -59,10 +56,6 @@ public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumb
       I18N.initialize(this);
       SettingForm.populateFormWithSettings();
       APP_VERSION = getAppProperty("MIDlet-Version");
-
-      if (PlayerMethod.getPlayerHttpMethod() == PlayerHttpMethod.SAVE_TO_FILE) {
-        AudioFileConnector.getInstance().initialize();
-      }
     } catch (Exception e) {
       showErrorAlert("Init Error", "Failed to initialize");
     }

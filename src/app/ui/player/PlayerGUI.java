@@ -1,9 +1,7 @@
 package app.ui.player;
 
-import app.common.AudioFileConnector;
 import app.common.PlayerMethod;
 import app.common.RestClient;
-import app.constants.PlayerHttpMethod;
 import app.model.Song;
 import app.utils.I18N;
 import java.io.IOException;
@@ -48,7 +46,6 @@ public class PlayerGUI implements PlayerListener {
   private boolean restartOnResume = false;
   private boolean isTransitioning = false;
 
-  private AudioFileConnector tempFile;
   private int playerHttpMethod;
 
   HttpConnection httpConn = null;
@@ -248,13 +245,10 @@ public class PlayerGUI implements PlayerListener {
       this.parent.setAlbumArtUrl(s.getImage());
 
       switch (this.playerHttpMethod) {
-        case PlayerHttpMethod.SAVE_TO_FILE:
-          createPlayerFromFile(s);
-          break;
-        case PlayerHttpMethod.PASS_CONNECTION_STREAM:
+        case PlayerMethod.PASS_CONNECTION_STREAM:
           createPlayerFromStream(s);
           break;
-        default:
+        case PlayerMethod.PASS_URL:
           createPlayerFromUrl(s);
           break;
       }
@@ -272,31 +266,6 @@ public class PlayerGUI implements PlayerListener {
       this.player = null;
       this.setStatus(error.toString());
       closeResources();
-    }
-  }
-
-  private void createPlayerFromFile(Song s) throws IOException {
-    this.tempFile = AudioFileConnector.getInstance();
-    this.httpConn = RestClient.getInstance().getStreamConnection(s.getStreamUrl());
-    this.inputStream = this.httpConn.openInputStream();
-
-    this.tempFile.clear();
-    this.outputStream = this.tempFile.openOutputStream();
-
-    byte[] buffer = new byte[8192];
-    int bytesRead;
-    while ((bytesRead = this.inputStream.read(buffer)) != -1) {
-      this.outputStream.write(buffer, 0, bytesRead);
-    }
-
-    this.outputStream.close();
-    this.outputStream = null;
-    this.playUrl = this.tempFile.getFilePath();
-
-    try {
-      this.player = Manager.createPlayer(this.playUrl);
-    } catch (MediaException me) {
-      throw new IOException(me.toString());
     }
   }
 
@@ -450,11 +419,6 @@ public class PlayerGUI implements PlayerListener {
 
       }
       this.httpConn = null;
-    }
-
-    if (this.tempFile != null) {
-      this.tempFile.close();
-      this.tempFile = null;
     }
   }
 
