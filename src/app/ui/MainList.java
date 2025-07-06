@@ -16,6 +16,7 @@ import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
+import org.json.me.JSONObject;
 
 public class MainList extends List implements CommandListener, LoadDataObserver {
 
@@ -326,12 +327,12 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       nextService = availableServices[0];
     }
 
-    settingManager.saveSettings(
-        settingManager.getCurrentLanguage(),
-        settingManager.getCurrentAudioQuality(),
-        nextService,
-        settingManager.isAutoUpdateEnabled() ? "true" : "false",
-        settingManager.isLoadPlaylistArtEnabled() ? "true" : "false");
+    try {
+      JSONObject config = settingManager.loadConfigSync();
+      config.put("service", nextService);
+      settingManager.saveConfig(config);
+    } catch (Exception e) {
+    }
 
     final MainList mainList = Utils.createMainMenu(observer, nextService);
     if (observer instanceof MIDPlay) {

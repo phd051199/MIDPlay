@@ -63,7 +63,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
 
   private void saveSearchConfig() {
     try {
-      JSONObject config = new JSONObject();
+      JSONObject config = settingManager.loadConfigSync();
       config.put("searchTypeIndex", new Integer(searchTypeGroup.getSelectedIndex()));
 
       settingManager.saveConfig(config);

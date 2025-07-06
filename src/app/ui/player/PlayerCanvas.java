@@ -837,17 +837,14 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       }
     }
 
-    final Command selectPlaylistCommand = new Command(I18N.tr("select"), Command.OK, 1);
-    final Command cancelCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
-
-    playlistList.addCommand(selectPlaylistCommand);
-    playlistList.addCommand(cancelCommand);
+    final Command cancelAddToPlaylistCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
+    playlistList.addCommand(cancelAddToPlaylistCommand);
 
     final Song finalCurrentSong = currentSong;
     playlistList.setCommandListener(
         new CommandListener() {
           public void commandAction(Command c, Displayable d) {
-            if (c == List.SELECT_COMMAND || c.getCommandType() == Command.OK) {
+            if (c == List.SELECT_COMMAND) {
               final int selectedIndex = playlistList.getSelectedIndex();
               if (selectedIndex >= 0 && selectedIndex < customPlaylists.size()) {
                 final FavoritesList.FavoriteItem selectedPlaylist =
@@ -870,7 +867,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
               } else {
                 MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
               }
-            } else if (c.getCommandType() == Command.BACK || c.getCommandType() == Command.CANCEL) {
+            } else if (c == cancelAddToPlaylistCommand) {
               MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
             }
           }
