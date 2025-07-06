@@ -193,6 +193,27 @@ public class SettingManager {
     loadThread.start();
   }
 
+  public synchronized JSONObject loadConfigSync() {
+    JSONObject config = new JSONObject();
+    try {
+      recordStore.openRecStore();
+      RecordEnumeration re = recordStore.enumerateRecords(null, null, false);
+      if (re.hasNextElement()) {
+        byte[] recordBytes = re.nextRecord();
+        String configJson = new String(recordBytes);
+        config = new JSONObject(configJson);
+        re.destroy();
+      }
+    } catch (Exception e) {
+    } finally {
+      try {
+        recordStore.closeRecStore();
+      } catch (Exception e) {
+      }
+    }
+    return config;
+  }
+
   public synchronized void shutdown() {
     isShuttingDown = true;
 

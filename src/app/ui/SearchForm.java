@@ -1,5 +1,6 @@
 package app.ui;
 
+import app.MIDPlay;
 import app.common.Common;
 import app.common.ParseData;
 import app.common.SettingManager;
@@ -10,6 +11,8 @@ import app.model.Playlist;
 import app.utils.I18N;
 import app.utils.Utils;
 import java.util.Vector;
+import javax.microedition.lcdui.Alert;
+import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
@@ -35,17 +38,27 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
 
   public SearchForm(String title) {
     super(title);
+
+    settingManager = SettingManager.getInstance();
+
     this.append(this.symbolField);
     this.searchTypeGroup.append(I18N.tr("playlist"), null);
     this.searchTypeGroup.append(I18N.tr("album"), null);
     this.searchTypeGroup.append(I18N.tr("track"), null);
 
-    settingManager = SettingManager.getInstance();
-
-    loadSearchConfig();
+    this.loadSearchConfig();
 
     this.append(this.searchTypeGroup);
     this.initMenu();
+  }
+
+  private void loadSearchConfig() {
+    JSONObject config = settingManager.loadConfigSync();
+    int savedTypeIndex = config.optInt("searchTypeIndex", 0);
+
+    if (savedTypeIndex >= 0 && savedTypeIndex < searchTypeGroup.size()) {
+      searchTypeGroup.setSelectedIndex(savedTypeIndex, true);
+    }
   }
 
   private void saveSearchConfig() {
@@ -57,31 +70,6 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
     } catch (Exception e) {
 
     }
-  }
-
-  private void loadSearchConfig() {
-    settingManager.loadConfig(
-        new SettingManager.ConfigCallback() {
-          public void onConfigLoaded(JSONObject config) {
-            synchronized (SearchForm.this) {
-              int savedTypeIndex = config.optInt("searchTypeIndex", 0);
-              if (savedTypeIndex >= 0 && savedTypeIndex < searchTypeGroup.size()) {
-                searchTypeGroup.setSelectedIndex(savedTypeIndex, true);
-                switch (savedTypeIndex) {
-                  case 0:
-                    searchType = "playlist";
-                    break;
-                  case 1:
-                    searchType = "album";
-                    break;
-                  case 2:
-                    searchType = "track";
-                    break;
-                }
-              }
-            }
-          }
-        });
   }
 
   public TextField getSymbolField() {
@@ -112,6 +100,11 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   private void gotoSearchPlaylist(String keyword, final int curPage, final int perPage) {
+    if (keyword.equals("")) {
+      showAlert("", I18N.tr("search_keyword_empty"), AlertType.ERROR);
+      return;
+    }
+
     switch (this.searchTypeGroup.getSelectedIndex()) {
       case 0:
         this.searchType = "playlist";
@@ -194,6 +187,12 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
     this.addCommand(this.exitCommand);
     this.addCommand(this.nowPlayingCommand);
     this.setCommandListener(this);
+  }
+
+  private void showAlert(String title, String message, AlertType type) {
+    Alert alert = new Alert(title, message, null, type);
+    alert.setTimeout(2000);
+    MIDPlay.getInstance().getDisplay().setCurrent(alert, SearchForm.this);
   }
 
   public void cancel() {
