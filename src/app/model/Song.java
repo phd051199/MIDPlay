@@ -10,15 +10,8 @@ public class Song implements JSONAble {
   private String songName = "";
   private String artistName = "";
   private String streamUrl = "";
-  private String kbit = "";
-  private String genreID = "";
-  private String genreName = "";
-  private final String listened = "0";
-  private final String liked = "0";
-  private int downloadStatus = -1;
-  private String filePath = "";
-  private int duration = 0;
   private String image = "";
+  private int duration = 0;
 
   public void setSongId(String songId) {
     this.songId = songId;
@@ -58,46 +51,6 @@ public class Song implements JSONAble {
     return this.streamUrl;
   }
 
-  public void setKbit(String kbit) {
-    this.kbit = kbit;
-  }
-
-  public String getKbit() {
-    return this.kbit;
-  }
-
-  public void setDownloadStatus(int status) {
-    this.downloadStatus = status;
-  }
-
-  public int getDownloadStatus() {
-    return this.downloadStatus;
-  }
-
-  public void setFilePath(String filePath) {
-    this.filePath = filePath;
-  }
-
-  public String getFilePath() {
-    return this.filePath;
-  }
-
-  public void setGenreID(String genreID) {
-    this.genreID = genreID;
-  }
-
-  public String getGenreID() {
-    return this.genreID;
-  }
-
-  public void setGenreName(String genreName) {
-    this.genreName = genreName;
-  }
-
-  public String getGenreName() {
-    return this.genreName;
-  }
-
   public int getDuration() {
     return this.duration;
   }
@@ -128,21 +81,7 @@ public class Song implements JSONAble {
   }
 
   public JSONObject toJSON() {
-    JSONObject json = new JSONObject();
-    try {
-      json.put("songId", this.songId);
-      json.put("songName", this.songName);
-      json.put("artistName", this.artistName);
-      json.put("streamUrl", this.streamUrl);
-      json.put("kbit", this.kbit);
-      json.put("genreID", this.genreID);
-      json.put("genreName", this.genreName);
-      json.put("filePath", this.filePath);
-      json.put("duration", this.duration);
-      json.put("image", this.image);
-    } catch (Exception e) {
-    }
-    return json;
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   public void fromJSON(String jsonString) {
