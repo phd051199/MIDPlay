@@ -25,7 +25,6 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
 
   private Command nowPlayingCommand;
   private Command exitCommand;
-  private Command selectCommand;
   private Command searchCommand;
   private Command addToPlaylistCommand;
   private Command removeFromPlaylistCommand;
@@ -55,14 +54,12 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void initCommands() {
-    this.selectCommand = new Command(I18N.tr("select"), Command.OK, 1);
     this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 2);
     this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
     this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 3);
     this.addToPlaylistCommand = new Command(I18N.tr("add_to_playlist"), Command.ITEM, 4);
     this.removeFromPlaylistCommand = new Command(I18N.tr("remove_from_playlist"), Command.ITEM, 5);
 
-    this.addCommand(this.selectCommand);
     this.addCommand(this.exitCommand);
     this.addCommand(this.searchCommand);
     this.addCommand(this.nowPlayingCommand);
@@ -76,7 +73,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   public void commandAction(Command c, Displayable d) {
     if (c == this.exitCommand) {
       this.observer.goBack();
-    } else if (c == this.selectCommand || c == List.SELECT_COMMAND) {
+    } else if (c == List.SELECT_COMMAND) {
       int selectedItemIndex = getSelectedIndex();
       if (selectedItemIndex >= 0 && selectedItemIndex < this.songItems.size()) {
         Song song = (Song) this.songItems.elementAt(selectedItemIndex);

@@ -27,6 +27,7 @@ public class SettingManager {
   private String audioQuality;
   private String service;
   private boolean autoUpdate;
+  private boolean loadPlaylistArt;
 
   private SettingManager() {
     recordStore = new ReadWriteRecordStore(SETTINGS_STORE_NAME);
@@ -46,6 +47,7 @@ public class SettingManager {
         this.audioQuality = settings.optString("audioQuality", AUDIO_QUALITIES[0]);
         this.service = settings.optString("service", AVAILABLE_SERVICES[0]);
         this.autoUpdate = settings.optBoolean("autoUpdate", true);
+        this.loadPlaylistArt = settings.optBoolean("loadPlaylistArt", true);
 
         re.destroy();
       } else {
@@ -66,6 +68,7 @@ public class SettingManager {
     this.audioQuality = AUDIO_QUALITIES[0];
     this.service = AVAILABLE_SERVICES[0];
     this.autoUpdate = true;
+    this.loadPlaylistArt = true;
   }
 
   public String[] getAudioQualities() {
@@ -76,16 +79,17 @@ public class SettingManager {
     return AVAILABLE_SERVICES;
   }
 
-  public void saveSettings(String language, String audioQuality, String service) {
-    saveSettings(language, audioQuality, service, "true");
-  }
-
   public void saveSettings(
-      String language, String audioQuality, String service, String autoUpdate) {
+      String language,
+      String audioQuality,
+      String service,
+      String autoUpdate,
+      String loadPlaylistArt) {
     this.language = language;
     this.audioQuality = audioQuality;
     this.service = service;
     this.autoUpdate = "true".equals(autoUpdate);
+    this.loadPlaylistArt = "true".equals(loadPlaylistArt);
 
     JSONObject settings = new JSONObject();
     try {
@@ -93,6 +97,7 @@ public class SettingManager {
       settings.put("audioQuality", this.audioQuality);
       settings.put("service", this.service);
       settings.put("autoUpdate", this.autoUpdate);
+      settings.put("loadPlaylistArt", this.loadPlaylistArt);
     } catch (Exception e) {
     }
 
@@ -238,7 +243,11 @@ public class SettingManager {
 
   public String[] getAllCurrentSettings() {
     return new String[] {
-      this.language, this.audioQuality, this.service, this.autoUpdate ? "true" : "false"
+      this.language,
+      this.audioQuality,
+      this.service,
+      this.autoUpdate ? "true" : "false",
+      this.loadPlaylistArt ? "true" : "false"
     };
   }
 
@@ -256,6 +265,14 @@ public class SettingManager {
 
   public boolean isAutoUpdateEnabled() {
     return this.autoUpdate;
+  }
+
+  public boolean isLoadPlaylistArtEnabled() {
+    return this.loadPlaylistArt;
+  }
+
+  public void setLoadPlaylistArt(boolean loadPlaylistArt) {
+    this.loadPlaylistArt = loadPlaylistArt;
   }
 
   public interface ConfigCallback {

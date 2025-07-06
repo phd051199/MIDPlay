@@ -1,5 +1,6 @@
 package app.ui;
 
+import app.MIDPlay;
 import app.common.Common;
 import app.common.ParseData;
 import app.common.SettingManager;
@@ -51,7 +52,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   private Command nowPlayingCommand;
-  private Command selectCommand;
+  private Command switchServiceCommand;
   private Command exitCommand;
   private Utils.BreadCrumbTrail observer;
   Thread mLoadDataThread;
@@ -78,17 +79,17 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void initCommands() {
-    this.selectCommand = new Command(I18N.tr("select"), Command.OK, 0);
+    this.switchServiceCommand = new Command(getNextServiceCommandLabel(), Command.SCREEN, 2);
     this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 1);
-    this.exitCommand = new Command(I18N.tr("exit"), Command.EXIT, 2);
+    this.exitCommand = new Command(I18N.tr("exit"), Command.EXIT, 3);
 
-    this.addCommand(this.selectCommand);
+    this.addCommand(this.switchServiceCommand);
     this.addCommand(this.nowPlayingCommand);
     this.addCommand(this.exitCommand);
   }
 
   public void commandAction(Command c, Displayable d) {
-    if (c == this.selectCommand || c == List.SELECT_COMMAND) {
+    if (c == List.SELECT_COMMAND) {
       if (SettingManager.getInstance().getCurrentService().equals("nct")) {
         this.itemActionNCT();
       } else {
@@ -100,6 +101,8 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       }
     } else if (c == this.nowPlayingCommand) {
       gotoNowPlaying(this.observer);
+    } else if (c == this.switchServiceCommand) {
+      switchService();
     }
   }
 
@@ -284,5 +287,56 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       }
     } catch (Exception var2) {
     }
+  }
+
+  private String getNextServiceCommandLabel() {
+    SettingManager settingManager = SettingManager.getInstance();
+    String currentService = settingManager.getCurrentService();
+    String[] availableServices = settingManager.getAvailableServices();
+
+    String nextService = availableServices[0];
+    for (int i = 0; i < availableServices.length - 1; i++) {
+      if (availableServices[i].equals(currentService)) {
+        nextService = availableServices[i + 1];
+        break;
+      }
+    }
+
+    if (currentService.equals(availableServices[availableServices.length - 1])) {
+      nextService = availableServices[0];
+    }
+
+    return Common.replace(I18N.tr("switch_service_to"), "{0}", nextService);
+  }
+
+  private void switchService() {
+    SettingManager settingManager = SettingManager.getInstance();
+    String currentService = settingManager.getCurrentService();
+    String[] availableServices = settingManager.getAvailableServices();
+
+    String nextService = availableServices[0];
+    for (int i = 0; i < availableServices.length - 1; i++) {
+      if (availableServices[i].equals(currentService)) {
+        nextService = availableServices[i + 1];
+        break;
+      }
+    }
+
+    if (currentService.equals(availableServices[availableServices.length - 1])) {
+      nextService = availableServices[0];
+    }
+
+    settingManager.saveSettings(
+        settingManager.getCurrentLanguage(),
+        settingManager.getCurrentAudioQuality(),
+        nextService,
+        settingManager.isAutoUpdateEnabled() ? "true" : "false",
+        settingManager.isLoadPlaylistArtEnabled() ? "true" : "false");
+
+    final MainList mainList = Utils.createMainMenu(observer, nextService);
+    if (observer instanceof MIDPlay) {
+      ((MIDPlay) observer).clearHistory();
+    }
+    observer.replaceCurrent(mainList);
   }
 }

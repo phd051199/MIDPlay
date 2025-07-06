@@ -4,6 +4,7 @@ import app.MIDPlay;
 import app.common.Common;
 import app.common.ParseData;
 import app.common.ReadWriteRecordStore;
+import app.common.SettingManager;
 import app.interfaces.DataLoader;
 import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
@@ -28,7 +29,6 @@ import org.json.me.JSONObject;
 public class FavoritesList extends List implements CommandListener, LoadDataObserver {
 
   private Command backCommand;
-  private Command selectCommand;
   private Command removeCommand;
   private Command createPlaylistCommand;
   private Command renamePlaylistCommand;
@@ -54,13 +54,11 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
 
   private void initCommands() {
     this.backCommand = new Command(I18N.tr("back"), Command.BACK, 0);
-    this.selectCommand = new Command(I18N.tr("select"), Command.OK, 1);
     this.removeCommand = new Command(I18N.tr("remove_from_favorites"), Command.ITEM, 2);
     this.createPlaylistCommand = new Command(I18N.tr("create_playlist"), Command.ITEM, 3);
     this.renamePlaylistCommand = new Command(I18N.tr("rename_playlist"), Command.ITEM, 4);
 
     this.addCommand(backCommand);
-    this.addCommand(selectCommand);
     this.addCommand(removeCommand);
     this.addCommand(createPlaylistCommand);
     this.addCommand(renamePlaylistCommand);
@@ -126,6 +124,10 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   }
 
   private void loadFavoriteImages() {
+    if (!SettingManager.getInstance().isLoadPlaylistArtEnabled()) {
+      return;
+    }
+
     this.imageLoaderThread =
         new Thread(
             new Runnable() {
@@ -210,7 +212,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
     if (c == backCommand) {
       this.cancel();
       this.observer.goBack();
-    } else if (c == selectCommand || c == List.SELECT_COMMAND) {
+    } else if (c == List.SELECT_COMMAND) {
       openSelectedPlaylist();
     } else if (c == removeCommand) {
       removeSelectedFavorite();

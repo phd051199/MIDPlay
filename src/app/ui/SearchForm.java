@@ -100,7 +100,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   private void gotoSearchPlaylist(String keyword, final int curPage, final int perPage) {
-    if (keyword.equals("")) {
+    if (keyword.length() == 0) {
       showAlert("", I18N.tr("search_keyword_empty"), AlertType.ERROR);
       return;
     }

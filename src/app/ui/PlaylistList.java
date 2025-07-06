@@ -4,6 +4,7 @@ import app.MIDPlay;
 import app.common.Common;
 import app.common.ParseData;
 import app.common.ReadWriteRecordStore;
+import app.common.SettingManager;
 import app.interfaces.DataLoader;
 import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
@@ -76,12 +77,9 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   }
 
   private void initCommands() {
-    this.selectCommand = new Command(I18N.tr("select"), Command.OK, 1);
     this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 2);
     this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
     this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 3);
-
-    this.addCommand(this.selectCommand);
     this.addCommand(this.nowPlayingCommand);
 
     if (showAddToFavorites) {
@@ -111,7 +109,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     if (c == this.exitCommand) {
       this.cancel();
       this.observer.goBack();
-    } else if (c == this.selectCommand || c == List.SELECT_COMMAND) {
+    } else if (c == List.SELECT_COMMAND) {
       int selectedItemIndex = getSelectedIndex();
       if (selectedItemIndex >= 0 && selectedItemIndex < this.playlistItems.size()) {
         Playlist playlist = (Playlist) this.playlistItems.elementAt(selectedItemIndex);
@@ -196,6 +194,12 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
 
   private void processImageBatchLoading(final int startIndex) {
     if (this.imageLoaderThread != null && this.imageLoaderThread.isAlive()) {}
+
+    final boolean shouldLoadImages = SettingManager.getInstance().isLoadPlaylistArtEnabled();
+
+    if (!shouldLoadImages) {
+      return;
+    }
 
     this.imageLoaderThread =
         new Thread(

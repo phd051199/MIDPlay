@@ -19,6 +19,7 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
   private static ChoiceGroup audioQualityChoice;
   private static ChoiceGroup serviceChoice;
   private static ChoiceGroup autoUpdateChoice;
+  private static ChoiceGroup performanceChoice;
 
   public static void populateFormWithSettings() {
     try {
@@ -67,6 +68,13 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
           autoUpdateChoice.setSelectedIndex(0, autoUpdate);
         }
       }
+
+      if (settings.length > 4) {
+        boolean loadPlaylistArt = "true".equals(settings[4]);
+        if (performanceChoice != null) {
+          performanceChoice.setSelectedIndex(0, loadPlaylistArt);
+        }
+      }
     } catch (Exception e) {
       setDefaultSettings();
     }
@@ -94,6 +102,9 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
       }
       if (autoUpdateChoice != null) {
         autoUpdateChoice.setSelectedIndex(0, true);
+      }
+      if (performanceChoice != null) {
+        performanceChoice.setSelectedIndex(0, true);
       }
     } catch (Exception e) {
     }
@@ -136,10 +147,14 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
     autoUpdateChoice = new ChoiceGroup(I18N.tr("auto_update"), Choice.MULTIPLE);
     autoUpdateChoice.append(I18N.tr("check_for_update"), null);
 
+    performanceChoice = new ChoiceGroup(I18N.tr("performance"), Choice.MULTIPLE);
+    performanceChoice.append(I18N.tr("load_playlist_art"), null);
+
     append(languageChoice);
     append(audioQualityChoice);
     append(serviceChoice);
     append(autoUpdateChoice);
+    append(performanceChoice);
 
     addCommand(backCommand);
     addCommand(saveCommand);
@@ -163,7 +178,8 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
           selectedLanguage,
           getSelectedAudioQuality(),
           getSelectedService(),
-          isAutoUpdateEnabled() ? "true" : "false");
+          isAutoUpdateEnabled() ? "true" : "false",
+          isLoadPlaylistArtEnabled() ? "true" : "false");
 
       if (languageChanged) {
         I18N.setLanguage(selectedLanguage);
@@ -183,7 +199,6 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
         parent.goBack();
       }
     } catch (Exception e) {
-
     }
   }
 
@@ -218,6 +233,10 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
 
   public boolean isAutoUpdateEnabled() {
     return autoUpdateChoice.isSelected(0);
+  }
+
+  public boolean isLoadPlaylistArtEnabled() {
+    return performanceChoice.isSelected(0);
   }
 
   public Displayable go(Displayable d) {

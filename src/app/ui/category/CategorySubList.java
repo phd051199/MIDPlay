@@ -20,7 +20,6 @@ import javax.microedition.lcdui.List;
 public class CategorySubList extends List implements CommandListener, LoadDataObserver {
 
   private Command exitCommand;
-  private Command selectCommand;
   private Command nowPlayingCommand;
   private Command searchCommand;
 
@@ -41,11 +40,9 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
   }
 
   private void initCommands() {
-    this.selectCommand = new Command(I18N.tr("select"), Command.OK, 1);
     this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 2);
     this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
     this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 3);
-    this.addCommand(this.selectCommand);
     this.addCommand(this.exitCommand);
     this.addCommand(this.searchCommand);
     this.addCommand(this.nowPlayingCommand);
@@ -81,7 +78,7 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
   public void commandAction(Command c, Displayable d) {
     if (c == this.exitCommand) {
       this.observer.goBack();
-    } else if (c == this.selectCommand || c == List.SELECT_COMMAND) {
+    } else if (c == List.SELECT_COMMAND) {
       int selected = this.getSelectedIndex();
       if (selected >= 0 && selected < this.subItems.size()) {
         Category cate = (Category) this.subItems.elementAt(selected);
