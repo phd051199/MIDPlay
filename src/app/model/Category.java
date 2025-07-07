@@ -35,10 +35,6 @@ public class Category implements JSONAble {
     this.subItems = v;
   }
 
-  public JSONObject toJSON() {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
   public void fromJSON(String jsonString) {
     try {
       JSONObject json = new JSONObject(jsonString);

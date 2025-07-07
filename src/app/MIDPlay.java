@@ -2,6 +2,7 @@ package app;
 
 import app.common.ParseData;
 import app.common.SettingManager;
+import app.interfaces.MainObserver;
 import app.interfaces.Observer;
 import app.model.Song;
 import app.ui.MainList;
@@ -18,7 +19,7 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
 
-public class MIDPlay extends MIDlet implements CommandListener, Utils.BreadCrumbTrail {
+public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
 
   private static MIDPlay instance;
 

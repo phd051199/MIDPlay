@@ -5,11 +5,11 @@ import app.common.ParseData;
 import app.interfaces.DataLoader;
 import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
+import app.interfaces.MainObserver;
 import app.model.Category;
 import app.ui.MainList;
 import app.ui.PlaylistList;
 import app.utils.I18N;
-import app.utils.Utils;
 import java.util.Vector;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
@@ -26,7 +26,7 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
   Vector images;
   public int selectedItem = 0;
   Vector cateItems;
-  private Utils.BreadCrumbTrail observer;
+  private MainObserver observer;
   Thread mLoadDataThread;
   private Image defaultImage;
 
@@ -108,7 +108,7 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
         (this.images != null && this.images.size() > index ? this.images.elementAt(index) : null);
   }
 
-  public void setObserver(Utils.BreadCrumbTrail _observer) {
+  public void setObserver(MainObserver _observer) {
     this.observer = _observer;
   }
 

@@ -14,10 +14,6 @@ class Chat implements JSONAble {
     return this.message;
   }
 
-  public JSONObject toJSON() {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
   public void fromJSON(String jsonString) {
     try {
       JSONObject json = new JSONObject(jsonString);

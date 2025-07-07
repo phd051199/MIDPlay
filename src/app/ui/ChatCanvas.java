@@ -6,10 +6,10 @@ import app.common.ParseData;
 import app.interfaces.DataLoader;
 import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
+import app.interfaces.MainObserver;
 import app.model.Playlist;
 import app.utils.I18N;
 import app.utils.TextUtil;
-import app.utils.Utils;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
@@ -67,9 +67,9 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   private Font font;
   private String sessionId;
 
-  private final Utils.BreadCrumbTrail observer;
+  private final MainObserver observer;
 
-  public ChatCanvas(String title, Utils.BreadCrumbTrail observer) {
+  public ChatCanvas(String title, MainObserver observer) {
     this.observer = observer;
     this.setTitle(title);
     this.addCommand(selectCommand);

@@ -3,12 +3,12 @@ package app.ui.player;
 import app.MIDPlay;
 import app.common.ReadWriteRecordStore;
 import app.interfaces.LoadDataObserver;
+import app.interfaces.MainObserver;
 import app.model.Playlist;
 import app.model.Song;
 import app.ui.FavoritesList;
 import app.utils.I18N;
 import app.utils.ImageUtils;
-import app.utils.Utils;
 import java.io.IOException;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
@@ -42,7 +42,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
 
   private String title;
   private PlayerGUI gui;
-  private Utils.BreadCrumbTrail parent;
+  private MainObserver parent;
   private String status = "";
 
   int displayWidth = -1;
@@ -87,7 +87,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   private final int controlButtonWidth = 40;
   private final int controlButtonHeight = 40;
 
-  private Utils.BreadCrumbTrail observer = null;
+  private MainObserver observer = null;
   private Playlist playlist;
   private boolean _play = false;
 
@@ -771,7 +771,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     }
   }
 
-  public void setObserver(Utils.BreadCrumbTrail _observer) {
+  public void setObserver(MainObserver _observer) {
     this.observer = _observer;
   }
 

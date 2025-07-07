@@ -1,13 +1,8 @@
 package app.utils;
 
-import app.model.Song;
+import app.interfaces.MainObserver;
 import app.ui.MainList;
-import app.utils.Utils.BreadCrumbTrail;
-import javax.microedition.lcdui.Command;
-import javax.microedition.lcdui.CommandListener;
-import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
-import javax.microedition.lcdui.TextBox;
 
 public class Utils {
 
@@ -50,24 +45,6 @@ public class Utils {
     "search_title", "favorites", "chat", "discover_playlists", "settings", "app_info",
   };
 
-  public static String convertString(String source) {
-    while (true) {
-      try {
-        if (source.indexOf("&#") > 0) {
-          int indexBegin = source.indexOf("&#");
-          int indexEnd = source.indexOf(';');
-          String sChar = source.substring(indexBegin + 2, indexEnd - 1);
-          int ichar = Integer.parseInt(sChar);
-          String replace = String.valueOf((char) ichar);
-          source = source.substring(0, indexBegin - 1) + replace + source.substring(indexEnd + 1);
-          continue;
-        }
-      } catch (Throwable var6) {
-      }
-      return source;
-    }
-  }
-
   public static Image[] loadMainMenuIcons(String service) {
     String[] icons = service.equals("nct") ? MAIN_MENU_ICONS_NCT : MAIN_MENU_ICONS_SOUNDCLOUD;
     Image[] images = new Image[icons.length];
@@ -90,7 +67,7 @@ public class Utils {
     return labels;
   }
 
-  public static MainList createMainMenu(BreadCrumbTrail observer, String service) {
+  public static MainList createMainMenu(MainObserver observer, String service) {
     Image[] images = loadMainMenuIcons(service);
     String[] labels = getMainMenuItemLabels(service);
     MainList mainMenu = new MainList(I18N.tr("app_name"), labels, images);
@@ -99,86 +76,4 @@ public class Utils {
   }
 
   private Utils() {}
-
-  public static class QueryTask implements CommandListener, Runnable {
-
-    private static Command cancelCommand = new Command("Cancel", Command.CANCEL, 1);
-    private static Command OKCommand = new Command("OK", Command.OK, 1);
-    private static String queryText = "";
-    private Utils.QueryListener queryListener;
-    private Utils.BreadCrumbTrail queryBCT;
-
-    private QueryTask(Utils.QueryListener listener, Utils.BreadCrumbTrail bct) {
-      this.queryListener = listener;
-      this.queryBCT = bct;
-    }
-
-    QueryTask(Utils.QueryListener x0, Utils.BreadCrumbTrail x1, Object x2) {
-      this(x0, x1);
-    }
-
-    public void commandAction(Command c, Displayable s) {
-
-      if (c == cancelCommand) {
-        if (this.queryListener != null) {
-          this.queryListener.queryCancelled();
-        }
-      } else if (c == OKCommand) {
-        if (this.queryListener != null) {
-          queryText = "";
-          if (s instanceof TextBox) {
-            queryText = ((TextBox) s).getString();
-          }
-
-          (new Thread(this)).start();
-        }
-      }
-    }
-
-    public void run() {
-      this.sendListenerEvent();
-    }
-
-    private void sendListenerEvent() {
-      if (this.queryListener != null) {
-        this.queryListener.queryOK(queryText);
-      }
-    }
-  }
-
-  public interface Interruptable {
-
-    void pauseApp();
-
-    void resumeApp();
-  }
-
-  interface QueryListener {
-
-    void queryOK(String var1);
-
-    void queryCancelled();
-  }
-
-  public interface ContentHandler {
-
-    void close();
-
-    boolean canHandle(String var1);
-
-    void handle(Song var1);
-  }
-
-  public interface BreadCrumbTrail {
-
-    Displayable go(Displayable var1);
-
-    Displayable goBack();
-
-    void handle(Song var1);
-
-    Displayable replaceCurrent(Displayable var1);
-
-    Displayable getCurrentDisplayable();
-  }
 }

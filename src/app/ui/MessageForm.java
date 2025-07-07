@@ -1,8 +1,8 @@
 package app.ui;
 
 import app.interfaces.LoadDataObserver;
+import app.interfaces.MainObserver;
 import app.utils.I18N;
-import app.utils.Utils;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
@@ -15,7 +15,7 @@ public class MessageForm extends Form implements CommandListener {
   private LoadDataObserver loadDataObserver;
   Command exitCommand = new Command(I18N.tr("back"), 2, 1);
   StringItem message = new StringItem("", "");
-  private Utils.BreadCrumbTrail observer;
+  private MainObserver observer;
 
   public MessageForm(String title, String dataMessage, String messageType) {
     super(title);
@@ -40,7 +40,7 @@ public class MessageForm extends Form implements CommandListener {
     }
   }
 
-  public void setObserver(Utils.BreadCrumbTrail _observer) {
+  public void setObserver(MainObserver _observer) {
     this.observer = _observer;
   }
 }

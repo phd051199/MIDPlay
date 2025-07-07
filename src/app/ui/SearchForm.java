@@ -7,9 +7,9 @@ import app.common.SettingManager;
 import app.interfaces.DataLoader;
 import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
+import app.interfaces.MainObserver;
 import app.model.Playlist;
 import app.utils.I18N;
-import app.utils.Utils;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -31,7 +31,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   private Command nowPlayingCommand;
   private String keyWord = "";
   private String searchType = "playlist";
-  private Utils.BreadCrumbTrail observer;
+  private MainObserver observer;
   Thread mLoadDataThread;
 
   private final SettingManager settingManager;
@@ -84,7 +84,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
     return this.searchCommand;
   }
 
-  public void setObserver(Utils.BreadCrumbTrail _observer) {
+  public void setObserver(MainObserver _observer) {
     this.observer = _observer;
   }
 

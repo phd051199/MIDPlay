@@ -4,11 +4,11 @@ import app.MIDPlay;
 import app.common.ParseData;
 import app.common.ReadWriteRecordStore;
 import app.interfaces.LoadDataObserver;
+import app.interfaces.MainObserver;
 import app.model.Playlist;
 import app.model.Song;
 import app.ui.player.PlayerCanvas;
 import app.utils.I18N;
-import app.utils.Utils;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -31,7 +31,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
 
   private final Vector images;
   private final Vector songItems;
-  private Utils.BreadCrumbTrail observer;
+  private MainObserver observer;
   int curPage = 1;
   int perPage = 10;
   private final Playlist playlist;
@@ -331,7 +331,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     this.loadMoreSongs(this.playlist.getId(), this.curPage, this.perPage);
   }
 
-  public void setObserver(Utils.BreadCrumbTrail _observer) {
+  public void setObserver(MainObserver _observer) {
     this.observer = _observer;
   }
 
@@ -393,57 +393,35 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
 
     final Song selectedSong = (Song) this.songItems.elementAt(selectedIndex);
 
-    Alert confirmAlert =
-        new Alert("", I18N.tr("confirm_remove_song_from_playlist"), null, AlertType.CONFIRMATION);
-
-    confirmAlert.setTimeout(Alert.FOREVER);
-
-    final Command yesCommand = new Command(I18N.tr("yes"), Command.OK, 1);
-    final Command noCommand = new Command(I18N.tr("no"), Command.CANCEL, 2);
-
-    confirmAlert.addCommand(yesCommand);
-    confirmAlert.addCommand(noCommand);
-
-    confirmAlert.setCommandListener(
-        new CommandListener() {
-          public void commandAction(Command c, Displayable d) {
-            if (c == yesCommand) {
-              removeSongFromPlaylistThread =
-                  new Thread(
-                      new Runnable() {
-                        public void run() {
-                          try {
-                            boolean success =
-                                removeSongFromPlaylist(selectedSong, playlist.getId());
-                            if (success) {
-                              MIDPlay.getInstance()
-                                  .getDisplay()
-                                  .callSerially(
-                                      new Runnable() {
-                                        public void run() {
-                                          songItems.removeElementAt(selectedIndex);
-                                          delete(selectedIndex);
-                                          showAlert(
-                                              "",
-                                              I18N.tr("alert_song_removed_from_playlist"),
-                                              AlertType.CONFIRMATION);
-                                        }
-                                      });
-                            } else {
-                              showAlert("", I18N.tr("alert_error_removing_song"), AlertType.ERROR);
-                            }
-                          } catch (Exception e) {
-                            showAlert("", e.toString(), AlertType.ERROR);
-                          }
-                        }
-                      });
-              removeSongFromPlaylistThread.start();
-            }
-            MIDPlay.getInstance().getDisplay().setCurrent(SongList.this);
-          }
-        });
-
-    MIDPlay.getInstance().getDisplay().setCurrent(confirmAlert);
+    removeSongFromPlaylistThread =
+        new Thread(
+            new Runnable() {
+              public void run() {
+                try {
+                  boolean success = removeSongFromPlaylist(selectedSong, playlist.getId());
+                  if (success) {
+                    MIDPlay.getInstance()
+                        .getDisplay()
+                        .callSerially(
+                            new Runnable() {
+                              public void run() {
+                                songItems.removeElementAt(selectedIndex);
+                                delete(selectedIndex);
+                                showAlert(
+                                    "",
+                                    I18N.tr("alert_song_removed_from_playlist"),
+                                    AlertType.CONFIRMATION);
+                              }
+                            });
+                  } else {
+                    showAlert("", I18N.tr("alert_error_removing_song"), AlertType.ERROR);
+                  }
+                } catch (Exception e) {
+                  showAlert("", e.toString(), AlertType.ERROR);
+                }
+              }
+            });
+    removeSongFromPlaylistThread.start();
   }
 
   private boolean removeSongFromPlaylist(Song song, String playlistId) {

@@ -8,10 +8,10 @@ import app.common.SettingManager;
 import app.interfaces.DataLoader;
 import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
+import app.interfaces.MainObserver;
 import app.model.Playlist;
 import app.utils.I18N;
 import app.utils.ImageUtils;
-import app.utils.Utils;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -33,7 +33,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
 
   private Vector images;
   private Vector playlistItems;
-  private Utils.BreadCrumbTrail observer;
+  private MainObserver observer;
   private boolean showAddToFavorites;
   private Image defaultImage;
 
@@ -330,7 +330,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     }
   }
 
-  public void setObserver(Utils.BreadCrumbTrail _observer) {
+  public void setObserver(MainObserver _observer) {
     this.observer = _observer;
   }
 

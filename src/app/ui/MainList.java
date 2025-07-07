@@ -7,6 +7,7 @@ import app.common.SettingManager;
 import app.interfaces.DataLoader;
 import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
+import app.interfaces.MainObserver;
 import app.ui.category.CategoryList;
 import app.utils.I18N;
 import app.utils.Utils;
@@ -20,14 +21,14 @@ import org.json.me.JSONObject;
 
 public class MainList extends List implements CommandListener, LoadDataObserver {
 
-  public static void gotoNowPlaying(Utils.BreadCrumbTrail observer) {
+  public static void gotoNowPlaying(MainObserver observer) {
     if (SongList.playerCanvas != null) {
       SongList.playerCanvas.setObserver(observer);
       observer.go(SongList.playerCanvas);
     }
   }
 
-  public static void gotoSearch(Utils.BreadCrumbTrail observer) {
+  public static void gotoSearch(MainObserver observer) {
     SearchForm searchForm = new SearchForm(I18N.tr("search_title"));
     searchForm.setObserver(observer);
     observer.go(searchForm);
@@ -37,7 +38,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       String title,
       String message,
       String messageType,
-      Utils.BreadCrumbTrail observer,
+      MainObserver observer,
       LoadDataObserver loadDataOberserver) {
     MessageForm messageForm = new MessageForm(title, message, messageType);
     messageForm.setObserver(observer);
@@ -55,7 +56,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   private Command nowPlayingCommand;
   private Command switchServiceCommand;
   private Command exitCommand;
-  private Utils.BreadCrumbTrail observer;
+  private MainObserver observer;
   Thread mLoadDataThread;
 
   public MainList(String title, String[] items, Image[] imageElements) {
@@ -107,7 +108,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     }
   }
 
-  public void setObserver(Utils.BreadCrumbTrail mObserver) {
+  public void setObserver(MainObserver mObserver) {
     this.observer = mObserver;
   }
 

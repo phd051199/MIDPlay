@@ -2,6 +2,7 @@ package app.ui;
 
 import app.MIDPlay;
 import app.common.SettingManager;
+import app.interfaces.MainObserver;
 import app.model.Song;
 import app.utils.I18N;
 import app.utils.Utils;
@@ -12,7 +13,7 @@ import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
 
-public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandListener {
+public class SettingForm extends Form implements MainObserver, CommandListener {
 
   private static final SettingManager settingManager = SettingManager.getInstance();
   private static ChoiceGroup languageChoice;
@@ -112,9 +113,9 @@ public class SettingForm extends Form implements Utils.BreadCrumbTrail, CommandL
 
   private Command backCommand;
   private Command saveCommand;
-  private final Utils.BreadCrumbTrail parent;
+  private final MainObserver parent;
 
-  public SettingForm(String title, Utils.BreadCrumbTrail parent) {
+  public SettingForm(String title, MainObserver parent) {
     super(title);
     this.parent = parent;
     initUI();

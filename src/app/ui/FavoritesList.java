@@ -8,11 +8,11 @@ import app.common.SettingManager;
 import app.interfaces.DataLoader;
 import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
+import app.interfaces.MainObserver;
 import app.model.Playlist;
 import app.model.Song;
 import app.utils.I18N;
 import app.utils.ImageUtils;
-import app.utils.Utils;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -33,7 +33,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   private Command createPlaylistCommand;
   private Command renamePlaylistCommand;
   private final Vector favorites;
-  private final Utils.BreadCrumbTrail observer;
+  private final MainObserver observer;
   private final Vector images;
   private Thread mLoadDataThread;
   private Thread imageLoaderThread;
@@ -42,7 +42,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
   private Image defaultImage;
   private boolean isDestroyed = false;
 
-  public FavoritesList(Utils.BreadCrumbTrail observer) {
+  public FavoritesList(MainObserver observer) {
     super(I18N.tr("favorites"), List.IMPLICIT);
     this.observer = observer;
     this.favorites = new Vector();

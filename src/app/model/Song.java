@@ -43,10 +43,6 @@ public class Song implements JSONAble {
     this.streamUrl = Common.replace(this.streamUrl, "]", "%5D");
   }
 
-  public void setStreamUrlNotReplaceSpecialChar(String streamUrl) {
-    this.streamUrl = streamUrl;
-  }
-
   public String getStreamUrl() {
     return this.streamUrl;
   }
@@ -59,29 +55,12 @@ public class Song implements JSONAble {
     this.duration = duration;
   }
 
-  public String createFileName() {
-    String result = "New Song";
-    if (this.songName != null && this.songName.length() > 0) {
-      result = this.songName;
-    }
-
-    if (this.artistName != null && this.artistName.length() > 0) {
-      result = result + " - " + this.artistName;
-    }
-
-    return result;
-  }
-
   public void setImage(String image) {
     this.image = image;
   }
 
   public String getImage() {
     return this.image;
-  }
-
-  public JSONObject toJSON() {
-    throw new UnsupportedOperationException("Not supported yet.");
   }
 
   public void fromJSON(String jsonString) {
