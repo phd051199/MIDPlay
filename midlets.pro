@@ -24,5 +24,4 @@
 -dontwarn org.json.**
 
 -dontoptimize
--dontpreverify
 -flattenpackagehierarchy
