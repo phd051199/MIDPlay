@@ -195,6 +195,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     this._loadingAlbumArt = false;
 
     if (this.gui != null) {
+      this.gui.shutdown();
       this.gui.closePlayer();
       this.gui = null;
     }
@@ -207,6 +208,9 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   private synchronized PlayerGUI getGUI() {
     if (this.gui == null) {
       this.gui = new PlayerGUI(this);
+
+      updateRepeatCommand();
+      updateShuffleCommand();
     }
     return this.gui;
   }
@@ -217,16 +221,20 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     }
 
     String commandText = "";
-    switch (this.getGUI().getRepeatMode()) {
-      case PlayerGUI.REPEAT_OFF:
-        commandText = I18N.tr("repeat") + ": " + I18N.tr("off");
-        break;
-      case PlayerGUI.REPEAT_ONE:
-        commandText = I18N.tr("repeat") + ": " + I18N.tr("one");
-        break;
-      case PlayerGUI.REPEAT_ALL:
-        commandText = I18N.tr("repeat") + ": " + I18N.tr("all");
-        break;
+    if (this.gui != null) {
+      switch (this.gui.getRepeatMode()) {
+        case PlayerGUI.REPEAT_OFF:
+          commandText = I18N.tr("repeat") + ": " + I18N.tr("off");
+          break;
+        case PlayerGUI.REPEAT_ONE:
+          commandText = I18N.tr("repeat") + ": " + I18N.tr("one");
+          break;
+        case PlayerGUI.REPEAT_ALL:
+          commandText = I18N.tr("repeat") + ": " + I18N.tr("all");
+          break;
+      }
+    } else {
+      commandText = I18N.tr("repeat") + ": " + I18N.tr("all");
     }
 
     this.repeatCommand = new Command(commandText, Command.SCREEN, 5);
@@ -238,10 +246,14 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       this.removeCommand(this.shuffleCommand);
     }
 
-    String commandText =
-        I18N.tr("shuffle")
-            + ": "
-            + (this.getGUI().getShuffleMode() ? I18N.tr("on") : I18N.tr("off"));
+    String commandText;
+    if (this.gui != null) {
+      commandText =
+          I18N.tr("shuffle") + ": " + (this.gui.getShuffleMode() ? I18N.tr("on") : I18N.tr("off"));
+    } else {
+
+      commandText = I18N.tr("shuffle") + ": " + I18N.tr("off");
+    }
 
     this.shuffleCommand = new Command(commandText, Command.SCREEN, 6);
     this.addCommand(this.shuffleCommand);
@@ -968,8 +980,17 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     this.addCommand(this.stopCommand);
     this.addCommand(this.addToPlaylistCommand);
 
-    updateRepeatCommand();
-    updateShuffleCommand();
+    if (this.repeatCommand == null) {
+      this.repeatCommand =
+          new Command(I18N.tr("repeat") + ": " + I18N.tr("all"), Command.SCREEN, 5);
+      this.addCommand(this.repeatCommand);
+    }
+
+    if (this.shuffleCommand == null) {
+      this.shuffleCommand =
+          new Command(I18N.tr("shuffle") + ": " + I18N.tr("off"), Command.SCREEN, 6);
+      this.addCommand(this.shuffleCommand);
+    }
   }
 
   public void cancel() {}

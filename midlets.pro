@@ -7,21 +7,22 @@
 -microedition
 
 -overloadaggressively
--overloadaggressively
 -repackageclasses ''
 
 -allowaccessmodification
 -printmapping out.map
 
 -keep public class app.MIDPlay extends javax.microedition.midlet.MIDlet {
-    public <init>();           # Keep the constructor
-    public void startApp();    # Keep the startApp method
-    public void pauseApp();    # Keep the pauseApp method
-    public void destroyApp(boolean); # Keep the destroyApp method
+    public <init>();
+    public void startApp();
+    public void pauseApp();
+    public void destroyApp(boolean);
 }
 
 -dontwarn java.lang.**
 -dontwarn javax.microedition.**
 -dontwarn org.json.**
 
--optimizations !code/simplification/arithmetic,!field/*,!class/merging/*,!code/allocation/variable
+-dontoptimize
+-dontpreverify
+-flattenpackagehierarchy

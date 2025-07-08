@@ -1,5 +1,7 @@
 package app.common;
 
+import app.constants.Services;
+
 public class PlayerMethod {
   public static final int PASS_URL = 0;
   public static final int PASS_CONNECTION_STREAM = 1;
@@ -77,7 +79,7 @@ public class PlayerMethod {
       }
     }
 
-    if (SettingManager.getInstance().getCurrentService().equals("soundcloud")
+    if (SettingManager.getInstance().getCurrentService().equals(Services.SOUNDCLOUD)
         && playerHttpMethod == PASS_URL) {
       playerHttpMethod = PASS_CONNECTION_STREAM;
     }

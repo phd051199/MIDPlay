@@ -1,6 +1,7 @@
 package app.ui.player;
 
 import app.common.PlayerMethod;
+import app.common.PlayerSettingsManager;
 import app.common.RestClient;
 import app.model.Song;
 import app.utils.I18N;
@@ -46,6 +47,8 @@ public class PlayerGUI implements PlayerListener {
   private boolean restartOnResume = false;
   private boolean isTransitioning = false;
 
+  private final PlayerSettingsManager settingsManager;
+
   private int playerHttpMethod;
 
   HttpConnection httpConn = null;
@@ -58,7 +61,20 @@ public class PlayerGUI implements PlayerListener {
 
   public PlayerGUI(PlayerCanvas parent) {
     this.parent = parent;
+    this.settingsManager = PlayerSettingsManager.getInstance();
+
+    this.loadPlayerConfigs();
     this.setStatus("");
+  }
+
+  private void loadPlayerConfigs() {
+    this.currentVolumeLevel = settingsManager.getVolumeLevel();
+    this.repeatMode = settingsManager.getRepeatMode();
+    this.shuffleMode = settingsManager.getShuffleMode();
+  }
+
+  private void savePlayerConfigs() {
+    settingsManager.savePlayerSettings(currentVolumeLevel, repeatMode, shuffleMode);
   }
 
   public void setListSong(Vector lst, int index) {
@@ -120,11 +136,13 @@ public class PlayerGUI implements PlayerListener {
 
   public void setRepeatMode(int mode) {
     this.repeatMode = mode;
+    savePlayerConfigs();
   }
 
   public void toggleRepeatMode() {
     this.repeatMode = (this.repeatMode + 1) % 3;
     this.parent.updateRepeatCommand();
+    savePlayerConfigs();
   }
 
   public boolean getShuffleMode() {
@@ -133,6 +151,7 @@ public class PlayerGUI implements PlayerListener {
 
   public void setShuffleMode(boolean mode) {
     this.shuffleMode = mode;
+    savePlayerConfigs();
   }
 
   public void toggleShuffleMode() {
@@ -150,6 +169,8 @@ public class PlayerGUI implements PlayerListener {
         shufflePlayedCount++;
       }
     }
+
+    savePlayerConfigs();
   }
 
   public Vector getListSong() {
@@ -524,6 +545,8 @@ public class PlayerGUI implements PlayerListener {
 
     vc.setLevel(currentVolumeLevel);
     this.setVolumeStatus(currentVolumeLevel);
+
+    savePlayerConfigs();
   }
 
   private void setVolumeStatus(int cv) {
@@ -696,6 +719,12 @@ public class PlayerGUI implements PlayerListener {
       }
     }
     this.restartOnResume = false;
+  }
+
+  public void shutdown() {
+    if (settingsManager != null) {
+      settingsManager.shutdown();
+    }
   }
 
   private class SPTimerTask extends TimerTask {

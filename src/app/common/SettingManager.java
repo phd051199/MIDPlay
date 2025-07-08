@@ -1,12 +1,13 @@
 package app.common;
 
+import app.constants.Services;
 import app.utils.I18N;
 import javax.microedition.rms.RecordEnumeration;
 import org.json.me.JSONObject;
 
 public class SettingManager {
   private static final String[] AUDIO_QUALITIES = {"128kbps", "320kbps"};
-  private static final String[] AVAILABLE_SERVICES = {"nct", "soundcloud"};
+  private static final String[] AVAILABLE_SERVICES = {Services.NCT, Services.SOUNDCLOUD};
   private static SettingManager instance;
 
   private static final String SETTINGS_STORE_NAME = "settings";

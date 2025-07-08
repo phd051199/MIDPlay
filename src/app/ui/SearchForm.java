@@ -3,7 +3,7 @@ package app.ui;
 import app.MIDPlay;
 import app.common.Common;
 import app.common.ParseData;
-import app.common.SettingManager;
+import app.common.SearchSettingsManager;
 import app.interfaces.DataLoader;
 import app.interfaces.LoadDataListener;
 import app.interfaces.LoadDataObserver;
@@ -19,7 +19,6 @@ import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.TextField;
-import org.json.me.JSONObject;
 
 public class SearchForm extends Form implements CommandListener, LoadDataObserver {
 
@@ -34,12 +33,12 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   private MainObserver observer;
   Thread mLoadDataThread;
 
-  private final SettingManager settingManager;
+  private final SearchSettingsManager searchSettingsManager;
 
   public SearchForm(String title) {
     super(title);
 
-    settingManager = SettingManager.getInstance();
+    searchSettingsManager = SearchSettingsManager.getInstance();
 
     this.append(this.symbolField);
     this.searchTypeGroup.append(I18N.tr("playlist"), null);
@@ -53,8 +52,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   private void loadSearchConfig() {
-    JSONObject config = settingManager.loadConfigSync();
-    int savedTypeIndex = config.optInt("searchTypeIndex", 0);
+    int savedTypeIndex = searchSettingsManager.getSearchTypeIndex();
 
     if (savedTypeIndex >= 0 && savedTypeIndex < searchTypeGroup.size()) {
       searchTypeGroup.setSelectedIndex(savedTypeIndex, true);
@@ -62,14 +60,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   private void saveSearchConfig() {
-    try {
-      JSONObject config = settingManager.loadConfigSync();
-      config.put("searchTypeIndex", new Integer(searchTypeGroup.getSelectedIndex()));
-
-      settingManager.saveConfig(config);
-    } catch (Exception e) {
-
-    }
+    searchSettingsManager.saveSearchSettings(searchTypeGroup.getSelectedIndex());
   }
 
   public TextField getSymbolField() {
@@ -200,8 +191,8 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   public void quit() {
-    if (settingManager != null) {
-      settingManager.shutdown();
+    if (searchSettingsManager != null) {
+      searchSettingsManager.shutdown();
     }
 
     try {
