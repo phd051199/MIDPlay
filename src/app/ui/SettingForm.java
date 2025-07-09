@@ -6,12 +6,15 @@ import app.interfaces.MainObserver;
 import app.model.Song;
 import app.utils.I18N;
 import app.utils.Utils;
+import javax.microedition.lcdui.Alert;
+import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Choice;
 import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
+import javax.microedition.lcdui.TextField;
 
 public class SettingForm extends Form implements MainObserver, CommandListener {
 
@@ -21,6 +24,8 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
   private static ChoiceGroup serviceChoice;
   private static ChoiceGroup autoUpdateChoice;
   private static ChoiceGroup performanceChoice;
+  private static TextField themeColorField;
+  private static TextField backgroundColorField;
 
   public static void populateFormWithSettings() {
     try {
@@ -76,6 +81,20 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
           performanceChoice.setSelectedIndex(0, loadPlaylistArt);
         }
       }
+
+      if (settings.length > 5) {
+        String themeColor = settings[5];
+        if (themeColorField != null) {
+          themeColorField.setString(themeColor);
+        }
+      }
+
+      if (settings.length > 6) {
+        String backgroundColor = settings[6];
+        if (backgroundColorField != null) {
+          backgroundColorField.setString(backgroundColor);
+        }
+      }
     } catch (Exception e) {
       setDefaultSettings();
     }
@@ -106,6 +125,12 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
       }
       if (performanceChoice != null) {
         performanceChoice.setSelectedIndex(0, true);
+      }
+      if (themeColorField != null) {
+        themeColorField.setString("410A4A");
+      }
+      if (backgroundColorField != null) {
+        backgroundColorField.setString("F0F0F0");
       }
     } catch (Exception e) {
     }
@@ -151,11 +176,19 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
     performanceChoice = new ChoiceGroup(I18N.tr("performance"), Choice.MULTIPLE);
     performanceChoice.append(I18N.tr("load_playlist_art"), null);
 
+    themeColorField =
+        new TextField(I18N.tr("theme_color"), settingManager.getThemeColor(), 6, TextField.ANY);
+    backgroundColorField =
+        new TextField(
+            I18N.tr("background_color"), settingManager.getBackgroundColor(), 6, TextField.ANY);
+
     append(languageChoice);
     append(audioQualityChoice);
     append(serviceChoice);
     append(autoUpdateChoice);
     append(performanceChoice);
+    append(themeColorField);
+    append(backgroundColorField);
 
     addCommand(backCommand);
     addCommand(saveCommand);
@@ -167,6 +200,18 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
       String selectedLanguage = getSelectedLanguage();
       String currentLanguage = settingManager.getCurrentLanguage();
       String currentService = settingManager.getCurrentService();
+      String themeColor = getThemeColor();
+      String backgroundColor = getBackgroundColor();
+
+      if (!isValidHexColor(themeColor)) {
+        showAlert("", I18N.tr("color_format_description"));
+        return;
+      }
+
+      if (!isValidHexColor(backgroundColor)) {
+        showAlert("", I18N.tr("color_format_description"));
+        return;
+      }
 
       boolean languageChanged = !selectedLanguage.equals(currentLanguage);
       boolean serviceChanged = !getSelectedService().equals(currentService);
@@ -180,7 +225,9 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
           getSelectedAudioQuality(),
           getSelectedService(),
           isAutoUpdateEnabled() ? "true" : "false",
-          isLoadPlaylistArtEnabled() ? "true" : "false");
+          isLoadPlaylistArtEnabled() ? "true" : "false",
+          themeColor,
+          backgroundColor);
 
       if (languageChanged) {
         I18N.setLanguage(selectedLanguage);
@@ -200,6 +247,33 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
         parent.goBack();
       }
     } catch (Exception e) {
+    }
+  }
+
+  private void showAlert(String title, String message) {
+    Alert alert = new Alert(title, message, null, AlertType.WARNING);
+    alert.setTimeout(Alert.FOREVER);
+    MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
+  }
+
+  private boolean isValidHexColor(String color) {
+    if (color == null || color.trim().length() == 0) {
+      return true;
+    }
+
+    if (color.charAt(0) == '#') {
+      color = color.substring(1);
+    }
+
+    if (color.length() != 6) {
+      return false;
+    }
+
+    try {
+      Integer.parseInt(color, 16);
+      return true;
+    } catch (NumberFormatException e) {
+      return false;
     }
   }
 
@@ -238,6 +312,34 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
 
   public boolean isLoadPlaylistArtEnabled() {
     return performanceChoice.isSelected(0);
+  }
+
+  public String getThemeColor() {
+    String color = themeColorField.getString();
+
+    if (color == null || color.trim().length() == 0) {
+      return "410A4A";
+    }
+
+    if (color.charAt(0) == '#') {
+      color = color.substring(1);
+    }
+
+    return color;
+  }
+
+  public String getBackgroundColor() {
+    String color = backgroundColorField.getString();
+
+    if (color == null || color.trim().length() == 0) {
+      return "F0F0F0";
+    }
+
+    if (color.charAt(0) == '#') {
+      color = color.substring(1);
+    }
+
+    return color;
   }
 
   public Displayable go(Displayable d) {
