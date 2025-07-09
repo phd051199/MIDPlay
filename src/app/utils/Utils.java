@@ -72,9 +72,9 @@ public class Utils {
   }
 
   public static MainList createMainMenu(MainObserver parent, String service) {
-    return Services.SOUNDCLOUD.equals(service)
-        ? createSoundcloudMainMenu(parent)
-        : createNCTMainMenu(parent);
+    return Services.NCT.equals(service)
+        ? createNCTMainMenu(parent)
+        : createSoundcloudMainMenu(parent, service);
   }
 
   private static MainList createNCTMainMenu(MainObserver parent) {
@@ -111,7 +111,7 @@ public class Utils {
     return l;
   }
 
-  private static MainList createSoundcloudMainMenu(MainObserver parent) {
+  private static MainList createSoundcloudMainMenu(MainObserver parent, String service) {
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
     int[] menuOrder = menuSettingsManager.getSoundcloudMenuOrder(MAIN_MENU_ITEMS_SOUNDCLOUD.length);
     boolean[] menuVisibility =
@@ -119,9 +119,7 @@ public class Utils {
 
     MainList l =
         new MainList(
-            I18N.tr("app_name") + " - " + Services.SOUNDCLOUD,
-            I18N.tr("main_list_description"),
-            Services.SOUNDCLOUD);
+            I18N.tr("app_name") + " - " + service, I18N.tr("main_list_description"), service);
 
     for (int i = 0; i < menuOrder.length; i++) {
       int originalIndex = menuOrder[i];

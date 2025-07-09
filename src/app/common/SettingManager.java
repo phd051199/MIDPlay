@@ -7,7 +7,9 @@ import org.json.me.JSONObject;
 
 public class SettingManager {
   private static final String[] AUDIO_QUALITIES = {"128kbps", "320kbps"};
-  private static final String[] AVAILABLE_SERVICES = {Services.NCT, Services.SOUNDCLOUD};
+  private static final String[] AVAILABLE_SERVICES = {
+    Services.NCT, Services.SOUNDCLOUD, Services.YTMUSIC, Services.SPOTIFY
+  };
   private static SettingManager instance;
 
   private static final String SETTINGS_STORE_NAME = "settings";
