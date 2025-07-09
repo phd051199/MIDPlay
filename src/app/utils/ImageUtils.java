@@ -13,7 +13,13 @@ public class ImageUtils {
           Constants.SERVICE_URL
               + "/proxy?url="
               + TextUtil.urlEncodeUTF8(
-                  "https://wsrv.nl/?url=" + url + "&output=png&w=" + size + "&h=" + size);
+                  "https://wsrv.nl/?url="
+                      + url
+                      + "&output=png&w="
+                      + size
+                      + "&h="
+                      + size
+                      + "&fit=cover");
       byte[] b = RestClient.getInstance().getBytes(url);
 
       return Image.createImage(b, 0, b.length);
