@@ -2,6 +2,7 @@ package app.ui.player;
 
 import app.MIDPlay;
 import app.common.ReadWriteRecordStore;
+import app.common.SettingManager;
 import app.interfaces.LoadDataObserver;
 import app.interfaces.MainObserver;
 import app.model.Playlist;
@@ -113,6 +114,12 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
 
   private Thread loadAlbumArtThread = null;
   private Thread addSongToPlaylistThread = null;
+
+  private final SettingManager settingManager = SettingManager.getInstance();
+  private int cachedThemeColorRGB;
+  private int cachedBackgroundColorRGB;
+  private String lastThemeColor = "";
+  private String lastBackgroundColor = "";
 
   public PlayerCanvas(String title, Vector lst, int index, Playlist _playlist) {
     this.playlist = _playlist;
@@ -595,6 +602,48 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     return this._imgShuffleOff;
   }
 
+  private int getThemeColor() {
+    String currentThemeColor = settingManager.getThemeColor();
+    if (!currentThemeColor.equals(lastThemeColor)) {
+      try {
+        cachedThemeColorRGB = Integer.parseInt(currentThemeColor, 16);
+        lastThemeColor = currentThemeColor;
+      } catch (Exception e) {
+        cachedThemeColorRGB = 0x410A4A;
+      }
+    }
+    return cachedThemeColorRGB;
+  }
+
+  private void setThemeColor(Graphics g) {
+    int color = getThemeColor();
+    int r = (color >> 16) & 0xFF;
+    int g1 = (color >> 8) & 0xFF;
+    int b = color & 0xFF;
+    g.setColor(r, g1, b);
+  }
+
+  private int getBackgroundColor() {
+    String currentBackgroundColor = settingManager.getBackgroundColor();
+    if (!currentBackgroundColor.equals(lastBackgroundColor)) {
+      try {
+        cachedBackgroundColorRGB = Integer.parseInt(currentBackgroundColor, 16);
+        lastBackgroundColor = currentBackgroundColor;
+      } catch (Exception e) {
+        cachedBackgroundColorRGB = 0xF0F0F0;
+      }
+    }
+    return cachedBackgroundColorRGB;
+  }
+
+  private void setBackgroundColor(Graphics g) {
+    int color = getBackgroundColor();
+    int r = (color >> 16) & 0xFF;
+    int g1 = (color >> 8) & 0xFF;
+    int b = color & 0xFF;
+    g.setColor(r, g1, b);
+  }
+
   public void paint(Graphics g) {
     try {
       int clipX;
@@ -628,10 +677,10 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       int clipWidth = g.getClipWidth();
       int clipHeight = g.getClipHeight();
 
-      g.setColor(245, 245, 245);
+      setBackgroundColor(g);
       g.fillRect(0, 0, this.displayWidth, this.displayHeight);
 
-      g.setColor(65, 10, 74);
+      setThemeColor(g);
       g.fillRect(0, 0, this.displayWidth, this.statusBarHeight);
 
       if (this.intersects(clipY, clipHeight, PLAYER_STATUS_TOP, this.textHeight)) {
@@ -662,7 +711,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
         }
 
         if (this.intersects(clipY, clipHeight, this.songNameTop, this.textHeight)) {
-          g.setColor(65, 10, 74);
+          setThemeColor(g);
           int maxSongNameWidth = this.displayWidth - this.songInfoLeft - 10;
           String truncatedSongName = this.truncateText(this.gui.getSongName(), g, maxSongNameWidth);
           g.drawString(truncatedSongName, this.songInfoLeft, this.songNameTop, 20);
@@ -694,7 +743,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
         g.setColor(220, 220, 220);
         g.fillRect(this.sliderLeft, this.sliderTop, this.sliderWidth, this.sliderHeight);
 
-        g.setColor(65, 10, 74);
+        setThemeColor(g);
         g.fillRect(this.sliderLeft, this.sliderTop, (int) this.slidervalue, this.sliderHeight);
 
         if (this.intersects(clipY, clipHeight, this.timeRateTop, this.textHeight)) {

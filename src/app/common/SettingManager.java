@@ -11,6 +11,7 @@ public class SettingManager {
   private static SettingManager instance;
 
   private static final String SETTINGS_STORE_NAME = "settings";
+  private static final long SAVE_THROTTLE = 2000;
 
   public static synchronized SettingManager getInstance() {
     if (instance == null) {
@@ -23,12 +24,20 @@ public class SettingManager {
   private Thread saveThread = null;
   private Thread loadThread = null;
   private boolean isShuttingDown = false;
+  private boolean settingsModified = false;
+  private long lastSaveTime = 0;
 
   private String language;
   private String audioQuality;
   private String service;
   private boolean autoUpdate;
   private boolean loadPlaylistArt;
+  private String themeColor;
+  private String backgroundColor;
+  private int cachedThemeColorRGB = -1;
+  private int cachedBackgroundColorRGB = -1;
+  private String lastThemeColor = "";
+  private String lastBackgroundColor = "";
 
   private SettingManager() {
     recordStore = new ReadWriteRecordStore(SETTINGS_STORE_NAME);
@@ -49,6 +58,8 @@ public class SettingManager {
         this.service = settings.optString("service", AVAILABLE_SERVICES[0]);
         this.autoUpdate = settings.optBoolean("autoUpdate", true);
         this.loadPlaylistArt = settings.optBoolean("loadPlaylistArt", true);
+        this.themeColor = settings.optString("themeColor", "410A4A");
+        this.backgroundColor = settings.optString("backgroundColor", "F0F0F0");
 
         re.destroy();
       } else {
@@ -70,6 +81,8 @@ public class SettingManager {
     this.service = AVAILABLE_SERVICES[0];
     this.autoUpdate = true;
     this.loadPlaylistArt = true;
+    this.themeColor = "410A4A";
+    this.backgroundColor = "F0F0F0";
   }
 
   public String[] getAudioQualities() {
@@ -85,12 +98,16 @@ public class SettingManager {
       String audioQuality,
       String service,
       String autoUpdate,
-      String loadPlaylistArt) {
+      String loadPlaylistArt,
+      String themeColor,
+      String backgroundColor) {
     this.language = language;
     this.audioQuality = audioQuality;
     this.service = service;
     this.autoUpdate = "true".equals(autoUpdate);
     this.loadPlaylistArt = "true".equals(loadPlaylistArt);
+    this.themeColor = themeColor;
+    this.backgroundColor = backgroundColor;
 
     JSONObject settings = new JSONObject();
     try {
@@ -99,6 +116,8 @@ public class SettingManager {
       settings.put("service", this.service);
       settings.put("autoUpdate", this.autoUpdate);
       settings.put("loadPlaylistArt", this.loadPlaylistArt);
+      settings.put("themeColor", this.themeColor);
+      settings.put("backgroundColor", this.backgroundColor);
     } catch (Exception e) {
     }
 
@@ -107,45 +126,69 @@ public class SettingManager {
 
   public synchronized void saveConfig(final JSONObject config) {
     if (saveThread != null && saveThread.isAlive()) {
-      saveThread.interrupt();
+
+      settingsModified = true;
+      return;
     }
 
-    saveThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
-                try {
-                  if (isShuttingDown) {
-                    return;
-                  }
+    long currentTime = System.currentTimeMillis();
+    if (currentTime - lastSaveTime < SAVE_THROTTLE) {
 
-                  recordStore.openRecStore();
-                  byte[] recordBytes = config.toString().getBytes("UTF-8");
+      settingsModified = true;
+      if (saveThread == null) {
+        saveThread =
+            new Thread(
+                new Runnable() {
+                  public void run() {
+                    try {
+                      Thread.sleep(SAVE_THROTTLE);
+                      if (settingsModified) {
+                        performSave(config);
+                      }
+                    } catch (InterruptedException e) {
 
-                  RecordEnumeration re = recordStore.enumerateRecords(null, null, false);
-                  if (re.hasNextElement()) {
-                    int recordId = re.nextRecordId();
-                    recordStore.setRecord(recordId, recordBytes, 0, recordBytes.length);
-                  } else {
-                    recordStore.writeRecord(config.toString());
-                  }
-                  re.destroy();
-                } catch (Exception e) {
-                } finally {
-                  try {
-                    recordStore.closeRecStore();
-                  } catch (Exception e) {
-                  }
-
-                  synchronized (SettingManager.this) {
-                    if (Thread.currentThread() == saveThread) {
-                      saveThread = null;
                     }
                   }
-                }
-              }
-            });
-    saveThread.start();
+                });
+        saveThread.start();
+      }
+      return;
+    }
+
+    performSave(config);
+  }
+
+  private void performSave(final JSONObject config) {
+    settingsModified = false;
+    lastSaveTime = System.currentTimeMillis();
+
+    try {
+      if (isShuttingDown) {
+        return;
+      }
+
+      recordStore.openRecStore();
+      byte[] recordBytes = config.toString().getBytes("UTF-8");
+
+      RecordEnumeration re = recordStore.enumerateRecords(null, null, false);
+      if (re.hasNextElement()) {
+        int recordId = re.nextRecordId();
+        recordStore.setRecord(recordId, recordBytes, 0, recordBytes.length);
+      } else {
+        recordStore.writeRecord(config.toString());
+      }
+      re.destroy();
+    } catch (Exception e) {
+    } finally {
+      try {
+        recordStore.closeRecStore();
+      } catch (Exception e) {
+      }
+
+      synchronized (SettingManager.this) {
+        saveThread = null;
+      }
+    }
   }
 
   public synchronized void loadConfig(final ConfigCallback callback) {
@@ -248,7 +291,9 @@ public class SettingManager {
       this.audioQuality,
       this.service,
       this.autoUpdate ? "true" : "false",
-      this.loadPlaylistArt ? "true" : "false"
+      this.loadPlaylistArt ? "true" : "false",
+      this.themeColor,
+      this.backgroundColor
     };
   }
 
@@ -274,6 +319,38 @@ public class SettingManager {
 
   public void setLoadPlaylistArt(boolean loadPlaylistArt) {
     this.loadPlaylistArt = loadPlaylistArt;
+  }
+
+  public String getThemeColor() {
+    return this.themeColor;
+  }
+
+  public int getThemeColorRGB() {
+    if (!themeColor.equals(lastThemeColor) || cachedThemeColorRGB == -1) {
+      try {
+        cachedThemeColorRGB = Integer.parseInt(themeColor, 16);
+      } catch (Exception e) {
+        cachedThemeColorRGB = 0x410A4A;
+      }
+      lastThemeColor = themeColor;
+    }
+    return cachedThemeColorRGB;
+  }
+
+  public String getBackgroundColor() {
+    return this.backgroundColor;
+  }
+
+  public int getBackgroundColorRGB() {
+    if (!backgroundColor.equals(lastBackgroundColor) || cachedBackgroundColorRGB == -1) {
+      try {
+        cachedBackgroundColorRGB = Integer.parseInt(backgroundColor, 16);
+      } catch (Exception e) {
+        cachedBackgroundColorRGB = 0xF0F0F0;
+      }
+      lastBackgroundColor = backgroundColor;
+    }
+    return cachedBackgroundColorRGB;
   }
 
   public interface ConfigCallback {

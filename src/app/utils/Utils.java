@@ -80,6 +80,7 @@ public class Utils {
   private static MainList createNCTMainMenu(MainObserver parent) {
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
     int[] menuOrder = menuSettingsManager.getNctMenuOrder(MAIN_MENU_ITEMS_NCT.length);
+    boolean[] menuVisibility = menuSettingsManager.getNctMenuVisibility(MAIN_MENU_ITEMS_NCT.length);
 
     MainList l =
         new MainList(
@@ -90,6 +91,10 @@ public class Utils {
     for (int i = 0; i < menuOrder.length; i++) {
       int originalIndex = menuOrder[i];
       if (originalIndex < 0 || originalIndex >= MAIN_MENU_ITEMS_NCT.length) {
+        continue;
+      }
+
+      if (!menuVisibility[originalIndex]) {
         continue;
       }
 
@@ -109,6 +114,8 @@ public class Utils {
   private static MainList createSoundcloudMainMenu(MainObserver parent) {
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
     int[] menuOrder = menuSettingsManager.getSoundcloudMenuOrder(MAIN_MENU_ITEMS_SOUNDCLOUD.length);
+    boolean[] menuVisibility =
+        menuSettingsManager.getSoundcloudMenuVisibility(MAIN_MENU_ITEMS_SOUNDCLOUD.length);
 
     MainList l =
         new MainList(
@@ -119,6 +126,10 @@ public class Utils {
     for (int i = 0; i < menuOrder.length; i++) {
       int originalIndex = menuOrder[i];
       if (originalIndex < 0 || originalIndex >= MAIN_MENU_ITEMS_SOUNDCLOUD.length) {
+        continue;
+      }
+
+      if (!menuVisibility[originalIndex]) {
         continue;
       }
 

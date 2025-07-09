@@ -21,6 +21,8 @@ public class MenuSettingsManager {
 
   private int[] nctMenuOrder = null;
   private int[] soundcloudMenuOrder = null;
+  private boolean[] nctMenuVisibility = null;
+  private boolean[] soundcloudMenuVisibility = null;
 
   private MenuSettingsManager() {
     recordStore = new ReadWriteRecordStore(MENU_SETTINGS_STORE_NAME);
@@ -52,6 +54,22 @@ public class MenuSettingsManager {
           }
         }
 
+        if (settings.has("nctMenuVisibility")) {
+          JSONArray nctVisibilityArray = settings.getJSONArray("nctMenuVisibility");
+          nctMenuVisibility = new boolean[nctVisibilityArray.length()];
+          for (int i = 0; i < nctVisibilityArray.length(); i++) {
+            nctMenuVisibility[i] = "true".equals(nctVisibilityArray.get(i).toString());
+          }
+        }
+
+        if (settings.has("soundcloudMenuVisibility")) {
+          JSONArray scVisibilityArray = settings.getJSONArray("soundcloudMenuVisibility");
+          soundcloudMenuVisibility = new boolean[scVisibilityArray.length()];
+          for (int i = 0; i < scVisibilityArray.length(); i++) {
+            soundcloudMenuVisibility[i] = "true".equals(scVisibilityArray.get(i).toString());
+          }
+        }
+
         re.destroy();
       } else {
         setDefaultSettings();
@@ -67,9 +85,10 @@ public class MenuSettingsManager {
   }
 
   private void setDefaultSettings() {
-
     nctMenuOrder = null;
     soundcloudMenuOrder = null;
+    nctMenuVisibility = null;
+    soundcloudMenuVisibility = null;
   }
 
   public void saveNctMenuOrder(int[] order) {
@@ -79,6 +98,16 @@ public class MenuSettingsManager {
 
   public void saveSoundcloudMenuOrder(int[] order) {
     this.soundcloudMenuOrder = order;
+    saveSettings();
+  }
+
+  public void saveNctMenuVisibility(boolean[] visibility) {
+    this.nctMenuVisibility = visibility;
+    saveSettings();
+  }
+
+  public void saveSoundcloudMenuVisibility(boolean[] visibility) {
+    this.soundcloudMenuVisibility = visibility;
     saveSettings();
   }
 
@@ -99,6 +128,22 @@ public class MenuSettingsManager {
           scArray.put(soundcloudMenuOrder[i]);
         }
         settings.put("soundcloudMenuOrder", scArray);
+      }
+
+      if (nctMenuVisibility != null) {
+        JSONArray nctVisibilityArray = new JSONArray();
+        for (int i = 0; i < nctMenuVisibility.length; i++) {
+          nctVisibilityArray.put(nctMenuVisibility[i]);
+        }
+        settings.put("nctMenuVisibility", nctVisibilityArray);
+      }
+
+      if (soundcloudMenuVisibility != null) {
+        JSONArray scVisibilityArray = new JSONArray();
+        for (int i = 0; i < soundcloudMenuVisibility.length; i++) {
+          scVisibilityArray.put(soundcloudMenuVisibility[i]);
+        }
+        settings.put("soundcloudMenuVisibility", scVisibilityArray);
       }
     } catch (Exception e) {
     }
@@ -128,6 +173,30 @@ public class MenuSettingsManager {
       defaultOrder[i] = i;
     }
     return defaultOrder;
+  }
+
+  public boolean[] getNctMenuVisibility(int size) {
+    if (nctMenuVisibility != null && nctMenuVisibility.length == size) {
+      return nctMenuVisibility;
+    }
+
+    boolean[] defaultVisibility = new boolean[size];
+    for (int i = 0; i < size; i++) {
+      defaultVisibility[i] = true;
+    }
+    return defaultVisibility;
+  }
+
+  public boolean[] getSoundcloudMenuVisibility(int size) {
+    if (soundcloudMenuVisibility != null && soundcloudMenuVisibility.length == size) {
+      return soundcloudMenuVisibility;
+    }
+
+    boolean[] defaultVisibility = new boolean[size];
+    for (int i = 0; i < size; i++) {
+      defaultVisibility[i] = true;
+    }
+    return defaultVisibility;
   }
 
   public synchronized void saveConfig(final JSONObject config) {

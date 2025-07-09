@@ -57,6 +57,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   private Command nowPlayingCommand;
   private Command reorderCommand;
+  private Command menuVisibilityCommand;
   private Command saveOrderCommand;
   private Command exitCommand;
   private MainObserver observer;
@@ -81,10 +82,12 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   private void initCommands() {
     this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 1);
     this.reorderCommand = new Command(I18N.tr("reorder"), Command.SCREEN, 2);
-    this.exitCommand = new Command(I18N.tr("exit"), Command.EXIT, 3);
+    this.menuVisibilityCommand = new Command(I18N.tr("menu_visibility"), Command.SCREEN, 3);
+    this.exitCommand = new Command(I18N.tr("exit"), Command.EXIT, 4);
 
     this.addCommand(this.nowPlayingCommand);
     this.addCommand(this.reorderCommand);
+    this.addCommand(this.menuVisibilityCommand);
     this.addCommand(this.exitCommand);
   }
 
@@ -107,6 +110,8 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       gotoNowPlaying(this.observer);
     } else if (c == this.reorderCommand) {
       startReorderMode();
+    } else if (c == this.menuVisibilityCommand) {
+      showMenuVisibilityForm();
     } else if (c == this.saveOrderCommand) {
       saveCurrentOrder();
       exitReorderMode();
@@ -119,6 +124,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
     this.removeCommand(this.nowPlayingCommand);
     this.removeCommand(this.reorderCommand);
+    this.removeCommand(this.menuVisibilityCommand);
 
     this.saveOrderCommand = new Command(I18N.tr("save"), Command.SCREEN, 1);
     this.addCommand(this.saveOrderCommand);
@@ -140,11 +146,12 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     this.saveOrderCommand = null;
 
     this.removeCommand(this.exitCommand);
-    this.exitCommand = new Command(I18N.tr("exit"), Command.EXIT, 3);
+    this.exitCommand = new Command(I18N.tr("exit"), Command.EXIT, 4);
     this.addCommand(this.exitCommand);
 
     this.addCommand(this.nowPlayingCommand);
     this.addCommand(this.reorderCommand);
+    this.addCommand(this.menuVisibilityCommand);
   }
 
   private void cancelReorderMode() {
@@ -216,14 +223,21 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   private int findOriginalIndex(String itemText) {
     if (Services.NCT.equals(service)) {
+      boolean[] visibility =
+          MenuSettingsManager.getInstance().getNctMenuVisibility(Utils.MAIN_MENU_ITEMS_NCT.length);
+
       for (int i = 0; i < Utils.MAIN_MENU_ITEMS_NCT.length; i++) {
-        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_NCT[i]))) {
+        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_NCT[i])) && visibility[i]) {
           return i;
         }
       }
     } else {
+      boolean[] visibility =
+          MenuSettingsManager.getInstance()
+              .getSoundcloudMenuVisibility(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
+
       for (int i = 0; i < Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length; i++) {
-        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD[i]))) {
+        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD[i])) && visibility[i]) {
           return i;
         }
       }
@@ -338,53 +352,98 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   private void itemActionNCT() {
     int selectedIndex = this.getSelectedIndex();
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
-    int[] order = menuSettingsManager.getNctMenuOrder(9);
-    int originalIndex = order[selectedIndex];
+    int[] order = menuSettingsManager.getNctMenuOrder(Utils.MAIN_MENU_ITEMS_NCT.length);
+    boolean[] menuVisibility =
+        menuSettingsManager.getNctMenuVisibility(Utils.MAIN_MENU_ITEMS_NCT.length);
 
-    if (originalIndex == 0) { // search
-      MainList.gotoSearch(this.observer);
-    } else if (originalIndex == 1) { // favorites
-      this.gotoFavorites();
-    } else if (originalIndex == 2) { // genres
-      displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-      this.gotoCate();
-    } else if (originalIndex == 3) { // billboard
-      displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-      this.gotoBillboard();
-    } else if (originalIndex == 4) { // new_playlists
-      displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-      this.gotoPlaylist("new");
-    } else if (originalIndex == 5) { // hot_playlists
-      displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-      this.gotoPlaylist("hot");
-    } else if (originalIndex == 6) { // chat
-      this.gotoChat();
-    } else if (originalIndex == 7) { // settings
-      this.gotoSetting();
-    } else if (originalIndex == 8) { // app_info
-      this.gotoAbout();
+    int[] visibleToOriginalMap = new int[this.size()];
+    int visibleCount = 0;
+
+    for (int i = 0; i < order.length; i++) {
+      int originalIndex = order[i];
+      if (originalIndex < 0 || originalIndex >= Utils.MAIN_MENU_ITEMS_NCT.length) {
+        continue;
+      }
+
+      if (menuVisibility[originalIndex]) {
+        if (visibleCount < visibleToOriginalMap.length) {
+          visibleToOriginalMap[visibleCount] = originalIndex;
+          visibleCount++;
+        }
+      }
+    }
+
+    if (selectedIndex >= 0 && selectedIndex < visibleCount) {
+      int originalIndex = visibleToOriginalMap[selectedIndex];
+
+      if (originalIndex == 0) { // search
+        MainList.gotoSearch(this.observer);
+      } else if (originalIndex == 1) { // favorites
+        this.gotoFavorites();
+      } else if (originalIndex == 2) { // genres
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        this.gotoCate();
+      } else if (originalIndex == 3) { // billboard
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        this.gotoBillboard();
+      } else if (originalIndex == 4) { // new_playlists
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        this.gotoPlaylist("new");
+      } else if (originalIndex == 5) { // hot_playlists
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        this.gotoPlaylist("hot");
+      } else if (originalIndex == 6) { // chat
+        this.gotoChat();
+      } else if (originalIndex == 7) { // settings
+        this.gotoSetting();
+      } else if (originalIndex == 8) { // app_info
+        this.gotoAbout();
+      }
     }
   }
 
   private void itemActionSoundCloud() {
     int selectedIndex = this.getSelectedIndex();
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
-    int[] order = menuSettingsManager.getSoundcloudMenuOrder(6);
-    int originalIndex = order[selectedIndex];
+    int[] order =
+        menuSettingsManager.getSoundcloudMenuOrder(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
+    boolean[] menuVisibility =
+        menuSettingsManager.getSoundcloudMenuVisibility(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
 
-    if (originalIndex == 0) { // search
-      MainList.gotoSearch(this.observer);
-    } else if (originalIndex == 1) { // favorites
-      this.gotoFavorites();
-    } else if (originalIndex == 2) { // discover_playlists
-      displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-      this.gotoPlaylist("discover");
-    } else if (originalIndex == 3) { // chat
-      this.gotoChat();
-    } else if (originalIndex == 4) { // settings
-      this.gotoSetting();
-    } else if (originalIndex == 5) { // app_info
-      this.gotoAbout();
+    int[] visibleToOriginalMap = new int[this.size()];
+    int visibleCount = 0;
+
+    for (int i = 0; i < order.length; i++) {
+      int originalIndex = order[i];
+      if (originalIndex < 0 || originalIndex >= Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length) {
+        continue;
+      }
+
+      if (menuVisibility[originalIndex]) {
+        if (visibleCount < visibleToOriginalMap.length) {
+          visibleToOriginalMap[visibleCount] = originalIndex;
+          visibleCount++;
+        }
+      }
+    }
+
+    if (selectedIndex >= 0 && selectedIndex < visibleCount) {
+      int originalIndex = visibleToOriginalMap[selectedIndex];
+
+      if (originalIndex == 0) { // search
+        MainList.gotoSearch(this.observer);
+      } else if (originalIndex == 1) { // favorites
+        this.gotoFavorites();
+      } else if (originalIndex == 2) { // discover_playlists
+        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        this.gotoPlaylist("discover");
+      } else if (originalIndex == 3) { // chat
+        this.gotoChat();
+      } else if (originalIndex == 4) { // settings
+        this.gotoSetting();
+      } else if (originalIndex == 5) { // app_info
+        this.gotoAbout();
+      }
     }
   }
 
@@ -404,5 +463,11 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     if (menuSettingsManager != null) {
       menuSettingsManager.shutdown();
     }
+  }
+
+  private void showMenuVisibilityForm() {
+    MenuVisibilityForm visibilityForm =
+        new MenuVisibilityForm(I18N.tr("menu_visibility"), this.observer, this.service);
+    this.observer.go(visibilityForm);
   }
 }
