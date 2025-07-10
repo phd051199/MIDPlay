@@ -352,7 +352,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
 
   protected void paint(Graphics g) {
     if (font == null) {
-      font = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_PLAIN, Font.SIZE_SMALL);
+      font = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_SMALL);
     }
     int width = getWidth();
     int height = getHeight();
@@ -865,7 +865,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   private void displayAlert(String message, AlertType messageType) {
-    Alert alert = new Alert("", message, null, messageType);
+    Alert alert = new Alert(null, message, null, messageType);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
   }
 

@@ -92,7 +92,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
 
   private void gotoSearchPlaylist(String keyword, final int curPage, final int perPage) {
     if (keyword.length() == 0) {
-      showAlert("", I18N.tr("search_keyword_empty"), AlertType.ERROR);
+      showAlert(I18N.tr("search_keyword_empty"), AlertType.ERROR);
       return;
     }
 
@@ -180,9 +180,13 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
     this.setCommandListener(this);
   }
 
-  private void showAlert(String title, String message, AlertType type) {
-    Alert alert = new Alert(title, message, null, type);
-    alert.setTimeout(2000);
+  private void showAlert(String message, AlertType type) {
+    Alert alert = new Alert(null, message, null, type);
+    if (type == AlertType.ERROR) {
+      alert.setTimeout(Alert.FOREVER);
+    } else {
+      alert.setTimeout(2000);
+    }
     MIDPlay.getInstance().getDisplay().setCurrent(alert, SearchForm.this);
   }
 

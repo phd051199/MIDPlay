@@ -41,7 +41,7 @@ public class ParseData {
   }
 
   public static Vector parseCate(int type) {
-    Vector cateItems = new Vector();
+    Vector cateItems = new Vector(20);
     String result = getCate(type);
     if (result != null && !"".equals(result)) {
       try {
@@ -52,7 +52,7 @@ public class ParseData {
         for (int gi = 0; gi < totalGroups; ++gi) {
           JSONObject groupObj = new JSONObject(jsonArray.getString(gi));
 
-          Vector subVec = new Vector();
+          Vector subVec = new Vector(10);
           if (groupObj.has("SubItems")) {
             JSONArray subs = groupObj.getJSONArray("SubItems");
             int totalSubs = subs.length();
@@ -98,7 +98,7 @@ public class ParseData {
   }
 
   private static Vector parsePlaylists(String key, String jsonResult) {
-    Vector playlistItems = new Vector();
+    Vector playlistItems = new Vector(50);
 
     try {
       JSONObject json = new JSONObject(jsonResult);
@@ -194,7 +194,7 @@ public class ParseData {
   }
 
   private static Vector parseSongOfPlaylist(String jsonResult) {
-    Vector songItems = new Vector();
+    Vector songItems = new Vector(30);
 
     try {
       JSONObject json = new JSONObject(jsonResult);

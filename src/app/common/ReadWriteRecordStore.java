@@ -14,6 +14,7 @@ public class ReadWriteRecordStore {
 
   private RecordStore rs = null;
   private final String name;
+  private String cachedEncoding = null;
 
   public ReadWriteRecordStore(String name) {
     this.name = name;
@@ -39,7 +40,8 @@ public class ReadWriteRecordStore {
   }
 
   public Vector readRecords() throws RecordStoreException, UnsupportedEncodingException {
-    Vector recordItems = new Vector();
+    int recordCount = rs != null ? rs.getNumRecords() : 10;
+    Vector recordItems = new Vector(recordCount);
     RecordEnumeration re = null;
     try {
       re = this.rs.enumerateRecords(null, null, false);
@@ -54,6 +56,45 @@ public class ReadWriteRecordStore {
       }
     }
     return recordItems;
+  }
+
+  public Vector readRecordsBatch() throws RecordStoreException, UnsupportedEncodingException {
+    if (rs == null) {
+      throw new RecordStoreNotOpenException("Record store is not open");
+    }
+
+    int recordCount = rs.getNumRecords();
+    Vector recordItems = new Vector(recordCount);
+    RecordEnumeration re = null;
+
+    try {
+      re = rs.enumerateRecords(null, null, false);
+
+      while (re.hasNextElement()) {
+        byte[] recordData = re.nextRecord();
+        String record = decodeRecordData(recordData);
+        recordItems.addElement(record);
+      }
+    } finally {
+      if (re != null) {
+        re.destroy();
+      }
+    }
+
+    return recordItems;
+  }
+
+  public void writeRecordsBatch(String[] records)
+      throws RecordStoreException, UnsupportedEncodingException {
+    if (records == null || records.length == 0) {
+      return;
+    }
+
+    for (int i = 0; i < records.length; i++) {
+      if (records[i] != null) {
+        writeRecord(records[i]);
+      }
+    }
   }
 
   public void deleteRecord(int recordId) throws RecordStoreException {
@@ -83,18 +124,48 @@ public class ReadWriteRecordStore {
       throw new RecordStoreNotOpenException("Record store is not open");
     }
     byte[] recordData = rs.getRecord(recordId);
+    return decodeRecordData(recordData);
+  }
 
+  private String decodeRecordData(byte[] recordData) throws UnsupportedEncodingException {
+    if (recordData == null || recordData.length == 0) {
+      return "";
+    }
+
+    if (cachedEncoding != null) {
+      return new String(recordData, cachedEncoding);
+    }
+
+    String encoding = detectEncoding(recordData);
+    cachedEncoding = encoding;
+
+    if ("UTF-8".equals(encoding)
+        && recordData.length >= 3
+        && (recordData[0] & 0xFF) == 0xEF
+        && (recordData[1] & 0xFF) == 0xBB
+        && (recordData[2] & 0xFF) == 0xBF) {
+      return new String(recordData, 3, recordData.length - 3, encoding);
+    }
+
+    return new String(recordData, encoding);
+  }
+
+  private String detectEncoding(byte[] recordData) {
     if (recordData.length >= 3
         && (recordData[0] & 0xFF) == 0xEF
         && (recordData[1] & 0xFF) == 0xBB
         && (recordData[2] & 0xFF) == 0xBF) {
-      return new String(recordData, 3, recordData.length - 3, "UTF-8");
+      return "UTF-8";
     }
 
     if (recordData.length > 0 && (recordData[0] == 0xFF || recordData[0] == 0xFE)) {
-      return new String(recordData, "UTF-16");
+      return "UTF-16";
     }
 
-    return new String(recordData, "UTF-8");
+    return "UTF-8";
+  }
+
+  public void clearEncodingCache() {
+    cachedEncoding = null;
   }
 }

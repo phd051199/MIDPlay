@@ -395,7 +395,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   }
 
   private void displayAlert(String message, AlertType messageType) {
-    Alert alert = new Alert("", message, null, messageType);
+    Alert alert = new Alert(null, message, null, messageType);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
   }
 }

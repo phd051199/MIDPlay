@@ -394,10 +394,10 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
 
       this.delete(selectedIndex);
 
-      showAlert("", I18N.tr("alert_removed_from_favorites"), AlertType.CONFIRMATION);
+      showAlert(I18N.tr("alert_removed_from_favorites"), AlertType.CONFIRMATION);
 
     } catch (Exception e) {
-      showAlert("", I18N.tr("alert_error_removing_from_favorites"), AlertType.ERROR);
+      showAlert(I18N.tr("alert_error_removing_from_favorites"), AlertType.ERROR);
     }
   }
 
@@ -447,7 +447,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
 
         loadFavorites();
 
-        showAlert("", I18N.tr("alert_playlist_created"), AlertType.CONFIRMATION);
+        showAlert(I18N.tr("alert_playlist_created"), AlertType.CONFIRMATION);
       } finally {
         try {
           recordStore.closeRecStore();
@@ -455,7 +455,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
         }
       }
     } catch (Exception e) {
-      showAlert("", I18N.tr("alert_error_creating_playlist"), AlertType.ERROR);
+      showAlert(I18N.tr("alert_error_creating_playlist"), AlertType.ERROR);
     }
   }
 
@@ -471,7 +471,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
 
       boolean isCustomPlaylist = selected.has("isCustom") && selected.getBoolean("isCustom");
       if (!isCustomPlaylist) {
-        showAlert("", I18N.tr("alert_cannot_rename_system_playlist"), AlertType.WARNING);
+        showAlert(I18N.tr("alert_cannot_rename_system_playlist"), AlertType.WARNING);
         return;
       }
 
@@ -504,7 +504,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
       MIDPlay.getInstance().getDisplay().setCurrent(renameForm);
 
     } catch (Exception e) {
-      showAlert("", I18N.tr("alert_error_renaming_playlist"), AlertType.ERROR);
+      showAlert(I18N.tr("alert_error_renaming_playlist"), AlertType.ERROR);
     }
   }
 
@@ -524,7 +524,7 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
           set(index, newName, (Image) images.elementAt(index));
         }
 
-        showAlert("", I18N.tr("alert_playlist_renamed"), AlertType.CONFIRMATION);
+        showAlert(I18N.tr("alert_playlist_renamed"), AlertType.CONFIRMATION);
       } finally {
         try {
           recordStore.closeRecStore();
@@ -532,13 +532,17 @@ public class FavoritesList extends List implements CommandListener, LoadDataObse
         }
       }
     } catch (Exception e) {
-      showAlert("", I18N.tr("alert_error_renaming_playlist"), AlertType.ERROR);
+      showAlert(I18N.tr("alert_error_renaming_playlist"), AlertType.ERROR);
     }
   }
 
-  private void showAlert(String title, String message, AlertType type) {
-    Alert alert = new Alert(title, message, null, type);
-    alert.setTimeout(2000);
+  private void showAlert(String message, AlertType type) {
+    Alert alert = new Alert(null, message, null, type);
+    if (type == AlertType.ERROR) {
+      alert.setTimeout(Alert.FOREVER);
+    } else {
+      alert.setTimeout(2000);
+    }
     MIDPlay.getInstance().getDisplay().setCurrent(alert, FavoritesList.this);
   }
 

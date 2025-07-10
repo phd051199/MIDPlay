@@ -7,7 +7,10 @@ import app.interfaces.Observer;
 import app.model.Song;
 import app.ui.MainList;
 import app.ui.SettingForm;
+import app.utils.AsyncNetworkManager;
 import app.utils.I18N;
+import app.utils.ImageUtils;
+import app.utils.ThreadManager;
 import app.utils.Utils;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
@@ -35,7 +38,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
     return APP_VERSION;
   }
 
-  private final Vector history = new Vector();
+  private final Vector history = new Vector(MAX_HISTORY_SIZE);
   private Displayable currentDisplayable;
 
   private Command downloadCmd;
@@ -82,6 +85,18 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   private void cleanup() {
     try {
       history.removeAllElements();
+
+      Displayable current = getCurrentDisplayable();
+      if (current != null) {
+        if (current instanceof app.ui.player.PlayerCanvas) {
+          ((app.ui.player.PlayerCanvas) current).close();
+        }
+      }
+
+      ImageUtils.clearImageCache();
+
+      AsyncNetworkManager.getInstance().shutdown();
+
     } catch (Exception e) {
     }
   }
@@ -98,36 +113,45 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
     }
   }
 
-  public String checkForUpdate() {
-    try {
-      if (!SettingManager.getInstance().isAutoUpdateEnabled()) {
-        return EMPTY_STRING;
-      }
-
-      return checkForUpdate(true);
-    } catch (Exception e) {
-    }
-    return EMPTY_STRING;
+  public void checkForUpdate() {
+    checkForUpdate(true);
   }
 
-  public String checkForUpdate(boolean respectAutoUpdateSetting) {
+  public void checkForUpdate(boolean respectAutoUpdateSetting) {
     try {
       if (respectAutoUpdateSetting && !SettingManager.getInstance().isAutoUpdateEnabled()) {
-        return EMPTY_STRING;
+        return;
       }
 
-      final String updateInfo = ParseData.checkForUpdate();
-      if (!EMPTY_STRING.equals(updateInfo)) {
-        showUpdateDialog(updateInfo);
-        return updateInfo;
-      }
+      checkForUpdateAsync();
     } catch (Exception e) {
+
     }
-    return EMPTY_STRING;
+  }
+
+  private void checkForUpdateAsync() {
+    AsyncNetworkManager networkManager = AsyncNetworkManager.getInstance();
+
+    Thread updateThread =
+        ThreadManager.createThread(
+            new Runnable() {
+              public void run() {
+                try {
+                  final String updateInfo = ParseData.checkForUpdate();
+                  if (!EMPTY_STRING.equals(updateInfo)) {
+                    showUpdateDialog(updateInfo);
+                  }
+                } catch (Exception e) {
+                }
+              }
+            },
+            "UpdateChecker");
+
+    ThreadManager.safeStartThread(updateThread);
   }
 
   private void showUpdateDialog(final String updateInfo) {
-    Alert updateAlert = new Alert("", I18N.tr("update_message"), null, AlertType.INFO);
+    Alert updateAlert = new Alert(null, I18N.tr("update_message"), null, AlertType.INFO);
     updateAlert.setTimeout(Alert.FOREVER);
     updateAlert.addCommand(downloadCmd);
     updateAlert.addCommand(cancelCmd);
@@ -253,7 +277,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   }
 
   public void showErrorAlert(String title, String message) {
-    Alert alert = new Alert(title, message, null, AlertType.ERROR);
+    Alert alert = new Alert(null, message, null, AlertType.ERROR);
     alert.setTimeout(2000);
     Displayable current = getCurrentDisplayable();
     if (current != null) {

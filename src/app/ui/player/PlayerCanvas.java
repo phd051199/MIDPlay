@@ -10,7 +10,7 @@ import app.model.Song;
 import app.ui.FavoritesList;
 import app.utils.I18N;
 import app.utils.ImageUtils;
-import java.io.IOException;
+import app.utils.ThreadManager;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -18,6 +18,7 @@ import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
@@ -38,6 +39,8 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   private final Command stopCommand = new Command(I18N.tr("stop"), Command.SCREEN, 7);
   private final Command addToPlaylistCommand =
       new Command(I18N.tr("add_to_playlist"), Command.SCREEN, 8);
+  private final Command viewPlaylistCommand =
+      new Command(I18N.tr("view_playlist"), Command.SCREEN, 9);
   private Command repeatCommand;
   private Command shuffleCommand;
 
@@ -114,6 +117,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
 
   private Thread loadAlbumArtThread = null;
   private Thread addSongToPlaylistThread = null;
+  private ThreadManager.SimpleThreadPool threadPool = null;
 
   private final SettingManager settingManager = SettingManager.getInstance();
   private int cachedThemeColorRGB;
@@ -121,14 +125,18 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   private String lastThemeColor = "";
   private String lastBackgroundColor = "";
 
+  private Font font;
+
   public PlayerCanvas(String title, Vector lst, int index, Playlist _playlist) {
     this.playlist = _playlist;
     this.setTitle(title);
     this.addCommand(this.backCommand);
     this.setCommandListener(this);
-    this.createCommand();
+    this.createCommands();
 
     this.touchSupported = this.hasPointerEvents();
+
+    this.threadPool = new ThreadManager.SimpleThreadPool(3);
 
     this.change(title, lst, index, this.playlist);
   }
@@ -179,22 +187,15 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   }
 
   public synchronized void close() {
-    if (this.loadAlbumArtThread != null && this.loadAlbumArtThread.isAlive()) {
-      try {
-        this.loadAlbumArtThread.interrupt();
-      } catch (Exception e) {
+    ThreadManager.cleanupThread(this.loadAlbumArtThread);
+    ThreadManager.cleanupThread(this.addSongToPlaylistThread);
 
-      }
-      this.loadAlbumArtThread = null;
-    }
+    this.loadAlbumArtThread = null;
+    this.addSongToPlaylistThread = null;
 
-    if (this.addSongToPlaylistThread != null && this.addSongToPlaylistThread.isAlive()) {
-      try {
-        this.addSongToPlaylistThread.interrupt();
-      } catch (Exception e) {
-
-      }
-      this.addSongToPlaylistThread = null;
+    if (this.threadPool != null) {
+      this.threadPool.shutdown();
+      this.threadPool = null;
     }
 
     this._albumArt = null;
@@ -212,7 +213,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     return this.status.indexOf(I18N.tr("loading")) != -1;
   }
 
-  private synchronized PlayerGUI getGUI() {
+  public synchronized PlayerGUI getGUI() {
     if (this.gui == null) {
       this.gui = new PlayerGUI(this);
 
@@ -272,6 +273,27 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       this._albumArt = null;
       this._loadingAlbumArt = false;
       loadAlbumArt();
+
+      preloadUpcomingAlbumArt();
+    }
+  }
+
+  private void preloadUpcomingAlbumArt() {
+    if (this.gui == null || this.gui.listSong == null) {
+      return;
+    }
+
+    Vector songList = this.gui.listSong;
+    int currentIndex = this.gui.index;
+
+    for (int i = 1; i <= 3 && (currentIndex + i) < songList.size(); i++) {
+      try {
+        Song nextSong = (Song) songList.elementAt(currentIndex + i);
+        if (nextSong != null && nextSong.getImage() != null) {
+          ImageUtils.preloadImage(nextSong.getImage(), artSize);
+        }
+      } catch (Exception e) {
+      }
     }
   }
 
@@ -282,16 +304,10 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
 
     this._loadingAlbumArt = true;
 
-    if (this.loadAlbumArtThread != null && this.loadAlbumArtThread.isAlive()) {
-      try {
-        this.loadAlbumArtThread.interrupt();
-      } catch (Exception e) {
-
-      }
-    }
+    ThreadManager.cleanupThread(this.loadAlbumArtThread);
 
     this.loadAlbumArtThread =
-        new Thread(
+        ThreadManager.createThread(
             new Runnable() {
               public void run() {
                 try {
@@ -299,14 +315,19 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
                   if (_albumArt != null) {
                     updateDisplay();
                   }
-                } catch (IOException e) {
+                } catch (Exception e) {
                   _albumArt = null;
                 } finally {
                   _loadingAlbumArt = false;
                 }
               }
-            });
-    this.loadAlbumArtThread.start();
+            },
+            "AlbumArtLoader");
+
+    if (!ThreadManager.safeStartThread(this.loadAlbumArtThread)) {
+      this._loadingAlbumArt = false;
+      this.loadAlbumArtThread = null;
+    }
   }
 
   protected void keyPressed(int keycode) {
@@ -645,6 +666,11 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   }
 
   public void paint(Graphics g) {
+    if (font == null) {
+      font = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_BOLD, Font.SIZE_MEDIUM);
+    }
+    g.setFont(font);
+
     try {
       int clipX;
       if (this.displayHeight == -1) {
@@ -718,7 +744,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
         }
 
         if (this.intersects(clipY, clipHeight, this.SignerNameTop, this.textHeight)) {
-          g.setColor(140, 140, 140);
+          g.setColor(100, 100, 100);
           int maxSingerWidth = this.displayWidth - this.songInfoLeft - 10;
           String truncatedSinger = this.truncateText(this.gui.getSinger(), g, maxSingerWidth);
           g.drawString(truncatedSinger, this.songInfoLeft, this.SignerNameTop, 20);
@@ -736,7 +762,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
         }
 
         if (this.intersects(clipY, clipHeight, this.timeRateTop, this.textHeight)) {
-          g.setColor(140, 140, 140);
+          g.setColor(100, 100, 100);
           g.drawString(strCurrent, 5, this.timeRateTop, 20);
         }
 
@@ -747,7 +773,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
         g.fillRect(this.sliderLeft, this.sliderTop, (int) this.slidervalue, this.sliderHeight);
 
         if (this.intersects(clipY, clipHeight, this.timeRateTop, this.textHeight)) {
-          g.setColor(140, 140, 140);
+          g.setColor(100, 100, 100);
           g.drawString(strDuration, this.displayWidth - 5, this.timeRateTop, 24);
         }
 
@@ -871,6 +897,8 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       this.getGUI().toggleShuffleMode();
     } else if (c == this.addToPlaylistCommand) {
       showAddToPlaylistDialog();
+    } else if (c == this.viewPlaylistCommand) {
+      showPlaylistView();
     }
   }
 
@@ -883,7 +911,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     final Vector customPlaylists = getCustomPlaylists();
 
     if (customPlaylists.isEmpty()) {
-      showAlert("", I18N.tr("alert_no_custom_playlists"), AlertType.INFO);
+      showAlert(I18N.tr("alert_no_custom_playlists"), AlertType.INFO);
       return;
     }
 
@@ -913,18 +941,25 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
 
                 MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
 
+                ThreadManager.cleanupThread(addSongToPlaylistThread);
+
                 addSongToPlaylistThread =
-                    new Thread(
+                    ThreadManager.createThread(
                         new Runnable() {
                           public void run() {
                             try {
                               addSongToCustomPlaylist(finalCurrentSong, selectedPlaylist);
                             } catch (Exception e) {
-                              showAlert("", e.toString(), AlertType.ERROR);
+                              showAlert(e.toString(), AlertType.ERROR);
                             }
                           }
-                        });
-                addSongToPlaylistThread.start();
+                        },
+                        "PlaylistAdder");
+
+                if (!ThreadManager.safeStartThread(addSongToPlaylistThread)) {
+                  addSongToPlaylistThread = null;
+                  showAlert(I18N.tr("error_occurred"), AlertType.ERROR);
+                }
               } else {
                 MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
               }
@@ -1002,7 +1037,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
         songJson.put("duration", new Integer(song.getDuration()));
 
         songRecordStore.writeRecord(songJson.toString());
-        showAlert("", I18N.tr("alert_song_added_to_playlist"), AlertType.CONFIRMATION);
+        showAlert(I18N.tr("alert_song_added_to_playlist"), AlertType.CONFIRMATION);
       } finally {
         try {
           if (songRecordStore != null) {
@@ -1012,22 +1047,56 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
         }
       }
     } catch (Exception e) {
-      showAlert("", e.toString(), AlertType.ERROR);
+      showAlert(e.toString(), AlertType.ERROR);
     }
   }
 
-  private void showAlert(String title, String message, AlertType type) {
-    Alert alert = new Alert(title, message, null, type);
-    alert.setTimeout(2000);
+  public void showAlert(String message, AlertType type) {
+    Alert alert = new Alert(null, message, null, type);
+    if (type == AlertType.ERROR) {
+      alert.setTimeout(Alert.FOREVER);
+    } else {
+      alert.setTimeout(2000);
+    }
     MIDPlay.getInstance().getDisplay().setCurrent(alert, PlayerCanvas.this);
   }
 
-  private void createCommand() {
+  private void showPlaylistView() {
+    try {
+      Vector songList = this.getGUI().getListSong();
+      if (songList != null && songList.size() > 0) {
+        Playlist currentPlaylist = createCurrentPlaylistInfo();
+        CurrentPlaylistSongList playlistView =
+            new CurrentPlaylistSongList(
+                I18N.tr("current_playlist"),
+                songList,
+                currentPlaylist,
+                this.getGUI().getCurrentSongIndex(),
+                this);
+        playlistView.setObserver(this.observer);
+        this.observer.replaceCurrent(playlistView);
+      } else {
+        showAlert(I18N.tr("no_data"), AlertType.INFO);
+      }
+    } catch (Exception e) {
+      showAlert(I18N.tr("error_occurred"), AlertType.ERROR);
+    }
+  }
+
+  private Playlist createCurrentPlaylistInfo() {
+    Playlist currentPlaylist = new Playlist();
+    currentPlaylist.setId("current_playing_queue");
+    currentPlaylist.setName(I18N.tr("current_playlist"));
+    return currentPlaylist;
+  }
+
+  private void createCommands() {
     this.addCommand(this.playCommand);
     this.addCommand(this.nextCommand);
     this.addCommand(this.prevCommand);
     this.addCommand(this.stopCommand);
     this.addCommand(this.addToPlaylistCommand);
+    this.addCommand(this.viewPlaylistCommand);
 
     if (this.repeatCommand == null) {
       this.repeatCommand =

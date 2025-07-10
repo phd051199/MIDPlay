@@ -23,22 +23,22 @@ import org.json.me.JSONObject;
 public class SongList extends List implements CommandListener, LoadDataObserver {
   public static PlayerCanvas playerCanvas = null;
 
-  private Command nowPlayingCommand;
-  private Command exitCommand;
+  protected Command nowPlayingCommand;
+  protected Command exitCommand;
   private Command searchCommand;
   private Command addToPlaylistCommand;
   private Command removeFromPlaylistCommand;
 
   private final Vector images;
-  private final Vector songItems;
-  private MainObserver observer;
+  protected final Vector songItems;
+  protected MainObserver observer;
   int curPage = 1;
   int perPage = 10;
   private final Playlist playlist;
   Thread mLoadDataThread;
   private Thread removeSongFromPlaylistThread;
   private Thread addSongToPlaylistThread;
-  private Image defaultImage;
+  protected Image defaultImage;
 
   public SongList(String title, Vector items, Playlist _playlist) {
     super(title, List.IMPLICIT);
@@ -104,7 +104,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     final Vector customPlaylists = getCustomPlaylists();
 
     if (customPlaylists.isEmpty()) {
-      showAlert("", I18N.tr("alert_no_custom_playlists"), AlertType.INFO);
+      showAlert(I18N.tr("alert_no_custom_playlists"), AlertType.INFO);
       return;
     }
 
@@ -140,7 +140,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
                             try {
                               addSongToCustomPlaylist(selectedSong, selectedPlaylist);
                             } catch (Exception e) {
-                              showAlert("", e.toString(), AlertType.ERROR);
+                              showAlert(e.toString(), AlertType.ERROR);
                             }
                           }
                         });
@@ -181,7 +181,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
         }
       }
     } catch (Exception e) {
-      showAlert("", e.toString(), AlertType.ERROR);
+      showAlert(e.toString(), AlertType.ERROR);
     } finally {
       if (re != null) {
         re.destroy();
@@ -189,7 +189,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
       try {
         recordStore.closeRecStore();
       } catch (Exception e) {
-        showAlert("", e.toString(), AlertType.ERROR);
+        showAlert(e.toString(), AlertType.ERROR);
       }
     }
 
@@ -224,7 +224,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
         songJson.put("duration", new Integer(song.getDuration()));
 
         songRecordStore.writeRecord(songJson.toString());
-        showAlert("", I18N.tr("alert_song_added_to_playlist"), AlertType.CONFIRMATION);
+        showAlert(I18N.tr("alert_song_added_to_playlist"), AlertType.CONFIRMATION);
       } finally {
         try {
           if (songRecordStore != null) {
@@ -234,13 +234,17 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
         }
       }
     } catch (Exception e) {
-      showAlert("", e.toString(), AlertType.ERROR);
+      showAlert(e.toString(), AlertType.ERROR);
     }
   }
 
-  private void showAlert(String title, String message, AlertType type) {
-    Alert alert = new Alert(title, message, null, type);
-    alert.setTimeout(2000);
+  private void showAlert(String message, AlertType type) {
+    Alert alert = new Alert(null, message, null, type);
+    if (type == AlertType.ERROR) {
+      alert.setTimeout(Alert.FOREVER);
+    } else {
+      alert.setTimeout(2000);
+    }
     MIDPlay.getInstance().getDisplay().setCurrent(alert, SongList.this);
   }
 
@@ -408,16 +412,15 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
                                 songItems.removeElementAt(selectedIndex);
                                 delete(selectedIndex);
                                 showAlert(
-                                    "",
                                     I18N.tr("alert_song_removed_from_playlist"),
                                     AlertType.CONFIRMATION);
                               }
                             });
                   } else {
-                    showAlert("", I18N.tr("alert_error_removing_song"), AlertType.ERROR);
+                    showAlert(I18N.tr("alert_error_removing_song"), AlertType.ERROR);
                   }
                 } catch (Exception e) {
-                  showAlert("", e.toString(), AlertType.ERROR);
+                  showAlert(e.toString(), AlertType.ERROR);
                 }
               }
             });

@@ -133,7 +133,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     this.exitCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
     this.addCommand(this.exitCommand);
 
-    Alert alert = new Alert("", I18N.tr("reorder_instructions"), null, AlertType.INFO);
+    Alert alert = new Alert(null, I18N.tr("reorder_instructions"), null, AlertType.INFO);
     alert.setTimeout(2000);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
   }
@@ -191,22 +191,46 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   private void saveCurrentOrder() {
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
-    int count = this.size();
-    int[] newOrder = new int[count];
 
-    for (int i = 0; i < count; i++) {
+    int totalItems;
+    int[] currentOrder;
+    boolean[] visibility;
 
-      String itemText = this.getString(i);
+    if (Services.NCT.equals(service)) {
+      totalItems = Utils.MAIN_MENU_ITEMS_NCT.length;
+      currentOrder = menuSettingsManager.getNctMenuOrder(totalItems);
+      visibility = menuSettingsManager.getNctMenuVisibility(totalItems);
+    } else {
+      totalItems = Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length;
+      currentOrder = menuSettingsManager.getSoundcloudMenuOrder(totalItems);
+      visibility = menuSettingsManager.getSoundcloudMenuVisibility(totalItems);
+    }
 
-      if (selectedItemIndex == i) {
-        itemText = itemText.substring(2);
-      }
+    int[] newOrder = new int[totalItems];
 
-      int originalIndex = findOriginalIndex(itemText);
-      if (originalIndex != -1) {
-        newOrder[i] = originalIndex;
-      } else {
-        newOrder[i] = i;
+    for (int i = 0; i < totalItems; i++) {
+      newOrder[i] = currentOrder[i];
+    }
+
+    int visibleIndex = 0;
+    for (int i = 0; i < totalItems; i++) {
+      int originalIndex = currentOrder[i];
+      if (originalIndex >= 0 && originalIndex < totalItems && visibility[originalIndex]) {
+        if (visibleIndex < this.size()) {
+
+          String itemText = this.getString(visibleIndex);
+
+          if (selectedItemIndex == visibleIndex) {
+            itemText = itemText.substring(2);
+          }
+
+          int newOriginalIndex = findOriginalIndex(itemText);
+          if (newOriginalIndex != -1) {
+            newOrder[i] = newOriginalIndex;
+          }
+
+          visibleIndex++;
+        }
       }
     }
 
@@ -216,28 +240,21 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       menuSettingsManager.saveSoundcloudMenuOrder(newOrder);
     }
 
-    Alert alert = new Alert("", I18N.tr("order_saved"), null, AlertType.CONFIRMATION);
+    Alert alert = new Alert(null, I18N.tr("order_saved"), null, AlertType.CONFIRMATION);
     alert.setTimeout(2000);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
   }
 
   private int findOriginalIndex(String itemText) {
     if (Services.NCT.equals(service)) {
-      boolean[] visibility =
-          MenuSettingsManager.getInstance().getNctMenuVisibility(Utils.MAIN_MENU_ITEMS_NCT.length);
-
       for (int i = 0; i < Utils.MAIN_MENU_ITEMS_NCT.length; i++) {
-        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_NCT[i])) && visibility[i]) {
+        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_NCT[i]))) {
           return i;
         }
       }
     } else {
-      boolean[] visibility =
-          MenuSettingsManager.getInstance()
-              .getSoundcloudMenuVisibility(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
-
       for (int i = 0; i < Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length; i++) {
-        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD[i])) && visibility[i]) {
+        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD[i]))) {
           return i;
         }
       }
@@ -376,27 +393,27 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     if (selectedIndex >= 0 && selectedIndex < visibleCount) {
       int originalIndex = visibleToOriginalMap[selectedIndex];
 
-      if (originalIndex == 0) { // search
+      if (originalIndex == 0) {
         MainList.gotoSearch(this.observer);
-      } else if (originalIndex == 1) { // favorites
+      } else if (originalIndex == 1) {
         this.gotoFavorites();
-      } else if (originalIndex == 2) { // genres
+      } else if (originalIndex == 2) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoCate();
-      } else if (originalIndex == 3) { // billboard
+      } else if (originalIndex == 3) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoBillboard();
-      } else if (originalIndex == 4) { // new_playlists
+      } else if (originalIndex == 4) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoPlaylist("new");
-      } else if (originalIndex == 5) { // hot_playlists
+      } else if (originalIndex == 5) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoPlaylist("hot");
-      } else if (originalIndex == 6) { // chat
+      } else if (originalIndex == 6) {
         this.gotoChat();
-      } else if (originalIndex == 7) { // settings
+      } else if (originalIndex == 7) {
         this.gotoSetting();
-      } else if (originalIndex == 8) { // app_info
+      } else if (originalIndex == 8) {
         this.gotoAbout();
       }
     }
@@ -430,18 +447,18 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     if (selectedIndex >= 0 && selectedIndex < visibleCount) {
       int originalIndex = visibleToOriginalMap[selectedIndex];
 
-      if (originalIndex == 0) { // search
+      if (originalIndex == 0) {
         MainList.gotoSearch(this.observer);
-      } else if (originalIndex == 1) { // favorites
+      } else if (originalIndex == 1) {
         this.gotoFavorites();
-      } else if (originalIndex == 2) { // discover_playlists
+      } else if (originalIndex == 2) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoPlaylist("discover");
-      } else if (originalIndex == 3) { // chat
+      } else if (originalIndex == 3) {
         this.gotoChat();
-      } else if (originalIndex == 4) { // settings
+      } else if (originalIndex == 4) {
         this.gotoSetting();
-      } else if (originalIndex == 5) { // app_info
+      } else if (originalIndex == 5) {
         this.gotoAbout();
       }
     }

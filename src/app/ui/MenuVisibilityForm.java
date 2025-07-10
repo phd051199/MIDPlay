@@ -97,7 +97,7 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
       }
 
       if (!anyVisible) {
-        showAlert("", I18N.tr("visibility_at_least_one"));
+        showAlert(I18N.tr("visibility_at_least_one"), AlertType.ERROR);
         return;
       }
 
@@ -117,7 +117,7 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
       }
 
       if (!anyVisible) {
-        showAlert("", I18N.tr("visibility_at_least_one"));
+        showAlert(I18N.tr("visibility_at_least_one"), AlertType.ERROR);
         return;
       }
 
@@ -133,9 +133,13 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
     observer.replaceCurrent(mainList);
   }
 
-  private void showAlert(String title, String message) {
-    Alert alert = new Alert(title, message, null, AlertType.WARNING);
-    alert.setTimeout(Alert.FOREVER);
+  private void showAlert(String message, AlertType type) {
+    Alert alert = new Alert(null, message, null, type);
+    if (type == AlertType.ERROR) {
+      alert.setTimeout(Alert.FOREVER);
+    } else {
+      alert.setTimeout(2000);
+    }
     Display.getDisplay(app.MIDPlay.getInstance()).setCurrent(alert, this);
   }
 
