@@ -28,8 +28,8 @@ import javax.microedition.lcdui.List;
 public class PlaylistList extends List
     implements CommandListener, LoadDataObserver, ImageLoadCallback {
   private static final int NAVIGATION_DELAY_MS = 300;
-  private static final int SELECTION_MONITOR_INTERVAL_MS = 200;
-  private static final int SELECTION_MONITOR_DELAY_MS = 100;
+  private static final int SELECTION_MONITOR_INTERVAL_MS = 100;
+  private static final int SELECTION_MONITOR_DELAY_MS = 50;
 
   private Command exitCommand;
   private Command selectCommand;
@@ -122,13 +122,17 @@ public class PlaylistList extends List
       return;
     }
 
-    if (isDestroyed || isNavigating) {
-      return;
-    }
+    synchronized (this) {
+      if (isDestroyed || isNavigating) {
+        return;
+      }
 
-    int startIndex = findFirstDefaultImageIndex();
-    if (startIndex >= 0) {
-      processImageBatchLoading(startIndex);
+      validateTimerState();
+
+      int startIndex = findFirstDefaultImageIndex();
+      if (startIndex >= 0) {
+        processImageBatchLoading(startIndex);
+      }
     }
   }
 
@@ -153,25 +157,113 @@ public class PlaylistList extends List
   }
 
   public void startSelectionMonitoring() {
-    if (selectionMonitorTimer == null) {
-      selectionMonitorTimer = new Timer();
+    synchronized (this) {
+      if (selectionMonitorTask != null) {
+        selectionMonitorTask.cancel();
+        selectionMonitorTask = null;
+      }
+
+      if (selectionMonitorTimer == null) {
+        selectionMonitorTimer = new Timer();
+      }
+
+      selectionMonitorTask =
+          new TimerTask() {
+            public void run() {
+              checkSelectionChange();
+            }
+          };
+
+      try {
+        selectionMonitorTimer.scheduleAtFixedRate(
+            selectionMonitorTask, SELECTION_MONITOR_DELAY_MS, SELECTION_MONITOR_INTERVAL_MS);
+      } catch (Exception e) {
+        selectionMonitorTimer = new Timer();
+        selectionMonitorTask =
+            new TimerTask() {
+              public void run() {
+                checkSelectionChange();
+              }
+            };
+        selectionMonitorTimer.scheduleAtFixedRate(
+            selectionMonitorTask, SELECTION_MONITOR_DELAY_MS, SELECTION_MONITOR_INTERVAL_MS);
+      }
     }
-
-    selectionMonitorTask =
-        new TimerTask() {
-          public void run() {
-            checkSelectionChange();
-          }
-        };
-
-    selectionMonitorTimer.scheduleAtFixedRate(
-        selectionMonitorTask, SELECTION_MONITOR_DELAY_MS, SELECTION_MONITOR_INTERVAL_MS);
   }
 
   private void stopSelectionMonitoring() {
-    if (selectionMonitorTask != null) {
-      selectionMonitorTask.cancel();
-      selectionMonitorTask = null;
+    synchronized (this) {
+      if (selectionMonitorTask != null) {
+        selectionMonitorTask.cancel();
+        selectionMonitorTask = null;
+      }
+    }
+  }
+
+  private void restartSelectionMonitoring() {
+    synchronized (this) {
+      stopSelectionMonitoring();
+
+      if (navigationTask != null) {
+        navigationTask.cancel();
+        navigationTask = null;
+      }
+
+      isNavigating = false;
+
+      try {
+        int currentSelection = getSelectedIndex();
+        if (currentSelection >= 0 && currentSelection < size()) {
+          lastSelectedIndex = currentSelection;
+        } else {
+          lastSelectedIndex = -1;
+        }
+      } catch (Exception e) {
+        lastSelectedIndex = -1;
+      }
+
+      startSelectionMonitoring();
+    }
+  }
+
+  private void validateTimerState() {
+    synchronized (this) {
+      if (isDestroyed) {
+        return;
+      }
+
+      if (selectionMonitorTask == null && !isDestroyed) {
+        startSelectionMonitoring();
+      }
+
+      try {
+        int currentSelection = getSelectedIndex();
+        if (currentSelection >= 0
+            && currentSelection < size()
+            && currentSelection != lastSelectedIndex) {
+          lastSelectedIndex = currentSelection;
+        }
+      } catch (Exception e) {
+      }
+    }
+  }
+
+  private void ensureTimerConsistency() {
+    synchronized (this) {
+      if (isDestroyed) {
+        return;
+      }
+
+      if (selectionMonitorTimer != null && selectionMonitorTask == null) {
+        selectionMonitorTimer.cancel();
+        selectionMonitorTimer = null;
+        startSelectionMonitoring();
+      }
+
+      if (navigationTimer != null && navigationTask == null && !isNavigating) {
+        navigationTimer.cancel();
+        navigationTimer = null;
+      }
     }
   }
 
@@ -180,46 +272,72 @@ public class PlaylistList extends List
       return;
     }
     try {
-      int currentSelectedIndex = getSelectedIndex();
-      if (currentSelectedIndex != lastSelectedIndex && currentSelectedIndex >= 0) {
-        handleNavigation();
-        lastSelectedIndex = currentSelectedIndex;
+      synchronized (this) {
+        ensureTimerConsistency();
+
+        int currentSelectedIndex = getSelectedIndex();
+
+        if (currentSelectedIndex >= 0
+            && currentSelectedIndex < size()
+            && currentSelectedIndex != lastSelectedIndex) {
+          handleNavigation();
+          lastSelectedIndex = currentSelectedIndex;
+        }
       }
     } catch (Exception e) {
+
     }
   }
 
   private void handleNavigation() {
-    if (!isNavigating) {
-      isNavigating = true;
-      pauseImageLoading();
-    }
+    synchronized (this) {
+      if (!isNavigating) {
+        isNavigating = true;
+        pauseImageLoading();
+      }
 
-    if (navigationTask != null) {
-      navigationTask.cancel();
-      navigationTask = null;
-    }
+      if (navigationTask != null) {
+        navigationTask.cancel();
+        navigationTask = null;
+      }
 
-    if (navigationTimer == null) {
-      navigationTimer = new Timer();
-    }
+      if (navigationTimer == null) {
+        navigationTimer = new Timer();
+      }
 
-    navigationTask =
-        new TimerTask() {
-          public void run() {
-            synchronized (PlaylistList.this) {
-              if (!isDestroyed) {
-                isNavigating = false;
-                resumeImageLoading();
+      navigationTask =
+          new TimerTask() {
+            public void run() {
+              synchronized (PlaylistList.this) {
+                if (!isDestroyed) {
+                  isNavigating = false;
+                  resumeImageLoading();
+                }
               }
             }
-          }
-        };
+          };
 
-    try {
-      navigationTimer.schedule(navigationTask, NAVIGATION_DELAY_MS);
-    } catch (Exception e) {
-      isNavigating = false;
+      try {
+        navigationTimer.schedule(navigationTask, NAVIGATION_DELAY_MS);
+      } catch (Exception e) {
+        navigationTimer = new Timer();
+        navigationTask =
+            new TimerTask() {
+              public void run() {
+                synchronized (PlaylistList.this) {
+                  if (!isDestroyed) {
+                    isNavigating = false;
+                    resumeImageLoading();
+                  }
+                }
+              }
+            };
+        try {
+          navigationTimer.schedule(navigationTask, NAVIGATION_DELAY_MS);
+        } catch (Exception ex) {
+          isNavigating = false;
+        }
+      }
     }
   }
 
@@ -230,7 +348,6 @@ public class PlaylistList extends List
       this.cancel();
       this.observer.goBack();
     } else if (c == List.SELECT_COMMAND) {
-      this.pauseImageLoading();
       int selectedItemIndex = getSelectedIndex();
       if (selectedItemIndex >= 0 && selectedItemIndex < this.playlistItems.size()) {
         Playlist playlist = (Playlist) this.playlistItems.elementAt(selectedItemIndex);
@@ -238,6 +355,7 @@ public class PlaylistList extends List
           this.doLoadMoreAction(playlist);
         } else {
           this.stopSelectionMonitoring();
+          this.pauseImageLoading();
           this.gotoSongByPlaylist();
         }
       }
@@ -296,14 +414,33 @@ public class PlaylistList extends List
                           if (isDestroyed) {
                             return;
                           }
-                          for (int i = 0; i < var1.size(); ++i) {
-                            Playlist p = (Playlist) var1.elementAt(i);
-                            append(p.getName(), defaultImage);
+
+                          synchronized (PlaylistList.this) {
+                            for (int i = 0; i < var1.size(); ++i) {
+                              Playlist p = (Playlist) var1.elementAt(i);
+                              append(p.getName(), defaultImage);
+                            }
                           }
+
+                          final Timer delayTimer = new Timer();
+                          delayTimer.schedule(
+                              new TimerTask() {
+                                public void run() {
+                                  synchronized (PlaylistList.this) {
+                                    if (!isDestroyed) {
+                                      restartSelectionMonitoring();
+
+                                      if (!isNavigating) {
+                                        processImageBatchLoading(startIndex);
+                                      }
+                                    }
+                                  }
+                                  delayTimer.cancel();
+                                }
+                              },
+                              50);
                         }
                       });
-
-                  processImageBatchLoading(startIndex);
                 }
               }
 
@@ -328,17 +465,23 @@ public class PlaylistList extends List
   }
 
   private void processImageBatchLoading(final int startIndex) {
-    if (isDestroyed || isNavigating) {
-      return;
+    synchronized (this) {
+      if (isDestroyed || isNavigating) {
+        return;
+      }
+
+      final boolean shouldLoadImages = SettingsManager.getInstance().isLoadPlaylistArtEnabled();
+
+      if (!shouldLoadImages) {
+        return;
+      }
+
+      if (startIndex < 0 || startIndex >= playlistItems.size()) {
+        return;
+      }
+
+      loadImagesWithImageLoader(startIndex);
     }
-
-    final boolean shouldLoadImages = SettingsManager.getInstance().isLoadPlaylistArtEnabled();
-
-    if (!shouldLoadImages) {
-      return;
-    }
-
-    loadImagesWithImageLoader(startIndex);
   }
 
   private void loadImagesWithImageLoader(int startIndex) {
@@ -346,25 +489,48 @@ public class PlaylistList extends List
       return;
     }
 
-    int totalSize = playlistItems.size();
+    int totalSize;
+    synchronized (this) {
+      totalSize = playlistItems.size();
+
+      if (startIndex < 0 || startIndex >= totalSize) {
+        return;
+      }
+    }
 
     for (int i = startIndex; i < totalSize; i++) {
-      if (isDestroyed || isNavigating) {
-        break;
+      synchronized (this) {
+        if (isDestroyed || isNavigating) {
+          break;
+        }
       }
 
       try {
-        Image currentImage = (Image) images.elementAt(i);
+        Image currentImage;
+        Playlist playlist;
+
+        synchronized (this) {
+          if (i >= images.size() || i >= playlistItems.size()) {
+            break;
+          }
+
+          currentImage = (Image) images.elementAt(i);
+          playlist = (Playlist) playlistItems.elementAt(i);
+        }
+
         if (currentImage == defaultImage || currentImage == null) {
-          Playlist playlist = (Playlist) playlistItems.elementAt(i);
           if (playlist.getImageUrl() != null && playlist.getImageUrl().length() > 0) {
-            if (!isDestroyed && !isNavigating) {
-              ImageLoadRequest request = new ImageLoadRequest(playlist.getImageUrl(), 48, i, this);
-              imageLoader.loadImage(request);
+            synchronized (this) {
+              if (!isDestroyed && !isNavigating) {
+                ImageLoadRequest request =
+                    new ImageLoadRequest(playlist.getImageUrl(), 48, i, this);
+                imageLoader.loadImage(request);
+              }
             }
           }
         }
       } catch (Exception e) {
+
       }
     }
   }
@@ -491,41 +657,43 @@ public class PlaylistList extends List
   }
 
   public void quit() {
-    this.isDestroyed = true;
-    this.pauseImageLoading();
+    synchronized (this) {
+      this.isDestroyed = true;
+      this.pauseImageLoading();
 
-    if (selectionMonitorTask != null) {
-      selectionMonitorTask.cancel();
-      selectionMonitorTask = null;
+      if (selectionMonitorTask != null) {
+        selectionMonitorTask.cancel();
+        selectionMonitorTask = null;
+      }
+
+      if (selectionMonitorTimer != null) {
+        selectionMonitorTimer.cancel();
+        selectionMonitorTimer = null;
+      }
+
+      if (navigationTask != null) {
+        navigationTask.cancel();
+        navigationTask = null;
+      }
+
+      if (navigationTimer != null) {
+        navigationTimer.cancel();
+        navigationTimer = null;
+      }
+
+      if (images != null) {
+        images.removeAllElements();
+        images = null;
+      }
+
+      if (playlistItems != null) {
+        playlistItems.removeAllElements();
+        playlistItems = null;
+      }
+
+      defaultImage = null;
+      imageLoader = null;
     }
-
-    if (selectionMonitorTimer != null) {
-      selectionMonitorTimer.cancel();
-      selectionMonitorTimer = null;
-    }
-
-    if (navigationTask != null) {
-      navigationTask.cancel();
-      navigationTask = null;
-    }
-
-    if (navigationTimer != null) {
-      navigationTimer.cancel();
-      navigationTimer = null;
-    }
-
-    if (images != null) {
-      images.removeAllElements();
-      images = null;
-    }
-
-    if (playlistItems != null) {
-      playlistItems.removeAllElements();
-      playlistItems = null;
-    }
-
-    defaultImage = null;
-    imageLoader = null;
   }
 
   public Image getImage(int index) {
@@ -544,10 +712,15 @@ public class PlaylistList extends List
   }
 
   public void onImageLoaded(int index, Image image, String requestId) {
-    if (isDestroyed || isNavigating) {
-      return;
+    synchronized (this) {
+      if (isDestroyed || isNavigating) {
+        return;
+      }
+
+      if (index >= 0 && index < images.size() && index < size()) {
+        updateSingleImage(index, image);
+      }
     }
-    updateSingleImage(index, image);
   }
 
   public void onImageLoadFailed(int index, String url, String error, String requestId) {
@@ -559,6 +732,8 @@ public class PlaylistList extends List
   }
 
   public boolean shouldContinueLoading() {
-    return !isDestroyed && !isNavigating;
+    synchronized (this) {
+      return !isDestroyed && !isNavigating;
+    }
   }
 }

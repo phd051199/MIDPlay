@@ -32,8 +32,8 @@ import org.json.me.JSONObject;
 public class FavoritesList extends List
     implements CommandListener, LoadDataObserver, ImageLoadCallback {
   private static final int NAVIGATION_DELAY_MS = 300;
-  private static final int SELECTION_MONITOR_INTERVAL_MS = 200;
-  private static final int SELECTION_MONITOR_DELAY_MS = 100;
+  private static final int SELECTION_MONITOR_INTERVAL_MS = 100;
+  private static final int SELECTION_MONITOR_DELAY_MS = 50;
 
   private Command backCommand;
   private Command removeCommand;
@@ -83,10 +83,6 @@ public class FavoritesList extends List
 
   private void initComponents() {
     this.loadFavorites();
-    if (this.size() > 0) {
-      this.setSelectedIndex(0, true);
-      this.lastSelectedIndex = 0;
-    }
     startSelectionMonitoring();
   }
 
@@ -98,20 +94,27 @@ public class FavoritesList extends List
   }
 
   private void loadFavorites() {
-    this.favorites.removeAllElements();
-    this.images.removeAllElements();
-    this.deleteAll();
+    synchronized (this) {
+      this.favorites.removeAllElements();
+      this.images.removeAllElements();
+      this.deleteAll();
 
-    try {
-      Vector allFavorites = FavoritesService.getInstance().getAllFavorites();
+      try {
+        Vector allFavorites = FavoritesService.getInstance().getAllFavorites();
 
-      for (int i = 0; i < allFavorites.size(); i++) {
-        FavoriteItem item = (FavoriteItem) allFavorites.elementAt(i);
-        favorites.addElement(item);
-        this.append(item.data.getString("name"), defaultImage);
-        this.images.addElement(defaultImage);
+        for (int i = 0; i < allFavorites.size(); i++) {
+          FavoriteItem item = (FavoriteItem) allFavorites.elementAt(i);
+          favorites.addElement(item);
+          this.append(item.data.getString("name"), defaultImage);
+          this.images.addElement(defaultImage);
+        }
+      } catch (Exception e) {
       }
-    } catch (Exception e) {
+
+      if (this.size() > 0) {
+        this.setSelectedIndex(0, true);
+        this.lastSelectedIndex = 0;
+      }
     }
 
     if (favorites.size() > 0) {
@@ -120,106 +123,41 @@ public class FavoritesList extends List
   }
 
   private void loadFavoriteImages() {
-    if (isDestroyed || isNavigating) {
-      return;
-    }
+    synchronized (this) {
+      if (isDestroyed || isNavigating) {
+        return;
+      }
 
-    if (!SettingsManager.getInstance().isLoadPlaylistArtEnabled()) {
-      return;
-    }
+      if (!SettingsManager.getInstance().isLoadPlaylistArtEnabled()) {
+        return;
+      }
 
-    loadImagesWithImageLoader(0);
+      if (favorites.size() > 0) {
+        loadImagesWithImageLoader(0);
+      }
+    }
   }
 
   public void resumeImageLoading() {
-    if (isDestroyed || isNavigating) {
-      return;
-    }
-
     if (!SettingsManager.getInstance().isLoadPlaylistArtEnabled()) {
       return;
     }
 
-    final int startIndex = findFirstDefaultImageIndex();
-    if (startIndex >= 0) {
-      loadImagesWithImageLoader(startIndex);
+    synchronized (this) {
+      if (isDestroyed || isNavigating) {
+        return;
+      }
+
+      final int startIndex = findFirstDefaultImageIndex();
+      if (startIndex >= 0) {
+        loadImagesWithImageLoader(startIndex);
+      }
     }
   }
 
   public void pauseImageLoading() {
     if (this.imageLoader != null) {
       this.imageLoader.cancelRequestsForCallback(this);
-    }
-  }
-
-  public void startSelectionMonitoring() {
-    if (selectionMonitorTimer == null) {
-      selectionMonitorTimer = new Timer();
-    }
-
-    selectionMonitorTask =
-        new TimerTask() {
-          public void run() {
-            checkSelectionChange();
-          }
-        };
-
-    selectionMonitorTimer.scheduleAtFixedRate(
-        selectionMonitorTask, SELECTION_MONITOR_DELAY_MS, SELECTION_MONITOR_INTERVAL_MS);
-  }
-
-  private void stopSelectionMonitoring() {
-    if (selectionMonitorTask != null) {
-      selectionMonitorTask.cancel();
-      selectionMonitorTask = null;
-    }
-  }
-
-  private void checkSelectionChange() {
-    if (isDestroyed) {
-      return;
-    }
-    try {
-      int currentSelectedIndex = getSelectedIndex();
-      if (currentSelectedIndex != lastSelectedIndex && currentSelectedIndex >= 0) {
-        handleNavigation();
-        lastSelectedIndex = currentSelectedIndex;
-      }
-    } catch (Exception e) {
-    }
-  }
-
-  private void handleNavigation() {
-    if (!isNavigating) {
-      isNavigating = true;
-      pauseImageLoading();
-    }
-
-    if (navigationTask != null) {
-      navigationTask.cancel();
-      navigationTask = null;
-    }
-
-    if (navigationTimer == null) {
-      navigationTimer = new Timer();
-    }
-
-    navigationTask =
-        new TimerTask() {
-          public void run() {
-            synchronized (FavoritesList.this) {
-              if (!isDestroyed) {
-                isNavigating = false;
-                resumeImageLoading();
-              }
-            }
-          }
-        };
-
-    try {
-      navigationTimer.schedule(navigationTask, NAVIGATION_DELAY_MS);
-    } catch (Exception e) {
-      isNavigating = false;
     }
   }
 
@@ -237,29 +175,148 @@ public class FavoritesList extends List
     return -1;
   }
 
+  public void startSelectionMonitoring() {
+    synchronized (this) {
+      if (selectionMonitorTimer == null) {
+        selectionMonitorTimer = new Timer();
+      }
+
+      selectionMonitorTask =
+          new TimerTask() {
+            public void run() {
+              checkSelectionChange();
+            }
+          };
+
+      selectionMonitorTimer.scheduleAtFixedRate(
+          selectionMonitorTask, SELECTION_MONITOR_DELAY_MS, SELECTION_MONITOR_INTERVAL_MS);
+    }
+  }
+
+  private void stopSelectionMonitoring() {
+    synchronized (this) {
+      if (selectionMonitorTask != null) {
+        selectionMonitorTask.cancel();
+        selectionMonitorTask = null;
+      }
+    }
+  }
+
+  private void restartSelectionMonitoring() {
+    synchronized (this) {
+      stopSelectionMonitoring();
+
+      try {
+        int currentSelection = getSelectedIndex();
+        if (currentSelection >= 0) {
+          lastSelectedIndex = currentSelection;
+        }
+      } catch (Exception e) {
+        lastSelectedIndex = -1;
+      }
+
+      startSelectionMonitoring();
+    }
+  }
+
+  private void checkSelectionChange() {
+    if (isDestroyed) {
+      return;
+    }
+    try {
+      synchronized (this) {
+        int currentSelectedIndex = getSelectedIndex();
+        if (currentSelectedIndex >= 0
+            && currentSelectedIndex < size()
+            && currentSelectedIndex != lastSelectedIndex) {
+          handleNavigation();
+          lastSelectedIndex = currentSelectedIndex;
+        }
+      }
+    } catch (Exception e) {
+    }
+  }
+
+  private void handleNavigation() {
+    synchronized (this) {
+      if (!isNavigating) {
+        isNavigating = true;
+        pauseImageLoading();
+      }
+
+      if (navigationTask != null) {
+        navigationTask.cancel();
+        navigationTask = null;
+      }
+
+      if (navigationTimer == null) {
+        navigationTimer = new Timer();
+      }
+
+      navigationTask =
+          new TimerTask() {
+            public void run() {
+              synchronized (FavoritesList.this) {
+                if (!isDestroyed) {
+                  isNavigating = false;
+                  resumeImageLoading();
+                }
+              }
+            }
+          };
+
+      try {
+        navigationTimer.schedule(navigationTask, NAVIGATION_DELAY_MS);
+      } catch (Exception e) {
+        isNavigating = false;
+      }
+    }
+  }
+
   private void loadImagesWithImageLoader(int startIndex) {
     if (isDestroyed || isNavigating) {
       return;
     }
 
-    int totalSize = favorites.size();
+    int totalSize;
+    synchronized (this) {
+      totalSize = favorites.size();
+
+      if (startIndex < 0 || startIndex >= totalSize) {
+        return;
+      }
+    }
 
     for (int i = startIndex; i < totalSize; i++) {
-      if (isDestroyed || isNavigating) {
-        break;
+      synchronized (this) {
+        if (isDestroyed || isNavigating) {
+          break;
+        }
       }
 
       try {
-        Image currentImage = (Image) images.elementAt(i);
+        Image currentImage;
+        FavoriteItem item;
+
+        synchronized (this) {
+          if (i >= images.size() || i >= favorites.size()) {
+            break;
+          }
+
+          currentImage = (Image) images.elementAt(i);
+          item = (FavoriteItem) this.favorites.elementAt(i);
+        }
+
         if (currentImage == defaultImage || currentImage == null) {
-          FavoriteItem item = (FavoriteItem) this.favorites.elementAt(i);
           JSONObject favorite = item.data;
           if (favorite.has("imageUrl")) {
             String imageUrl = favorite.getString("imageUrl");
             if (imageUrl != null && imageUrl.length() > 0) {
-              if (!isDestroyed && !isNavigating) {
-                ImageLoadRequest request = new ImageLoadRequest(imageUrl, 48, i, this);
-                imageLoader.loadImage(request);
+              synchronized (this) {
+                if (!isDestroyed && !isNavigating) {
+                  ImageLoadRequest request = new ImageLoadRequest(imageUrl, 48, i, this);
+                  imageLoader.loadImage(request);
+                }
               }
             }
           }
@@ -445,14 +502,30 @@ public class FavoritesList extends List
     }
 
     try {
-      FavoriteItem itemToRemove = (FavoriteItem) favorites.elementAt(selectedIndex);
+      FavoriteItem itemToRemove;
+
+      synchronized (this) {
+        if (selectedIndex >= favorites.size()) {
+          return;
+        }
+        itemToRemove = (FavoriteItem) favorites.elementAt(selectedIndex);
+      }
 
       FavoritesService.getInstance().removeFavorite(itemToRemove.recordId);
 
-      favorites.removeElementAt(selectedIndex);
-      images.removeElementAt(selectedIndex);
+      synchronized (this) {
+        if (selectedIndex < favorites.size()) {
+          favorites.removeElementAt(selectedIndex);
+          images.removeElementAt(selectedIndex);
+          this.delete(selectedIndex);
 
-      this.delete(selectedIndex);
+          if (this.size() > 0) {
+            int newIndex = selectedIndex < this.size() ? selectedIndex : this.size() - 1;
+            this.setSelectedIndex(newIndex, true);
+            this.lastSelectedIndex = newIndex;
+          }
+        }
+      }
 
       showAlert(LocalizationManager.tr("alert_removed_from_favorites"), AlertType.CONFIRMATION);
 
@@ -495,6 +568,7 @@ public class FavoritesList extends List
     try {
       FavoritesService.getInstance().createCustomPlaylist(name);
       loadFavorites();
+      restartSelectionMonitoring();
       showAlert(LocalizationManager.tr("alert_playlist_created"), AlertType.CONFIRMATION);
     } catch (Exception e) {
       showAlert(LocalizationManager.tr("alert_error_creating_playlist"), AlertType.ERROR);
@@ -558,10 +632,12 @@ public class FavoritesList extends List
     try {
       FavoritesService.getInstance().renameCustomPlaylist(item.recordId, newName);
 
-      item.data.put("name", newName);
-      int index = favorites.indexOf(item);
-      if (index >= 0) {
-        set(index, newName, (Image) images.elementAt(index));
+      synchronized (this) {
+        item.data.put("name", newName);
+        int index = favorites.indexOf(item);
+        if (index >= 0 && index < size()) {
+          set(index, newName, (Image) images.elementAt(index));
+        }
       }
 
       showAlert(LocalizationManager.tr("alert_playlist_renamed"), AlertType.CONFIRMATION);
@@ -590,51 +666,58 @@ public class FavoritesList extends List
   }
 
   public void quit() {
-    this.isDestroyed = true;
-    this.pauseImageLoading();
+    synchronized (this) {
+      this.isDestroyed = true;
+      this.pauseImageLoading();
 
-    if (selectionMonitorTask != null) {
-      selectionMonitorTask.cancel();
-      selectionMonitorTask = null;
+      if (selectionMonitorTask != null) {
+        selectionMonitorTask.cancel();
+        selectionMonitorTask = null;
+      }
+
+      if (selectionMonitorTimer != null) {
+        selectionMonitorTimer.cancel();
+        selectionMonitorTimer = null;
+      }
+
+      if (navigationTask != null) {
+        navigationTask.cancel();
+        navigationTask = null;
+      }
+
+      if (navigationTimer != null) {
+        navigationTimer.cancel();
+        navigationTimer = null;
+      }
+
+      if (images != null) {
+        images.removeAllElements();
+        images = null;
+      }
+
+      if (favorites != null) {
+        favorites.removeAllElements();
+        favorites = null;
+      }
+
+      defaultImage = null;
+      imageLoader = null;
     }
-
-    if (selectionMonitorTimer != null) {
-      selectionMonitorTimer.cancel();
-      selectionMonitorTimer = null;
-    }
-
-    if (navigationTask != null) {
-      navigationTask.cancel();
-      navigationTask = null;
-    }
-
-    if (navigationTimer != null) {
-      navigationTimer.cancel();
-      navigationTimer = null;
-    }
-
-    if (images != null) {
-      images.removeAllElements();
-      images = null;
-    }
-
-    if (favorites != null) {
-      favorites.removeAllElements();
-      favorites = null;
-    }
-
-    defaultImage = null;
-    imageLoader = null;
   }
 
   public void onImageLoaded(int index, Image image, String requestId) {
-    if (isDestroyed || isNavigating) {
-      return;
-    }
-    try {
-      FavoriteItem item = (FavoriteItem) this.favorites.elementAt(index);
-      updateSingleImage(index, image, item);
-    } catch (Exception e) {
+    synchronized (this) {
+      if (isDestroyed || isNavigating) {
+        return;
+      }
+
+      if (index >= 0 && index < favorites.size() && index < images.size() && index < size()) {
+        try {
+          FavoriteItem item = (FavoriteItem) this.favorites.elementAt(index);
+          updateSingleImage(index, image, item);
+        } catch (Exception e) {
+        }
+      }
     }
   }
 
@@ -647,7 +730,9 @@ public class FavoritesList extends List
   }
 
   public boolean shouldContinueLoading() {
-    return !isDestroyed && !isNavigating;
+    synchronized (this) {
+      return !isDestroyed && !isNavigating;
+    }
   }
 
   public static class FavoriteItem {
