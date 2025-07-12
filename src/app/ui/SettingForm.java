@@ -1,11 +1,10 @@
 package app.ui;
 
 import app.MIDPlay;
-import app.common.SettingManager;
-import app.interfaces.MainObserver;
-import app.model.Song;
-import app.utils.I18N;
-import app.utils.Utils;
+import app.core.settings.SettingsManager;
+import app.models.Song;
+import app.utils.text.LocalizationManager;
+import app.utils.ui.UiUtils;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Choice;
@@ -18,7 +17,7 @@ import javax.microedition.lcdui.TextField;
 
 public class SettingForm extends Form implements MainObserver, CommandListener {
 
-  private static final SettingManager settingManager = SettingManager.getInstance();
+  private static final SettingsManager settingManager = SettingsManager.getInstance();
   private static ChoiceGroup languageChoice;
   private static ChoiceGroup audioQualityChoice;
   private static ChoiceGroup serviceChoice;
@@ -32,9 +31,9 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
       String[] settings = settingManager.getAllCurrentSettings();
 
       String savedLanguage = settings[0];
-      I18N.setLanguage(savedLanguage);
+      LocalizationManager.setLanguage(savedLanguage);
 
-      String[] languages = I18N.getLanguages();
+      String[] languages = LocalizationManager.getLanguages();
       if (languageChoice != null) {
         for (int i = 0; i < languages.length; i++) {
           if (languages[i].equals(savedLanguage)) {
@@ -103,8 +102,8 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
   private static void setDefaultSettings() {
     try {
 
-      String defaultLanguage = I18N.getLanguage();
-      String[] languages = I18N.getLanguages();
+      String defaultLanguage = LocalizationManager.getLanguage();
+      String[] languages = LocalizationManager.getLanguages();
       if (languageChoice != null) {
         for (int i = 0; i < languages.length; i++) {
           if (languages[i].equals(defaultLanguage)) {
@@ -149,38 +148,45 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
   }
 
   private void initUI() {
-    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
-    this.saveCommand = new Command(I18N.tr("save"), Command.SCREEN, 2);
+    this.backCommand = new Command(LocalizationManager.tr("back"), Command.BACK, 1);
+    this.saveCommand = new Command(LocalizationManager.tr("save"), Command.SCREEN, 2);
 
-    languageChoice = new ChoiceGroup(I18N.tr("language"), Choice.POPUP);
-    String[] languages = I18N.getLanguages();
+    languageChoice = new ChoiceGroup(LocalizationManager.tr("language"), Choice.POPUP);
+    String[] languages = LocalizationManager.getLanguages();
     for (int i = 0; i < languages.length; i++) {
-      languageChoice.append(I18N.getLanguageName(languages[i]), null);
+      languageChoice.append(LocalizationManager.getLanguageName(languages[i]), null);
     }
 
-    audioQualityChoice = new ChoiceGroup(I18N.tr("audio_quality"), Choice.POPUP);
+    audioQualityChoice = new ChoiceGroup(LocalizationManager.tr("audio_quality"), Choice.POPUP);
     String[] audioQualities = settingManager.getAudioQualities();
     for (int i = 0; i < audioQualities.length; i++) {
       audioQualityChoice.append(audioQualities[i], null);
     }
 
-    serviceChoice = new ChoiceGroup(I18N.tr("service"), Choice.POPUP);
+    serviceChoice = new ChoiceGroup(LocalizationManager.tr("service"), Choice.POPUP);
     String[] services = settingManager.getAvailableServices();
     for (int i = 0; i < services.length; i++) {
       serviceChoice.append(services[i], null);
     }
 
-    autoUpdateChoice = new ChoiceGroup(I18N.tr("auto_update"), Choice.MULTIPLE);
-    autoUpdateChoice.append(I18N.tr("check_for_update"), null);
+    autoUpdateChoice = new ChoiceGroup(LocalizationManager.tr("auto_update"), Choice.MULTIPLE);
+    autoUpdateChoice.append(LocalizationManager.tr("check_for_update"), null);
 
-    performanceChoice = new ChoiceGroup(I18N.tr("performance"), Choice.MULTIPLE);
-    performanceChoice.append(I18N.tr("load_playlist_art"), null);
+    performanceChoice = new ChoiceGroup(LocalizationManager.tr("performance"), Choice.MULTIPLE);
+    performanceChoice.append(LocalizationManager.tr("load_playlist_art"), null);
 
     themeColorField =
-        new TextField(I18N.tr("theme_color"), settingManager.getThemeColor(), 6, TextField.ANY);
+        new TextField(
+            LocalizationManager.tr("theme_color"),
+            settingManager.getThemeColor(),
+            6,
+            TextField.ANY);
     backgroundColorField =
         new TextField(
-            I18N.tr("background_color"), settingManager.getBackgroundColor(), 6, TextField.ANY);
+            LocalizationManager.tr("background_color"),
+            settingManager.getBackgroundColor(),
+            6,
+            TextField.ANY);
 
     append(languageChoice);
     append(audioQualityChoice);
@@ -204,12 +210,12 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
       String backgroundColor = getBackgroundColor();
 
       if (!isValidHexColor(themeColor)) {
-        showAlert(I18N.tr("color_format_description"), AlertType.ERROR);
+        showAlert(LocalizationManager.tr("color_format_description"), AlertType.ERROR);
         return;
       }
 
       if (!isValidHexColor(backgroundColor)) {
-        showAlert(I18N.tr("color_format_description"), AlertType.ERROR);
+        showAlert(LocalizationManager.tr("color_format_description"), AlertType.ERROR);
         return;
       }
 
@@ -230,7 +236,7 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
           backgroundColor);
 
       if (languageChanged) {
-        I18N.setLanguage(selectedLanguage);
+        LocalizationManager.setLanguage(selectedLanguage);
       }
 
       if (shouldCheckUpdateNow && parent instanceof MIDPlay) {
@@ -238,7 +244,7 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
       }
 
       if (languageChanged || serviceChanged) {
-        MainList mainList = Utils.createMainMenu(parent, getSelectedService());
+        MainList mainList = UiUtils.createMainMenu(parent, getSelectedService());
         if (parent instanceof MIDPlay) {
           ((MIDPlay) parent).clearHistory();
         }
@@ -292,7 +298,7 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
   }
 
   public String getSelectedLanguage() {
-    String[] languages = I18N.getLanguages();
+    String[] languages = LocalizationManager.getLanguages();
     int index = languageChoice.getSelectedIndex();
     if (index >= 0 && index < languages.length) {
       return languages[index];

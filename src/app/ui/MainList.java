@@ -1,17 +1,18 @@
 package app.ui;
 
 import app.MIDPlay;
-import app.common.Common;
-import app.common.MenuSettingsManager;
-import app.common.ParseData;
+import app.constants.MenuConstants;
 import app.constants.Services;
-import app.interfaces.DataLoader;
-import app.interfaces.LoadDataListener;
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
+import app.core.data.AsyncDataManager;
+import app.core.data.DataLoader;
+import app.core.data.DataParser;
+import app.core.data.LoadDataListener;
+import app.core.data.LoadDataObserver;
+import app.core.settings.SettingsManager;
 import app.ui.category.CategoryList;
-import app.utils.I18N;
-import app.utils.Utils;
+import app.utils.concurrent.ThreadManager;
+import app.utils.text.LocalizationManager;
+import app.utils.ui.UiUtils;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -31,7 +32,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   public static void gotoSearch(MainObserver observer) {
-    SearchForm searchForm = new SearchForm(I18N.tr("search_title"));
+    SearchForm searchForm = new SearchForm(LocalizationManager.tr("search_title"));
     searchForm.setObserver(observer);
     observer.go(searchForm);
   }
@@ -64,7 +65,6 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   private final String service;
   private boolean isReorderMode = false;
   private int selectedItemIndex = -1;
-  Thread mLoadDataThread;
 
   public MainList(String title, String subtitle, String service) {
     super(title, List.IMPLICIT);
@@ -75,15 +75,16 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   public void gotoAbout() {
-    AboutForm aboutForm = new AboutForm(I18N.tr("about"), this.observer);
+    AboutForm aboutForm = new AboutForm(LocalizationManager.tr("about"), this.observer);
     this.observer.go(aboutForm);
   }
 
   private void initCommands() {
-    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 1);
-    this.reorderCommand = new Command(I18N.tr("reorder"), Command.SCREEN, 2);
-    this.menuVisibilityCommand = new Command(I18N.tr("menu_visibility"), Command.SCREEN, 3);
-    this.exitCommand = new Command(I18N.tr("exit"), Command.EXIT, 4);
+    this.nowPlayingCommand = new Command(LocalizationManager.tr("now_playing"), Command.SCREEN, 1);
+    this.reorderCommand = new Command(LocalizationManager.tr("reorder"), Command.SCREEN, 2);
+    this.menuVisibilityCommand =
+        new Command(LocalizationManager.tr("menu_visibility"), Command.SCREEN, 3);
+    this.exitCommand = new Command(LocalizationManager.tr("exit"), Command.EXIT, 4);
 
     this.addCommand(this.nowPlayingCommand);
     this.addCommand(this.reorderCommand);
@@ -126,14 +127,15 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     this.removeCommand(this.reorderCommand);
     this.removeCommand(this.menuVisibilityCommand);
 
-    this.saveOrderCommand = new Command(I18N.tr("save"), Command.SCREEN, 1);
+    this.saveOrderCommand = new Command(LocalizationManager.tr("save"), Command.SCREEN, 1);
     this.addCommand(this.saveOrderCommand);
 
     this.removeCommand(this.exitCommand);
-    this.exitCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
+    this.exitCommand = new Command(LocalizationManager.tr("cancel"), Command.BACK, 2);
     this.addCommand(this.exitCommand);
 
-    Alert alert = new Alert(null, I18N.tr("reorder_instructions"), null, AlertType.INFO);
+    Alert alert =
+        new Alert(null, LocalizationManager.tr("reorder_instructions"), null, AlertType.INFO);
     alert.setTimeout(2000);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
   }
@@ -146,7 +148,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     this.saveOrderCommand = null;
 
     this.removeCommand(this.exitCommand);
-    this.exitCommand = new Command(I18N.tr("exit"), Command.EXIT, 4);
+    this.exitCommand = new Command(LocalizationManager.tr("exit"), Command.EXIT, 4);
     this.addCommand(this.exitCommand);
 
     this.addCommand(this.nowPlayingCommand);
@@ -157,7 +159,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   private void cancelReorderMode() {
     exitReorderMode();
 
-    final MainList mainList = Utils.createMainMenu(observer, service);
+    final MainList mainList = UiUtils.createMainMenu(observer, service);
     observer.replaceCurrent(mainList);
   }
 
@@ -190,27 +192,24 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void saveCurrentOrder() {
-    MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
+    SettingsManager menuSettingsManager = SettingsManager.getInstance();
 
     int totalItems;
     int[] currentOrder;
     boolean[] visibility;
 
     if (Services.NCT.equals(service)) {
-      totalItems = Utils.MAIN_MENU_ITEMS_NCT.length;
+      totalItems = MenuConstants.MAIN_MENU_ITEMS_NCT.length;
       currentOrder = menuSettingsManager.getNctMenuOrder(totalItems);
       visibility = menuSettingsManager.getNctMenuVisibility(totalItems);
     } else {
-      totalItems = Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length;
+      totalItems = MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length;
       currentOrder = menuSettingsManager.getSoundcloudMenuOrder(totalItems);
       visibility = menuSettingsManager.getSoundcloudMenuVisibility(totalItems);
     }
 
     int[] newOrder = new int[totalItems];
-
-    for (int i = 0; i < totalItems; i++) {
-      newOrder[i] = currentOrder[i];
-    }
+    System.arraycopy(currentOrder, 0, newOrder, 0, totalItems);
 
     int visibleIndex = 0;
     for (int i = 0; i < totalItems; i++) {
@@ -240,21 +239,22 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       menuSettingsManager.saveSoundcloudMenuOrder(newOrder);
     }
 
-    Alert alert = new Alert(null, I18N.tr("order_saved"), null, AlertType.CONFIRMATION);
+    Alert alert =
+        new Alert(null, LocalizationManager.tr("order_saved"), null, AlertType.CONFIRMATION);
     alert.setTimeout(2000);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
   }
 
   private int findOriginalIndex(String itemText) {
     if (Services.NCT.equals(service)) {
-      for (int i = 0; i < Utils.MAIN_MENU_ITEMS_NCT.length; i++) {
-        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_NCT[i]))) {
+      for (int i = 0; i < MenuConstants.MAIN_MENU_ITEMS_NCT.length; i++) {
+        if (itemText.equals(LocalizationManager.tr(MenuConstants.MAIN_MENU_ITEMS_NCT[i]))) {
           return i;
         }
       }
     } else {
-      for (int i = 0; i < Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length; i++) {
-        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD[i]))) {
+      for (int i = 0; i < MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length; i++) {
+        if (itemText.equals(LocalizationManager.tr(MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD[i]))) {
           return i;
         }
       }
@@ -270,10 +270,10 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     loadDataAsync(
         new DataLoader() {
           public Vector load() throws Exception {
-            return ParseData.parseCate(2);
+            return DataParser.parseCategories(2);
           }
         },
-        I18N.tr("genres"),
+        LocalizationManager.tr("genres"),
         "category",
         "category");
   }
@@ -290,27 +290,27 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void gotoSetting() {
-    SettingForm settingForm = new SettingForm(I18N.tr("settings"), this.observer);
+    SettingForm settingForm = new SettingForm(LocalizationManager.tr("settings"), this.observer);
     this.observer.go(settingForm);
   }
 
   private void gotoChat() {
-    ChatCanvas chatCanvas = new ChatCanvas(I18N.tr("chat"), this.observer);
+    ChatCanvas chatCanvas = new ChatCanvas(LocalizationManager.tr("chat"), this.observer);
     this.observer.go(chatCanvas);
   }
 
   private void gotoPlaylist(final String type) {
-    String title = I18N.tr("discover_playlists");
+    String title = LocalizationManager.tr("discover_playlists");
 
     if (type.equals("new")) {
-      title = I18N.tr("new_playlists");
+      title = LocalizationManager.tr("new_playlists");
     } else if (type.equals("hot")) {
-      title = I18N.tr("hot_playlists");
+      title = LocalizationManager.tr("hot_playlists");
     }
     loadDataAsync(
         new DataLoader() {
           public Vector load() throws Exception {
-            return ParseData.parsePlaylist(1, 30, type, "0");
+            return DataParser.parsePlaylist(1, 30, type, "0");
           }
         },
         title,
@@ -322,40 +322,55 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     loadDataAsync(
         new DataLoader() {
           public Vector load() throws Exception {
-            return ParseData.parseBillboard(1, 10);
+            return DataParser.parseBillboard(1, 10);
           }
         },
-        I18N.tr("billboard"),
+        LocalizationManager.tr("billboard"),
         "billboard",
         "chart");
   }
 
   private void loadDataAsync(
       final DataLoader loader, final String title, final String from, final String itemType) {
-    Common.loadDataAsync(
-        loader,
-        new LoadDataListener() {
-          public void loadDataCompleted(Vector items) {
-            if ("category".equals(from)) {
-              showCategoryList(title, items, from, itemType);
-            } else {
-              showPlaylistList(title, items, from, itemType);
-            }
-          }
+    AsyncDataManager.getInstance()
+        .loadDataAsync(
+            loader,
+            new LoadDataListener() {
+              public void loadDataCompleted(final Vector items) {
+                ThreadManager.runOnUiThread(
+                    new Runnable() {
+                      public void run() {
+                        if ("category".equals(from)) {
+                          showCategoryList(title, items, from, itemType);
+                        } else {
+                          showPlaylistList(title, items, from, itemType);
+                        }
+                      }
+                    });
+              }
 
-          public void loadError() {
-            showErrorMessage(I18N.tr("connection_error"));
-          }
+              public void loadError() {
+                ThreadManager.runOnUiThread(
+                    new Runnable() {
+                      public void run() {
+                        showErrorMessage(LocalizationManager.tr("connection_error"));
+                      }
+                    });
+              }
 
-          public void noData() {
-            showErrorMessage(I18N.tr("no_data"));
-          }
-        },
-        this.mLoadDataThread);
+              public void noData() {
+                ThreadManager.runOnUiThread(
+                    new Runnable() {
+                      public void run() {
+                        showErrorMessage(LocalizationManager.tr("no_data"));
+                      }
+                    });
+              }
+            });
   }
 
   private void showErrorMessage(String message) {
-    displayMessage(I18N.tr("app_name"), message, "error", this.observer, this);
+    displayMessage(LocalizationManager.tr("app_name"), message, "error", this.observer, this);
   }
 
   private void showPlaylistList(String title, Vector items, String from, String itemType) {
@@ -368,17 +383,17 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   private void itemActionNCT() {
     int selectedIndex = this.getSelectedIndex();
-    MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
-    int[] order = menuSettingsManager.getNctMenuOrder(Utils.MAIN_MENU_ITEMS_NCT.length);
+    SettingsManager menuSettingsManager = SettingsManager.getInstance();
+    int[] order = menuSettingsManager.getNctMenuOrder(MenuConstants.MAIN_MENU_ITEMS_NCT.length);
     boolean[] menuVisibility =
-        menuSettingsManager.getNctMenuVisibility(Utils.MAIN_MENU_ITEMS_NCT.length);
+        menuSettingsManager.getNctMenuVisibility(MenuConstants.MAIN_MENU_ITEMS_NCT.length);
 
     int[] visibleToOriginalMap = new int[this.size()];
     int visibleCount = 0;
 
     for (int i = 0; i < order.length; i++) {
       int originalIndex = order[i];
-      if (originalIndex < 0 || originalIndex >= Utils.MAIN_MENU_ITEMS_NCT.length) {
+      if (originalIndex < 0 || originalIndex >= MenuConstants.MAIN_MENU_ITEMS_NCT.length) {
         continue;
       }
 
@@ -398,16 +413,36 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       } else if (originalIndex == 1) {
         this.gotoFavorites();
       } else if (originalIndex == 2) {
-        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        displayMessage(
+            LocalizationManager.tr("app_name"),
+            LocalizationManager.tr("loading"),
+            "loading",
+            this.observer,
+            this);
         this.gotoCate();
       } else if (originalIndex == 3) {
-        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        displayMessage(
+            LocalizationManager.tr("app_name"),
+            LocalizationManager.tr("loading"),
+            "loading",
+            this.observer,
+            this);
         this.gotoBillboard();
       } else if (originalIndex == 4) {
-        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        displayMessage(
+            LocalizationManager.tr("app_name"),
+            LocalizationManager.tr("loading"),
+            "loading",
+            this.observer,
+            this);
         this.gotoPlaylist("new");
       } else if (originalIndex == 5) {
-        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        displayMessage(
+            LocalizationManager.tr("app_name"),
+            LocalizationManager.tr("loading"),
+            "loading",
+            this.observer,
+            this);
         this.gotoPlaylist("hot");
       } else if (originalIndex == 6) {
         this.gotoChat();
@@ -421,18 +456,19 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   private void itemActionSoundCloud() {
     int selectedIndex = this.getSelectedIndex();
-    MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
+    SettingsManager menuSettingsManager = SettingsManager.getInstance();
     int[] order =
-        menuSettingsManager.getSoundcloudMenuOrder(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
+        menuSettingsManager.getSoundcloudMenuOrder(MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
     boolean[] menuVisibility =
-        menuSettingsManager.getSoundcloudMenuVisibility(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
+        menuSettingsManager.getSoundcloudMenuVisibility(
+            MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
 
     int[] visibleToOriginalMap = new int[this.size()];
     int visibleCount = 0;
 
     for (int i = 0; i < order.length; i++) {
       int originalIndex = order[i];
-      if (originalIndex < 0 || originalIndex >= Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length) {
+      if (originalIndex < 0 || originalIndex >= MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length) {
         continue;
       }
 
@@ -452,7 +488,12 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       } else if (originalIndex == 1) {
         this.gotoFavorites();
       } else if (originalIndex == 2) {
-        displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
+        displayMessage(
+            LocalizationManager.tr("app_name"),
+            LocalizationManager.tr("loading"),
+            "loading",
+            this.observer,
+            this);
         this.gotoPlaylist("discover");
       } else if (originalIndex == 3) {
         this.gotoChat();
@@ -469,14 +510,8 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   public synchronized void quit() {
-    try {
-      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
-        this.mLoadDataThread.interrupt();
-      }
-    } catch (Exception var2) {
-    }
 
-    MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
+    SettingsManager menuSettingsManager = SettingsManager.getInstance();
     if (menuSettingsManager != null) {
       menuSettingsManager.shutdown();
     }
@@ -484,7 +519,8 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   private void showMenuVisibilityForm() {
     MenuVisibilityForm visibilityForm =
-        new MenuVisibilityForm(I18N.tr("menu_visibility"), this.observer, this.service);
+        new MenuVisibilityForm(
+            LocalizationManager.tr("menu_visibility"), this.observer, this.service);
     this.observer.go(visibilityForm);
   }
 }

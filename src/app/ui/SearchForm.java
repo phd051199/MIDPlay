@@ -1,15 +1,14 @@
 package app.ui;
 
 import app.MIDPlay;
-import app.common.Common;
-import app.common.ParseData;
-import app.common.SearchSettingsManager;
-import app.interfaces.DataLoader;
-import app.interfaces.LoadDataListener;
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
-import app.model.Playlist;
-import app.utils.I18N;
+import app.core.data.AsyncDataManager;
+import app.core.data.DataLoader;
+import app.core.data.DataParser;
+import app.core.data.LoadDataListener;
+import app.core.data.LoadDataObserver;
+import app.core.settings.SettingsManager;
+import app.models.Playlist;
+import app.utils.text.LocalizationManager;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -22,28 +21,28 @@ import javax.microedition.lcdui.TextField;
 
 public class SearchForm extends Form implements CommandListener, LoadDataObserver {
 
-  private final TextField symbolField = new TextField(I18N.tr("search_hint"), "", 300, 0);
+  private final TextField symbolField =
+      new TextField(LocalizationManager.tr("search_hint"), "", 300, 0);
   private final ChoiceGroup searchTypeGroup =
-      new ChoiceGroup(I18N.tr("search_type"), ChoiceGroup.EXCLUSIVE);
+      new ChoiceGroup(LocalizationManager.tr("search_type"), ChoiceGroup.EXCLUSIVE);
   private Command exitCommand;
   private Command searchCommand;
   private Command nowPlayingCommand;
   private String keyWord = "";
   private String searchType = "playlist";
   private MainObserver observer;
-  Thread mLoadDataThread;
 
-  private final SearchSettingsManager searchSettingsManager;
+  private final SettingsManager settingsManager;
 
   public SearchForm(String title) {
     super(title);
 
-    searchSettingsManager = SearchSettingsManager.getInstance();
+    settingsManager = SettingsManager.getInstance();
 
     this.append(this.symbolField);
-    this.searchTypeGroup.append(I18N.tr("playlist"), null);
-    this.searchTypeGroup.append(I18N.tr("album"), null);
-    this.searchTypeGroup.append(I18N.tr("track"), null);
+    this.searchTypeGroup.append(LocalizationManager.tr("playlist"), null);
+    this.searchTypeGroup.append(LocalizationManager.tr("album"), null);
+    this.searchTypeGroup.append(LocalizationManager.tr("track"), null);
 
     this.loadSearchConfig();
 
@@ -52,7 +51,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   private void loadSearchConfig() {
-    int savedTypeIndex = searchSettingsManager.getSearchTypeIndex();
+    int savedTypeIndex = settingsManager.getSearchTypeIndex();
 
     if (savedTypeIndex >= 0 && savedTypeIndex < searchTypeGroup.size()) {
       searchTypeGroup.setSelectedIndex(savedTypeIndex, true);
@@ -60,7 +59,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   private void saveSearchConfig() {
-    searchSettingsManager.saveSearchSettings(searchTypeGroup.getSelectedIndex());
+    settingsManager.setSearchTypeIndex(searchTypeGroup.getSelectedIndex());
   }
 
   public TextField getSymbolField() {
@@ -92,7 +91,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
 
   private void gotoSearchPlaylist(String keyword, final int curPage, final int perPage) {
     if (keyword.length() == 0) {
-      showAlert(I18N.tr("search_keyword_empty"), AlertType.ERROR);
+      showAlert(LocalizationManager.tr("search_keyword_empty"), AlertType.ERROR);
       return;
     }
 
@@ -110,60 +109,64 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
 
     saveSearchConfig();
 
-    this.displayMessage(I18N.tr("search_hint") + ": " + keyword, I18N.tr("loading"), "loading");
-    Common.loadDataAsync(
-        new DataLoader() {
-          public Vector load() throws Exception {
-            if (SearchForm.this.searchType.equals("track")) {
-              return ParseData.parseSearchTracks(SearchForm.this.keyWord);
-            } else {
-              return ParseData.parseSearch(
-                  "", SearchForm.this.keyWord, curPage, perPage, searchType);
-            }
-          }
-        },
-        new LoadDataListener() {
-          public void loadDataCompleted(Vector listItems) {
+    this.displayMessage(
+        LocalizationManager.tr("search_hint") + ": " + keyword,
+        LocalizationManager.tr("loading"),
+        "loading");
+    AsyncDataManager.getInstance()
+        .loadDataAsync(
+            new DataLoader() {
+              public Vector load() throws Exception {
+                if (SearchForm.this.searchType.equals("track")) {
+                  return DataParser.parseSearchTracks(SearchForm.this.keyWord);
+                } else {
+                  return DataParser.parseSearch(
+                      "", SearchForm.this.keyWord, curPage, perPage, searchType);
+                }
+              }
+            },
+            new LoadDataListener() {
+              public void loadDataCompleted(Vector listItems) {
 
-            if (SearchForm.this.searchType.equals("track")) {
-              String searchResultsTitle =
-                  I18N.tr("search_results") + ": " + SearchForm.this.keyWord;
-              Playlist searchPlaylist = new Playlist();
-              searchPlaylist.setName(searchResultsTitle);
-              searchPlaylist.setId("search");
+                if (SearchForm.this.searchType.equals("track")) {
+                  String searchResultsTitle =
+                      LocalizationManager.tr("search_results") + ": " + SearchForm.this.keyWord;
+                  Playlist searchPlaylist = new Playlist();
+                  searchPlaylist.setName(searchResultsTitle);
+                  searchPlaylist.setId("search");
 
-              SongList songList = new SongList(searchResultsTitle, listItems, searchPlaylist);
-              songList.setObserver(SearchForm.this.observer);
-              SearchForm.this.observer.replaceCurrent(songList);
-            } else {
-              String searchResultsTitle =
-                  I18N.tr("search_results") + ": " + SearchForm.this.keyWord;
-              PlaylistList playlistList =
-                  new PlaylistList(
-                      searchResultsTitle,
-                      listItems,
-                      "search",
-                      SearchForm.this.keyWord,
-                      SearchForm.this.searchType);
-              playlistList.setObserver(SearchForm.this.observer);
-              SearchForm.this.observer.replaceCurrent(playlistList);
-            }
-          }
+                  SongList songList = new SongList(searchResultsTitle, listItems, searchPlaylist);
+                  songList.setObserver(SearchForm.this.observer);
+                  SearchForm.this.observer.replaceCurrent(songList);
+                } else {
+                  String searchResultsTitle =
+                      LocalizationManager.tr("search_results") + ": " + SearchForm.this.keyWord;
+                  PlaylistList playlistList =
+                      new PlaylistList(
+                          searchResultsTitle,
+                          listItems,
+                          "search",
+                          SearchForm.this.keyWord,
+                          SearchForm.this.searchType);
+                  playlistList.setObserver(SearchForm.this.observer);
+                  SearchForm.this.observer.replaceCurrent(playlistList);
+                }
+              }
 
-          public void loadError() {
-            SearchForm.this.displayMessage("", I18N.tr("connection_error"), "error");
-          }
+              public void loadError() {
+                SearchForm.this.displayMessage(
+                    "", LocalizationManager.tr("connection_error"), "error");
+              }
 
-          public void noData() {
-            MainList.displayMessage(
-                I18N.tr("search"),
-                I18N.tr("no_results"),
-                "error",
-                SearchForm.this.observer,
-                SearchForm.this);
-          }
-        },
-        this.mLoadDataThread);
+              public void noData() {
+                MainList.displayMessage(
+                    LocalizationManager.tr("search"),
+                    LocalizationManager.tr("no_results"),
+                    "error",
+                    SearchForm.this.observer,
+                    SearchForm.this);
+              }
+            });
   }
 
   private void displayMessage(String title, String message, String messageType) {
@@ -171,9 +174,9 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   private void initMenu() {
-    this.searchCommand = new Command(I18N.tr("search"), Command.OK, 0);
-    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 1);
-    this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
+    this.searchCommand = new Command(LocalizationManager.tr("search"), Command.OK, 0);
+    this.nowPlayingCommand = new Command(LocalizationManager.tr("now_playing"), Command.SCREEN, 1);
+    this.exitCommand = new Command(LocalizationManager.tr("back"), Command.BACK, 0);
     this.addCommand(this.searchCommand);
     this.addCommand(this.exitCommand);
     this.addCommand(this.nowPlayingCommand);
@@ -195,15 +198,9 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   public void quit() {
-    if (searchSettingsManager != null) {
-      searchSettingsManager.shutdown();
-    }
-
-    try {
-      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
-        this.mLoadDataThread.join();
-      }
-    } catch (InterruptedException var2) {
+    SettingsManager settingsManager = SettingsManager.getInstance();
+    if (settingsManager != null) {
+      settingsManager.shutdown();
     }
   }
 }

@@ -1,14 +1,18 @@
 package app.ui;
 
 import app.MIDPlay;
-import app.common.ParseData;
-import app.common.ReadWriteRecordStore;
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
-import app.model.Playlist;
-import app.model.Song;
+import app.core.data.AsyncDataManager;
+import app.core.data.DataLoader;
+import app.core.data.DataParser;
+import app.core.data.LoadDataListener;
+import app.core.data.LoadDataObserver;
+import app.core.service.FavoritesService;
+import app.core.service.PlaylistSongService;
+import app.models.Playlist;
+import app.models.Song;
 import app.ui.player.PlayerCanvas;
-import app.utils.I18N;
+import app.utils.concurrent.ThreadManager;
+import app.utils.text.LocalizationManager;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -17,8 +21,6 @@ import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
-import javax.microedition.rms.RecordEnumeration;
-import org.json.me.JSONObject;
 
 public class SongList extends List implements CommandListener, LoadDataObserver {
   public static PlayerCanvas playerCanvas = null;
@@ -35,7 +37,6 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   int curPage = 1;
   int perPage = 10;
   private final Playlist playlist;
-  Thread mLoadDataThread;
   private Thread removeSongFromPlaylistThread;
   private Thread addSongToPlaylistThread;
   protected Image defaultImage;
@@ -54,11 +55,13 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void initCommands() {
-    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 2);
-    this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
-    this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 3);
-    this.addToPlaylistCommand = new Command(I18N.tr("add_to_playlist"), Command.ITEM, 4);
-    this.removeFromPlaylistCommand = new Command(I18N.tr("remove_from_playlist"), Command.ITEM, 5);
+    this.nowPlayingCommand = new Command(LocalizationManager.tr("now_playing"), Command.SCREEN, 2);
+    this.exitCommand = new Command(LocalizationManager.tr("back"), Command.BACK, 0);
+    this.searchCommand = new Command(LocalizationManager.tr("search"), Command.SCREEN, 3);
+    this.addToPlaylistCommand =
+        new Command(LocalizationManager.tr("add_to_playlist"), Command.ITEM, 4);
+    this.removeFromPlaylistCommand =
+        new Command(LocalizationManager.tr("remove_from_playlist"), Command.ITEM, 5);
 
     this.addCommand(this.exitCommand);
     this.addCommand(this.searchCommand);
@@ -77,7 +80,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
       int selectedItemIndex = getSelectedIndex();
       if (selectedItemIndex >= 0 && selectedItemIndex < this.songItems.size()) {
         Song song = (Song) this.songItems.elementAt(selectedItemIndex);
-        if (song.getSongName().equals(I18N.tr("load_more"))) {
+        if (song.getSongName().equals(LocalizationManager.tr("load_more"))) {
           this.doLoadMoreAction(song);
         } else {
           this.gotoPlaySong();
@@ -104,22 +107,23 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     final Vector customPlaylists = getCustomPlaylists();
 
     if (customPlaylists.isEmpty()) {
-      showAlert(I18N.tr("alert_no_custom_playlists"), AlertType.INFO);
+      showAlert(LocalizationManager.tr("alert_no_custom_playlists"), AlertType.INFO);
       return;
     }
 
-    final List playlistList = new List(I18N.tr("select_playlist"), List.IMPLICIT);
+    final List playlistList = new List(LocalizationManager.tr("select_playlist"), List.IMPLICIT);
 
     for (int i = 0; i < customPlaylists.size(); i++) {
       FavoritesList.FavoriteItem item = (FavoritesList.FavoriteItem) customPlaylists.elementAt(i);
       try {
         playlistList.append(item.data.getString("name"), null);
       } catch (Exception e) {
-        playlistList.append(I18N.tr("playlist") + " " + i, null);
+        playlistList.append(LocalizationManager.tr("playlist") + " " + i, null);
       }
     }
 
-    final Command cancelAddToPlaylistCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
+    final Command cancelAddToPlaylistCommand =
+        new Command(LocalizationManager.tr("cancel"), Command.BACK, 2);
     playlistList.addCommand(cancelAddToPlaylistCommand);
 
     playlistList.setCommandListener(
@@ -134,7 +138,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
                 MIDPlay.getInstance().getDisplay().setCurrent(SongList.this);
 
                 addSongToPlaylistThread =
-                    new Thread(
+                    ThreadManager.createThread(
                         new Runnable() {
                           public void run() {
                             try {
@@ -143,8 +147,9 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
                               showAlert(e.toString(), AlertType.ERROR);
                             }
                           }
-                        });
-                addSongToPlaylistThread.start();
+                        },
+                        "AddSongToPlaylist");
+                ThreadManager.safeStartThread(addSongToPlaylistThread);
               } else {
                 MIDPlay.getInstance().getDisplay().setCurrent(SongList.this);
               }
@@ -158,81 +163,20 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   }
 
   private Vector getCustomPlaylists() {
-    Vector customPlaylists = new Vector();
-    ReadWriteRecordStore recordStore = new ReadWriteRecordStore("favorites");
-    RecordEnumeration re = null;
-
     try {
-      recordStore.openRecStore();
-      re = recordStore.enumerateRecords(null, null, false);
-
-      while (re.hasNextElement()) {
-        int recordId = re.nextRecordId();
-        String record = recordStore.getRecord(recordId);
-
-        if (record.trim().length() == 0) {
-          continue;
-        }
-
-        JSONObject favoriteJson = new JSONObject(record);
-        if (favoriteJson.has("isCustom") && favoriteJson.getBoolean("isCustom")) {
-          FavoritesList.FavoriteItem item = new FavoritesList.FavoriteItem(recordId, favoriteJson);
-          customPlaylists.addElement(item);
-        }
-      }
+      return FavoritesService.getInstance().getCustomPlaylists();
     } catch (Exception e) {
       showAlert(e.toString(), AlertType.ERROR);
-    } finally {
-      if (re != null) {
-        re.destroy();
-      }
-      try {
-        recordStore.closeRecStore();
-      } catch (Exception e) {
-        showAlert(e.toString(), AlertType.ERROR);
-      }
+      return new Vector();
     }
-
-    return customPlaylists;
   }
 
   private void addSongToCustomPlaylist(final Song song, final FavoritesList.FavoriteItem playlist) {
     try {
       String playlistId = playlist.data.getString("id");
 
-      String songId = song.getSongId();
-      if (songId == null || songId.trim().length() == 0) {
-        songId = song.getSongName() + "_" + String.valueOf(System.currentTimeMillis());
-        song.setSongId(songId);
-      }
-
-      ReadWriteRecordStore songRecordStore = null;
-      try {
-        songRecordStore = new ReadWriteRecordStore("playlist_songs");
-        songRecordStore.openRecStore();
-
-        String relationId = playlistId + "_" + songId;
-
-        JSONObject songJson = new JSONObject();
-        songJson.put("relationId", relationId);
-        songJson.put("playlistId", playlistId);
-        songJson.put("songId", songId);
-        songJson.put("name", song.getSongName());
-        songJson.put("artist", song.getArtistName());
-        songJson.put("image", song.getImage());
-        songJson.put("streamUrl", song.getStreamUrl());
-        songJson.put("duration", new Integer(song.getDuration()));
-
-        songRecordStore.writeRecord(songJson.toString());
-        showAlert(I18N.tr("alert_song_added_to_playlist"), AlertType.CONFIRMATION);
-      } finally {
-        try {
-          if (songRecordStore != null) {
-            songRecordStore.closeRecStore();
-          }
-        } catch (Exception e) {
-        }
-      }
+      PlaylistSongService.getInstance().addSongToPlaylist(playlistId, song);
+      showAlert(LocalizationManager.tr("alert_song_added_to_playlist"), AlertType.CONFIRMATION);
     } catch (Exception e) {
       showAlert(e.toString(), AlertType.ERROR);
     }
@@ -256,18 +200,28 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void loadMoreSongs(final String genKey, final int curPage, final int perPage) {
-    this.mLoadDataThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
-                Vector listItems = ParseData.parseSongsInPlaylist(genKey, "", curPage, perPage, "");
-                if (listItems != null) {
-                  SongList.this.addMorePlaylists(listItems);
-                  SongList.this.repaintList();
-                }
+    AsyncDataManager.getInstance()
+        .loadDataAsync(
+            new DataLoader() {
+              public Vector load() {
+                return DataParser.parseSongsInPlaylist(genKey, "", curPage, perPage, "");
               }
+            },
+            new LoadDataListener() {
+              public void loadDataCompleted(Vector listItems) {
+                SongList.this.addMorePlaylists(listItems);
+                ThreadManager.runOnUiThread(
+                    new Runnable() {
+                      public void run() {
+                        SongList.this.repaintList();
+                      }
+                    });
+              }
+
+              public void loadError() {}
+
+              public void noData() {}
             });
-    this.mLoadDataThread.start();
   }
 
   private void initComponents() {
@@ -328,7 +282,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     this.curPage++;
     if (this.songItems.size() > 0) {
       Song lastSong = (Song) this.songItems.elementAt(this.songItems.size() - 1);
-      if (lastSong.getSongName().equals(I18N.tr("load_more"))) {
+      if (lastSong.getSongName().equals(LocalizationManager.tr("load_more"))) {
         this.songItems.removeElementAt(this.songItems.size() - 1);
       }
     }
@@ -366,9 +320,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
 
   public void quit() {
     try {
-      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
-        this.mLoadDataThread.join();
-      }
+
       if (this.removeSongFromPlaylistThread != null
           && this.removeSongFromPlaylistThread.isAlive()) {
         this.removeSongFromPlaylistThread.join();
@@ -387,95 +339,86 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
 
   private void removeFromCurrentPlaylist() {
     if (playlist == null || !playlist.getId().startsWith("custom_")) {
+      showAlert(
+          LocalizationManager.tr("alert_cannot_remove_from_non_custom_playlist"),
+          AlertType.WARNING);
       return;
     }
 
     final int selectedIndex = this.getSelectedIndex();
     if (selectedIndex < 0 || selectedIndex >= this.songItems.size()) {
+      showAlert(LocalizationManager.tr("alert_no_song_selected"), AlertType.WARNING);
       return;
     }
 
     final Song selectedSong = (Song) this.songItems.elementAt(selectedIndex);
 
+    if (selectedSong.getStreamUrl() == null || selectedSong.getStreamUrl().trim().length() == 0) {
+      showAlert(LocalizationManager.tr("alert_cannot_remove_song_no_id"), AlertType.ERROR);
+      return;
+    }
+
     removeSongFromPlaylistThread =
-        new Thread(
+        ThreadManager.createThread(
             new Runnable() {
               public void run() {
                 try {
                   boolean success = removeSongFromPlaylist(selectedSong, playlist.getId());
                   if (success) {
-                    MIDPlay.getInstance()
-                        .getDisplay()
-                        .callSerially(
-                            new Runnable() {
-                              public void run() {
-                                songItems.removeElementAt(selectedIndex);
-                                delete(selectedIndex);
-                                showAlert(
-                                    I18N.tr("alert_song_removed_from_playlist"),
-                                    AlertType.CONFIRMATION);
-                              }
-                            });
+                    ThreadManager.runOnUiThread(
+                        new Runnable() {
+                          public void run() {
+                            songItems.removeElementAt(selectedIndex);
+                            delete(selectedIndex);
+                            showAlert(
+                                LocalizationManager.tr("alert_song_removed_from_playlist"),
+                                AlertType.CONFIRMATION);
+                          }
+                        });
                   } else {
-                    showAlert(I18N.tr("alert_error_removing_song"), AlertType.ERROR);
+                    ThreadManager.runOnUiThread(
+                        new Runnable() {
+                          public void run() {
+                            showAlert(
+                                LocalizationManager.tr("alert_song_not_found_in_playlist"),
+                                AlertType.ERROR);
+                          }
+                        });
                   }
-                } catch (Exception e) {
-                  showAlert(e.toString(), AlertType.ERROR);
+                } catch (final Exception e) {
+                  ThreadManager.runOnUiThread(
+                      new Runnable() {
+                        public void run() {
+                          showAlert(
+                              LocalizationManager.tr("alert_error_removing_song")
+                                  + ": "
+                                  + e.getMessage(),
+                              AlertType.ERROR);
+                        }
+                      });
                 }
               }
-            });
-    removeSongFromPlaylistThread.start();
+            },
+            "RemoveSongFromPlaylist");
+    ThreadManager.safeStartThread(removeSongFromPlaylistThread);
   }
 
-  private boolean removeSongFromPlaylist(Song song, String playlistId) {
-    ReadWriteRecordStore songRecordStore = new ReadWriteRecordStore("playlist_songs");
-    RecordEnumeration re = null;
-    boolean success = false;
+  private boolean removeSongFromPlaylist(Song song, String playlistId) throws Exception {
 
-    try {
-      songRecordStore.openRecStore();
-      re = songRecordStore.enumerateRecords(null, null, false);
+    String songId = song.getStreamUrl();
+    if (songId == null || songId.trim().length() == 0) {
 
-      String songId = song.getSongId();
-
-      while (re.hasNextElement()) {
-        try {
-          int recordId = re.nextRecordId();
-          String record = songRecordStore.getRecord(recordId);
-
-          if (record != null && record.trim().length() > 0) {
-            JSONObject relationJson = new JSONObject(record);
-
-            if (relationJson.has("playlistId")
-                && relationJson.getString("playlistId").equals(playlistId)
-                && relationJson.has("songId")
-                && relationJson.getString("songId").equals(songId)) {
-              songRecordStore.deleteRecord(recordId);
-              success = true;
-              break;
-            }
-          }
-        } catch (Exception e) {
-        }
-      }
-    } catch (Exception e) {
-      return false;
-    } finally {
-      try {
-        if (re != null) {
-          re.destroy();
-        }
-      } catch (Exception e) {
-      }
-
-      try {
-        if (songRecordStore != null) {
-          songRecordStore.closeRecStore();
-        }
-      } catch (Exception e) {
-      }
+      songId = song.getSongId();
     }
 
-    return success;
+    if (songId == null || songId.trim().length() == 0) {
+      throw new Exception("Song has no valid identifier for removal");
+    }
+
+    if (playlistId == null || playlistId.trim().length() == 0) {
+      throw new Exception("Invalid playlist ID");
+    }
+
+    return PlaylistSongService.getInstance().removeSongFromPlaylist(playlistId, songId);
   }
 }

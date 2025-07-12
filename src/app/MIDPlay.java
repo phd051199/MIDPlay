@@ -1,17 +1,20 @@
 package app;
 
-import app.common.ParseData;
-import app.common.SettingManager;
-import app.interfaces.MainObserver;
-import app.interfaces.Observer;
-import app.model.Song;
+import app.core.data.AsyncDataManager;
+import app.core.network.ApiEndpoints;
+import app.core.platform.Observer;
+import app.core.settings.SettingsManager;
+import app.models.Song;
+import app.ui.FavoritesList;
 import app.ui.MainList;
+import app.ui.MainObserver;
+import app.ui.PlaylistList;
 import app.ui.SettingForm;
-import app.utils.AsyncNetworkManager;
-import app.utils.I18N;
-import app.utils.ImageUtils;
-import app.utils.ThreadManager;
-import app.utils.Utils;
+import app.ui.player.PlayerCanvas;
+import app.utils.concurrent.ThreadManager;
+import app.utils.image.ImageUtils;
+import app.utils.text.LocalizationManager;
+import app.utils.ui.UiUtils;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -26,16 +29,15 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
 
   private static MIDPlay instance;
 
-  private static final String EMPTY_STRING = "";
-  private static final int MAX_HISTORY_SIZE = 10;
-  private static String APP_VERSION = "";
+  private static final int MAX_HISTORY_SIZE = 20;
+  private static String appVersion = "";
 
   public static MIDPlay getInstance() {
     return instance;
   }
 
   public static String getAppVersion() {
-    return APP_VERSION;
+    return appVersion;
   }
 
   private final Vector history = new Vector(MAX_HISTORY_SIZE);
@@ -51,15 +53,15 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   }
 
   private void initializeCommands() {
-    downloadCmd = new Command(I18N.tr("update"), Command.OK, 1);
-    cancelCmd = new Command(I18N.tr("cancel"), Command.CANCEL, 2);
+    downloadCmd = new Command(LocalizationManager.tr("update"), Command.OK, 1);
+    cancelCmd = new Command(LocalizationManager.tr("cancel"), Command.CANCEL, 2);
   }
 
   private void initializeApplication() {
     try {
-      I18N.initialize(this);
+      LocalizationManager.initialize(this);
       SettingForm.populateFormWithSettings();
-      APP_VERSION = getAppProperty("MIDlet-Version");
+      appVersion = getAppProperty("MIDlet-Version");
     } catch (Exception e) {
       showErrorAlert("Init Error", "Failed to initialize");
     }
@@ -88,14 +90,14 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
 
       Displayable current = getCurrentDisplayable();
       if (current != null) {
-        if (current instanceof app.ui.player.PlayerCanvas) {
-          ((app.ui.player.PlayerCanvas) current).close();
+        if (current instanceof PlayerCanvas) {
+          ((PlayerCanvas) current).close();
         }
       }
 
       ImageUtils.clearImageCache();
 
-      AsyncNetworkManager.getInstance().shutdown();
+      AsyncDataManager.getInstance().shutdown();
 
     } catch (Exception e) {
     }
@@ -106,7 +108,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   private void setMainScreen() {
     try {
       MainList mainMenu =
-          Utils.createMainMenu(this, SettingManager.getInstance().getCurrentService());
+          UiUtils.createMainMenu(this, SettingsManager.getInstance().getCurrentService());
       go(mainMenu);
     } catch (Exception e) {
       showErrorAlert("Error", "Cannot create main screen");
@@ -119,39 +121,56 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
 
   public void checkForUpdate(boolean respectAutoUpdateSetting) {
     try {
-      if (respectAutoUpdateSetting && !SettingManager.getInstance().isAutoUpdateEnabled()) {
+      if (respectAutoUpdateSetting && !SettingsManager.getInstance().isAutoUpdate()) {
         return;
       }
 
       checkForUpdateAsync();
     } catch (Exception e) {
-
     }
   }
 
   private void checkForUpdateAsync() {
-    AsyncNetworkManager networkManager = AsyncNetworkManager.getInstance();
-
-    Thread updateThread =
-        ThreadManager.createThread(
-            new Runnable() {
-              public void run() {
-                try {
-                  final String updateInfo = ParseData.checkForUpdate();
-                  if (!EMPTY_STRING.equals(updateInfo)) {
-                    showUpdateDialog(updateInfo);
+    try {
+      final String updateUrl = ApiEndpoints.checkForUpdate();
+      if (updateUrl != null) {
+        AsyncDataManager.getInstance()
+            .getAsync(
+                updateUrl,
+                new AsyncDataManager.NetworkCallback() {
+                  public void onSuccess(String result) {
+                    handleUpdateResponse(result);
                   }
-                } catch (Exception e) {
-                }
-              }
-            },
-            "UpdateChecker");
 
-    ThreadManager.safeStartThread(updateThread);
+                  public void onError(Exception error) {}
+
+                  public void onCancelled() {}
+                });
+      }
+    } catch (Exception e) {
+    }
+  }
+
+  private void handleUpdateResponse(final String response) {
+    if (response == null || "".equals(response)) {
+
+      return;
+    }
+
+    if (response.startsWith("http://") || response.startsWith("https://")) {
+
+      ThreadManager.runOnUiThread(
+          new Runnable() {
+            public void run() {
+              showUpdateDialog(response);
+            }
+          });
+    }
   }
 
   private void showUpdateDialog(final String updateInfo) {
-    Alert updateAlert = new Alert(null, I18N.tr("update_message"), null, AlertType.INFO);
+    Alert updateAlert =
+        new Alert(null, LocalizationManager.tr("update_message"), null, AlertType.INFO);
     updateAlert.setTimeout(Alert.FOREVER);
     updateAlert.addCommand(downloadCmd);
     updateAlert.addCommand(cancelCmd);
@@ -229,6 +248,17 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
       exit();
       return null;
     }
+
+    if (previous instanceof PlaylistList) {
+      PlaylistList playlistList = (PlaylistList) previous;
+      playlistList.resumeImageLoading();
+      playlistList.startSelectionMonitoring();
+    } else if (previous instanceof FavoritesList) {
+      FavoritesList favoritesList = (FavoritesList) previous;
+      favoritesList.resumeImageLoading();
+      favoritesList.startSelectionMonitoring();
+    }
+
     return replaceCurrent(previous);
   }
 

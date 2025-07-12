@@ -1,10 +1,10 @@
 package app.ui;
 
-import app.common.MenuSettingsManager;
+import app.constants.MenuConstants;
 import app.constants.Services;
-import app.interfaces.MainObserver;
-import app.utils.I18N;
-import app.utils.Utils;
+import app.core.settings.SettingsManager;
+import app.utils.text.LocalizationManager;
+import app.utils.ui.UiUtils;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.ChoiceGroup;
@@ -35,10 +35,11 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
   }
 
   private void initComponents() {
-    StringItem descriptionItem = new StringItem(null, I18N.tr("select_visible_items"));
+    StringItem descriptionItem =
+        new StringItem(null, LocalizationManager.tr("select_visible_items"));
     this.append(descriptionItem);
 
-    menuItemsGroup = new ChoiceGroup(I18N.tr("menu_items"), ChoiceGroup.MULTIPLE);
+    menuItemsGroup = new ChoiceGroup(LocalizationManager.tr("menu_items"), ChoiceGroup.MULTIPLE);
 
     if (Services.NCT.equals(service)) {
       loadNCTMenuItems();
@@ -48,42 +49,43 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
 
     this.append(menuItemsGroup);
 
-    saveCommand = new Command(I18N.tr("save"), Command.OK, 1);
-    cancelCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
+    saveCommand = new Command(LocalizationManager.tr("save"), Command.OK, 1);
+    cancelCommand = new Command(LocalizationManager.tr("cancel"), Command.BACK, 2);
 
     this.addCommand(saveCommand);
     this.addCommand(cancelCommand);
   }
 
   private void loadNCTMenuItems() {
-    MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
+    SettingsManager menuSettingsManager = SettingsManager.getInstance();
     boolean[] visibility =
-        menuSettingsManager.getNctMenuVisibility(Utils.MAIN_MENU_ITEMS_NCT.length);
+        menuSettingsManager.getNctMenuVisibility(MenuConstants.MAIN_MENU_ITEMS_NCT.length);
 
-    for (int i = 0; i < Utils.MAIN_MENU_ITEMS_NCT.length; i++) {
-      String itemLabel = I18N.tr(Utils.MAIN_MENU_ITEMS_NCT[i]);
+    for (int i = 0; i < MenuConstants.MAIN_MENU_ITEMS_NCT.length; i++) {
+      String itemLabel = LocalizationManager.tr(MenuConstants.MAIN_MENU_ITEMS_NCT[i]);
       menuItemsGroup.append(itemLabel, null);
       menuItemsGroup.setSelectedIndex(i, visibility[i]);
     }
   }
 
   private void loadSoundcloudMenuItems() {
-    MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
+    SettingsManager menuSettingsManager = SettingsManager.getInstance();
     boolean[] visibility =
-        menuSettingsManager.getSoundcloudMenuVisibility(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
+        menuSettingsManager.getSoundcloudMenuVisibility(
+            MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
 
-    for (int i = 0; i < Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length; i++) {
-      String itemLabel = I18N.tr(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD[i]);
+    for (int i = 0; i < MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length; i++) {
+      String itemLabel = LocalizationManager.tr(MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD[i]);
       menuItemsGroup.append(itemLabel, null);
       menuItemsGroup.setSelectedIndex(i, visibility[i]);
     }
   }
 
   private void saveVisibility() {
-    MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
+    SettingsManager menuSettingsManager = SettingsManager.getInstance();
 
     if (Services.NCT.equals(service)) {
-      boolean[] visibility = new boolean[Utils.MAIN_MENU_ITEMS_NCT.length];
+      boolean[] visibility = new boolean[MenuConstants.MAIN_MENU_ITEMS_NCT.length];
       for (int i = 0; i < visibility.length; i++) {
         visibility[i] = menuItemsGroup.isSelected(i);
       }
@@ -97,13 +99,13 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
       }
 
       if (!anyVisible) {
-        showAlert(I18N.tr("visibility_at_least_one"), AlertType.ERROR);
+        showAlert(LocalizationManager.tr("visibility_at_least_one"), AlertType.ERROR);
         return;
       }
 
       menuSettingsManager.saveNctMenuVisibility(visibility);
     } else {
-      boolean[] visibility = new boolean[Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length];
+      boolean[] visibility = new boolean[MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length];
       for (int i = 0; i < visibility.length; i++) {
         visibility[i] = menuItemsGroup.isSelected(i);
       }
@@ -117,14 +119,14 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
       }
 
       if (!anyVisible) {
-        showAlert(I18N.tr("visibility_at_least_one"), AlertType.ERROR);
+        showAlert(LocalizationManager.tr("visibility_at_least_one"), AlertType.ERROR);
         return;
       }
 
       menuSettingsManager.saveSoundcloudMenuVisibility(visibility);
     }
 
-    MainList mainList = Utils.createMainMenu(observer, service);
+    MainList mainList = UiUtils.createMainMenu(observer, service);
 
     if (observer instanceof app.MIDPlay) {
       ((app.MIDPlay) observer).clearHistory();

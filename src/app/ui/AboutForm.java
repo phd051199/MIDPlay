@@ -2,9 +2,8 @@ package app.ui;
 
 import app.MIDPlay;
 import app.constants.Constants;
-import app.interfaces.MainObserver;
-import app.model.Song;
-import app.utils.I18N;
+import app.models.Song;
+import app.utils.text.LocalizationManager;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
@@ -13,8 +12,8 @@ import javax.microedition.lcdui.StringItem;
 
 public class AboutForm extends Form implements MainObserver, CommandListener {
 
-  public static final String APPLICATION = I18N.tr("about");
-  protected Command backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
+  public static final String APPLICATION = LocalizationManager.tr("about");
+  protected Command backCommand = new Command(LocalizationManager.tr("back"), Command.BACK, 1);
   private final MainObserver parent;
 
   public AboutForm(String title, MainObserver parent) {

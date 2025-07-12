@@ -1,15 +1,16 @@
 package app.ui.category;
 
-import app.common.Common;
-import app.common.ParseData;
-import app.interfaces.DataLoader;
-import app.interfaces.LoadDataListener;
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
-import app.model.Category;
+import app.core.data.AsyncDataManager;
+import app.core.data.DataLoader;
+import app.core.data.DataParser;
+import app.core.data.LoadDataListener;
+import app.core.data.LoadDataObserver;
+import app.models.Category;
 import app.ui.MainList;
+import app.ui.MainObserver;
 import app.ui.PlaylistList;
-import app.utils.I18N;
+import app.utils.concurrent.ThreadManager;
+import app.utils.text.LocalizationManager;
 import java.util.Vector;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
@@ -27,7 +28,6 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
   public int selectedItem = 0;
   Vector cateItems;
   private MainObserver observer;
-  Thread mLoadDataThread;
   private Image defaultImage;
 
   public CategoryList(String title, Vector items) {
@@ -43,9 +43,9 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
   }
 
   private void initCommands() {
-    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 2);
-    this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
-    this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 3);
+    this.nowPlayingCommand = new Command(LocalizationManager.tr("now_playing"), Command.SCREEN, 2);
+    this.exitCommand = new Command(LocalizationManager.tr("back"), Command.BACK, 0);
+    this.searchCommand = new Command(LocalizationManager.tr("search"), Command.SCREEN, 3);
     this.addCommand(this.exitCommand);
     this.addCommand(this.searchCommand);
     this.addCommand(this.nowPlayingCommand);
@@ -113,46 +113,62 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
   }
 
   private void gotoPlaylistByCate(final String genKey, final int curPage, final int perPage) {
-    this.displayMessage(I18N.tr("loading"), "loading");
-    Common.loadDataAsync(
-        new DataLoader() {
-          public Vector load() throws Exception {
-            return ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
-          }
-        },
-        new LoadDataListener() {
-          public void loadDataCompleted(Vector listItems) {
-            PlaylistList playlistList =
-                new PlaylistList(I18N.tr("genres"), listItems, "genre", "", "playlist");
-            playlistList.setObserver(CategoryList.this.observer);
-            CategoryList.this.observer.replaceCurrent(playlistList);
-          }
+    this.displayMessage(LocalizationManager.tr("loading"), "loading");
+    AsyncDataManager.getInstance()
+        .loadDataAsync(
+            new DataLoader() {
+              public Vector load() throws Exception {
+                return DataParser.parsePlaylist(curPage, perPage, "hot,new", genKey);
+              }
+            },
+            new LoadDataListener() {
+              public void loadDataCompleted(final Vector listItems) {
+                ThreadManager.runOnUiThread(
+                    new Runnable() {
+                      public void run() {
+                        PlaylistList playlistList =
+                            new PlaylistList(
+                                LocalizationManager.tr("genres"),
+                                listItems,
+                                "genre",
+                                "",
+                                "playlist");
+                        playlistList.setObserver(CategoryList.this.observer);
+                        CategoryList.this.observer.replaceCurrent(playlistList);
+                      }
+                    });
+              }
 
-          public void loadError() {
-            CategoryList.this.displayMessage(I18N.tr("connection_error"), "error");
-          }
+              public void loadError() {
+                ThreadManager.runOnUiThread(
+                    new Runnable() {
+                      public void run() {
+                        CategoryList.this.displayMessage(
+                            LocalizationManager.tr("connection_error"), "error");
+                      }
+                    });
+              }
 
-          public void noData() {
-            CategoryList.this.displayMessage(I18N.tr("no_data"), "error");
-          }
-        },
-        this.mLoadDataThread);
+              public void noData() {
+                ThreadManager.runOnUiThread(
+                    new Runnable() {
+                      public void run() {
+                        CategoryList.this.displayMessage(
+                            LocalizationManager.tr("no_data"), "error");
+                      }
+                    });
+              }
+            });
   }
 
   private void displayMessage(String message, String messageType) {
-    MainList.displayMessage(I18N.tr("genres"), message, messageType, this.observer, this);
+    MainList.displayMessage(
+        LocalizationManager.tr("genres"), message, messageType, this.observer, this);
   }
 
   public void cancel() {
     this.quit();
   }
 
-  public void quit() {
-    try {
-      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
-        this.mLoadDataThread.join();
-      }
-    } catch (InterruptedException var2) {
-    }
-  }
+  public void quit() {}
 }

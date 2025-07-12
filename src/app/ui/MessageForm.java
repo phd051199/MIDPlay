@@ -1,8 +1,7 @@
 package app.ui;
 
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
-import app.utils.I18N;
+import app.core.data.LoadDataObserver;
+import app.utils.text.LocalizationManager;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
@@ -13,7 +12,7 @@ import javax.microedition.lcdui.StringItem;
 public class MessageForm extends Form implements CommandListener {
 
   private LoadDataObserver loadDataObserver;
-  Command exitCommand = new Command(I18N.tr("back"), 2, 1);
+  Command exitCommand = new Command(LocalizationManager.tr("back"), 2, 1);
   StringItem message = new StringItem("", "");
   private MainObserver observer;
 

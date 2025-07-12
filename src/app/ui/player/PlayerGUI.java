@@ -1,11 +1,11 @@
 package app.ui.player;
 
-import app.common.PlayerMethod;
-import app.common.PlayerSettingsManager;
-import app.common.RestClient;
-import app.model.Song;
-import app.utils.I18N;
-import app.utils.ThreadManager;
+import app.core.network.RestClient;
+import app.core.platform.PlatformDetector;
+import app.core.settings.SettingsManager;
+import app.models.Song;
+import app.utils.concurrent.ThreadManager;
+import app.utils.text.LocalizationManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,6 +28,8 @@ public class PlayerGUI implements PlayerListener {
   public static final int REPEAT_ALL = 2;
 
   private static String prevStatus = "";
+  private static final long STATE_CACHE_TIMEOUT = 100L;
+  private static final long TIME_CACHE_TIMEOUT = 200L;
   private int currentVolumeLevel = 100;
 
   private int repeatMode = REPEAT_ALL;
@@ -54,11 +56,9 @@ public class PlayerGUI implements PlayerListener {
   private volatile long cachedDuration = 0L;
   private volatile long lastStateUpdate = 0L;
   private volatile long lastTimeUpdate = 0L;
-  private static final long STATE_CACHE_TIMEOUT = 100L;
-  private static final long TIME_CACHE_TIMEOUT = 200L;
   private volatile boolean playerStateChanged = false;
 
-  private final PlayerSettingsManager settingsManager;
+  private final SettingsManager settingsManager;
 
   private int playerHttpMethod;
 
@@ -72,7 +72,7 @@ public class PlayerGUI implements PlayerListener {
 
   public PlayerGUI(PlayerCanvas parent) {
     this.parent = parent;
-    this.settingsManager = PlayerSettingsManager.getInstance();
+    this.settingsManager = SettingsManager.getInstance();
 
     this.loadPlayerConfigs();
     this.setStatus("");
@@ -81,7 +81,7 @@ public class PlayerGUI implements PlayerListener {
   private void loadPlayerConfigs() {
     this.currentVolumeLevel = settingsManager.getVolumeLevel();
     this.repeatMode = settingsManager.getRepeatMode();
-    this.shuffleMode = settingsManager.getShuffleMode();
+    this.shuffleMode = settingsManager.isShuffleMode();
   }
 
   private void savePlayerConfigs() {
@@ -214,6 +214,16 @@ public class PlayerGUI implements PlayerListener {
     playerStateChanged = true;
   }
 
+  private void forceUIUpdate() {
+    ThreadManager.runOnUiThread(
+        new Runnable() {
+          public void run() {
+            PlayerGUI.this.invalidatePlayerStateCache();
+            PlayerGUI.this.parent.updateDisplay();
+          }
+        });
+  }
+
   public long getDuration() {
     if (this.listSong == null || this.index < 0 || this.index >= this.listSong.size()) {
       return 0L;
@@ -303,19 +313,19 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void assertPlayer() throws Throwable {
-    this.setStatus(I18N.tr("loading"));
+    this.setStatus(LocalizationManager.tr("loading"));
 
-    this.playerHttpMethod = PlayerMethod.getPlayerHttpMethod();
+    this.playerHttpMethod = PlatformDetector.getPlayerHttpMethod();
     Song s = (Song) this.listSong.elementAt(this.index);
 
     try {
       this.parent.setAlbumArtUrl(s.getImage());
 
       switch (this.playerHttpMethod) {
-        case PlayerMethod.PASS_CONNECTION_STREAM:
+        case PlatformDetector.PASS_CONNECTION_STREAM:
           createPlayerFromStream(s);
           break;
-        case PlayerMethod.PASS_URL:
+        case PlatformDetector.PASS_URL:
           createPlayerFromUrl(s);
           break;
       }
@@ -331,7 +341,7 @@ public class PlayerGUI implements PlayerListener {
       }
     } catch (Throwable error) {
       this.player = null;
-      this.setStatus(I18N.tr("error"));
+      this.setStatus(LocalizationManager.tr("error"));
       this.parent.showAlert(error.toString(), AlertType.ERROR);
       closeResources();
     }
@@ -403,7 +413,7 @@ public class PlayerGUI implements PlayerListener {
 
       this.closePlayer();
       this.startPlayer();
-      this.setStatus(I18N.tr("playing"));
+      this.setStatus(LocalizationManager.tr("playing"));
     } finally {
       isTransitioning = false;
     }
@@ -439,11 +449,28 @@ public class PlayerGUI implements PlayerListener {
                   } catch (MediaException var3) {
                   }
                   PlayerGUI.this.player.start();
-                  if (PlayerGUI.this.player.getState() >= 400) {
-                    PlayerGUI.this.setStatus(I18N.tr("playing"));
-                  }
+
+                  ThreadManager.runOnUiThread(
+                      new Runnable() {
+                        public void run() {
+                          try {
+                            PlayerGUI.this.invalidatePlayerStateCache();
+                            if (PlayerGUI.this.player != null
+                                && PlayerGUI.this.player.getState() >= 400) {
+                              PlayerGUI.this.setStatus(LocalizationManager.tr("playing"));
+                            }
+                          } catch (Throwable e) {
+                            PlayerGUI.this.setStatus(LocalizationManager.tr("error"));
+                          }
+                        }
+                      });
                 } catch (Throwable var4) {
-                  PlayerGUI.this.setStatus(I18N.tr("error"));
+                  ThreadManager.runOnUiThread(
+                      new Runnable() {
+                        public void run() {
+                          PlayerGUI.this.setStatus(LocalizationManager.tr("error"));
+                        }
+                      });
                 }
               }
             },
@@ -451,7 +478,7 @@ public class PlayerGUI implements PlayerListener {
 
     if (!ThreadManager.safeStartThread(this.playerThread)) {
       this.playerThread = null;
-      this.setStatus(I18N.tr("error"));
+      this.setStatus(LocalizationManager.tr("error"));
     }
   }
 
@@ -509,7 +536,6 @@ public class PlayerGUI implements PlayerListener {
           this.player.close();
         }
       } catch (Exception e) {
-
       } finally {
         this.player = null;
       }
@@ -528,15 +554,29 @@ public class PlayerGUI implements PlayerListener {
     if (this.player != null) {
       try {
         this.player.stop();
-      } catch (Exception e) {
 
+        ThreadManager.runOnUiThread(
+            new Runnable() {
+              public void run() {
+                PlayerGUI.this.invalidatePlayerStateCache();
+                PlayerGUI.this.setStatus(LocalizationManager.tr("paused"));
+              }
+            });
+      } catch (Exception e) {
+        ThreadManager.runOnUiThread(
+            new Runnable() {
+              public void run() {
+                PlayerGUI.this.setStatus(LocalizationManager.tr("error"));
+              }
+            });
       }
-      this.setStatus(I18N.tr("paused"));
     }
   }
 
   public void togglePlayer() {
     if (this.player != null) {
+
+      this.invalidatePlayerStateCache();
       if (this.player.getState() >= 400) {
         this.pausePlayer();
       } else {
@@ -551,7 +591,6 @@ public class PlayerGUI implements PlayerListener {
         this.player.setMediaTime(time);
         this.parent.updateDisplay();
       } catch (Exception e) {
-
       }
     }
   }
@@ -562,7 +601,7 @@ public class PlayerGUI implements PlayerListener {
       return;
     }
 
-    if (!this.parent.getStatus().startsWith(I18N.tr("volume"))) {
+    if (!this.parent.getStatus().startsWith(LocalizationManager.tr("volume"))) {
       prevStatus = this.parent.getStatus();
     }
 
@@ -579,7 +618,7 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void setVolumeStatus(int cv) {
-    this.parent.setStatus(I18N.tr("volume") + ": " + cv);
+    this.parent.setStatus(LocalizationManager.tr("volume") + ": " + cv);
 
     if (volumeStatusTask != null) {
       volumeStatusTask.cancel();
@@ -623,15 +662,33 @@ public class PlayerGUI implements PlayerListener {
         return;
       }
 
+      this.invalidatePlayerStateCache();
+
       if ("closed".equals(evt) || "error".equals(evt) || "stopped".equals(evt)) {
         this.stopDisplayTimer();
-        this.parent.updateDisplay();
+        ThreadManager.runOnUiThread(
+            new Runnable() {
+              public void run() {
+                PlayerGUI.this.parent.updateDisplay();
+              }
+            });
       } else if ("endOfMedia".equals(evt)) {
         handleEndOfMedia(plyr);
       } else if ("started".equals(evt)) {
         this.startDisplayTimer();
+        ThreadManager.runOnUiThread(
+            new Runnable() {
+              public void run() {
+                PlayerGUI.this.parent.updateDisplay();
+              }
+            });
       } else if ("durationUpdated".equals(evt)) {
-        this.parent.updateDisplay();
+        ThreadManager.runOnUiThread(
+            new Runnable() {
+              public void run() {
+                PlayerGUI.this.parent.updateDisplay();
+              }
+            });
       }
     } catch (Throwable t) {
 
@@ -768,6 +825,8 @@ public class PlayerGUI implements PlayerListener {
     private SPTimerTask() {}
 
     public void run() {
+
+      PlayerGUI.this.invalidatePlayerStateCache();
       PlayerGUI.this.parent.updateDisplay();
     }
   }

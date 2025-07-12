@@ -1,16 +1,17 @@
 package app.ui;
 
 import app.MIDPlay;
-import app.common.Common;
-import app.common.ParseData;
-import app.common.SettingManager;
-import app.interfaces.DataLoader;
-import app.interfaces.LoadDataListener;
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
-import app.model.Playlist;
-import app.utils.I18N;
-import app.utils.TextUtil;
+import app.core.data.AsyncDataManager;
+import app.core.data.DataLoader;
+import app.core.data.DataParser;
+import app.core.data.LoadDataListener;
+import app.core.data.LoadDataObserver;
+import app.core.settings.SettingsManager;
+import app.models.Playlist;
+import app.utils.concurrent.ThreadManager;
+import app.utils.text.LocalizationManager;
+import app.utils.text.StringUtils;
+import app.utils.text.TextUtils;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
@@ -43,7 +44,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   private static final int CHAR_PER_LOOP = 4;
   private static final int MESSAGE_DELAY = 50;
 
-  private final SettingManager settingManager = SettingManager.getInstance();
+  private final SettingsManager settingsManager = SettingsManager.getInstance();
   private int cachedSentBubbleColorRGB;
   private int cachedBackgroundColorRGB;
   private String lastThemeColor = "";
@@ -56,7 +57,6 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   private boolean isWaitingForResponse = false;
   private Displayable previousDisplay;
   private final Vector pendingMessages = new Vector();
-  private Thread mLoadDataThread;
   private int firstVisibleMessage = 0;
   private int lastVisibleMessage = 0;
 
@@ -64,9 +64,11 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   private int focusedClickableIndex = -1;
   private int totalContentHeight = 0;
 
-  private final Command backCommand = new Command(I18N.tr("back"), Command.BACK, 0);
-  private final Command inputCommand = new Command(I18N.tr("input"), Command.SCREEN, 1);
-  private final Command selectCommand = new Command(I18N.tr("select"), Command.OK, 1);
+  private final Command backCommand = new Command(LocalizationManager.tr("back"), Command.BACK, 0);
+  private final Command inputCommand =
+      new Command(LocalizationManager.tr("input"), Command.SCREEN, 1);
+  private final Command selectCommand =
+      new Command(LocalizationManager.tr("select"), Command.OK, 1);
 
   private TextBox inputBox;
   private Font font;
@@ -81,14 +83,14 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
     this.addCommand(backCommand);
     this.addCommand(inputCommand);
     this.setCommandListener(this);
-    this.sessionId = TextUtil.generateRandomId(12);
+    this.sessionId = TextUtils.generateRandomId(12);
   }
 
   public void showNotify() {
     super.showNotify();
 
     if (this.messages.isEmpty()) {
-      addAIMessage(I18N.tr("welcome_message"));
+      addAIMessage(LocalizationManager.tr("welcome_message"));
       startTypingEffect();
     }
   }
@@ -424,7 +426,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   private int getSentBubbleColor() {
-    String currentThemeColor = settingManager.getThemeColor();
+    String currentThemeColor = settingsManager.getThemeColor();
     if (!currentThemeColor.equals(lastThemeColor)) {
       try {
         cachedSentBubbleColorRGB = Integer.parseInt(currentThemeColor, 16);
@@ -437,7 +439,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   private int getBackgroundColor() {
-    String currentBackgroundColor = settingManager.getBackgroundColor();
+    String currentBackgroundColor = settingsManager.getBackgroundColor();
     if (!currentBackgroundColor.equals(lastBackgroundColor)) {
       try {
         cachedBackgroundColorRGB = Integer.parseInt(currentBackgroundColor, 16);
@@ -461,9 +463,9 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
 
     String textToRender = text;
     if (isClickable) {
-      textToRender = Common.replace(textToRender, "[", "");
-      textToRender = Common.replace(textToRender, "].", "");
-      textToRender = Common.replace(textToRender, "]", "");
+      textToRender = StringUtils.replace(textToRender, "[", "");
+      textToRender = StringUtils.replace(textToRender, "].", "");
+      textToRender = StringUtils.replace(textToRender, "]", "");
     }
 
     Vector wrappedLines =
@@ -678,33 +680,53 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
 
           final String finalDisplayText = displayText;
 
-          Common.loadDataAsync(
-              new DataLoader() {
-                public Vector load() {
-                  return ParseData.parseSearchTracks(finalDisplayText);
-                }
-              },
-              new LoadDataListener() {
-                public void loadDataCompleted(Vector data) {
-                  String searchResultsTitle = I18N.tr("search_results") + ": " + finalDisplayText;
-                  Playlist searchPlaylist = new Playlist();
-                  searchPlaylist.setName(searchResultsTitle);
-                  searchPlaylist.setId("search");
+          AsyncDataManager.getInstance()
+              .loadDataAsync(
+                  new DataLoader() {
+                    public Vector load() {
+                      return DataParser.parseSearchTracks(finalDisplayText);
+                    }
+                  },
+                  new LoadDataListener() {
+                    public void loadDataCompleted(final Vector data) {
+                      ThreadManager.runOnUiThread(
+                          new Runnable() {
+                            public void run() {
+                              String searchResultsTitle =
+                                  LocalizationManager.tr("search_results")
+                                      + ": "
+                                      + finalDisplayText;
+                              Playlist searchPlaylist = new Playlist();
+                              searchPlaylist.setName(searchResultsTitle);
+                              searchPlaylist.setId("search");
 
-                  SongList songList = new SongList(searchResultsTitle, data, searchPlaylist);
-                  songList.setObserver(observer);
-                  observer.go(songList);
-                }
+                              SongList songList =
+                                  new SongList(searchResultsTitle, data, searchPlaylist);
+                              songList.setObserver(observer);
+                              observer.go(songList);
+                            }
+                          });
+                    }
 
-                public void loadError() {
-                  displayAlert(I18N.tr("connection_error"), AlertType.ERROR);
-                }
+                    public void loadError() {
+                      ThreadManager.runOnUiThread(
+                          new Runnable() {
+                            public void run() {
+                              displayAlert(
+                                  LocalizationManager.tr("connection_error"), AlertType.ERROR);
+                            }
+                          });
+                    }
 
-                public void noData() {
-                  displayAlert(I18N.tr("no_results"), AlertType.ERROR);
-                }
-              },
-              this.mLoadDataThread);
+                    public void noData() {
+                      ThreadManager.runOnUiThread(
+                          new Runnable() {
+                            public void run() {
+                              displayAlert(LocalizationManager.tr("no_results"), AlertType.ERROR);
+                            }
+                          });
+                    }
+                  });
         }
       }
     }
@@ -807,34 +829,31 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
         addAIMessage("...");
 
         isWaitingForResponse = true;
-        Common.loadDataAsync(
-            new DataLoader() {
-              public Vector load() throws Exception {
-                Vector v = new Vector();
-                v.addElement(ParseData.sendChatMessage(text, sessionId));
-                return v;
-              }
-            },
-            new LoadDataListener() {
-              public void loadDataCompleted(Vector data) {
-                String response = (String) data.elementAt(0);
-                addAIResponseMessages(response);
-                isWaitingForResponse = false;
-              }
-
-              public void loadError() {
-                messages.removeElementAt(messages.size() - 1);
-                addAIMessage(I18N.tr("error_connect"));
-                isWaitingForResponse = false;
-              }
-
-              public void noData() {
-                messages.removeElementAt(messages.size() - 1);
-                addAIMessage(I18N.tr("error_connect"));
-                isWaitingForResponse = false;
-              }
-            },
-            this.mLoadDataThread);
+        AsyncDataManager.getInstance()
+            .executeAsync(
+                new Runnable() {
+                  public void run() {
+                    try {
+                      final String response = DataParser.sendChatMessage(text, sessionId);
+                      ThreadManager.runOnUiThread(
+                          new Runnable() {
+                            public void run() {
+                              addAIResponseMessages(response);
+                              isWaitingForResponse = false;
+                            }
+                          });
+                    } catch (Exception e) {
+                      ThreadManager.runOnUiThread(
+                          new Runnable() {
+                            public void run() {
+                              messages.removeElementAt(messages.size() - 1);
+                              addAIMessage(LocalizationManager.tr("error_connect"));
+                              isWaitingForResponse = false;
+                            }
+                          });
+                    }
+                  }
+                });
       }
       MIDPlay.getInstance().getDisplay().setCurrent(previousDisplay);
     } else if (d == inputBox && c.getCommandType() == Command.CANCEL) {
@@ -843,9 +862,9 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   private void openInputBox() {
-    inputBox = new TextBox(I18N.tr("input_message"), "", 200, TextField.ANY);
-    inputBox.addCommand(new Command(I18N.tr("send"), Command.OK, 1));
-    inputBox.addCommand(new Command(I18N.tr("cancel"), Command.CANCEL, 2));
+    inputBox = new TextBox(LocalizationManager.tr("input_message"), "", 200, TextField.ANY);
+    inputBox.addCommand(new Command(LocalizationManager.tr("send"), Command.OK, 1));
+    inputBox.addCommand(new Command(LocalizationManager.tr("cancel"), Command.CANCEL, 2));
     inputBox.setCommandListener(this);
     MIDPlay.getInstance().getDisplay().setCurrent(inputBox);
   }
@@ -855,13 +874,8 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   public void quit() {
-    try {
-      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
-        this.mLoadDataThread.join();
-      }
-      this.sessionId = null;
-    } catch (InterruptedException var2) {
-    }
+
+    this.sessionId = null;
   }
 
   private void displayAlert(String message, AlertType messageType) {

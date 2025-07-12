@@ -1,9 +1,9 @@
 package app.ui.player;
 
-import app.model.Playlist;
-import app.model.Song;
+import app.models.Playlist;
+import app.models.Song;
 import app.ui.SongList;
-import app.utils.I18N;
+import app.utils.text.LocalizationManager;
 import java.util.Vector;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Displayable;
@@ -12,8 +12,8 @@ import javax.microedition.lcdui.List;
 
 public class CurrentPlaylistSongList extends SongList {
 
-  private int currentPlayingIndex;
-  private PlayerCanvas playerCanvas;
+  private final int currentPlayingIndex;
+  private final PlayerCanvas playerCanvas;
 
   public CurrentPlaylistSongList(
       String title, Vector items, Playlist playlist, int currentIndex, PlayerCanvas parent) {
@@ -44,7 +44,7 @@ public class CurrentPlaylistSongList extends SongList {
           String displayText = songName + "\n" + artistName;
 
           if (i == this.currentPlayingIndex) {
-            displayText = "(" + I18N.tr("currently_playing") + ") " + displayText;
+            displayText = "(" + LocalizationManager.tr("currently_playing") + ") " + displayText;
           }
 
           this.append(displayText, this.defaultImage);
@@ -125,7 +125,7 @@ public class CurrentPlaylistSongList extends SongList {
           this.playerCanvas.getGUI().setCurrentSongIndex(selectedIndex);
           this.playerCanvas.getGUI().closePlayer();
           this.playerCanvas.getGUI().startPlayer();
-          this.playerCanvas.setStatus(I18N.tr("playing"));
+          this.playerCanvas.setStatus(LocalizationManager.tr("playing"));
 
           if (this.observer != null) {
             this.observer.replaceCurrent(this.playerCanvas);
