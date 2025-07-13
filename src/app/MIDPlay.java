@@ -1,6 +1,8 @@
 package app;
 
+import app.core.data.DataLoader;
 import app.core.data.DataParser;
+import app.core.data.LoadDataListener;
 import app.core.platform.Observer;
 import app.core.settings.SettingsManager;
 import app.core.threading.ThreadManager;
@@ -113,32 +115,38 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
     }
   }
 
-  public String checkForUpdate() {
-    try {
-      if (!SettingsManager.getInstance().isAutoUpdateEnabled()) {
-        return EMPTY_STRING;
-      }
-
-      return checkForUpdate(true);
-    } catch (Exception e) {
-    }
-    return EMPTY_STRING;
+  public void checkForUpdate() {
+    checkForUpdate(true);
   }
 
-  public String checkForUpdate(boolean respectAutoUpdateSetting) {
-    try {
-      if (respectAutoUpdateSetting && !SettingsManager.getInstance().isAutoUpdateEnabled()) {
-        return EMPTY_STRING;
-      }
-
-      final String updateInfo = DataParser.checkForUpdate();
-      if (!EMPTY_STRING.equals(updateInfo)) {
-        showUpdateDialog(updateInfo);
-        return updateInfo;
-      }
-    } catch (Exception e) {
+  public void checkForUpdate(final boolean respectAutoUpdateSetting) {
+    if (respectAutoUpdateSetting && !SettingsManager.getInstance().isAutoUpdateEnabled()) {
+      return;
     }
-    return EMPTY_STRING;
+
+    ThreadManagerIntegration.loadDataAsync(
+        new DataLoader() {
+          public Vector load() throws Exception {
+            String updateInfo = DataParser.checkForUpdate();
+            Vector result = new Vector();
+            result.addElement(updateInfo != null ? updateInfo : EMPTY_STRING);
+            return result;
+          }
+        },
+        new LoadDataListener() {
+          public void loadDataCompleted(Vector data) {
+            if (data != null && data.size() > 0) {
+              String updateInfo = (String) data.elementAt(0);
+              if (updateInfo != null && !EMPTY_STRING.equals(updateInfo)) {
+                showUpdateDialog(updateInfo);
+              }
+            }
+          }
+
+          public void loadError() {}
+
+          public void noData() {}
+        });
   }
 
   private void showUpdateDialog(final String updateInfo) {

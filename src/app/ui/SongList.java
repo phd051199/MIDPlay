@@ -254,7 +254,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
           this.setSelectedIndex(0, true);
         }
       }
-    } catch (Exception var3) {
+    } catch (Exception e) {
     }
   }
 
@@ -264,7 +264,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
       for (int i = 0; i < this.songItems.size(); ++i) {
         this.images.addElement(this.defaultImage);
       }
-    } catch (Exception var3) {
+    } catch (Exception e) {
     }
   }
 
@@ -386,7 +386,6 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
           String record = songRecordStore.getRecordAsString(recordId);
 
           if (record != null && record.trim().length() > 0) {
-
             JSONObject relationJson = new JSONObject(record);
 
             if (relationJson.has("playlistId")

@@ -26,7 +26,6 @@ public class RecordStoreManager {
       try {
         recordStore.closeRecordStore();
       } catch (RecordStoreException e) {
-
       } finally {
         recordStore = null;
       }
@@ -96,7 +95,6 @@ public class RecordStoreManager {
     try {
       RecordStore.deleteRecordStore(recordStoreName);
     } catch (RecordStoreException e) {
-
     }
   }
 

@@ -98,7 +98,7 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
       for (int i = 0; i < this.cateItems.size(); ++i) {
         this.images.addElement(this.defaultImage);
       }
-    } catch (Exception var3) {
+    } catch (Exception e) {
     }
   }
 

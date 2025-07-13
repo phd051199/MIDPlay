@@ -10,9 +10,9 @@ import java.util.Vector;
 public class ThreadManagerIntegration {
 
   private static final ThreadManager threadManager = ThreadManager.getInstance();
-  private static final ThreadPool networkPool = threadManager.createThreadPool("NetworkPool", 3);
-  private static ThreadPool dataPool = threadManager.createThreadPool("DataPool", 2);
-  private static final ThreadPool uiPool = threadManager.createThreadPool("UIPool", 2);
+  private static final ThreadPool networkPool = threadManager.createThreadPool("NetworkPool", 5);
+  private static ThreadPool dataPool = threadManager.createThreadPool("DataPool", 3);
+  private static final ThreadPool uiPool = threadManager.createThreadPool("UIPool", 3);
   private static final PlayerThreadManager playerThreadManager = PlayerThreadManager.getInstance();
   private static final Object dataPoolLock = new Object();
 
@@ -53,8 +53,12 @@ public class ThreadManagerIntegration {
 
   private static void ensureDataPoolAvailable() {
     synchronized (dataPoolLock) {
-      if (dataPool.isShutdown()) {
-        dataPool = threadManager.createThreadPool("DataPool", 2);
+      if (dataPool == null || dataPool.isShutdown()) {
+        try {
+          dataPool = threadManager.createThreadPool("DataPool", 3);
+        } catch (Exception e) {
+          throw new RuntimeException("Failed to create DataPool: " + e.getMessage());
+        }
       }
     }
   }
@@ -157,8 +161,12 @@ public class ThreadManagerIntegration {
 
   public static void recreateDataPool() {
     synchronized (dataPoolLock) {
-      if (dataPool.isShutdown()) {
-        dataPool = threadManager.createThreadPool("DataPool", 2);
+      if (dataPool == null || dataPool.isShutdown()) {
+        try {
+          dataPool = threadManager.createThreadPool("DataPool", 3);
+        } catch (Exception e) {
+          throw new RuntimeException("Failed to recreate DataPool: " + e.getMessage());
+        }
       }
     }
   }

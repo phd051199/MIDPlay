@@ -46,7 +46,7 @@ public class FavoritesList extends List
   private Image defaultImage;
   private boolean isDestroyed = false;
   private final FavoritesManager favoritesManager;
-  private ImageLoader imageLoader;
+  private final ImageLoader imageLoader;
 
   private boolean isNavigating = false;
   private Timer navigationTimer;
@@ -282,7 +282,6 @@ public class FavoritesList extends List
         }
       }
     } catch (Exception e) {
-
     }
   }
 
@@ -707,16 +706,6 @@ public class FavoritesList extends List
     ThreadManagerIntegration.cancelPendingDataOperations();
   }
 
-  public static class FavoriteItem {
-    public int recordId;
-    public JSONObject data;
-
-    public FavoriteItem(int recordId, JSONObject data) {
-      this.recordId = recordId;
-      this.data = data;
-    }
-  }
-
   public void onImageLoaded(int index, Image image, String requestId) {
     if (isDestroyed || index < 0 || index >= images.size() || index >= size()) {
       return;
@@ -740,5 +729,15 @@ public class FavoritesList extends List
 
   public boolean shouldContinueLoading() {
     return !isDestroyed;
+  }
+
+  public static class FavoriteItem {
+    public int recordId;
+    public JSONObject data;
+
+    public FavoriteItem(int recordId, JSONObject data) {
+      this.recordId = recordId;
+      this.data = data;
+    }
   }
 }

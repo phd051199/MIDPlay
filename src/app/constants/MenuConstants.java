@@ -40,11 +40,11 @@ public class MenuConstants {
   };
 
   public static String[] getMenuIcons(String service) {
-    return service.equals(Services.NCT) ? MAIN_MENU_ICONS_NCT : MAIN_MENU_ICONS_SOUNDCLOUD;
+    return service.equals(ServicesConstants.NCT) ? MAIN_MENU_ICONS_NCT : MAIN_MENU_ICONS_SOUNDCLOUD;
   }
 
   public static String[] getMenuItems(String service) {
-    return service.equals(Services.NCT) ? MAIN_MENU_ITEMS_NCT : MAIN_MENU_ITEMS_SOUNDCLOUD;
+    return service.equals(ServicesConstants.NCT) ? MAIN_MENU_ITEMS_NCT : MAIN_MENU_ITEMS_SOUNDCLOUD;
   }
 
   private MenuConstants() {}

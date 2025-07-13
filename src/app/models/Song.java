@@ -63,14 +63,47 @@ public class Song implements JSONAble {
   }
 
   public void fromJSON(String jsonString) {
+    if (jsonString == null || jsonString.trim().length() == 0) {
+      return;
+    }
+
     try {
       JSONObject json = new JSONObject(jsonString);
-      this.setSongName(json.getString("Name"));
-      this.setStreamUrl(json.getString("Url"));
-      this.setArtistName(json.getString("Singer"));
-      this.setDuration(json.getInt("Duration"));
-      this.setImage(json.getString("Image"));
-    } catch (Exception var3) {
+
+      if (json.has("Name")) {
+        String name = json.optString("Name", "");
+        this.setSongName(name.length() > 0 ? name : "Unknown Song");
+      } else {
+        this.setSongName("Unknown Song");
+      }
+
+      if (json.has("Url")) {
+        String url = json.optString("Url", "");
+        if (url.length() > 0) {
+          this.setStreamUrl(url);
+        }
+      }
+
+      if (json.has("Singer")) {
+        String artist = json.optString("Singer", "");
+        this.setArtistName(artist.length() > 0 ? artist : "Unknown Artist");
+      } else {
+        this.setArtistName("Unknown Artist");
+      }
+
+      if (json.has("Duration")) {
+        try {
+          this.setDuration(json.getInt("Duration"));
+        } catch (Exception e) {
+          this.setDuration(0);
+        }
+      }
+
+      if (json.has("Image")) {
+        String image = json.optString("Image", "");
+        this.setImage(image);
+      }
+    } catch (Exception e) {
     }
   }
 }

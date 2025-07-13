@@ -52,7 +52,7 @@ public class Category implements JSONAble {
         }
         this.setSubItems(subs);
       }
-    } catch (Exception var3) {
+    } catch (Exception e) {
     }
   }
 }

@@ -225,21 +225,33 @@ public class FavoritesManager {
         int recordId = re.nextRecordId();
         String record = recordStore.getRecordAsString(recordId);
 
-        if (record.trim().length() == 0) {
+        if (record == null || record.trim().length() == 0) {
           continue;
         }
 
-        JSONObject favoriteJson = new JSONObject(record);
-        if (favoriteJson.has("id") && favoriteJson.has("name")) {
-          FavoritesList.FavoriteItem item = new FavoritesList.FavoriteItem(recordId, favoriteJson);
-          favorites.addElement(item);
+        try {
+          JSONObject favoriteJson = new JSONObject(record);
+          if (favoriteJson.has("id") && favoriteJson.has("name")) {
+            FavoritesList.FavoriteItem item =
+                new FavoritesList.FavoriteItem(recordId, favoriteJson);
+            favorites.addElement(item);
+          }
+        } catch (Exception jsonEx) {
         }
       }
+    } catch (Exception e) {
+      throw e;
     } finally {
       if (re != null) {
-        re.destroy();
+        try {
+          re.destroy();
+        } catch (Exception e) {
+        }
       }
-      recordStore.closeRecordStore();
+      try {
+        recordStore.closeRecordStore();
+      } catch (Exception e) {
+      }
     }
 
     return favorites;
@@ -390,21 +402,33 @@ public class FavoritesManager {
         int recordId = re.nextRecordId();
         String record = recordStore.getRecordAsString(recordId);
 
-        if (record.trim().length() == 0) {
+        if (record == null || record.trim().length() == 0) {
           continue;
         }
 
-        JSONObject favoriteJson = new JSONObject(record);
-        if (favoriteJson.has("isCustom") && favoriteJson.getBoolean("isCustom")) {
-          FavoritesList.FavoriteItem item = new FavoritesList.FavoriteItem(recordId, favoriteJson);
-          customPlaylists.addElement(item);
+        try {
+          JSONObject favoriteJson = new JSONObject(record);
+          if (favoriteJson.has("isCustom") && favoriteJson.getBoolean("isCustom")) {
+            FavoritesList.FavoriteItem item =
+                new FavoritesList.FavoriteItem(recordId, favoriteJson);
+            customPlaylists.addElement(item);
+          }
+        } catch (Exception jsonEx) {
         }
       }
+    } catch (Exception e) {
+      throw e;
     } finally {
       if (re != null) {
-        re.destroy();
+        try {
+          re.destroy();
+        } catch (Exception e) {
+        }
       }
-      recordStore.closeRecordStore();
+      try {
+        recordStore.closeRecordStore();
+      } catch (Exception e) {
+      }
     }
 
     return customPlaylists;

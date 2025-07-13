@@ -7,6 +7,7 @@ public class ThreadSafetyUtils {
 
   private static final Hashtable namedLocks = new Hashtable();
   private static final Object namedLocksLock = new Object();
+  private static final int MAX_NAMED_LOCKS = 100;
 
   public static Object getNamedLock(String lockName) {
     if (lockName == null) {
@@ -16,6 +17,10 @@ public class ThreadSafetyUtils {
     synchronized (namedLocksLock) {
       Object lock = namedLocks.get(lockName);
       if (lock == null) {
+        if (namedLocks.size() >= MAX_NAMED_LOCKS) {
+          namedLocks.clear();
+        }
+
         lock = new Object();
         namedLocks.put(lockName, lock);
       }
@@ -117,6 +122,18 @@ public class ThreadSafetyUtils {
       Thread.sleep(millis);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+    }
+  }
+
+  public static void clearAllNamedLocks() {
+    synchronized (namedLocksLock) {
+      namedLocks.clear();
+    }
+  }
+
+  public static int getNamedLockCount() {
+    synchronized (namedLocksLock) {
+      return namedLocks.size();
     }
   }
 

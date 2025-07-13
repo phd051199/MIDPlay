@@ -203,22 +203,32 @@ public class MenuSettingsManager {
     ThreadManagerIntegration.executeSettingsSave(
         new Runnable() {
           public void run() {
+            RecordEnumeration re = null;
+
             try {
               if (isShuttingDown) {
                 return;
               }
 
-              RecordEnumeration re = recordStore.enumerateRecords();
+              re = recordStore.enumerateRecords();
               if (re.hasNextElement()) {
                 int recordId = re.nextRecordId();
                 recordStore.setRecord(recordId, config.toString());
               } else {
                 recordStore.addRecord(config.toString());
               }
-              re.destroy();
             } catch (Exception e) {
             } finally {
-              recordStore.closeRecordStore();
+              if (re != null) {
+                try {
+                  re.destroy();
+                } catch (Exception e) {
+                }
+              }
+              try {
+                recordStore.closeRecordStore();
+              } catch (Exception e) {
+              }
             }
           }
         });

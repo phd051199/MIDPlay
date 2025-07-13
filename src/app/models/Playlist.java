@@ -33,17 +33,32 @@ public class Playlist implements JSONAble {
   }
 
   public void fromJSON(String jsonString) {
+    if (jsonString == null || jsonString.trim().length() == 0) {
+      return;
+    }
+
     try {
       JSONObject json = new JSONObject(jsonString);
-      this.setId(json.getString("ListKey"));
-      if (json.getString("Name").length() != 0) {
-        String listName = json.getString("Name");
-        this.setName(listName);
+
+      if (json.has("ListKey")) {
+        String id = json.optString("ListKey", "");
+        this.setId(id.length() > 0 ? id : "unknown");
+      } else {
+        this.setId("unknown");
+      }
+
+      if (json.has("Name")) {
+        String name = json.optString("Name", "");
+        this.setName(name.length() > 0 ? name : "MIDPlay");
       } else {
         this.setName("MIDPlay");
       }
-      this.setImageUrl(json.getString("Image"));
-    } catch (Exception var4) {
+
+      if (json.has("Image")) {
+        String imageUrl = json.optString("Image", "");
+        this.setImageUrl(imageUrl);
+      }
+    } catch (Exception e) {
     }
   }
 }

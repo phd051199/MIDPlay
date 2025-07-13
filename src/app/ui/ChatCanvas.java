@@ -110,7 +110,6 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   private void addAIResponseMessages(String response) {
-
     Vector sentences = splitBySentence(response);
 
     if (messages.size() > 0) {
@@ -141,13 +140,11 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
       currentSentence.append(c);
 
       if (c == '.' || c == '!' || c == '?') {
-
         if (i == text.length() - 1
             || (i < text.length() - 1
                 && (text.charAt(i + 1) == ' '
                     || text.charAt(i + 1) == '\n'
                     || text.charAt(i + 1) == '\r'))) {
-
           String sentence = currentSentence.toString().trim();
           if (sentence.length() > 0) {
             sentences.addElement(sentence);
@@ -266,12 +263,10 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   private void cleanupOldMessages() {
-
     if (messages.size() > MAX_STORED_MESSAGES && isScrolledToBottom()) {
       int messagesToRemove = messages.size() - MAX_VISIBLE_MESSAGES;
 
       if (messagesToRemove > 0 && messagesToRemove < messages.size() / 2) {
-
         Vector messagesToKeep = new Vector();
         for (int i = messagesToRemove; i < messages.size(); i++) {
           messagesToKeep.addElement(messages.elementAt(i));
@@ -317,12 +312,10 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
                 adjustScrollToBottom();
                 repaint();
               } else {
-
                 currentMessageIndex++;
                 currentCharIndex = 0;
 
                 if (currentMessageIndex >= messages.size() && pendingMessages.size() > 0) {
-
                   timer.cancel();
                   ThreadManagerIntegration.scheduleDelayedTask(
                       new Runnable() {
@@ -456,7 +449,6 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
       int screenWidth,
       Font font,
       boolean highlighted) {
-
     String textToRender = text;
     if (isClickable) {
       textToRender = TextUtils.replace(textToRender, "[", "");
@@ -626,12 +618,10 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   protected void keyPressed(int keyCode) {
     int action = getGameAction(keyCode);
     if (action == UP || keyCode == KEY_NUM2) {
-
       if (!moveFocus(-1)) {
         scrollUp();
       }
     } else if (action == DOWN || keyCode == KEY_NUM8) {
-
       if (!moveFocus(1)) {
         scrollDown();
       }
@@ -653,16 +643,13 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   private void handlePointerEvent(int x, int y) {
-
     int absoluteY = y + scrollOffset;
 
     for (int i = 0; i < messages.size(); i++) {
       Message message = (Message) messages.elementAt(i);
       if (message.isClickable && message.clickableY != 0) {
-
         if (absoluteY >= message.clickableY
             && absoluteY <= message.clickableY + message.clickableHeight) {
-
           String displayText = message.text;
 
           if (displayText.startsWith("[")) {
@@ -760,7 +747,6 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
     int oldScroll = scrollOffset;
     scrollOffset = Math.max(0, scrollOffset - 20);
     if (oldScroll != scrollOffset) {
-
       if (Math.abs(oldScroll - scrollOffset) > 100) {
         invalidateMessageHeights();
       }
@@ -798,7 +784,6 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
     } else if (d == inputBox && c.getCommandType() == Command.OK) {
       final String text = inputBox.getString().trim();
       if (text.length() > 0 && !isWaitingForResponse) {
-
         addUserMessage(text);
 
         addAIMessage("...");

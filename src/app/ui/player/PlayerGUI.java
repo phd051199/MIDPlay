@@ -204,7 +204,6 @@ public class PlayerGUI implements PlayerListener {
         }
       }
     } catch (IllegalStateException e) {
-
     }
 
     return (long) s.getDuration() * 1000000L;
@@ -216,7 +215,6 @@ public class PlayerGUI implements PlayerListener {
         return this.player.getMediaTime();
       }
     } catch (IllegalStateException e) {
-
     }
 
     return 0L;
@@ -255,7 +253,6 @@ public class PlayerGUI implements PlayerListener {
         return (VolumeControl) this.player.getControl("VolumeControl");
       }
     } catch (IllegalStateException e) {
-
     }
 
     return null;
@@ -396,15 +393,13 @@ public class PlayerGUI implements PlayerListener {
                 if (duration != -1L && PlayerGUI.this.player.getMediaTime() >= duration) {
                   PlayerGUI.this.player.setMediaTime(0L);
                 }
-              } catch (MediaException var3) {
-
+              } catch (MediaException e) {
               }
               PlayerGUI.this.player.start();
               if (PlayerGUI.this.player.getState() >= 400) {
                 PlayerGUI.this.setStatus(I18N.tr("playing"));
               }
-            } catch (Throwable var4) {
-
+            } catch (Throwable e) {
             } finally {
               playerTaskRunning = false;
             }
@@ -418,7 +413,6 @@ public class PlayerGUI implements PlayerListener {
       try {
         this.inputStream.close();
       } catch (IOException e) {
-
       }
       this.inputStream = null;
     }
@@ -427,7 +421,6 @@ public class PlayerGUI implements PlayerListener {
       try {
         this.outputStream.close();
       } catch (IOException e) {
-
       }
       this.outputStream = null;
     }
@@ -436,7 +429,6 @@ public class PlayerGUI implements PlayerListener {
       try {
         this.httpConn.close();
       } catch (IOException e) {
-
       }
       this.httpConn = null;
     }
@@ -459,14 +451,12 @@ public class PlayerGUI implements PlayerListener {
             try {
               this.player.stop();
             } catch (MediaException e) {
-
             }
           }
 
           this.player.close();
         }
       } catch (Exception e) {
-
       } finally {
         this.player = null;
       }
@@ -486,7 +476,6 @@ public class PlayerGUI implements PlayerListener {
       try {
         this.player.stop();
       } catch (Exception e) {
-
       }
       this.setStatus(I18N.tr("paused"));
     }
@@ -508,7 +497,6 @@ public class PlayerGUI implements PlayerListener {
         this.player.setMediaTime(time);
         this.parent.updateDisplay();
       } catch (Exception e) {
-
       }
     }
   }
@@ -591,7 +579,6 @@ public class PlayerGUI implements PlayerListener {
         this.parent.updateDisplay();
       }
     } catch (Throwable t) {
-
     }
   }
 
@@ -695,7 +682,6 @@ public class PlayerGUI implements PlayerListener {
       try {
         this.player.stop();
       } catch (MediaException e) {
-
       }
 
       this.stopDisplayTimer();
@@ -710,7 +696,6 @@ public class PlayerGUI implements PlayerListener {
       try {
         this.player.start();
       } catch (MediaException e) {
-
       }
     }
     this.restartOnResume = false;

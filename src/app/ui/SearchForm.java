@@ -122,7 +122,6 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
         },
         new LoadDataListener() {
           public void loadDataCompleted(Vector listItems) {
-
             if (SearchForm.this.searchType.equals("track")) {
               String searchResultsTitle =
                   I18N.tr("search_results") + ": " + SearchForm.this.keyWord;

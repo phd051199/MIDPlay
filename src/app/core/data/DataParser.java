@@ -17,15 +17,21 @@ public class DataParser {
   private static final RestClient client = RestClient.getInstance();
 
   public static String sendChatMessage(String message, String sessionId) {
+    if (message == null || message.trim().length() == 0) {
+      return I18N.tr("error_occurred");
+    }
+
     try {
       String url = ApiEndpoints.getChatEndpoint(message, sessionId);
       if (url == null) {
         return I18N.tr("error_connect");
       }
+
       String response = client.get(url);
-      if (response.length() == 0) {
+      if (response == null || response.length() == 0) {
         return I18N.tr("error_connect");
       }
+
       JSONObject json = new JSONObject(response);
       return json.optString("message", I18N.tr("error_occurred"));
     } catch (Exception e) {
@@ -36,7 +42,7 @@ public class DataParser {
   private static String getCate(int type) {
     try {
       return client.get(ApiEndpoints.getCategory(type));
-    } catch (IOException var3) {
+    } catch (IOException e) {
       return "";
     }
   }
@@ -78,7 +84,7 @@ public class DataParser {
             }
           }
         }
-      } catch (JSONException var9) {
+      } catch (JSONException e) {
         return null;
       }
 
@@ -93,7 +99,7 @@ public class DataParser {
     try {
       String url = ApiEndpoints.getSearchData(type, keyword, key, curpage, pagesize);
       return client.get(url);
-    } catch (IOException var6) {
+    } catch (IOException e) {
       return "";
     }
   }
@@ -121,7 +127,7 @@ public class DataParser {
       }
 
       return playlistItems;
-    } catch (JSONException var9) {
+    } catch (JSONException e) {
       return null;
     }
   }
@@ -141,7 +147,7 @@ public class DataParser {
     try {
       String url = ApiEndpoints.getSearchTracks(keyword);
       return client.get(url);
-    } catch (IOException var6) {
+    } catch (IOException e) {
       return "";
     }
   }
@@ -159,7 +165,7 @@ public class DataParser {
   private static String getPlaylist(int curPare, int pageSize, String type, String genreKey) {
     try {
       return client.get(ApiEndpoints.getPlaylist(curPare, pageSize, type, genreKey));
-    } catch (IOException var4) {
+    } catch (IOException e) {
       return "";
     }
   }
@@ -178,7 +184,7 @@ public class DataParser {
       String listkey, String username, int curPare, int pageSize, String type) {
     try {
       return client.get(ApiEndpoints.getSongByPlaylist(listkey, username, type));
-    } catch (IOException var6) {
+    } catch (IOException e) {
       return "";
     }
   }
@@ -197,28 +203,46 @@ public class DataParser {
   private static Vector parseSongOfPlaylist(String jsonResult) {
     Vector songItems = new Vector();
 
+    if (jsonResult == null || jsonResult.trim().length() == 0) {
+      return songItems;
+    }
+
     try {
       JSONObject json = new JSONObject(jsonResult);
+
+      if (!json.has("Items")) {
+        return songItems;
+      }
+
       JSONArray jsonArray = json.getJSONArray("Items");
       int total = jsonArray.length();
 
+      if (total > 2000) {
+        total = 2000;
+      }
+
       for (int i = 0; i < total; ++i) {
-        String threadsJSON = jsonArray.getString(i);
-        Song song = new Song();
-        song.fromJSON(threadsJSON);
-        songItems.addElement(song);
+        try {
+          String songJSON = jsonArray.getString(i);
+          if (songJSON != null && songJSON.trim().length() > 0) {
+            Song song = new Song();
+            song.fromJSON(songJSON);
+            songItems.addElement(song);
+          }
+        } catch (Exception songEx) {
+        }
       }
 
       return songItems;
-    } catch (JSONException var9) {
-      return null;
+    } catch (Exception e) {
+      return songItems;
     }
   }
 
   public static String getBillboard(int curPage, int pageSize) {
     try {
       return client.get(ApiEndpoints.getBillboard(curPage, pageSize));
-    } catch (IOException var6) {
+    } catch (IOException e) {
       return "";
     }
   }
@@ -236,7 +260,7 @@ public class DataParser {
   public static String checkForUpdate() {
     try {
       return client.get(ApiEndpoints.checkForUpdate());
-    } catch (IOException var6) {
+    } catch (IOException e) {
       return "";
     }
   }

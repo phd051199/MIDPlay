@@ -100,7 +100,6 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
 
   private static void setDefaultSettings() {
     try {
-
       String defaultLanguage = I18N.getLanguage();
       String[] languages = I18N.getLanguages();
       if (languageChoice != null) {

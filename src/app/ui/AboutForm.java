@@ -1,7 +1,7 @@
 package app.ui;
 
 import app.MIDPlay;
-import app.constants.Constants;
+import app.constants.AppConstants;
 import app.models.Song;
 import app.utils.I18N;
 import javax.microedition.lcdui.Command;
@@ -21,7 +21,7 @@ public class AboutForm extends Form implements MainObserver, CommandListener {
     this.parent = parent;
 
     append(new StringItem(null, "Version: " + MIDPlay.getAppVersion() + "\n"));
-    append(new StringItem(null, "Developer: " + Constants.APP_AUTHOR + "\n"));
+    append(new StringItem(null, "Developer: " + AppConstants.APP_AUTHOR + "\n"));
 
     this.addCommand(this.backCommand);
     this.setCommandListener(this);

@@ -53,7 +53,6 @@ public class I18N {
 
       if (is != null) {
         try {
-
           byte[] data = new byte[is.available()];
           is.read(data);
           String content = new String(data, "UTF-8");
@@ -89,7 +88,6 @@ public class I18N {
   }
 
   public static String[] getLanguages() {
-
     return new String[] {"en", "vi", "tr"};
   }
 

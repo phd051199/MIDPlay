@@ -93,21 +93,27 @@ public class PlayerSettingsManager {
     ThreadManagerIntegration.executeSettingsSave(
         new Runnable() {
           public void run() {
+            RecordEnumeration re = null;
             try {
               if (isShuttingDown) {
                 return;
               }
 
-              RecordEnumeration re = recordStore.enumerateRecords();
+              re = recordStore.enumerateRecords();
               if (re.hasNextElement()) {
                 int recordId = re.nextRecordId();
                 recordStore.setRecord(recordId, config.toString());
               } else {
                 recordStore.addRecord(config.toString());
               }
-              re.destroy();
             } catch (Exception e) {
             } finally {
+              if (re != null) {
+                try {
+                  re.destroy();
+                } catch (Exception e) {
+                }
+              }
               recordStore.closeRecordStore();
             }
           }
@@ -116,16 +122,22 @@ public class PlayerSettingsManager {
 
   public synchronized JSONObject loadConfigSync() {
     JSONObject config = new JSONObject();
+    RecordEnumeration re = null;
     try {
-      RecordEnumeration re = recordStore.enumerateRecords();
+      re = recordStore.enumerateRecords();
       if (re.hasNextElement()) {
         byte[] recordBytes = re.nextRecord();
         String configJson = new String(recordBytes);
         config = new JSONObject(configJson);
-        re.destroy();
       }
     } catch (Exception e) {
     } finally {
+      if (re != null) {
+        try {
+          re.destroy();
+        } catch (Exception e) {
+        }
+      }
       recordStore.closeRecordStore();
     }
     return config;

@@ -179,7 +179,6 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   }
 
   public synchronized void close() {
-
     this._albumArt = null;
     this._albumArtUrl = null;
     this._loadingAlbumArt = false;
@@ -243,7 +242,6 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       commandText =
           I18N.tr("shuffle") + ": " + (this.gui.getShuffleMode() ? I18N.tr("on") : I18N.tr("off"));
     } else {
-
       commandText = I18N.tr("shuffle") + ": " + I18N.tr("off");
     }
 
@@ -291,7 +289,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     try {
       int action = this.getGameAction(keycode);
       handleAction(action);
-    } catch (Throwable var3) {
+    } catch (Throwable e) {
     }
   }
 
@@ -463,7 +461,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (this._imgPlay == null) {
       try {
         this._imgPlay = Image.createImage("/images/player/play.png");
-      } catch (Exception var2) {
+      } catch (Exception e) {
         this._imgPlay = null;
       }
     }
@@ -474,7 +472,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (this._imgPause == null) {
       try {
         this._imgPause = Image.createImage("/images/player/pause.png");
-      } catch (Exception var2) {
+      } catch (Exception e) {
         this._imgPause = null;
       }
     }
@@ -485,7 +483,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (this._imgBack == null) {
       try {
         this._imgBack = Image.createImage("/images/player/previous.png");
-      } catch (Exception var2) {
+      } catch (Exception e) {
         this._imgBack = null;
       }
     }
@@ -496,7 +494,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (this._imgNext == null) {
       try {
         this._imgNext = Image.createImage("/images/player/next.png");
-      } catch (Exception var2) {
+      } catch (Exception e) {
         this._imgNext = null;
       }
     }
@@ -507,7 +505,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (this._imgBackActive == null) {
       try {
         this._imgBackActive = Image.createImage("/images/player/previous.png");
-      } catch (Exception var2) {
+      } catch (Exception e) {
         this._imgBackActive = null;
       }
     }
@@ -518,7 +516,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (this._imgNextActive == null) {
       try {
         this._imgNextActive = Image.createImage("/images/player/next.png");
-      } catch (Exception var2) {
+      } catch (Exception e) {
         this._imgNextActive = null;
       }
     }
@@ -529,7 +527,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (this._imgRepeat == null) {
       try {
         this._imgRepeat = Image.createImage("/images/player/repeat.png");
-      } catch (Exception var2) {
+      } catch (Exception e) {
         this._imgRepeat = null;
       }
     }
@@ -540,7 +538,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (this._imgRepeatOne == null) {
       try {
         this._imgRepeatOne = Image.createImage("/images/player/repeat-one.png");
-      } catch (Exception var2) {
+      } catch (Exception e) {
         this._imgRepeatOne = null;
       }
     }
@@ -551,7 +549,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (this._imgRepeatOff == null) {
       try {
         this._imgRepeatOff = Image.createImage("/images/player/repeat-off.png");
-      } catch (Exception var2) {
+      } catch (Exception e) {
         this._imgRepeatOff = null;
       }
     }
@@ -562,7 +560,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (this._imgShuffle == null) {
       try {
         this._imgShuffle = Image.createImage("/images/player/shuffle.png");
-      } catch (Exception var2) {
+      } catch (Exception e) {
         this._imgShuffle = null;
       }
     }
@@ -573,7 +571,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (this._imgShuffleOff == null) {
       try {
         this._imgShuffleOff = Image.createImage("/images/player/shuffle-off.png");
-      } catch (Exception var2) {
+      } catch (Exception e) {
         this._imgShuffleOff = null;
       }
     }
@@ -800,7 +798,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
           g.drawImage(shuffleImg, this.shuffleButtonX, this.shuffleButtonY, 3);
         }
       }
-    } catch (Throwable var14) {
+    } catch (Throwable e4) {
     }
 
     if (this._play) {
@@ -823,7 +821,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
           this.goNext = true;
           this.timeNext = System.currentTimeMillis();
           this.getGUI().getNextSong();
-        } catch (Throwable var5) {
+        } catch (Throwable e) {
         }
       }
     } else if (c == this.prevCommand) {
@@ -832,7 +830,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
           this.goBack = true;
           this.timeBack = System.currentTimeMillis();
           this.getGUI().getPrevSong();
-        } catch (Throwable var4) {
+        } catch (Throwable e) {
         }
       }
     } else if (c == this.playCommand || c == this.pauseCommand) {

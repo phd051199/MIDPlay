@@ -12,15 +12,18 @@ public class RestClient {
 
   private static final int MAX_REDIRECT_TIMES = 5;
   private static final int DEFAULT_TIMEOUT = 30000;
-  private static final int BUFFER_SIZE = 2048;
+  private static final int BUFFER_SIZE = 8192;
   private static final String CHARSET = "UTF-8";
 
   private static String USER_AGENT;
   private static RestClient instance;
+  private static final Object instanceLock = new Object();
 
   public static RestClient getInstance() {
-    if (instance == null) {
-      instance = new RestClient();
+    synchronized (instanceLock) {
+      if (instance == null) {
+        instance = new RestClient();
+      }
     }
     return instance;
   }
@@ -41,37 +44,76 @@ public class RestClient {
       return new byte[0];
     }
 
+    final int MAX_CONTENT_SIZE = 300 * 1024;
+
+    if (contentLength > MAX_CONTENT_SIZE) {
+      throw new IOException(
+          "Content too large: " + contentLength + " bytes (max: " + MAX_CONTENT_SIZE + ")");
+    }
+
     ByteArrayOutputStream baos;
     byte[] buffer;
 
     if (contentLength > 0) {
-
       buffer = new byte[Math.min(contentLength, BUFFER_SIZE)];
       baos = new ByteArrayOutputStream(contentLength);
     } else {
-
       buffer = new byte[BUFFER_SIZE];
       baos = new ByteArrayOutputStream(BUFFER_SIZE);
     }
 
     int bytesRead;
+    int totalBytesRead = 0;
+
     try {
       while ((bytesRead = in.read(buffer)) != -1) {
+        totalBytesRead += bytesRead;
+
+        if (totalBytesRead > MAX_CONTENT_SIZE) {
+          throw new IOException(
+              "Content too large: " + totalBytesRead + " bytes (max: " + MAX_CONTENT_SIZE + ")");
+        }
+
         baos.write(buffer, 0, bytesRead);
       }
       return baos.toByteArray();
+    } catch (OutOfMemoryError e) {
+      throw new IOException("Out of memory reading response");
     } finally {
-      baos.close();
+      try {
+        baos.close();
+      } catch (Exception e) {
+      }
     }
   }
 
   private RestClient() {}
 
   public HttpConnection createConnection(String url, String method) throws IOException {
-    HttpConnection conn = (HttpConnection) Connector.open(url, Connector.READ_WRITE, true);
-    conn.setRequestMethod(method);
-    conn.setRequestProperty("User-Agent", getUserAgent());
-    return conn;
+    if (url == null || url.trim().length() == 0) {
+      throw new IllegalArgumentException("URL cannot be null or empty");
+    }
+
+    if (method == null || method.trim().length() == 0) {
+      throw new IllegalArgumentException("HTTP method cannot be null or empty");
+    }
+
+    HttpConnection conn = null;
+    try {
+      conn = (HttpConnection) Connector.open(url, Connector.READ_WRITE, true);
+      conn.setRequestMethod(method);
+      conn.setRequestProperty("User-Agent", getUserAgent());
+      conn.setRequestProperty("Connection", "close");
+      return conn;
+    } catch (Exception e) {
+      if (conn != null) {
+        try {
+          conn.close();
+        } catch (Exception closeEx) {
+        }
+      }
+      throw new IOException("Failed to create connection: " + e.getMessage());
+    }
   }
 
   public HttpConnection getStreamConnection(String url) throws IOException {
@@ -88,7 +130,6 @@ public class RestClient {
           return conn;
         } else if (status == HttpConnection.HTTP_MOVED_PERM
             || status == HttpConnection.HTTP_MOVED_TEMP) {
-
           String location = conn.getHeaderField("Location");
           conn.close();
           conn = null;
@@ -165,7 +206,6 @@ public class RestClient {
           ((HttpConnection) closeable).close();
         }
       } catch (IOException ignore) {
-
       }
     }
   }

@@ -175,12 +175,12 @@ public class PlaylistList extends List
           }
         },
         new LoadDataListener() {
-          public void loadDataCompleted(final Vector var1) {
-            if (var1 != null && !var1.isEmpty()) {
+          public void loadDataCompleted(final Vector e) {
+            if (e != null && !e.isEmpty()) {
               final int startIndex = playlistItems.size();
 
-              for (int i = 0; i < var1.size(); ++i) {
-                playlistItems.addElement(var1.elementAt(i));
+              for (int i = 0; i < e.size(); ++i) {
+                playlistItems.addElement(e.elementAt(i));
                 images.addElement(defaultImage);
               }
 
@@ -192,8 +192,8 @@ public class PlaylistList extends List
                           if (isDestroyed) {
                             return;
                           }
-                          for (int i = 0; i < var1.size(); ++i) {
-                            Playlist p = (Playlist) var1.elementAt(i);
+                          for (int i = 0; i < e.size(); ++i) {
+                            Playlist p = (Playlist) e.elementAt(i);
                             append(p.getName(), defaultImage);
                           }
                         }
@@ -375,7 +375,6 @@ public class PlaylistList extends List
         }
       }
     } catch (Exception e) {
-
     }
   }
 

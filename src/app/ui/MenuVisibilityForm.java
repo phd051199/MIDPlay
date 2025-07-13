@@ -2,7 +2,7 @@ package app.ui;
 
 import app.MIDPlay;
 import app.constants.MenuConstants;
-import app.constants.Services;
+import app.constants.ServicesConstants;
 import app.core.settings.MenuSettingsManager;
 import app.utils.I18N;
 import javax.microedition.lcdui.Alert;
@@ -40,7 +40,7 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
 
     menuItemsGroup = new ChoiceGroup(I18N.tr("menu_items"), ChoiceGroup.MULTIPLE);
 
-    if (Services.NCT.equals(service)) {
+    if (ServicesConstants.NCT.equals(service)) {
       loadNCTMenuItems();
     } else {
       loadSoundcloudMenuItems();
@@ -83,7 +83,7 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
   private void saveVisibility() {
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
 
-    if (Services.NCT.equals(service)) {
+    if (ServicesConstants.NCT.equals(service)) {
       boolean[] visibility = new boolean[MenuConstants.MAIN_MENU_ITEMS_NCT.length];
       for (int i = 0; i < visibility.length; i++) {
         visibility[i] = menuItemsGroup.isSelected(i);

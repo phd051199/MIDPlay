@@ -1,6 +1,6 @@
 package app.core.platform;
 
-import app.constants.Services;
+import app.constants.ServicesConstants;
 import app.core.settings.SettingsManager;
 
 public class PlayerMethod {
@@ -80,7 +80,7 @@ public class PlayerMethod {
       }
     }
 
-    if (SettingsManager.getInstance().getCurrentService().equals(Services.SOUNDCLOUD)
+    if (SettingsManager.getInstance().getCurrentService().equals(ServicesConstants.SOUNDCLOUD)
         && playerHttpMethod == PASS_URL) {
       playerHttpMethod = PASS_CONNECTION_STREAM;
     }

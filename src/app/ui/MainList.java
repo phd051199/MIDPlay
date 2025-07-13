@@ -2,7 +2,7 @@ package app.ui;
 
 import app.MIDPlay;
 import app.constants.MenuConstants;
-import app.constants.Services;
+import app.constants.ServicesConstants;
 import app.core.data.DataLoader;
 import app.core.data.DataParser;
 import app.core.data.LoadDataListener;
@@ -94,7 +94,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     if (c == List.SELECT_COMMAND) {
       if (isReorderMode) {
         handleReorderSelection();
-      } else if (Services.NCT.equals(service)) {
+      } else if (ServicesConstants.NCT.equals(service)) {
         this.itemActionNCT();
       } else {
         this.itemActionSoundCloud();
@@ -164,13 +164,10 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     int currentIndex = this.getSelectedIndex();
 
     if (selectedItemIndex == -1) {
-
       selectedItemIndex = currentIndex;
       this.set(currentIndex, "→ " + this.getString(currentIndex), this.getImage(currentIndex));
     } else {
-
       if (selectedItemIndex != currentIndex) {
-
         String item1 = this.getString(selectedItemIndex).substring(2);
         Image image1 = this.getImage(selectedItemIndex);
         String item2 = this.getString(currentIndex);
@@ -179,7 +176,6 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         this.set(selectedItemIndex, item2, image2);
         this.set(currentIndex, item1, image1);
       } else {
-
         this.set(
             currentIndex, this.getString(currentIndex).substring(2), this.getImage(currentIndex));
       }
@@ -195,7 +191,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     int[] currentOrder;
     boolean[] visibility;
 
-    if (Services.NCT.equals(service)) {
+    if (ServicesConstants.NCT.equals(service)) {
       totalItems = MenuConstants.MAIN_MENU_ITEMS_NCT.length;
       currentOrder = menuSettingsManager.getNctMenuOrder(totalItems);
       visibility = menuSettingsManager.getNctMenuVisibility(totalItems);
@@ -213,7 +209,6 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       int originalIndex = currentOrder[i];
       if (originalIndex >= 0 && originalIndex < totalItems && visibility[originalIndex]) {
         if (visibleIndex < this.size()) {
-
           String itemText = this.getString(visibleIndex);
 
           if (selectedItemIndex == visibleIndex) {
@@ -230,7 +225,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       }
     }
 
-    if (Services.NCT.equals(service)) {
+    if (ServicesConstants.NCT.equals(service)) {
       menuSettingsManager.saveNctMenuOrder(newOrder);
     } else {
       menuSettingsManager.saveSoundcloudMenuOrder(newOrder);
@@ -242,7 +237,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   private int findOriginalIndex(String itemText) {
-    if (Services.NCT.equals(service)) {
+    if (ServicesConstants.NCT.equals(service)) {
       for (int i = 0; i < MenuConstants.MAIN_MENU_ITEMS_NCT.length; i++) {
         if (itemText.equals(I18N.tr(MenuConstants.MAIN_MENU_ITEMS_NCT[i]))) {
           return i;
@@ -388,27 +383,27 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     if (selectedIndex >= 0 && selectedIndex < visibleCount) {
       int originalIndex = visibleToOriginalMap[selectedIndex];
 
-      if (originalIndex == 0) { // search
+      if (originalIndex == 0) {
         MainList.gotoSearch(this.observer);
-      } else if (originalIndex == 1) { // favorites
+      } else if (originalIndex == 1) {
         this.gotoFavorites();
-      } else if (originalIndex == 2) { // genres
+      } else if (originalIndex == 2) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoCate();
-      } else if (originalIndex == 3) { // billboard
+      } else if (originalIndex == 3) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoBillboard();
-      } else if (originalIndex == 4) { // new_playlists
+      } else if (originalIndex == 4) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoPlaylist("new");
-      } else if (originalIndex == 5) { // hot_playlists
+      } else if (originalIndex == 5) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoPlaylist("hot");
-      } else if (originalIndex == 6) { // chat
+      } else if (originalIndex == 6) {
         this.gotoChat();
-      } else if (originalIndex == 7) { // settings
+      } else if (originalIndex == 7) {
         this.gotoSetting();
-      } else if (originalIndex == 8) { // app_info
+      } else if (originalIndex == 8) {
         this.gotoAbout();
       }
     }
@@ -443,18 +438,18 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     if (selectedIndex >= 0 && selectedIndex < visibleCount) {
       int originalIndex = visibleToOriginalMap[selectedIndex];
 
-      if (originalIndex == 0) { // search
+      if (originalIndex == 0) {
         MainList.gotoSearch(this.observer);
-      } else if (originalIndex == 1) { // favorites
+      } else if (originalIndex == 1) {
         this.gotoFavorites();
-      } else if (originalIndex == 2) { // discover_playlists
+      } else if (originalIndex == 2) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoPlaylist("discover");
-      } else if (originalIndex == 3) { // chat
+      } else if (originalIndex == 3) {
         this.gotoChat();
-      } else if (originalIndex == 4) { // settings
+      } else if (originalIndex == 4) {
         this.gotoSetting();
-      } else if (originalIndex == 5) { // app_info
+      } else if (originalIndex == 5) {
         this.gotoAbout();
       }
     }

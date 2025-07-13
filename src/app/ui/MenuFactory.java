@@ -1,7 +1,7 @@
 package app.ui;
 
 import app.constants.MenuConstants;
-import app.constants.Services;
+import app.constants.ServicesConstants;
 import app.core.settings.MenuSettingsManager;
 import app.utils.I18N;
 import javax.microedition.lcdui.Image;
@@ -31,7 +31,7 @@ public class MenuFactory {
   }
 
   public static MainList createMainMenu(MainObserver parent, String service) {
-    return Services.NCT.equals(service)
+    return ServicesConstants.NCT.equals(service)
         ? createNCTMainMenu(parent)
         : createSoundcloudMainMenu(parent, service);
   }
@@ -44,9 +44,9 @@ public class MenuFactory {
 
     MainList mainList =
         new MainList(
-            I18N.tr("app_name") + " - " + Services.NCT,
+            I18N.tr("app_name") + " - " + ServicesConstants.NCT,
             I18N.tr("main_list_description"),
-            Services.NCT);
+            ServicesConstants.NCT);
 
     for (int i = 0; i < menuOrder.length; i++) {
       int originalIndex = menuOrder[i];

@@ -1,6 +1,6 @@
 package app.core.settings;
 
-import app.constants.Services;
+import app.constants.ServicesConstants;
 import app.core.storage.RecordStoreManager;
 import app.core.threading.ThreadManager;
 import app.core.threading.ThreadManagerIntegration;
@@ -11,7 +11,10 @@ import org.json.me.JSONObject;
 public class SettingsManager {
   private static final String[] AUDIO_QUALITIES = {"128kbps", "320kbps"};
   private static final String[] AVAILABLE_SERVICES = {
-    Services.NCT, Services.SOUNDCLOUD, Services.YTMUSIC, Services.SPOTIFY
+    ServicesConstants.NCT,
+    ServicesConstants.SOUNDCLOUD,
+    ServicesConstants.YTMUSIC,
+    ServicesConstants.SPOTIFY
   };
   private static SettingsManager instance;
 
@@ -159,30 +162,38 @@ public class SettingsManager {
           public void run() {
             settingsModified = false;
             lastSaveTime = System.currentTimeMillis();
+            RecordEnumeration re = null;
 
             try {
               if (isShuttingDown) {
                 return;
               }
 
-              RecordEnumeration re = recordStore.enumerateRecords();
+              re = recordStore.enumerateRecords();
               if (re.hasNextElement()) {
                 int recordId = re.nextRecordId();
                 recordStore.setRecord(recordId, config.toString());
               } else {
                 recordStore.addRecord(config.toString());
               }
-              re.destroy();
             } catch (Exception e) {
             } finally {
-              recordStore.closeRecordStore();
+              if (re != null) {
+                try {
+                  re.destroy();
+                } catch (Exception e) {
+                }
+              }
+              try {
+                recordStore.closeRecordStore();
+              } catch (Exception e) {
+              }
             }
           }
         });
   }
 
   public synchronized void loadConfig(final ConfigCallback callback) {
-
     ThreadManager.getInstance().interruptThread("SettingsLoad");
 
     ThreadManagerIntegration.executeBackgroundTask(
@@ -222,17 +233,31 @@ public class SettingsManager {
 
   public synchronized JSONObject loadConfigSync() {
     JSONObject config = new JSONObject();
+    RecordEnumeration re = null;
+
     try {
-      RecordEnumeration re = recordStore.enumerateRecords();
+      re = recordStore.enumerateRecords();
       if (re.hasNextElement()) {
         byte[] recordBytes = re.nextRecord();
-        String configJson = new String(recordBytes);
-        config = new JSONObject(configJson);
-        re.destroy();
+        if (recordBytes != null && recordBytes.length > 0) {
+          String configJson = new String(recordBytes);
+          if (configJson.trim().length() > 0) {
+            config = new JSONObject(configJson);
+          }
+        }
       }
     } catch (Exception e) {
     } finally {
-      recordStore.closeRecordStore();
+      if (re != null) {
+        try {
+          re.destroy();
+        } catch (Exception e) {
+        }
+      }
+      try {
+        recordStore.closeRecordStore();
+      } catch (Exception e) {
+      }
     }
     return config;
   }

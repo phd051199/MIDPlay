@@ -90,7 +90,7 @@ public class TextUtils {
               decodeBytes[decodedByteCount++] = bytes[count];
           }
         }
-      } catch (IndexOutOfBoundsException var7) {
+      } catch (IndexOutOfBoundsException e) {
         throw new IllegalArgumentException("Malformed UTF-8 string?");
       }
 
@@ -99,7 +99,7 @@ public class TextUtils {
       try {
         processedPageName = new String(decodeBytes, 0, decodedByteCount, encoding);
         return processedPageName;
-      } catch (UnsupportedEncodingException var6) {
+      } catch (UnsupportedEncodingException e) {
         throw new UnsupportedEncodingException("UTF-8 encoding not supported on this platform");
       }
     }
@@ -112,7 +112,7 @@ public class TextUtils {
       try {
         byte[] rs = text.getBytes("UTF-8");
         return urlEncode(rs);
-      } catch (UnsupportedEncodingException var3) {
+      } catch (UnsupportedEncodingException e) {
         throw new Exception("UTF-8 not supported!?!");
       }
     }
@@ -126,7 +126,7 @@ public class TextUtils {
       try {
         rs = urlDecode(utf8.getBytes("ISO-8859-1"), "UTF-8");
         return rs;
-      } catch (UnsupportedEncodingException var3) {
+      } catch (UnsupportedEncodingException e) {
         throw new Exception("UTF-8 or ISO-8859-1 not supported!?!");
       }
     }
@@ -138,7 +138,7 @@ public class TextUtils {
     } else {
       try {
         return urlEncode(data.getBytes(encoding));
-      } catch (UnsupportedEncodingException var3) {
+      } catch (UnsupportedEncodingException e) {
         throw new Exception("Could not encode String into" + encoding);
       }
     }
@@ -151,7 +151,7 @@ public class TextUtils {
     } else {
       try {
         return urlDecode(data.getBytes(encoding), encoding);
-      } catch (UnsupportedEncodingException var3) {
+      } catch (UnsupportedEncodingException e) {
         throw new Exception("Could not decode String into" + encoding);
       }
     }
