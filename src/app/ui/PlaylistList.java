@@ -1,17 +1,21 @@
 package app.ui;
 
 import app.MIDPlay;
-import app.common.Common;
-import app.common.ParseData;
-import app.common.ReadWriteRecordStore;
-import app.common.SettingManager;
-import app.interfaces.DataLoader;
-import app.interfaces.LoadDataListener;
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
-import app.model.Playlist;
+import app.core.data.DataLoader;
+import app.core.data.DataParser;
+import app.core.data.FavoritesCallback;
+import app.core.data.FavoritesManager;
+import app.core.data.LoadDataListener;
+import app.core.data.LoadDataObserver;
+import app.core.settings.SettingsManager;
+import app.core.threading.ThreadManagerIntegration;
+import app.models.Playlist;
 import app.utils.I18N;
-import app.utils.ImageUtils;
+import app.utils.image.ImageLoadCallback;
+import app.utils.image.ImageLoadRequest;
+import app.utils.image.ImageLoader;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -20,10 +24,12 @@ import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
-import javax.microedition.rms.RecordEnumeration;
-import org.json.me.JSONObject;
 
-public class PlaylistList extends List implements CommandListener, LoadDataObserver {
+public class PlaylistList extends List
+    implements CommandListener, LoadDataObserver, ImageLoadCallback {
+  private static final int NAVIGATION_DELAY_MS = 300;
+  private static final int SELECTION_MONITOR_INTERVAL_MS = 100;
+  private static final int SELECTION_MONITOR_DELAY_MS = 50;
 
   private Command exitCommand;
   private Command selectCommand;
@@ -36,8 +42,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   private MainObserver observer;
   private boolean showAddToFavorites;
   private Image defaultImage;
-
-  private final int batchSize = 3;
+  private final FavoritesManager favoritesManager;
 
   String type = "";
   int curPage = 1;
@@ -45,10 +50,15 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   String from = "";
   String keyWord = "";
 
-  Thread mLoadDataThread;
-  Thread imageLoaderThread;
+  private ImageLoader imageLoader;
 
   private boolean isDestroyed = false;
+  private boolean isNavigating = false;
+  private Timer navigationTimer;
+  private TimerTask navigationTask;
+  private int lastSelectedIndex = -1;
+  private Timer selectionMonitorTimer;
+  private TimerTask selectionMonitorTask;
 
   public PlaylistList(String title, Vector items, String _from, String keySearh, String type) {
     this(title, items, _from, keySearh, type, true);
@@ -68,6 +78,8 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     this.curPage = 1;
     this.perPage = 10;
     this.showAddToFavorites = showAddToFavorites;
+    this.favoritesManager = FavoritesManager.getInstance();
+    this.imageLoader = ImageLoader.getInstance();
     this.loadDefaultImage();
     this.initCommands();
     this.images = new Vector();
@@ -101,12 +113,16 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     }
     if (this.size() > 0) {
       this.setSelectedIndex(0, true);
+      this.lastSelectedIndex = 0;
     }
-    processImageBatchLoading(0);
+    startSelectionMonitoring();
+    resumeImageLoading();
   }
 
   public void commandAction(Command c, Displayable d) {
     if (c == this.exitCommand) {
+      this.stopSelectionMonitoring();
+      this.pauseImageLoading();
       this.cancel();
       this.observer.goBack();
     } else if (c == List.SELECT_COMMAND) {
@@ -116,12 +132,18 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
         if (playlist.getName().equals(I18N.tr("load_more"))) {
           this.doLoadMoreAction(playlist);
         } else {
+          this.stopSelectionMonitoring();
+          this.pauseImageLoading();
           this.gotoSongByPlaylist();
         }
       }
     } else if (c == this.nowPlayingCommand) {
+      this.stopSelectionMonitoring();
+      this.pauseImageLoading();
       MainList.gotoNowPlaying(this.observer);
     } else if (c == this.searchCommand) {
+      this.stopSelectionMonitoring();
+      this.pauseImageLoading();
       MainList.gotoSearch(this.observer);
     } else if (this.showAddToFavorites && c == this.addToFavoritesCommand) {
       this.addToFavorites();
@@ -137,16 +159,16 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
 
   private void loadMorePlaylists(
       final String keyword, final String genKey, final int curPage, final int perPage) {
-    Common.loadDataAsync(
+    ThreadManagerIntegration.loadDataAsync(
         new DataLoader() {
           public Vector load() {
             if (PlaylistList.this.from.equals("genre")) {
-              return ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
+              return DataParser.parsePlaylist(curPage, perPage, "hot,new", genKey);
             } else if (PlaylistList.this.from.equals("search")) {
-              return ParseData.parseSearch("", keyword, curPage, perPage, PlaylistList.this.type);
+              return DataParser.parseSearch("", keyword, curPage, perPage, PlaylistList.this.type);
             } else if (PlaylistList.this.from.equals("hot")
                 || PlaylistList.this.from.equals("new")) {
-              return ParseData.parsePlaylist(curPage, perPage, PlaylistList.this.type, "0");
+              return DataParser.parsePlaylist(curPage, perPage, PlaylistList.this.type, "0");
             } else {
               return null;
             }
@@ -177,7 +199,10 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
                         }
                       });
 
-              processImageBatchLoading(startIndex);
+              restartSelectionMonitoring();
+              if (!isNavigating) {
+                resumeImageLoading();
+              }
             }
           }
 
@@ -188,83 +213,222 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
           public void noData() {
             displayAlert(I18N.tr("no_results"), AlertType.ERROR);
           }
-        },
-        this.mLoadDataThread);
+        });
   }
 
-  private void processImageBatchLoading(final int startIndex) {
-    if (this.imageLoaderThread != null && this.imageLoaderThread.isAlive()) {}
-
-    final boolean shouldLoadImages = SettingManager.getInstance().isLoadPlaylistArtEnabled();
-
-    if (!shouldLoadImages) {
+  public void resumeImageLoading() {
+    if (!SettingsManager.getInstance().isLoadPlaylistArtEnabled()) {
       return;
     }
 
-    this.imageLoaderThread =
-        new Thread(
-            new Runnable() {
+    synchronized (this) {
+      if (isDestroyed || isNavigating) {
+        return;
+      }
+
+      validateTimerState();
+      loadVisibleImages();
+    }
+  }
+
+  private void loadVisibleImages() {
+    if (!SettingsManager.getInstance().isLoadPlaylistArtEnabled() || isDestroyed) {
+      return;
+    }
+
+    int selectedIndex = getSelectedIndex();
+    if (selectedIndex < 0) {
+      selectedIndex = 0;
+    }
+
+    int start = Math.max(0, selectedIndex - 2);
+    int end = Math.min(playlistItems.size(), selectedIndex + 3);
+
+    for (int i = start; i < end; i++) {
+      loadImageAtIndex(i);
+    }
+  }
+
+  private void loadImageAtIndex(int index) {
+    if (index < 0 || index >= playlistItems.size() || index >= images.size() || isDestroyed) {
+      return;
+    }
+
+    try {
+      Image currentImage = (Image) images.elementAt(index);
+      if (currentImage != defaultImage && currentImage != null) {
+        return;
+      }
+
+      Playlist playlist = (Playlist) playlistItems.elementAt(index);
+      if (playlist.getImageUrl() != null && playlist.getImageUrl().length() > 0) {
+        ImageLoadRequest request = new ImageLoadRequest(playlist.getImageUrl(), 48, index, this);
+        imageLoader.loadImage(request);
+      }
+    } catch (Exception e) {
+    }
+  }
+
+  public void pauseImageLoading() {
+    if (this.imageLoader != null) {
+      this.imageLoader.cancelRequestsForCallback(this);
+    }
+  }
+
+  public void startSelectionMonitoring() {
+    synchronized (this) {
+      if (selectionMonitorTask != null) {
+        selectionMonitorTask.cancel();
+        selectionMonitorTask = null;
+      }
+
+      if (selectionMonitorTimer == null) {
+        selectionMonitorTimer = new Timer();
+      }
+
+      selectionMonitorTask =
+          new TimerTask() {
+            public void run() {
+              checkSelectionChange();
+            }
+          };
+
+      try {
+        selectionMonitorTimer.scheduleAtFixedRate(
+            selectionMonitorTask, SELECTION_MONITOR_DELAY_MS, SELECTION_MONITOR_INTERVAL_MS);
+      } catch (Exception e) {
+        selectionMonitorTimer = new Timer();
+        selectionMonitorTask =
+            new TimerTask() {
               public void run() {
-                int totalSize = playlistItems.size();
-                for (int i = startIndex; i < totalSize; i += batchSize) {
-                  if (isDestroyed) {
-                    break;
-                  }
+                checkSelectionChange();
+              }
+            };
+        selectionMonitorTimer.scheduleAtFixedRate(
+            selectionMonitorTask, SELECTION_MONITOR_DELAY_MS, SELECTION_MONITOR_INTERVAL_MS);
+      }
+    }
+  }
 
-                  int endIndex = Math.min(i + batchSize, totalSize);
-                  final Vector batchImages = new Vector();
-                  final Vector batchIndexes = new Vector();
+  private void stopSelectionMonitoring() {
+    synchronized (this) {
+      if (selectionMonitorTask != null) {
+        selectionMonitorTask.cancel();
+        selectionMonitorTask = null;
+      }
+    }
+  }
 
-                  for (int j = i; j < endIndex; j++) {
-                    try {
-                      Playlist playlist = (Playlist) playlistItems.elementAt(j);
-                      if (playlist.getImageUrl() != null && playlist.getImageUrl().length() > 0) {
-                        Image img = ImageUtils.getImage(playlist.getImageUrl(), 48);
-                        if (img != null) {
-                          batchImages.addElement(img);
-                          batchIndexes.addElement(String.valueOf(j));
-                        }
-                      }
-                    } catch (Exception e) {
-                    }
-                  }
+  private void restartSelectionMonitoring() {
+    synchronized (this) {
+      stopSelectionMonitoring();
 
-                  if (!batchImages.isEmpty()) {
-                    MIDPlay.getInstance()
-                        .getDisplay()
-                        .callSerially(
-                            new Runnable() {
-                              public void run() {
-                                if (isDestroyed) {
-                                  return;
-                                }
-                                try {
-                                  for (int k = 0; k < batchImages.size(); k++) {
+      if (navigationTask != null) {
+        navigationTask.cancel();
+        navigationTask = null;
+      }
 
-                                    int index =
-                                        Integer.parseInt((String) batchIndexes.elementAt(k));
-                                    Image img = (Image) batchImages.elementAt(k);
-                                    if (index < images.size() && index < size()) {
-                                      images.setElementAt(img, index);
-                                      Playlist playlist = (Playlist) playlistItems.elementAt(index);
-                                      set(index, playlist.getName(), img);
-                                    }
-                                  }
-                                } catch (Exception e) {
-                                }
-                              }
-                            });
-                  }
+      isNavigating = false;
 
-                  try {
-                    Thread.sleep(100);
-                  } catch (InterruptedException e) {
-                    break;
+      try {
+        int currentSelection = getSelectedIndex();
+        if (currentSelection >= 0 && currentSelection < size()) {
+          lastSelectedIndex = currentSelection;
+        } else {
+          lastSelectedIndex = -1;
+        }
+      } catch (Exception e) {
+        lastSelectedIndex = -1;
+      }
+
+      startSelectionMonitoring();
+    }
+  }
+
+  private void validateTimerState() {
+    synchronized (this) {
+      if (isDestroyed) {
+        return;
+      }
+
+      if (selectionMonitorTask == null && !isDestroyed) {
+        startSelectionMonitoring();
+      }
+    }
+  }
+
+  private void checkSelectionChange() {
+    if (isDestroyed) {
+      return;
+    }
+    try {
+      synchronized (this) {
+        validateTimerState();
+
+        int currentSelectedIndex = getSelectedIndex();
+
+        if (currentSelectedIndex >= 0
+            && currentSelectedIndex < size()
+            && currentSelectedIndex != lastSelectedIndex) {
+          handleNavigation();
+          lastSelectedIndex = currentSelectedIndex;
+        }
+      }
+    } catch (Exception e) {
+
+    }
+  }
+
+  private void handleNavigation() {
+    synchronized (this) {
+      if (!isNavigating) {
+        isNavigating = true;
+        pauseImageLoading();
+      }
+
+      if (navigationTask != null) {
+        navigationTask.cancel();
+        navigationTask = null;
+      }
+
+      if (navigationTimer == null) {
+        navigationTimer = new Timer();
+      }
+
+      navigationTask =
+          new TimerTask() {
+            public void run() {
+              synchronized (PlaylistList.this) {
+                if (!isDestroyed) {
+                  isNavigating = false;
+                  resumeImageLoading();
+                }
+              }
+            }
+          };
+
+      try {
+        navigationTimer.schedule(navigationTask, NAVIGATION_DELAY_MS);
+      } catch (Exception e) {
+        navigationTimer = new Timer();
+        navigationTask =
+            new TimerTask() {
+              public void run() {
+                synchronized (PlaylistList.this) {
+                  if (!isDestroyed) {
+                    isNavigating = false;
+                    resumeImageLoading();
                   }
                 }
               }
-            });
-    this.imageLoaderThread.start();
+            };
+        try {
+          navigationTimer.schedule(navigationTask, NAVIGATION_DELAY_MS);
+        } catch (Exception ex) {
+          isNavigating = false;
+        }
+      }
+    }
   }
 
   private void doLoadMoreAction(Playlist playlist) {
@@ -288,46 +452,38 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
     }
 
     Playlist playlist = (Playlist) this.playlistItems.elementAt(selectedIndex);
-    ReadWriteRecordStore recordStore = new ReadWriteRecordStore("favorites");
-    RecordEnumeration re = null;
-    boolean alreadyExists = false;
 
-    try {
-      recordStore.openRecStore();
-      re = recordStore.enumerateRecords(null, null, false);
-      String newFavoriteId = playlist.getId();
+    favoritesManager.addFavorite(
+        playlist,
+        new FavoritesCallback() {
+          public void onFavoritesLoaded(Vector favorites) {}
 
-      while (re.hasNextElement()) {
-        int recordId = re.nextRecordId();
-        String record = recordStore.getRecord(recordId);
-        JSONObject existingFavorite = new JSONObject(record);
-        if (existingFavorite.has("id") && existingFavorite.getString("id").equals(newFavoriteId)) {
-          alreadyExists = true;
-          break;
-        }
-      }
+          public void onFavoriteRemoved() {}
 
-      if (alreadyExists) {
-        displayAlert(I18N.tr("alert_already_in_favorites"), AlertType.INFO);
-      } else {
-        JSONObject favorite = new JSONObject();
-        favorite.put("id", playlist.getId());
-        favorite.put("name", playlist.getName());
-        favorite.put("imageUrl", playlist.getImageUrl());
-        recordStore.writeRecord(favorite.toString());
-        displayAlert(I18N.tr("alert_added_to_favorites"), AlertType.CONFIRMATION);
-      }
-    } catch (Exception e) {
-      displayAlert(I18N.tr("alert_error_adding_to_favorites"), AlertType.ERROR);
-    } finally {
-      if (re != null) {
-        re.destroy();
-      }
-      try {
-        recordStore.closeRecStore();
-      } catch (Exception e) {
-      }
-    }
+          public void onCustomPlaylistCreated() {}
+
+          public void onCustomPlaylistRenamed() {}
+
+          public void onCustomPlaylistDeletedWithSongs() {}
+
+          public void onCustomPlaylistSongsLoaded(Vector songs) {}
+
+          public void onFavoriteAdded() {
+            if (!isDestroyed) {
+              displayAlert(I18N.tr("alert_added_to_favorites"), AlertType.CONFIRMATION);
+            }
+          }
+
+          public void onError(String message) {
+            if (!isDestroyed) {
+              if (message.indexOf("already") != -1) {
+                displayAlert(I18N.tr("alert_already_in_favorites"), AlertType.INFO);
+              } else {
+                displayAlert(I18N.tr("alert_error_adding_to_favorites"), AlertType.ERROR);
+              }
+            }
+          }
+        });
   }
 
   public void setObserver(MainObserver _observer) {
@@ -337,10 +493,10 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   private void gotoSongByPlaylist() {
     final Playlist playlist = (Playlist) this.playlistItems.elementAt(this.getSelectedIndex());
     this.displayMessage(playlist.getName(), I18N.tr("loading"), "loading");
-    Common.loadDataAsync(
+    ThreadManagerIntegration.loadDataAsync(
         new DataLoader() {
           public Vector load() {
-            return ParseData.parseSongsInPlaylist(
+            return DataParser.parseSongsInPlaylist(
                 playlist.getId(), "", 1, 30, PlaylistList.this.type);
           }
         },
@@ -359,8 +515,7 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
           public void noData() {
             PlaylistList.this.displayMessage(playlist.getName(), I18N.tr("no_data"), "error");
           }
-        },
-        this.mLoadDataThread);
+        });
   }
 
   private void displayMessage(String title, String message, String messageType) {
@@ -372,16 +527,31 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   }
 
   public void quit() {
-    this.isDestroyed = true;
-    try {
-      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
-        this.mLoadDataThread.join();
+    synchronized (this) {
+      this.isDestroyed = true;
+      this.pauseImageLoading();
+
+      if (selectionMonitorTask != null) {
+        selectionMonitorTask.cancel();
+        selectionMonitorTask = null;
       }
-      if (this.imageLoaderThread != null && this.imageLoaderThread.isAlive()) {
-        this.imageLoaderThread.join();
+
+      if (selectionMonitorTimer != null) {
+        selectionMonitorTimer.cancel();
+        selectionMonitorTimer = null;
       }
-    } catch (InterruptedException var2) {
+
+      if (navigationTask != null) {
+        navigationTask.cancel();
+        navigationTask = null;
+      }
+
+      if (navigationTimer != null) {
+        navigationTimer.cancel();
+        navigationTimer = null;
+      }
     }
+    ThreadManagerIntegration.cancelPendingDataOperations();
   }
 
   public Image getImage(int index) {
@@ -395,7 +565,32 @@ public class PlaylistList extends List implements CommandListener, LoadDataObser
   }
 
   private void displayAlert(String message, AlertType messageType) {
-    Alert alert = new Alert("", message, null, messageType);
+    Alert alert = new Alert(null, message, null, messageType);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
+  }
+
+  public void onImageLoaded(int index, Image image, String requestId) {
+    if (isDestroyed || index < 0 || index >= images.size() || index >= size()) {
+      return;
+    }
+
+    try {
+      images.setElementAt(image, index);
+      Playlist playlist = (Playlist) playlistItems.elementAt(index);
+      set(index, playlist.getName(), image);
+    } catch (Exception e) {
+    }
+  }
+
+  public void onImageLoadFailed(int index, String url, String error, String requestId) {
+    if (error != null && error.indexOf("Out of memory") >= 0) {
+      if (imageLoader != null) {
+        imageLoader.forceGarbageCollection();
+      }
+    }
+  }
+
+  public boolean shouldContinueLoading() {
+    return !isDestroyed;
   }
 }

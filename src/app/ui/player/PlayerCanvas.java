@@ -1,16 +1,17 @@
 package app.ui.player;
 
 import app.MIDPlay;
-import app.common.ReadWriteRecordStore;
-import app.common.SettingManager;
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
-import app.model.Playlist;
-import app.model.Song;
+import app.core.data.FavoritesCallback;
+import app.core.data.FavoritesManager;
+import app.core.data.LoadDataObserver;
+import app.core.settings.SettingsManager;
+import app.core.threading.ThreadManagerIntegration;
+import app.models.Playlist;
+import app.models.Song;
 import app.ui.FavoritesList;
+import app.ui.MainObserver;
+import app.ui.SongList;
 import app.utils.I18N;
-import app.utils.ImageUtils;
-import java.io.IOException;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -21,8 +22,6 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
-import javax.microedition.rms.RecordEnumeration;
-import org.json.me.JSONObject;
 
 public final class PlayerCanvas extends Canvas implements CommandListener, LoadDataObserver {
 
@@ -38,6 +37,8 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   private final Command stopCommand = new Command(I18N.tr("stop"), Command.SCREEN, 7);
   private final Command addToPlaylistCommand =
       new Command(I18N.tr("add_to_playlist"), Command.SCREEN, 8);
+  private final Command showPlaylistCommand =
+      new Command(I18N.tr("show_playlist"), Command.SCREEN, 9);
   private Command repeatCommand;
   private Command shuffleCommand;
 
@@ -45,6 +46,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   private PlayerGUI gui;
   private MainObserver parent;
   private String status = "";
+  private final FavoritesManager favoritesManager;
 
   int displayWidth = -1;
   int displayHeight = -1;
@@ -112,10 +114,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   public boolean goBack = false;
   public boolean goNext = false;
 
-  private Thread loadAlbumArtThread = null;
-  private Thread addSongToPlaylistThread = null;
-
-  private final SettingManager settingManager = SettingManager.getInstance();
+  private final SettingsManager settingManager = SettingsManager.getInstance();
   private int cachedThemeColorRGB;
   private int cachedBackgroundColorRGB;
   private String lastThemeColor = "";
@@ -123,6 +122,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
 
   public PlayerCanvas(String title, Vector lst, int index, Playlist _playlist) {
     this.playlist = _playlist;
+    this.favoritesManager = FavoritesManager.getInstance();
     this.setTitle(title);
     this.addCommand(this.backCommand);
     this.setCommandListener(this);
@@ -179,23 +179,6 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   }
 
   public synchronized void close() {
-    if (this.loadAlbumArtThread != null && this.loadAlbumArtThread.isAlive()) {
-      try {
-        this.loadAlbumArtThread.interrupt();
-      } catch (Exception e) {
-
-      }
-      this.loadAlbumArtThread = null;
-    }
-
-    if (this.addSongToPlaylistThread != null && this.addSongToPlaylistThread.isAlive()) {
-      try {
-        this.addSongToPlaylistThread.interrupt();
-      } catch (Exception e) {
-
-      }
-      this.addSongToPlaylistThread = null;
-    }
 
     this._albumArt = null;
     this._albumArtUrl = null;
@@ -206,6 +189,8 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       this.gui.closePlayer();
       this.gui = null;
     }
+
+    ThreadManagerIntegration.clearPlayerQueues();
   }
 
   private boolean isLoading() {
@@ -282,31 +267,24 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
 
     this._loadingAlbumArt = true;
 
-    if (this.loadAlbumArtThread != null && this.loadAlbumArtThread.isAlive()) {
-      try {
-        this.loadAlbumArtThread.interrupt();
-      } catch (Exception e) {
+    final String imageUrl = this._albumArtUrl;
+    ThreadManagerIntegration.executePlayerImageLoading(
+        imageUrl,
+        72,
+        new ThreadManagerIntegration.ImageLoadCallback() {
+          public void onImageLoaded(Object image) {
+            _albumArt = (javax.microedition.lcdui.Image) image;
+            if (_albumArt != null) {
+              updateDisplay();
+            }
+            _loadingAlbumArt = false;
+          }
 
-      }
-    }
-
-    this.loadAlbumArtThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
-                try {
-                  _albumArt = ImageUtils.getImage(_albumArtUrl, artSize);
-                  if (_albumArt != null) {
-                    updateDisplay();
-                  }
-                } catch (IOException e) {
-                  _albumArt = null;
-                } finally {
-                  _loadingAlbumArt = false;
-                }
-              }
-            });
-    this.loadAlbumArtThread.start();
+          public void onImageLoadError(Exception e) {
+            _albumArt = null;
+            _loadingAlbumArt = false;
+          }
+        });
   }
 
   protected void keyPressed(int keycode) {
@@ -871,6 +849,8 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       this.getGUI().toggleShuffleMode();
     } else if (c == this.addToPlaylistCommand) {
       showAddToPlaylistDialog();
+    } else if (c == this.showPlaylistCommand) {
+      showCurrentPlaylist();
     }
   }
 
@@ -883,7 +863,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     final Vector customPlaylists = getCustomPlaylists();
 
     if (customPlaylists.isEmpty()) {
-      showAlert("", I18N.tr("alert_no_custom_playlists"), AlertType.INFO);
+      showAlert(I18N.tr("alert_no_custom_playlists"), AlertType.INFO);
       return;
     }
 
@@ -913,18 +893,17 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
 
                 MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
 
-                addSongToPlaylistThread =
-                    new Thread(
-                        new Runnable() {
-                          public void run() {
-                            try {
-                              addSongToCustomPlaylist(finalCurrentSong, selectedPlaylist);
-                            } catch (Exception e) {
-                              showAlert("", e.toString(), AlertType.ERROR);
-                            }
-                          }
-                        });
-                addSongToPlaylistThread.start();
+                ThreadManagerIntegration.executeBackgroundTask(
+                    new Runnable() {
+                      public void run() {
+                        try {
+                          addSongToCustomPlaylist(finalCurrentSong, selectedPlaylist);
+                        } catch (Exception e) {
+                          showAlert(e.toString(), AlertType.ERROR);
+                        }
+                      }
+                    },
+                    "AddSongToPlaylist");
               } else {
                 MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
               }
@@ -938,88 +917,61 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   }
 
   private Vector getCustomPlaylists() {
-    Vector customPlaylists = new Vector();
-    ReadWriteRecordStore recordStore = new ReadWriteRecordStore("favorites");
-    RecordEnumeration re = null;
-
     try {
-      recordStore.openRecStore();
-      re = recordStore.enumerateRecords(null, null, false);
-
-      while (re.hasNextElement()) {
-        int recordId = re.nextRecordId();
-        String record = recordStore.getRecord(recordId);
-
-        if (record.trim().length() == 0) {
-          continue;
-        }
-
-        JSONObject favoriteJson = new JSONObject(record);
-        if (favoriteJson.has("isCustom") && favoriteJson.getBoolean("isCustom")) {
-          FavoritesList.FavoriteItem item = new FavoritesList.FavoriteItem(recordId, favoriteJson);
-          customPlaylists.addElement(item);
-        }
-      }
+      return favoritesManager.getCustomPlaylists();
     } catch (Exception e) {
-
-    } finally {
-      if (re != null) {
-        re.destroy();
-      }
-      try {
-        recordStore.closeRecStore();
-      } catch (Exception e) {
-      }
+      return new Vector();
     }
-
-    return customPlaylists;
   }
 
   private void addSongToCustomPlaylist(final Song song, final FavoritesList.FavoriteItem playlist) {
-    try {
-      String playlistId = playlist.data.getString("id");
+    favoritesManager.addSongToCustomPlaylist(
+        song,
+        playlist,
+        new FavoritesCallback() {
+          public void onFavoritesLoaded(Vector favorites) {}
 
-      String songId = song.getSongId();
-      if (songId == null || songId.trim().length() == 0) {
-        songId = song.getSongName() + "_" + String.valueOf(System.currentTimeMillis());
-        song.setSongId(songId);
-      }
+          public void onFavoriteRemoved() {}
 
-      ReadWriteRecordStore songRecordStore = new ReadWriteRecordStore("playlist_songs");
-      try {
-        songRecordStore.openRecStore();
+          public void onCustomPlaylistCreated() {}
 
-        String relationId = playlistId + "_" + songId;
+          public void onCustomPlaylistRenamed() {}
 
-        JSONObject songJson = new JSONObject();
-        songJson.put("relationId", relationId);
-        songJson.put("playlistId", playlistId);
-        songJson.put("songId", songId);
-        songJson.put("name", song.getSongName());
-        songJson.put("artist", song.getArtistName());
-        songJson.put("image", song.getImage());
-        songJson.put("streamUrl", song.getStreamUrl());
-        songJson.put("duration", new Integer(song.getDuration()));
+          public void onCustomPlaylistDeletedWithSongs() {}
 
-        songRecordStore.writeRecord(songJson.toString());
-        showAlert("", I18N.tr("alert_song_added_to_playlist"), AlertType.CONFIRMATION);
-      } finally {
-        try {
-          if (songRecordStore != null) {
-            songRecordStore.closeRecStore();
+          public void onCustomPlaylistSongsLoaded(Vector songs) {}
+
+          public void onFavoriteAdded() {
+            showAlert(I18N.tr("alert_song_added_to_playlist"), AlertType.CONFIRMATION);
           }
-        } catch (Exception e) {
-        }
-      }
-    } catch (Exception e) {
-      showAlert("", e.toString(), AlertType.ERROR);
-    }
+
+          public void onError(String message) {
+            showAlert(message, AlertType.ERROR);
+          }
+        });
   }
 
-  private void showAlert(String title, String message, AlertType type) {
-    Alert alert = new Alert(title, message, null, type);
+  private void showAlert(String message, AlertType type) {
+    Alert alert = new Alert(null, message, null, type);
     alert.setTimeout(2000);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, PlayerCanvas.this);
+  }
+
+  private void showCurrentPlaylist() {
+    if (this.playlist == null || this.gui == null) {
+      return;
+    }
+
+    Vector currentSongList = this.gui.getListSong();
+    if (currentSongList == null || currentSongList.isEmpty()) {
+      return;
+    }
+
+    int currentIndex = this.gui.getCurrentIndex();
+    SongList songList = new SongList(this.playlist.getName(), currentSongList, this.playlist);
+    songList.setObserver(this.observer);
+    songList.setCurrentlyPlayingIndex(currentIndex);
+    this.observer.go(songList);
   }
 
   private void createCommand() {
@@ -1028,6 +980,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     this.addCommand(this.prevCommand);
     this.addCommand(this.stopCommand);
     this.addCommand(this.addToPlaylistCommand);
+    this.addCommand(this.showPlaylistCommand);
 
     if (this.repeatCommand == null) {
       this.repeatCommand =
@@ -1042,5 +995,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     }
   }
 
-  public void cancel() {}
+  public void cancel() {
+    ThreadManagerIntegration.cancelPendingDataOperations();
+  }
 }

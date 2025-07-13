@@ -1,16 +1,15 @@
 package app.ui;
 
 import app.MIDPlay;
-import app.common.Common;
-import app.common.ParseData;
-import app.common.SettingManager;
-import app.interfaces.DataLoader;
-import app.interfaces.LoadDataListener;
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
-import app.model.Playlist;
+import app.core.data.DataLoader;
+import app.core.data.DataParser;
+import app.core.data.LoadDataListener;
+import app.core.data.LoadDataObserver;
+import app.core.settings.SettingsManager;
+import app.core.threading.ThreadManagerIntegration;
+import app.models.Playlist;
 import app.utils.I18N;
-import app.utils.TextUtil;
+import app.utils.TextUtils;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
@@ -43,7 +42,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   private static final int CHAR_PER_LOOP = 4;
   private static final int MESSAGE_DELAY = 50;
 
-  private final SettingManager settingManager = SettingManager.getInstance();
+  private final SettingsManager settingManager = SettingsManager.getInstance();
   private int cachedSentBubbleColorRGB;
   private int cachedBackgroundColorRGB;
   private String lastThemeColor = "";
@@ -56,7 +55,6 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   private boolean isWaitingForResponse = false;
   private Displayable previousDisplay;
   private final Vector pendingMessages = new Vector();
-  private Thread mLoadDataThread;
   private int firstVisibleMessage = 0;
   private int lastVisibleMessage = 0;
 
@@ -81,7 +79,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
     this.addCommand(backCommand);
     this.addCommand(inputCommand);
     this.setCommandListener(this);
-    this.sessionId = TextUtil.generateRandomId(12);
+    this.sessionId = TextUtils.generateRandomId(12);
   }
 
   public void showNotify() {
@@ -326,15 +324,15 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
                 if (currentMessageIndex >= messages.size() && pendingMessages.size() > 0) {
 
                   timer.cancel();
-                  timer = new Timer();
-                  timer.schedule(
-                      new TimerTask() {
+                  ThreadManagerIntegration.scheduleDelayedTask(
+                      new Runnable() {
                         public void run() {
                           String nextMessage = (String) pendingMessages.elementAt(0);
                           pendingMessages.removeElementAt(0);
                           addAIMessage(nextMessage);
                         }
                       },
+                      "ChatMessageDelay",
                       MESSAGE_DELAY);
                   return;
                 }
@@ -461,9 +459,9 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
 
     String textToRender = text;
     if (isClickable) {
-      textToRender = Common.replace(textToRender, "[", "");
-      textToRender = Common.replace(textToRender, "].", "");
-      textToRender = Common.replace(textToRender, "]", "");
+      textToRender = TextUtils.replace(textToRender, "[", "");
+      textToRender = TextUtils.replace(textToRender, "].", "");
+      textToRender = TextUtils.replace(textToRender, "]", "");
     }
 
     Vector wrappedLines =
@@ -678,10 +676,10 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
 
           final String finalDisplayText = displayText;
 
-          Common.loadDataAsync(
+          ThreadManagerIntegration.loadDataAsync(
               new DataLoader() {
                 public Vector load() {
-                  return ParseData.parseSearchTracks(finalDisplayText);
+                  return DataParser.parseSearchTracks(finalDisplayText);
                 }
               },
               new LoadDataListener() {
@@ -703,8 +701,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
                 public void noData() {
                   displayAlert(I18N.tr("no_results"), AlertType.ERROR);
                 }
-              },
-              this.mLoadDataThread);
+              });
         }
       }
     }
@@ -807,11 +804,11 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
         addAIMessage("...");
 
         isWaitingForResponse = true;
-        Common.loadDataAsync(
+        ThreadManagerIntegration.loadDataAsync(
             new DataLoader() {
               public Vector load() throws Exception {
                 Vector v = new Vector();
-                v.addElement(ParseData.sendChatMessage(text, sessionId));
+                v.addElement(DataParser.sendChatMessage(text, sessionId));
                 return v;
               }
             },
@@ -833,8 +830,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
                 addAIMessage(I18N.tr("error_connect"));
                 isWaitingForResponse = false;
               }
-            },
-            this.mLoadDataThread);
+            });
       }
       MIDPlay.getInstance().getDisplay().setCurrent(previousDisplay);
     } else if (d == inputBox && c.getCommandType() == Command.CANCEL) {
@@ -855,17 +851,11 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   public void quit() {
-    try {
-      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
-        this.mLoadDataThread.join();
-      }
-      this.sessionId = null;
-    } catch (InterruptedException var2) {
-    }
+    this.sessionId = null;
   }
 
   private void displayAlert(String message, AlertType messageType) {
-    Alert alert = new Alert("", message, null, messageType);
+    Alert alert = new Alert(null, message, null, messageType);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
   }
 

@@ -781,7 +781,7 @@
     <target name="cldc-run" if="cldc-platform.trigger">
         <exec executable="java" dir="${basedir}">
             <arg value="-jar"/>
-            <arg value="C:/kemnnmod/KEmulator.jar"/>
+            <arg value="C:/kemnnx64/KEmulator.jar"/>
             <arg value="${dist.dir}/${dist.jad}"/>
         </exec>
     </target>
@@ -904,7 +904,7 @@
                 <arg value="-Xdebug"/>
                 <arg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=${jpda.port}"/>
                 <arg value="-jar"/>
-                <arg path="C:/kemnnmod/KEmulator.jar"/>
+                <arg path="C:/kemnnx64/KEmulator.jar"/>
                 <arg path="${dist.dir}/${dist.jad}"/>
             </exec>
             <sequential>

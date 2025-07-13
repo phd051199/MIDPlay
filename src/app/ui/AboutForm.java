@@ -2,8 +2,7 @@ package app.ui;
 
 import app.MIDPlay;
 import app.constants.Constants;
-import app.interfaces.MainObserver;
-import app.model.Song;
+import app.models.Song;
 import app.utils.I18N;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;

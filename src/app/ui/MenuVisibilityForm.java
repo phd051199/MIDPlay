@@ -1,10 +1,10 @@
 package app.ui;
 
-import app.common.MenuSettingsManager;
+import app.MIDPlay;
+import app.constants.MenuConstants;
 import app.constants.Services;
-import app.interfaces.MainObserver;
+import app.core.settings.MenuSettingsManager;
 import app.utils.I18N;
-import app.utils.Utils;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.ChoiceGroup;
@@ -58,10 +58,10 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
   private void loadNCTMenuItems() {
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
     boolean[] visibility =
-        menuSettingsManager.getNctMenuVisibility(Utils.MAIN_MENU_ITEMS_NCT.length);
+        menuSettingsManager.getNctMenuVisibility(MenuConstants.MAIN_MENU_ITEMS_NCT.length);
 
-    for (int i = 0; i < Utils.MAIN_MENU_ITEMS_NCT.length; i++) {
-      String itemLabel = I18N.tr(Utils.MAIN_MENU_ITEMS_NCT[i]);
+    for (int i = 0; i < MenuConstants.MAIN_MENU_ITEMS_NCT.length; i++) {
+      String itemLabel = I18N.tr(MenuConstants.MAIN_MENU_ITEMS_NCT[i]);
       menuItemsGroup.append(itemLabel, null);
       menuItemsGroup.setSelectedIndex(i, visibility[i]);
     }
@@ -70,10 +70,11 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
   private void loadSoundcloudMenuItems() {
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
     boolean[] visibility =
-        menuSettingsManager.getSoundcloudMenuVisibility(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
+        menuSettingsManager.getSoundcloudMenuVisibility(
+            MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
 
-    for (int i = 0; i < Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length; i++) {
-      String itemLabel = I18N.tr(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD[i]);
+    for (int i = 0; i < MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length; i++) {
+      String itemLabel = I18N.tr(MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD[i]);
       menuItemsGroup.append(itemLabel, null);
       menuItemsGroup.setSelectedIndex(i, visibility[i]);
     }
@@ -83,7 +84,7 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
 
     if (Services.NCT.equals(service)) {
-      boolean[] visibility = new boolean[Utils.MAIN_MENU_ITEMS_NCT.length];
+      boolean[] visibility = new boolean[MenuConstants.MAIN_MENU_ITEMS_NCT.length];
       for (int i = 0; i < visibility.length; i++) {
         visibility[i] = menuItemsGroup.isSelected(i);
       }
@@ -97,13 +98,13 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
       }
 
       if (!anyVisible) {
-        showAlert("", I18N.tr("visibility_at_least_one"));
+        showAlert(I18N.tr("visibility_at_least_one"));
         return;
       }
 
       menuSettingsManager.saveNctMenuVisibility(visibility);
     } else {
-      boolean[] visibility = new boolean[Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length];
+      boolean[] visibility = new boolean[MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length];
       for (int i = 0; i < visibility.length; i++) {
         visibility[i] = menuItemsGroup.isSelected(i);
       }
@@ -117,26 +118,26 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
       }
 
       if (!anyVisible) {
-        showAlert("", I18N.tr("visibility_at_least_one"));
+        showAlert(I18N.tr("visibility_at_least_one"));
         return;
       }
 
       menuSettingsManager.saveSoundcloudMenuVisibility(visibility);
     }
 
-    MainList mainList = Utils.createMainMenu(observer, service);
+    MainList mainList = MenuFactory.createMainMenu(observer, service);
 
-    if (observer instanceof app.MIDPlay) {
-      ((app.MIDPlay) observer).clearHistory();
+    if (observer instanceof MIDPlay) {
+      ((MIDPlay) observer).clearHistory();
     }
 
     observer.replaceCurrent(mainList);
   }
 
-  private void showAlert(String title, String message) {
-    Alert alert = new Alert(title, message, null, AlertType.WARNING);
+  private void showAlert(String message) {
+    Alert alert = new Alert(null, message, null, AlertType.WARNING);
     alert.setTimeout(Alert.FOREVER);
-    Display.getDisplay(app.MIDPlay.getInstance()).setCurrent(alert, this);
+    Display.getDisplay(MIDPlay.getInstance()).setCurrent(alert, this);
   }
 
   public void commandAction(Command c, Displayable d) {

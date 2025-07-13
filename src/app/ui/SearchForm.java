@@ -1,14 +1,13 @@
 package app.ui;
 
 import app.MIDPlay;
-import app.common.Common;
-import app.common.ParseData;
-import app.common.SearchSettingsManager;
-import app.interfaces.DataLoader;
-import app.interfaces.LoadDataListener;
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
-import app.model.Playlist;
+import app.core.data.DataLoader;
+import app.core.data.DataParser;
+import app.core.data.LoadDataListener;
+import app.core.data.LoadDataObserver;
+import app.core.settings.SearchSettingsManager;
+import app.core.threading.ThreadManagerIntegration;
+import app.models.Playlist;
 import app.utils.I18N;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
@@ -31,7 +30,6 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   private String keyWord = "";
   private String searchType = "playlist";
   private MainObserver observer;
-  Thread mLoadDataThread;
 
   private final SearchSettingsManager searchSettingsManager;
 
@@ -92,7 +90,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
 
   private void gotoSearchPlaylist(String keyword, final int curPage, final int perPage) {
     if (keyword.length() == 0) {
-      showAlert("", I18N.tr("search_keyword_empty"), AlertType.ERROR);
+      showAlert(I18N.tr("search_keyword_empty"), AlertType.ERROR);
       return;
     }
 
@@ -111,13 +109,13 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
     saveSearchConfig();
 
     this.displayMessage(I18N.tr("search_hint") + ": " + keyword, I18N.tr("loading"), "loading");
-    Common.loadDataAsync(
+    ThreadManagerIntegration.loadDataAsync(
         new DataLoader() {
           public Vector load() throws Exception {
             if (SearchForm.this.searchType.equals("track")) {
-              return ParseData.parseSearchTracks(SearchForm.this.keyWord);
+              return DataParser.parseSearchTracks(SearchForm.this.keyWord);
             } else {
-              return ParseData.parseSearch(
+              return DataParser.parseSearch(
                   "", SearchForm.this.keyWord, curPage, perPage, searchType);
             }
           }
@@ -162,8 +160,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
                 SearchForm.this.observer,
                 SearchForm.this);
           }
-        },
-        this.mLoadDataThread);
+        });
   }
 
   private void displayMessage(String title, String message, String messageType) {
@@ -180,8 +177,8 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
     this.setCommandListener(this);
   }
 
-  private void showAlert(String title, String message, AlertType type) {
-    Alert alert = new Alert(title, message, null, type);
+  private void showAlert(String message, AlertType type) {
+    Alert alert = new Alert(null, message, null, type);
     alert.setTimeout(2000);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, SearchForm.this);
   }
@@ -191,15 +188,11 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   public void quit() {
-    if (searchSettingsManager != null) {
-      searchSettingsManager.shutdown();
-    }
-
     try {
-      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
-        this.mLoadDataThread.join();
+      if (searchSettingsManager != null) {
+        searchSettingsManager.shutdown();
       }
-    } catch (InterruptedException var2) {
+    } catch (Exception e) {
     }
   }
 }

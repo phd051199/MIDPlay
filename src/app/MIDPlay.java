@@ -1,14 +1,18 @@
 package app;
 
-import app.common.ParseData;
-import app.common.SettingManager;
-import app.interfaces.MainObserver;
-import app.interfaces.Observer;
-import app.model.Song;
+import app.core.data.DataParser;
+import app.core.platform.Observer;
+import app.core.settings.SettingsManager;
+import app.core.threading.ThreadManager;
+import app.core.threading.ThreadManagerIntegration;
+import app.models.Song;
+import app.ui.FavoritesList;
 import app.ui.MainList;
+import app.ui.MainObserver;
+import app.ui.MenuFactory;
+import app.ui.PlaylistList;
 import app.ui.SettingForm;
 import app.utils.I18N;
-import app.utils.Utils;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -25,14 +29,14 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
 
   private static final String EMPTY_STRING = "";
   private static final int MAX_HISTORY_SIZE = 10;
-  private static String APP_VERSION = "";
+  private static String appVersion = "";
 
   public static MIDPlay getInstance() {
     return instance;
   }
 
   public static String getAppVersion() {
-    return APP_VERSION;
+    return appVersion;
   }
 
   private final Vector history = new Vector();
@@ -56,9 +60,9 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
     try {
       I18N.initialize(this);
       SettingForm.populateFormWithSettings();
-      APP_VERSION = getAppProperty("MIDlet-Version");
+      appVersion = getAppProperty("MIDlet-Version");
     } catch (Exception e) {
-      showErrorAlert("Init Error", "Failed to initialize");
+      showErrorAlert(e.toString());
     }
   }
 
@@ -82,6 +86,17 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   private void cleanup() {
     try {
       history.removeAllElements();
+
+      try {
+        SettingsManager.getInstance().shutdown();
+      } catch (Exception e) {
+      }
+
+      try {
+        ThreadManagerIntegration.shutdownAllPools();
+        ThreadManager.getInstance().shutdown();
+      } catch (Exception e) {
+      }
     } catch (Exception e) {
     }
   }
@@ -91,16 +106,16 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   private void setMainScreen() {
     try {
       MainList mainMenu =
-          Utils.createMainMenu(this, SettingManager.getInstance().getCurrentService());
+          MenuFactory.createMainMenu(this, SettingsManager.getInstance().getCurrentService());
       go(mainMenu);
     } catch (Exception e) {
-      showErrorAlert("Error", "Cannot create main screen");
+      showErrorAlert(e.toString());
     }
   }
 
   public String checkForUpdate() {
     try {
-      if (!SettingManager.getInstance().isAutoUpdateEnabled()) {
+      if (!SettingsManager.getInstance().isAutoUpdateEnabled()) {
         return EMPTY_STRING;
       }
 
@@ -112,11 +127,11 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
 
   public String checkForUpdate(boolean respectAutoUpdateSetting) {
     try {
-      if (respectAutoUpdateSetting && !SettingManager.getInstance().isAutoUpdateEnabled()) {
+      if (respectAutoUpdateSetting && !SettingsManager.getInstance().isAutoUpdateEnabled()) {
         return EMPTY_STRING;
       }
 
-      final String updateInfo = ParseData.checkForUpdate();
+      final String updateInfo = DataParser.checkForUpdate();
       if (!EMPTY_STRING.equals(updateInfo)) {
         showUpdateDialog(updateInfo);
         return updateInfo;
@@ -127,7 +142,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   }
 
   private void showUpdateDialog(final String updateInfo) {
-    Alert updateAlert = new Alert("", I18N.tr("update_message"), null, AlertType.INFO);
+    Alert updateAlert = new Alert(null, I18N.tr("update_message"), null, AlertType.INFO);
     updateAlert.setTimeout(Alert.FOREVER);
     updateAlert.addCommand(downloadCmd);
     updateAlert.addCommand(cancelCmd);
@@ -148,7 +163,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
           exit();
         }
       } catch (Exception e) {
-        showErrorAlert("Error", "Cannot open download link");
+        showErrorAlert(e.toString());
       }
     } else if (command == cancelCmd) {
       Displayable current = getCurrentDisplayable();
@@ -205,6 +220,17 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
       exit();
       return null;
     }
+
+    if (previous instanceof PlaylistList) {
+      PlaylistList playlistList = (PlaylistList) previous;
+      playlistList.resumeImageLoading();
+      playlistList.startSelectionMonitoring();
+    } else if (previous instanceof FavoritesList) {
+      FavoritesList favoritesList = (FavoritesList) previous;
+      favoritesList.resumeImageLoading();
+      favoritesList.startSelectionMonitoring();
+    }
+
     return replaceCurrent(previous);
   }
 
@@ -252,8 +278,8 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
     return Display.getDisplay(this);
   }
 
-  public void showErrorAlert(String title, String message) {
-    Alert alert = new Alert(title, message, null, AlertType.ERROR);
+  public void showErrorAlert(String message) {
+    Alert alert = new Alert(null, message, null, AlertType.ERROR);
     alert.setTimeout(2000);
     Displayable current = getCurrentDisplayable();
     if (current != null) {

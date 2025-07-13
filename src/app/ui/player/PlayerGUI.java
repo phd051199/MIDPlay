@@ -1,9 +1,10 @@
 package app.ui.player;
 
-import app.common.PlayerMethod;
-import app.common.PlayerSettingsManager;
-import app.common.RestClient;
-import app.model.Song;
+import app.core.network.RestClient;
+import app.core.platform.PlayerMethod;
+import app.core.settings.PlayerSettingsManager;
+import app.core.threading.ThreadManagerIntegration;
+import app.models.Song;
 import app.utils.I18N;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,14 +37,14 @@ public class PlayerGUI implements PlayerListener {
   private boolean[] shufflePlayedIndices = null;
   private int shufflePlayedCount = 0;
 
-  private final int timerInterval = 500;
+  private final int timerInterval = 1000;
   private Timer guiTimer = null;
   private TimerTask timeDisplayTask = null;
   private TimerTask volumeStatusTask = null;
   private final PlayerCanvas parent;
   private Player player = null;
-  Vector listSong = null;
-  int index = 0;
+  private Vector listSong = null;
+  private int index = 0;
   private boolean restartOnResume = false;
   private boolean isTransitioning = false;
 
@@ -51,13 +52,13 @@ public class PlayerGUI implements PlayerListener {
 
   private int playerHttpMethod;
 
-  HttpConnection httpConn = null;
-  InputStream inputStream = null;
-  OutputStream outputStream = null;
-  String playUrl;
+  private HttpConnection httpConn = null;
+  private InputStream inputStream = null;
+  private OutputStream outputStream = null;
+  private String playUrl;
 
-  private Thread playerThread = null;
-  private Thread endOfMediaThread = null;
+  private volatile boolean playerTaskRunning = false;
+  private volatile boolean endOfMediaTaskRunning = false;
 
   public PlayerGUI(PlayerCanvas parent) {
     this.parent = parent;
@@ -175,6 +176,10 @@ public class PlayerGUI implements PlayerListener {
 
   public Vector getListSong() {
     return this.listSong;
+  }
+
+  public int getCurrentIndex() {
+    return this.index;
   }
 
   public boolean getIsPlaying() {
@@ -318,23 +323,8 @@ public class PlayerGUI implements PlayerListener {
     try {
       isTransitioning = true;
 
-      if (this.playerThread != null && this.playerThread.isAlive()) {
-        try {
-          this.playerThread.interrupt();
-        } catch (Exception e) {
-
-        }
-        this.playerThread = null;
-      }
-
-      if (this.endOfMediaThread != null && this.endOfMediaThread.isAlive()) {
-        try {
-          this.endOfMediaThread.interrupt();
-        } catch (Exception e) {
-
-        }
-        this.endOfMediaThread = null;
-      }
+      playerTaskRunning = false;
+      endOfMediaTaskRunning = false;
 
       if (shuffleMode) {
         if (next) {
@@ -383,35 +373,44 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void startPlayer() {
-    this.playerThread =
-        new Thread(
-            new Runnable() {
-              public void run() {
-                try {
-                  if (PlayerGUI.this.player == null || PlayerGUI.this.player.getState() < 300) {
-                    PlayerGUI.this.assertPlayer();
-                  }
-                  if (PlayerGUI.this.player == null || PlayerGUI.this.player.getState() >= 400) {
-                    return;
-                  }
-                  try {
-                    long duration = PlayerGUI.this.getDuration();
-                    if (duration != -1L && PlayerGUI.this.player.getMediaTime() >= duration) {
-                      PlayerGUI.this.player.setMediaTime(0L);
-                    }
-                  } catch (MediaException var3) {
+    if (playerTaskRunning) {
+      return;
+    }
 
-                  }
-                  PlayerGUI.this.player.start();
-                  if (PlayerGUI.this.player.getState() >= 400) {
-                    PlayerGUI.this.setStatus(I18N.tr("playing"));
-                  }
-                } catch (Throwable var4) {
-
-                }
+    playerTaskRunning = true;
+    ThreadManagerIntegration.executePlayerTask(
+        new Runnable() {
+          public void run() {
+            try {
+              if (!playerTaskRunning) {
+                return;
               }
-            });
-    this.playerThread.start();
+              if (PlayerGUI.this.player == null || PlayerGUI.this.player.getState() < 300) {
+                PlayerGUI.this.assertPlayer();
+              }
+              if (PlayerGUI.this.player == null || PlayerGUI.this.player.getState() >= 400) {
+                return;
+              }
+              try {
+                long duration = PlayerGUI.this.getDuration();
+                if (duration != -1L && PlayerGUI.this.player.getMediaTime() >= duration) {
+                  PlayerGUI.this.player.setMediaTime(0L);
+                }
+              } catch (MediaException var3) {
+
+              }
+              PlayerGUI.this.player.start();
+              if (PlayerGUI.this.player.getState() >= 400) {
+                PlayerGUI.this.setStatus(I18N.tr("playing"));
+              }
+            } catch (Throwable var4) {
+
+            } finally {
+              playerTaskRunning = false;
+            }
+          }
+        },
+        "PlayerStart");
   }
 
   private void closeResources() {
@@ -446,23 +445,10 @@ public class PlayerGUI implements PlayerListener {
   public void closePlayer() {
     this.stopDisplayTimer();
 
-    if (this.playerThread != null && this.playerThread.isAlive()) {
-      try {
-        this.playerThread.interrupt();
-      } catch (Exception e) {
+    playerTaskRunning = false;
+    endOfMediaTaskRunning = false;
 
-      }
-      this.playerThread = null;
-    }
-
-    if (this.endOfMediaThread != null && this.endOfMediaThread.isAlive()) {
-      try {
-        this.endOfMediaThread.interrupt();
-      } catch (Exception e) {
-
-      }
-      this.endOfMediaThread = null;
-    }
+    ThreadManagerIntegration.clearPlayerQueues();
 
     if (this.player != null) {
       try {
@@ -621,45 +607,54 @@ public class PlayerGUI implements PlayerListener {
       return;
     }
 
+    if (endOfMediaTaskRunning) {
+      return;
+    }
+
     isTransitioning = true;
+    endOfMediaTaskRunning = true;
+
     try {
-      this.endOfMediaThread =
-          new Thread(
-              new Runnable() {
-                public void run() {
-                  try {
-                    switch (repeatMode) {
-                      case REPEAT_ONE:
+      ThreadManagerIntegration.executeEndOfMediaHandling(
+          new Runnable() {
+            public void run() {
+              try {
+                if (!endOfMediaTaskRunning) {
+                  return;
+                }
+                switch (repeatMode) {
+                  case REPEAT_ONE:
+                    closePlayer();
+                    startPlayer();
+                    break;
+                  case REPEAT_ALL:
+                    getNextSong();
+                    break;
+                  case REPEAT_OFF:
+                  default:
+                    if (shuffleMode) {
+                      if (shufflePlayedCount >= shuffleIndices.length) {
+                        closePlayer();
+                        setStatus("");
+                      } else {
+                        getNextShuffleSong();
                         closePlayer();
                         startPlayer();
-                        break;
-                      case REPEAT_ALL:
-                        getNextSong();
-                        break;
-                      case REPEAT_OFF:
-                      default:
-                        if (shuffleMode) {
-                          if (shufflePlayedCount >= shuffleIndices.length) {
-                            closePlayer();
-                            setStatus("");
-                          } else {
-                            getNextShuffleSong();
-                            closePlayer();
-                            startPlayer();
-                          }
-                        } else if (index < listSong.size() - 1) {
-                          getNextSong();
-                        } else {
-                          closePlayer();
-                          setStatus("");
-                        }
-                        break;
+                      }
+                    } else if (index < listSong.size() - 1) {
+                      getNextSong();
+                    } else {
+                      closePlayer();
+                      setStatus("");
                     }
-                  } catch (Throwable t) {
-                  }
+                    break;
                 }
-              });
-      this.endOfMediaThread.start();
+              } catch (Throwable t) {
+              } finally {
+                endOfMediaTaskRunning = false;
+              }
+            }
+          });
     } finally {
       isTransitioning = false;
     }
@@ -722,6 +717,9 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void shutdown() {
+    playerTaskRunning = false;
+    endOfMediaTaskRunning = false;
+
     if (settingsManager != null) {
       settingsManager.shutdown();
     }

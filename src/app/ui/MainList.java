@@ -1,17 +1,16 @@
 package app.ui;
 
 import app.MIDPlay;
-import app.common.Common;
-import app.common.MenuSettingsManager;
-import app.common.ParseData;
+import app.constants.MenuConstants;
 import app.constants.Services;
-import app.interfaces.DataLoader;
-import app.interfaces.LoadDataListener;
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
+import app.core.data.DataLoader;
+import app.core.data.DataParser;
+import app.core.data.LoadDataListener;
+import app.core.data.LoadDataObserver;
+import app.core.settings.MenuSettingsManager;
+import app.core.threading.ThreadManagerIntegration;
 import app.ui.category.CategoryList;
 import app.utils.I18N;
-import app.utils.Utils;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -60,11 +59,11 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   private Command menuVisibilityCommand;
   private Command saveOrderCommand;
   private Command exitCommand;
+
   private MainObserver observer;
   private final String service;
   private boolean isReorderMode = false;
   private int selectedItemIndex = -1;
-  Thread mLoadDataThread;
 
   public MainList(String title, String subtitle, String service) {
     super(title, List.IMPLICIT);
@@ -133,7 +132,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     this.exitCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
     this.addCommand(this.exitCommand);
 
-    Alert alert = new Alert("", I18N.tr("reorder_instructions"), null, AlertType.INFO);
+    Alert alert = new Alert(null, I18N.tr("reorder_instructions"), null, AlertType.INFO);
     alert.setTimeout(2000);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
   }
@@ -157,7 +156,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   private void cancelReorderMode() {
     exitReorderMode();
 
-    final MainList mainList = Utils.createMainMenu(observer, service);
+    final MainList mainList = MenuFactory.createMainMenu(observer, service);
     observer.replaceCurrent(mainList);
   }
 
@@ -191,22 +190,43 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   private void saveCurrentOrder() {
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
-    int count = this.size();
-    int[] newOrder = new int[count];
 
-    for (int i = 0; i < count; i++) {
+    int totalItems;
+    int[] currentOrder;
+    boolean[] visibility;
 
-      String itemText = this.getString(i);
+    if (Services.NCT.equals(service)) {
+      totalItems = MenuConstants.MAIN_MENU_ITEMS_NCT.length;
+      currentOrder = menuSettingsManager.getNctMenuOrder(totalItems);
+      visibility = menuSettingsManager.getNctMenuVisibility(totalItems);
+    } else {
+      totalItems = MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length;
+      currentOrder = menuSettingsManager.getSoundcloudMenuOrder(totalItems);
+      visibility = menuSettingsManager.getSoundcloudMenuVisibility(totalItems);
+    }
 
-      if (selectedItemIndex == i) {
-        itemText = itemText.substring(2);
-      }
+    int[] newOrder = new int[totalItems];
+    System.arraycopy(currentOrder, 0, newOrder, 0, totalItems);
 
-      int originalIndex = findOriginalIndex(itemText);
-      if (originalIndex != -1) {
-        newOrder[i] = originalIndex;
-      } else {
-        newOrder[i] = i;
+    int visibleIndex = 0;
+    for (int i = 0; i < totalItems; i++) {
+      int originalIndex = currentOrder[i];
+      if (originalIndex >= 0 && originalIndex < totalItems && visibility[originalIndex]) {
+        if (visibleIndex < this.size()) {
+
+          String itemText = this.getString(visibleIndex);
+
+          if (selectedItemIndex == visibleIndex) {
+            itemText = itemText.substring(2);
+          }
+
+          int newOriginalIndex = findOriginalIndex(itemText);
+          if (newOriginalIndex != -1) {
+            newOrder[i] = newOriginalIndex;
+          }
+
+          visibleIndex++;
+        }
       }
     }
 
@@ -216,28 +236,21 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
       menuSettingsManager.saveSoundcloudMenuOrder(newOrder);
     }
 
-    Alert alert = new Alert("", I18N.tr("order_saved"), null, AlertType.CONFIRMATION);
+    Alert alert = new Alert(null, I18N.tr("order_saved"), null, AlertType.CONFIRMATION);
     alert.setTimeout(2000);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
   }
 
   private int findOriginalIndex(String itemText) {
     if (Services.NCT.equals(service)) {
-      boolean[] visibility =
-          MenuSettingsManager.getInstance().getNctMenuVisibility(Utils.MAIN_MENU_ITEMS_NCT.length);
-
-      for (int i = 0; i < Utils.MAIN_MENU_ITEMS_NCT.length; i++) {
-        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_NCT[i])) && visibility[i]) {
+      for (int i = 0; i < MenuConstants.MAIN_MENU_ITEMS_NCT.length; i++) {
+        if (itemText.equals(I18N.tr(MenuConstants.MAIN_MENU_ITEMS_NCT[i]))) {
           return i;
         }
       }
     } else {
-      boolean[] visibility =
-          MenuSettingsManager.getInstance()
-              .getSoundcloudMenuVisibility(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
-
-      for (int i = 0; i < Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length; i++) {
-        if (itemText.equals(I18N.tr(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD[i])) && visibility[i]) {
+      for (int i = 0; i < MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length; i++) {
+        if (itemText.equals(I18N.tr(MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD[i]))) {
           return i;
         }
       }
@@ -253,7 +266,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     loadDataAsync(
         new DataLoader() {
           public Vector load() throws Exception {
-            return ParseData.parseCate(2);
+            return DataParser.parseCate(2);
           }
         },
         I18N.tr("genres"),
@@ -293,7 +306,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     loadDataAsync(
         new DataLoader() {
           public Vector load() throws Exception {
-            return ParseData.parsePlaylist(1, 30, type, "0");
+            return DataParser.parsePlaylist(1, 30, type, "0");
           }
         },
         title,
@@ -305,7 +318,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     loadDataAsync(
         new DataLoader() {
           public Vector load() throws Exception {
-            return ParseData.parseBillboard(1, 10);
+            return DataParser.parseBillboard(1, 10);
           }
         },
         I18N.tr("billboard"),
@@ -315,7 +328,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   private void loadDataAsync(
       final DataLoader loader, final String title, final String from, final String itemType) {
-    Common.loadDataAsync(
+    ThreadManagerIntegration.loadDataAsync(
         loader,
         new LoadDataListener() {
           public void loadDataCompleted(Vector items) {
@@ -333,8 +346,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
           public void noData() {
             showErrorMessage(I18N.tr("no_data"));
           }
-        },
-        this.mLoadDataThread);
+        });
   }
 
   private void showErrorMessage(String message) {
@@ -352,16 +364,16 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   private void itemActionNCT() {
     int selectedIndex = this.getSelectedIndex();
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
-    int[] order = menuSettingsManager.getNctMenuOrder(Utils.MAIN_MENU_ITEMS_NCT.length);
+    int[] order = menuSettingsManager.getNctMenuOrder(MenuConstants.MAIN_MENU_ITEMS_NCT.length);
     boolean[] menuVisibility =
-        menuSettingsManager.getNctMenuVisibility(Utils.MAIN_MENU_ITEMS_NCT.length);
+        menuSettingsManager.getNctMenuVisibility(MenuConstants.MAIN_MENU_ITEMS_NCT.length);
 
     int[] visibleToOriginalMap = new int[this.size()];
     int visibleCount = 0;
 
     for (int i = 0; i < order.length; i++) {
       int originalIndex = order[i];
-      if (originalIndex < 0 || originalIndex >= Utils.MAIN_MENU_ITEMS_NCT.length) {
+      if (originalIndex < 0 || originalIndex >= MenuConstants.MAIN_MENU_ITEMS_NCT.length) {
         continue;
       }
 
@@ -406,16 +418,17 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     int selectedIndex = this.getSelectedIndex();
     MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
     int[] order =
-        menuSettingsManager.getSoundcloudMenuOrder(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
+        menuSettingsManager.getSoundcloudMenuOrder(MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
     boolean[] menuVisibility =
-        menuSettingsManager.getSoundcloudMenuVisibility(Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
+        menuSettingsManager.getSoundcloudMenuVisibility(
+            MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length);
 
     int[] visibleToOriginalMap = new int[this.size()];
     int visibleCount = 0;
 
     for (int i = 0; i < order.length; i++) {
       int originalIndex = order[i];
-      if (originalIndex < 0 || originalIndex >= Utils.MAIN_MENU_ITEMS_SOUNDCLOUD.length) {
+      if (originalIndex < 0 || originalIndex >= MenuConstants.MAIN_MENU_ITEMS_SOUNDCLOUD.length) {
         continue;
       }
 
@@ -453,15 +466,11 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
 
   public synchronized void quit() {
     try {
-      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
-        this.mLoadDataThread.interrupt();
+      MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
+      if (menuSettingsManager != null) {
+        menuSettingsManager.shutdown();
       }
-    } catch (Exception var2) {
-    }
-
-    MenuSettingsManager menuSettingsManager = MenuSettingsManager.getInstance();
-    if (menuSettingsManager != null) {
-      menuSettingsManager.shutdown();
+    } catch (Exception e) {
     }
   }
 

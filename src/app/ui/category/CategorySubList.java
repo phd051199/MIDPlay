@@ -1,13 +1,13 @@
 package app.ui.category;
 
-import app.common.Common;
-import app.common.ParseData;
-import app.interfaces.DataLoader;
-import app.interfaces.LoadDataListener;
-import app.interfaces.LoadDataObserver;
-import app.interfaces.MainObserver;
-import app.model.Category;
+import app.core.data.DataLoader;
+import app.core.data.DataParser;
+import app.core.data.LoadDataListener;
+import app.core.data.LoadDataObserver;
+import app.core.threading.ThreadManagerIntegration;
+import app.models.Category;
 import app.ui.MainList;
+import app.ui.MainObserver;
 import app.ui.PlaylistList;
 import app.utils.I18N;
 import java.util.Vector;
@@ -26,7 +26,6 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
   private final Vector subItems;
   private final Vector images;
   private MainObserver observer;
-  private Thread mLoadDataThread;
   private Image defaultImage;
 
   public CategorySubList(String title, Vector subs) {
@@ -95,23 +94,16 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
     this.quit();
   }
 
-  public void quit() {
-    try {
-      if (this.mLoadDataThread != null && this.mLoadDataThread.isAlive()) {
-        this.mLoadDataThread.join();
-      }
-    } catch (InterruptedException var2) {
-    }
-  }
+  public void quit() {}
 
   private void gotoPlaylistByCate(
       final String genKey, final int curPage, final int perPage, final String title) {
     MainList.displayMessage(title, I18N.tr("loading"), "loading", this.observer, this);
 
-    Common.loadDataAsync(
+    ThreadManagerIntegration.loadDataAsync(
         new DataLoader() {
           public Vector load() throws Exception {
-            return ParseData.parsePlaylist(curPage, perPage, "hot,new", genKey);
+            return DataParser.parsePlaylist(curPage, perPage, "hot,new", genKey);
           }
         },
         new LoadDataListener() {
@@ -130,7 +122,6 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
             MainList.displayMessage(
                 title, I18N.tr("no_data"), "error", observer, CategorySubList.this);
           }
-        },
-        this.mLoadDataThread);
+        });
   }
 }

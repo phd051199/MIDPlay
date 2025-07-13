@@ -1,11 +1,9 @@
 package app.ui;
 
 import app.MIDPlay;
-import app.common.SettingManager;
-import app.interfaces.MainObserver;
-import app.model.Song;
+import app.core.settings.SettingsManager;
+import app.models.Song;
 import app.utils.I18N;
-import app.utils.Utils;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Choice;
@@ -18,7 +16,7 @@ import javax.microedition.lcdui.TextField;
 
 public class SettingForm extends Form implements MainObserver, CommandListener {
 
-  private static final SettingManager settingManager = SettingManager.getInstance();
+  private static final SettingsManager settingManager = SettingsManager.getInstance();
   private static ChoiceGroup languageChoice;
   private static ChoiceGroup audioQualityChoice;
   private static ChoiceGroup serviceChoice;
@@ -204,12 +202,12 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
       String backgroundColor = getBackgroundColor();
 
       if (!isValidHexColor(themeColor)) {
-        showAlert("", I18N.tr("color_format_description"));
+        showAlert(I18N.tr("color_format_description"));
         return;
       }
 
       if (!isValidHexColor(backgroundColor)) {
-        showAlert("", I18N.tr("color_format_description"));
+        showAlert(I18N.tr("color_format_description"));
         return;
       }
 
@@ -238,7 +236,7 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
       }
 
       if (languageChanged || serviceChanged) {
-        MainList mainList = Utils.createMainMenu(parent, getSelectedService());
+        MainList mainList = MenuFactory.createMainMenu(parent, getSelectedService());
         if (parent instanceof MIDPlay) {
           ((MIDPlay) parent).clearHistory();
         }
@@ -250,8 +248,8 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
     }
   }
 
-  private void showAlert(String title, String message) {
-    Alert alert = new Alert(title, message, null, AlertType.WARNING);
+  private void showAlert(String message) {
+    Alert alert = new Alert(null, message, null, AlertType.WARNING);
     alert.setTimeout(Alert.FOREVER);
     MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
   }

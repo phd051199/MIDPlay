@@ -1,7 +1,7 @@
 package app.utils;
 
-import app.common.RestClient;
 import app.constants.Constants;
+import app.core.network.RestClient;
 import java.io.IOException;
 import javax.microedition.lcdui.Image;
 
@@ -12,7 +12,7 @@ public class ImageUtils {
       url =
           Constants.SERVICE_URL
               + "/proxy?url="
-              + TextUtil.urlEncodeUTF8(
+              + TextUtils.urlEncodeUTF8(
                   "https://wsrv.nl/?url="
                       + url
                       + "&output=png&w="
