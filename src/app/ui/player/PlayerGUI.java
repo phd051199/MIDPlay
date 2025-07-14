@@ -91,6 +91,10 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
+  public boolean getIsTransitioning() {
+    return isTransitioning;
+  }
+
   private void generateShuffleIndices() {
     if (listSong == null || listSong.isEmpty()) {
       return;
@@ -537,7 +541,7 @@ public class PlayerGUI implements PlayerListener {
     volumeStatusTask =
         new TimerTask() {
           public void run() {
-            parent.setStatus(prevStatus);
+            parent.restoreStatusAfterVolume(prevStatus);
           }
         };
 

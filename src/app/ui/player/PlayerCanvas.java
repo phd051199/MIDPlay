@@ -12,6 +12,7 @@ import app.ui.FavoritesList;
 import app.ui.MainObserver;
 import app.ui.SongList;
 import app.utils.I18N;
+import app.utils.TextUtils;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -39,6 +40,8 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       new Command(I18N.tr("add_to_playlist"), Command.SCREEN, 8);
   private final Command showPlaylistCommand =
       new Command(I18N.tr("show_playlist"), Command.SCREEN, 9);
+  private final Command sleepTimerCommand = new Command(I18N.tr("sleep_timer"), Command.SCREEN, 10);
+  private Command cancelTimerCommand;
   private Command repeatCommand;
   private Command shuffleCommand;
 
@@ -47,6 +50,10 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   private MainObserver parent;
   private String status = "";
   private final FavoritesManager favoritesManager;
+  private final SleepTimerManager sleepTimerManager = SleepTimerManager.getInstance();
+  private String originalStatus = "";
+  private String realPlayerStatus = "";
+  private boolean timerOverrideActive = false;
 
   int displayWidth = -1;
   int displayHeight = -1;
@@ -130,6 +137,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
 
     this.touchSupported = this.hasPointerEvents();
 
+    this.setupSleepTimerCallback();
     this.change(title, lst, index, this.playlist);
   }
 
@@ -165,12 +173,56 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   }
 
   public void setStatus(String s) {
-    this.status = s;
+
+    if (s != null
+        && s.indexOf(I18N.tr("timer_remaining").substring(0, 3)) == -1
+        && s.indexOf(I18N.tr("volume")) == -1) {
+      this.realPlayerStatus = s;
+    }
+
+    if (!timerOverrideActive) {
+      this.status = s;
+      this.originalStatus = s;
+    } else if (isCriticalStatus(s)) {
+      this.status = s;
+      this.originalStatus = s;
+      this.timerOverrideActive = false;
+    }
     this.updateDisplay();
+  }
+
+  private boolean isCriticalStatus(String status) {
+    return status != null
+        && (status.indexOf(I18N.tr("loading")) != -1
+            || status.toLowerCase().indexOf("error") != -1
+            || status.indexOf(I18N.tr("volume")) != -1);
   }
 
   public String getStatus() {
     return this.status;
+  }
+
+  public void restoreStatusAfterVolume(String previousStatus) {
+
+    this.originalStatus = this.realPlayerStatus;
+
+    if (sleepTimerManager.isActive()) {
+      if (realPlayerStatus.equals(I18N.tr("playing"))
+          || realPlayerStatus.equals(I18N.tr("paused"))) {
+        String remaining = sleepTimerManager.getRemainingTime();
+        String timerStatus = TextUtils.replace(I18N.tr("timer_remaining"), "{0}", remaining);
+        this.timerOverrideActive = true;
+        this.status = timerStatus;
+      } else {
+        this.timerOverrideActive = false;
+        this.status = realPlayerStatus;
+      }
+    } else {
+      this.timerOverrideActive = false;
+      this.status = realPlayerStatus;
+    }
+
+    this.updateDisplay();
   }
 
   public void updateDisplay() {
@@ -189,11 +241,8 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       this.gui = null;
     }
 
+    sleepTimerManager.shutdown();
     ThreadManagerIntegration.clearPlayerQueues();
-  }
-
-  private boolean isLoading() {
-    return this.status.indexOf(I18N.tr("loading")) != -1;
   }
 
   private synchronized PlayerGUI getGUI() {
@@ -294,7 +343,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   }
 
   protected void pointerPressed(int x, int y) {
-    if (!this.touchSupported || this.isLoading()) {
+    if (!this.touchSupported || this.getGUI().getIsTransitioning()) {
       return;
     }
 
@@ -336,7 +385,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
   }
 
   private void handleAction(int action) {
-    if (this.isLoading()) {
+    if (this.getGUI().getIsTransitioning()) {
       return;
     }
 
@@ -816,7 +865,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     if (c == this.backCommand) {
       this.observer.goBack();
     } else if (c == this.nextCommand) {
-      if (!this.isLoading()) {
+      if (!this.getGUI().getIsTransitioning()) {
         try {
           this.goNext = true;
           this.timeNext = System.currentTimeMillis();
@@ -825,7 +874,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
         }
       }
     } else if (c == this.prevCommand) {
-      if (!this.isLoading()) {
+      if (!this.getGUI().getIsTransitioning()) {
         try {
           this.goBack = true;
           this.timeBack = System.currentTimeMillis();
@@ -834,7 +883,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
         }
       }
     } else if (c == this.playCommand || c == this.pauseCommand) {
-      if (!this.isLoading()) {
+      if (!this.getGUI().getIsTransitioning()) {
         this.getGUI().togglePlayer();
       }
     } else if (c == this.stopCommand) {
@@ -849,6 +898,10 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
       showAddToPlaylistDialog();
     } else if (c == this.showPlaylistCommand) {
       showCurrentPlaylist();
+    } else if (c == this.sleepTimerCommand) {
+      showSleepTimerDialog();
+    } else if (c == this.cancelTimerCommand) {
+      sleepTimerManager.cancelTimer();
     }
   }
 
@@ -979,6 +1032,7 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
     this.addCommand(this.stopCommand);
     this.addCommand(this.addToPlaylistCommand);
     this.addCommand(this.showPlaylistCommand);
+    updateTimerCommands();
 
     if (this.repeatCommand == null) {
       this.repeatCommand =
@@ -991,6 +1045,201 @@ public final class PlayerCanvas extends Canvas implements CommandListener, LoadD
           new Command(I18N.tr("shuffle") + ": " + I18N.tr("off"), Command.SCREEN, 6);
       this.addCommand(this.shuffleCommand);
     }
+  }
+
+  private void showSleepTimerDialog() {
+    SleepTimerForm sleepTimerForm =
+        new SleepTimerForm(
+            this.observer,
+            new SleepTimerForm.SleepTimerCallback() {
+              public void onTimerSet(
+                  final int mode,
+                  final int durationMinutes,
+                  final int targetHour,
+                  final int targetMinute,
+                  final int action) {
+
+                observer.goBack();
+
+                ThreadManagerIntegration.executeBackgroundTask(
+                    new Runnable() {
+                      public void run() {
+                        try {
+                          if (mode == SleepTimerForm.MODE_COUNTDOWN) {
+                            sleepTimerManager.startCountdownTimer(durationMinutes, action);
+                            final String message =
+                                TextUtils.replace(
+                                    I18N.tr("timer_set_success"),
+                                    "{0}",
+                                    durationMinutes + " " + I18N.tr("minutes"));
+
+                            ThreadManagerIntegration.executeUITask(
+                                new Runnable() {
+                                  public void run() {
+                                    showAlert(message, AlertType.CONFIRMATION);
+                                    updateTimerCommands();
+                                    updateSleepTimerStatus();
+                                  }
+                                },
+                                "TimerSetupUI");
+                          } else {
+                            sleepTimerManager.startAbsoluteTimer(targetHour, targetMinute, action);
+                            final String timeStr =
+                                (targetHour < 10 ? "0" : "")
+                                    + targetHour
+                                    + ":"
+                                    + (targetMinute < 10 ? "0" : "")
+                                    + targetMinute;
+                            final String message =
+                                TextUtils.replace(I18N.tr("timer_set_success"), "{0}", timeStr);
+
+                            ThreadManagerIntegration.executeUITask(
+                                new Runnable() {
+                                  public void run() {
+                                    showAlert(message, AlertType.CONFIRMATION);
+                                    updateTimerCommands();
+                                    updateSleepTimerStatus();
+                                  }
+                                },
+                                "TimerSetupUI");
+                          }
+                        } catch (Exception e) {
+                          ThreadManagerIntegration.executeUITask(
+                              new Runnable() {
+                                public void run() {
+                                  showAlert(I18N.tr("error"), AlertType.ERROR);
+                                }
+                              },
+                              "TimerSetupError");
+                        }
+                      }
+                    },
+                    "SleepTimerSetup");
+              }
+            });
+    this.observer.go(sleepTimerForm);
+  }
+
+  private void setupSleepTimerCallback() {
+    sleepTimerManager.setCallback(
+        new SleepTimerManager.SleepTimerCallback() {
+          public void onTimerExpired(int action) {
+            timerOverrideActive = false;
+            if (action == SleepTimerForm.ACTION_STOP_PLAYBACK) {
+              if (gui != null) {
+                gui.pausePlayer();
+                setStatus(I18N.tr("pause"));
+              }
+            } else if (action == SleepTimerForm.ACTION_EXIT_APP) {
+              setStatus(I18N.tr("timer_expired_exit"));
+            }
+            updateTimerCommands();
+          }
+
+          public void onTimerUpdate(String remainingTime) {
+
+            if (!isVolumeStatusShowing()) {
+              updateSleepTimerDisplay();
+            } else {
+
+              scheduleDelayedTimerUpdate();
+            }
+          }
+
+          public void onTimerCancelled() {
+            timerOverrideActive = false;
+            setStatus(originalStatus);
+            updateTimerCommands();
+          }
+        });
+  }
+
+  private void updateTimerCommands() {
+    if (this.cancelTimerCommand != null) {
+      this.removeCommand(this.cancelTimerCommand);
+      this.cancelTimerCommand = null;
+    }
+
+    if (sleepTimerManager.isActive()) {
+      this.removeCommand(this.sleepTimerCommand);
+      this.cancelTimerCommand = new Command(I18N.tr("cancel_timer"), Command.SCREEN, 11);
+      this.addCommand(this.cancelTimerCommand);
+    } else {
+      this.addCommand(this.sleepTimerCommand);
+    }
+  }
+
+  private void updateSleepTimerDisplay() {
+    if (sleepTimerManager.isActive()) {
+      String remaining = sleepTimerManager.getRemainingTime();
+      String timerStatus = TextUtils.replace(I18N.tr("timer_remaining"), "{0}", remaining);
+
+      if (originalStatus.equals(I18N.tr("playing")) || originalStatus.equals(I18N.tr("paused"))) {
+        boolean wasActive = timerOverrideActive;
+        String previousStatus = status;
+
+        timerOverrideActive = true;
+        status = timerStatus;
+
+        if (!wasActive || !timerStatus.equals(previousStatus)) {
+          updateDisplay();
+        }
+      }
+    } else {
+      if (timerOverrideActive) {
+        timerOverrideActive = false;
+        status = originalStatus;
+        updateDisplay();
+      }
+    }
+  }
+
+  private boolean isVolumeStatusShowing() {
+    return status != null && status.indexOf(I18N.tr("volume")) != -1;
+  }
+
+  private void scheduleDelayedTimerUpdate() {
+
+    ThreadManagerIntegration.scheduleDelayedTask(
+        new Runnable() {
+          public void run() {
+            ThreadManagerIntegration.executeUITask(
+                new Runnable() {
+                  public void run() {
+                    if (sleepTimerManager.isActive() && !isVolumeStatusShowing()) {
+                      updateSleepTimerDisplay();
+                    }
+                  }
+                },
+                "DelayedTimerUpdate");
+          }
+        },
+        "DelayedTimerUpdateScheduler",
+        1200);
+  }
+
+  private void forceUpdateSleepTimerDisplay() {
+    if (sleepTimerManager.isActive()) {
+      String remaining = sleepTimerManager.getRemainingTime();
+      String timerStatus = TextUtils.replace(I18N.tr("timer_remaining"), "{0}", remaining);
+
+      if (!isCriticalStatus(status)) {
+        timerOverrideActive = true;
+        status = timerStatus;
+        updateDisplay();
+      }
+    } else {
+      if (timerOverrideActive) {
+        timerOverrideActive = false;
+        status = originalStatus;
+        updateDisplay();
+      }
+    }
+  }
+
+  private void updateSleepTimerStatus() {
+    updateSleepTimerDisplay();
+    updateTimerCommands();
   }
 
   public void cancel() {
