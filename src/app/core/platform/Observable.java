@@ -22,7 +22,7 @@ public class Observable {
   }
 
   public void notifyObservers() {
-    this.notifyObservers((Object) null);
+    this.notifyObservers(null);
   }
 
   public void notifyObservers(Object arg) {

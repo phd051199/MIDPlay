@@ -492,7 +492,7 @@ public class FavoritesList extends List
                 favorites.removeElementAt(selectedIndex);
                 images.removeElementAt(selectedIndex);
                 delete(selectedIndex);
-                showAlert(I18N.tr("removed_from_favorites"), AlertType.CONFIRMATION);
+                showAlert(I18N.tr("alert_removed_from_favorites"), AlertType.CONFIRMATION);
               }
             }
 
@@ -562,7 +562,7 @@ public class FavoritesList extends List
           public void onCustomPlaylistCreated() {
             if (!isDestroyed) {
               loadFavorites();
-              showAlert(I18N.tr("removed_from_favorites"), AlertType.CONFIRMATION);
+              showAlert(I18N.tr("alert_playlist_created"), AlertType.CONFIRMATION);
             }
           }
 
@@ -648,7 +648,7 @@ public class FavoritesList extends List
                 if (index >= 0) {
                   set(index, newName, (Image) images.elementAt(index));
                 }
-                showAlert(I18N.tr("removed_from_favorites"), AlertType.CONFIRMATION);
+                showAlert(I18N.tr("alert_playlist_renamed"), AlertType.CONFIRMATION);
               } catch (Exception e) {
                 showAlert(I18N.tr("alert_error_renaming_playlist"), AlertType.ERROR);
               }

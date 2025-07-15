@@ -6,18 +6,16 @@ A feature-rich online music player application developed using J2ME (Java Micro 
 
 ## Features
 
-- Stream music from multiple sources (NCT Music, SoundCloud)
+- Stream music from multiple sources (NCT, SoundCloud, YouTube Music, Spotify)
 - Browse music by categories and playlists
 - Search for songs, artists, and albums
 - Create and manage favorites
 - Multi-language support
-- Low resource consumption for feature phones
 
 ## System Requirements
 
 - Device supporting J2ME MIDP 2.0
 - CLDC 1.1
-- Minimum 512KB heap memory
 - Network connectivity for streaming
 
 ## Installation

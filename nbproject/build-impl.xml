@@ -779,9 +779,9 @@
     </target>
     <!--cldc-run-->
     <target name="cldc-run" if="cldc-platform.trigger">
-        <exec executable="java" dir="${basedir}">
+        <exec executable="${platform.java.home}" dir="${basedir}">
             <arg value="-jar"/>
-            <arg value="C:/kemnnx64/KEmulator.jar"/>
+            <arg value="${platform.java.emulator}"/>
             <arg value="${dist.dir}/${dist.jad}"/>
         </exec>
     </target>
@@ -900,11 +900,11 @@
         <freePortRetriever debuggerPortProperty="jpda.port"/>
         <echo message="Starting MicroEmulator in debug mode. Attaching debugger to port: ${jpda.port}"/>
         <parallel>
-            <exec executable="java" failonerror="true">
+            <exec executable="${platform.java.home}" failonerror="true">
                 <arg value="-Xdebug"/>
                 <arg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=${jpda.port}"/>
                 <arg value="-jar"/>
-                <arg path="C:/kemnnx64/KEmulator.jar"/>
+                <arg path="${platform.java.emulator}"/>
                 <arg path="${dist.dir}/${dist.jad}"/>
             </exec>
             <sequential>

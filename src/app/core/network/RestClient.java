@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import javax.microedition.io.Connection;
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
 
@@ -203,7 +204,7 @@ public class RestClient {
         } else if (closeable instanceof OutputStream) {
           ((OutputStream) closeable).close();
         } else if (closeable instanceof HttpConnection) {
-          ((HttpConnection) closeable).close();
+          ((Connection) closeable).close();
         }
       } catch (IOException ignore) {
       }

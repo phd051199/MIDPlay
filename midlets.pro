@@ -1,5 +1,5 @@
--injars  C:/Mac/Home/Documents/NetBeansProjects/MIDPlay/dist/MIDPlay_midlet.jar
--outjars C:/Mac/Home/Documents/NetBeansProjects/MIDPlay/dist/MIDPlay.jar
+-injars  dist/MIDPlay_midlet.jar
+-outjars dist/MIDPlay.jar
 
 -libraryjars C:/Java_ME_platform_SDK_3.4/lib/cldc_1.1.jar
 -libraryjars C:/Java_ME_platform_SDK_3.4/lib/midp_2.0.jar

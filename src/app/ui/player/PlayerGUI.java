@@ -91,6 +91,10 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
+  public boolean getIsTransitioning() {
+    return isTransitioning;
+  }
+
   private void generateShuffleIndices() {
     if (listSong == null || listSong.isEmpty()) {
       return;
@@ -382,10 +386,12 @@ public class PlayerGUI implements PlayerListener {
               if (!playerTaskRunning) {
                 return;
               }
-              if (PlayerGUI.this.player == null || PlayerGUI.this.player.getState() < 300) {
+              if (PlayerGUI.this.player == null
+                  || PlayerGUI.this.player.getState() < Player.PREFETCHED) {
                 PlayerGUI.this.assertPlayer();
               }
-              if (PlayerGUI.this.player == null || PlayerGUI.this.player.getState() >= 400) {
+              if (PlayerGUI.this.player == null
+                  || PlayerGUI.this.player.getState() >= Player.STARTED) {
                 return;
               }
               try {
@@ -396,7 +402,7 @@ public class PlayerGUI implements PlayerListener {
               } catch (MediaException e) {
               }
               PlayerGUI.this.player.start();
-              if (PlayerGUI.this.player.getState() >= 400) {
+              if (PlayerGUI.this.player.getState() >= Player.STARTED) {
                 PlayerGUI.this.setStatus(I18N.tr("playing"));
               }
             } catch (Throwable e) {
@@ -537,7 +543,7 @@ public class PlayerGUI implements PlayerListener {
     volumeStatusTask =
         new TimerTask() {
           public void run() {
-            parent.setStatus(prevStatus);
+            parent.restoreStatusAfterVolume(prevStatus);
           }
         };
 

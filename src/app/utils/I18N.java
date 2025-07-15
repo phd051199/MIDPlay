@@ -65,6 +65,11 @@ public class I18N {
               if (equalIndex > 0) {
                 String key = line.substring(0, equalIndex).trim();
                 String value = line.substring(equalIndex + 1).trim();
+
+                if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+                  value = value.substring(1, value.length() - 1);
+                }
+
                 resources.put(key, value);
               }
             }
