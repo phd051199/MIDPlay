@@ -5,6 +5,7 @@ import app.core.threading.ThreadManagerIntegration;
 import app.models.Playlist;
 import app.models.Song;
 import app.ui.FavoritesList;
+import app.utils.SongPool;
 import java.util.Vector;
 import javax.microedition.rms.RecordEnumeration;
 import org.json.me.JSONObject;
@@ -367,7 +368,7 @@ public class FavoritesManager {
 
             if (relationJson.has("playlistId")
                 && relationJson.getString("playlistId").equals(playlistId)) {
-              Song song = new Song();
+              Song song = SongPool.getInstance().borrowSong();
               song.setSongId(relationJson.getString("songId"));
               song.setSongName(relationJson.getString("name"));
               song.setArtistName(relationJson.getString("artist"));
