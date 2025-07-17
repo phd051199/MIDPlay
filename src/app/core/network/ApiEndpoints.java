@@ -65,28 +65,29 @@ public class ApiEndpoints {
     try {
       String baseUrl = AppConstants.SERVICE_URL + "/playlist?";
       if (baseUrl != null) {
-        String url = baseUrl + "page=" + pageIndex;
-        url = url + "&pageSize=" + pageSize;
+        StringBuffer urlBuffer = new StringBuffer(baseUrl);
+        urlBuffer.append("page=").append(pageIndex);
+        urlBuffer.append("&pageSize=").append(pageSize);
 
         if (type != null && type.length() > 0) {
-          url = url + "&type=" + type;
+          urlBuffer.append("&type=").append(type);
         }
 
         if (genreKey != null && genreKey.length() > 0) {
-          url = url + "&key=" + genreKey;
+          urlBuffer.append("&key=").append(genreKey);
         }
 
         String language = I18N.getLanguage();
         if (language != null && language.length() > 0) {
-          url = url + "&lang=" + language;
+          urlBuffer.append("&lang=").append(language);
         }
 
         String service = SettingsManager.getInstance().getCurrentService();
         if (service != null && service.length() > 0) {
-          url = url + "&service=" + service;
+          urlBuffer.append("&service=").append(service);
         }
 
-        return url;
+        return urlBuffer.toString();
       }
     } catch (Exception e) {
     }
@@ -95,13 +96,14 @@ public class ApiEndpoints {
   }
 
   public static String getChatEndpoint(String message, String sessionId) {
-    String client = AppConstants.SERVICE_URL + "/chat?";
-    if (client != null) {
+    String baseUrl = AppConstants.SERVICE_URL + "/chat?";
+    if (baseUrl != null) {
       try {
-        client = client + "lang=" + I18N.getLanguage();
-        client = client + "&m=" + TextUtils.urlEncodeUTF8(message);
-        client = client + "&sessionId=" + sessionId;
-        return client;
+        StringBuffer urlBuffer = new StringBuffer(baseUrl);
+        urlBuffer.append("lang=").append(I18N.getLanguage());
+        urlBuffer.append("&m=").append(TextUtils.urlEncodeUTF8(message));
+        urlBuffer.append("&sessionId=").append(sessionId);
+        return urlBuffer.toString();
       } catch (Exception e) {
       }
     }
@@ -110,15 +112,18 @@ public class ApiEndpoints {
   }
 
   public static String getSongByPlaylist(String listKey, String userName, String type) {
-    String client = AppConstants.SERVICE_URL + "/tracks?";
-    if (client != null) {
+    String baseUrl = AppConstants.SERVICE_URL + "/tracks?";
+    if (baseUrl != null) {
       try {
-        client = client + "listkey=" + listKey;
-        client = client + "&quality=" + SettingsManager.getInstance().getCurrentAudioQuality();
-        client = client + "&type=" + type;
-        client = client + "&lang=" + I18N.getLanguage();
-        client = client + "&service=" + SettingsManager.getInstance().getCurrentService();
-        return client;
+        StringBuffer urlBuffer = new StringBuffer(baseUrl);
+        urlBuffer.append("listkey=").append(listKey);
+        urlBuffer
+            .append("&quality=")
+            .append(SettingsManager.getInstance().getCurrentAudioQuality());
+        urlBuffer.append("&type=").append(type);
+        urlBuffer.append("&lang=").append(I18N.getLanguage());
+        urlBuffer.append("&service=").append(SettingsManager.getInstance().getCurrentService());
+        return urlBuffer.toString();
       } catch (Exception e) {
       }
     }
@@ -127,11 +132,12 @@ public class ApiEndpoints {
   }
 
   public static String getCategory(int type) {
-    String client = AppConstants.SERVICE_URL + "/genre?";
-    if (client != null) {
+    String baseUrl = AppConstants.SERVICE_URL + "/genre?";
+    if (baseUrl != null) {
       try {
-        client = client + "lang=" + I18N.getLanguage();
-        return client;
+        StringBuffer urlBuffer = new StringBuffer(baseUrl);
+        urlBuffer.append("lang=").append(I18N.getLanguage());
+        return urlBuffer.toString();
       } catch (Exception e) {
       }
     }
@@ -141,15 +147,16 @@ public class ApiEndpoints {
 
   public static String getSearchData(
       String type, String keyword, String genreKey, int pageIndex, int pageSize) {
-    String client = AppConstants.SERVICE_URL + "/search?";
-    if (client != null) {
+    String baseUrl = AppConstants.SERVICE_URL + "/search?";
+    if (baseUrl != null) {
       try {
-        client = client + "q=" + TextUtils.urlEncodeUTF8(keyword);
-        client = client + "&page=" + pageIndex;
-        client = client + "&type=" + type;
-        client = client + "&lang=" + I18N.getLanguage();
-        client = client + "&service=" + SettingsManager.getInstance().getCurrentService();
-        return client;
+        StringBuffer urlBuffer = new StringBuffer(baseUrl);
+        urlBuffer.append("q=").append(TextUtils.urlEncodeUTF8(keyword));
+        urlBuffer.append("&page=").append(pageIndex);
+        urlBuffer.append("&type=").append(type);
+        urlBuffer.append("&lang=").append(I18N.getLanguage());
+        urlBuffer.append("&service=").append(SettingsManager.getInstance().getCurrentService());
+        return urlBuffer.toString();
       } catch (Exception e) {
       }
     }
@@ -158,14 +165,17 @@ public class ApiEndpoints {
   }
 
   public static String getSearchTracks(String keyword) {
-    String client = AppConstants.SERVICE_URL + "/tracks/search?";
-    if (client != null) {
+    String baseUrl = AppConstants.SERVICE_URL + "/tracks/search?";
+    if (baseUrl != null) {
       try {
-        client = client + "q=" + TextUtils.urlEncodeUTF8(keyword);
-        client = client + "&lang=" + I18N.getLanguage();
-        client = client + "&service=" + SettingsManager.getInstance().getCurrentService();
-        client = client + "&quality=" + SettingsManager.getInstance().getCurrentAudioQuality();
-        return client;
+        StringBuffer urlBuffer = new StringBuffer(baseUrl);
+        urlBuffer.append("q=").append(TextUtils.urlEncodeUTF8(keyword));
+        urlBuffer.append("&lang=").append(I18N.getLanguage());
+        urlBuffer.append("&service=").append(SettingsManager.getInstance().getCurrentService());
+        urlBuffer
+            .append("&quality=")
+            .append(SettingsManager.getInstance().getCurrentAudioQuality());
+        return urlBuffer.toString();
       } catch (Exception e) {
       }
     }

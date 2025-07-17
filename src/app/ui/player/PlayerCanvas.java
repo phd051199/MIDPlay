@@ -481,7 +481,9 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     while (len > 0) {
       String truncated = text.substring(0, len);
       if (g.getFont().stringWidth(truncated) <= availableWidth) {
-        return truncated + ellipsis;
+        StringBuffer result = new StringBuffer(truncated);
+        result.append(ellipsis);
+        return result.toString();
       }
       len--;
     }
@@ -491,9 +493,11 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
 
   private String timeDisplay(long us) {
     long ts = us / 100000L;
-    return this.formatNumber(ts / 600L, 2, true)
-        + ":"
-        + this.formatNumber(ts % 600L / 10L, 2, true);
+    StringBuffer timeBuffer = new StringBuffer();
+    timeBuffer.append(this.formatNumber(ts / 600L, 2, true));
+    timeBuffer.append(":");
+    timeBuffer.append(this.formatNumber(ts % 600L / 10L, 2, true));
+    return timeBuffer.toString();
   }
 
   private String formatNumber(long num, int len, boolean leadingZeros) {
@@ -848,7 +852,9 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
         }
 
         Image shuffleImg =
-            this.getPlayerGUI().isShuffleMode() ? this.getShuffleImage() : this.getShuffleOffImage();
+            this.getPlayerGUI().isShuffleMode()
+                ? this.getShuffleImage()
+                : this.getShuffleOffImage();
         if (shuffleImg != null) {
           g.drawImage(shuffleImg, this.shuffleButtonX, this.shuffleButtonY, 3);
         }

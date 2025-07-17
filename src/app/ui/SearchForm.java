@@ -9,6 +9,7 @@ import app.core.settings.SearchSettingsManager;
 import app.core.threading.ThreadManagerIntegration;
 import app.models.Playlist;
 import app.utils.I18N;
+import app.utils.PlaylistPool;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -125,7 +126,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
             if (SearchForm.this.searchType.equals("track")) {
               String searchResultsTitle =
                   I18N.tr("search_results") + ": " + SearchForm.this.keyWord;
-              Playlist searchPlaylist = new Playlist();
+              Playlist searchPlaylist = PlaylistPool.getInstance().borrowPlaylist();
               searchPlaylist.setName(searchResultsTitle);
               searchPlaylist.setId("search");
 

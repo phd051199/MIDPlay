@@ -2,7 +2,6 @@ package app.utils;
 
 import java.io.InputStream;
 import java.util.Hashtable;
-import java.util.Vector;
 import javax.microedition.midlet.MIDlet;
 
 public class I18N {
@@ -101,18 +100,24 @@ public class I18N {
       return new String[0];
     }
 
-    Vector result = new Vector();
+    int count = 1;
+    for (int i = 0; i < str.length(); i++) {
+      if (str.charAt(i) == delimiter) {
+        count++;
+      }
+    }
+
+    String[] result = new String[count];
     int start = 0;
     int end;
+    int index = 0;
     while ((end = str.indexOf(delimiter, start)) != -1) {
-      result.addElement(str.substring(start, end));
+      result[index++] = str.substring(start, end);
       start = end + 1;
     }
-    result.addElement(str.substring(start));
+    result[index] = str.substring(start);
 
-    String[] arr = new String[result.size()];
-    result.copyInto(arr);
-    return arr;
+    return result;
   }
 
   public static String getLanguageName(String languageCode) {

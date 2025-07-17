@@ -23,7 +23,7 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
   private Command nowPlayingCommand;
   private Command searchCommand;
 
-  Vector images;
+  Image[] images;
   public int selectedItem = 0;
   Vector cateItems;
   private MainObserver observer;
@@ -35,7 +35,6 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
     this.loadDefaultImage();
     this.initCommands();
     this.cateItems = new Vector();
-    this.images = new Vector();
     this.cateItems = items;
     this.initComponents();
     this.setCommandListener(this);
@@ -94,17 +93,19 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
 
   private void createImages() {
     try {
-      this.images.removeAllElements();
-      for (int i = 0; i < this.cateItems.size(); ++i) {
-        this.images.addElement(this.defaultImage);
+      int size = this.cateItems.size();
+      this.images = new Image[size];
+      for (int i = 0; i < size; ++i) {
+        this.images[i] = this.defaultImage;
       }
     } catch (Exception e) {
     }
   }
 
   public Image getImage(int index) {
-    return (Image)
-        (this.images != null && this.images.size() > index ? this.images.elementAt(index) : null);
+    return (this.images != null && this.images.length > index && index >= 0)
+        ? this.images[index]
+        : null;
   }
 
   public void setObserver(MainObserver _observer) {

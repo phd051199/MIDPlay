@@ -11,6 +11,7 @@ import app.core.settings.SettingsManager;
 import app.core.threading.ThreadManagerIntegration;
 import app.models.Playlist;
 import app.utils.I18N;
+import app.utils.PlaylistPool;
 import app.utils.image.ImageLoadCallback;
 import app.utils.image.ImageLoadRequest;
 import app.utils.image.ImageLoader;
@@ -376,7 +377,7 @@ public class FavoritesList extends List
           return;
         }
 
-        final Playlist playlist = new Playlist();
+        final Playlist playlist = PlaylistPool.getInstance().borrowPlaylist();
         playlist.setId(selected.getString("id"));
         playlist.setName(selected.getString("name"));
 

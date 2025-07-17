@@ -6,6 +6,8 @@ import app.models.Category;
 import app.models.Playlist;
 import app.models.Song;
 import app.utils.I18N;
+import app.utils.PlaylistPool;
+import app.utils.SongPool;
 import java.io.IOException;
 import java.util.Vector;
 import org.json.me.JSONArray;
@@ -106,6 +108,7 @@ public class DataParser {
 
   private static Vector parsePlaylists(String key, String jsonResult) {
     Vector playlistItems = new Vector();
+    PlaylistPool playlistPool = PlaylistPool.getInstance();
 
     try {
       JSONObject json = new JSONObject(jsonResult);
@@ -114,13 +117,13 @@ public class DataParser {
 
       for (int i = 0; i < total; ++i) {
         String playlistJSON = jsonArray.getString(i);
-        Playlist playlist = new Playlist();
+        Playlist playlist = playlistPool.borrowPlaylist();
         playlist.fromJSON(playlistJSON);
         playlistItems.addElement(playlist);
       }
 
       if ("yes".equals(json.getString("GetMore"))) {
-        Playlist more = new Playlist();
+        Playlist more = playlistPool.borrowPlaylist();
         more.setName(I18N.tr("load_more"));
         more.setId(key);
         playlistItems.addElement(more);
@@ -202,6 +205,7 @@ public class DataParser {
 
   private static Vector parsePlaylistSongs(String jsonResult) {
     Vector songItems = new Vector();
+    SongPool songPool = SongPool.getInstance();
 
     if (jsonResult == null || jsonResult.trim().length() == 0) {
       return songItems;
@@ -225,7 +229,7 @@ public class DataParser {
         try {
           String songJSON = jsonArray.getString(i);
           if (songJSON != null && songJSON.trim().length() > 0) {
-            Song song = new Song();
+            Song song = songPool.borrowSong();
             song.fromJSON(songJSON);
             songItems.addElement(song);
           }

@@ -27,17 +27,11 @@ import javax.microedition.midlet.MIDletStateChangeException;
 
 public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
 
-  private static final String EMPTY_STRING = "";
-  private static final int MAX_HISTORY_SIZE = 10;
-
   private static MIDPlay instance;
   private static String appVersion = "";
 
-  private final Vector navigationHistory = new Vector(MAX_HISTORY_SIZE);
-  private Displayable currentDisplayable;
-
-  private Command downloadUpdateCommand;
-  private Command cancelUpdateCommand;
+  private static final String EMPTY_STRING = "";
+  private static final int MAX_HISTORY_SIZE = 10;
 
   public static MIDPlay getInstance() {
     return instance;
@@ -46,6 +40,12 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   public static String getAppVersion() {
     return appVersion;
   }
+
+  private final Vector navigationHistory = new Vector(MAX_HISTORY_SIZE);
+  private Displayable currentDisplayable;
+
+  private Command downloadUpdateCommand;
+  private Command cancelUpdateCommand;
 
   public MIDPlay() {
     instance = this;

@@ -104,7 +104,6 @@ public class RestClient {
       conn = (HttpConnection) Connector.open(url, Connector.READ_WRITE, true);
       conn.setRequestMethod(method);
       conn.setRequestProperty("User-Agent", getUserAgent());
-      conn.setRequestProperty("Connection", "close");
       return conn;
     } catch (Exception e) {
       if (conn != null) {

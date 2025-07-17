@@ -9,6 +9,7 @@ import app.core.settings.SettingsManager;
 import app.core.threading.ThreadManagerIntegration;
 import app.models.Playlist;
 import app.utils.I18N;
+import app.utils.PlaylistPool;
 import app.utils.TextUtils;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -544,40 +545,49 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   private Vector wrapText(String text, Font font, int maxWidth) {
     Vector lines = new Vector();
     String[] words = splitBySpace(text);
-    String currentLine = "";
 
+    StringBuffer currentLineBuffer = new StringBuffer();
     for (int i = 0; i < words.length; i++) {
       String word = words[i];
       if (word.equals("\n")) {
-        lines.addElement(currentLine);
-        currentLine = "";
+        lines.addElement(currentLineBuffer.toString());
+        currentLineBuffer = new StringBuffer();
         continue;
       }
 
       if (font.stringWidth(word) > maxWidth) {
         for (int j = 0; j < word.length(); j++) {
           String ch = word.substring(j, j + 1);
-          if (font.stringWidth(currentLine + ch) > maxWidth && currentLine.length() > 0) {
-            lines.addElement(currentLine);
-            currentLine = "";
+          StringBuffer testBuffer = new StringBuffer(currentLineBuffer.toString());
+          testBuffer.append(ch);
+          if (font.stringWidth(testBuffer.toString()) > maxWidth
+              && currentLineBuffer.length() > 0) {
+            lines.addElement(currentLineBuffer.toString());
+            currentLineBuffer = new StringBuffer();
           }
-          currentLine += ch;
+          currentLineBuffer.append(ch);
         }
         continue;
       }
 
-      String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
-
-      if (font.stringWidth(testLine) > maxWidth && currentLine.length() > 0) {
-        lines.addElement(currentLine);
-        currentLine = word;
+      StringBuffer testLineBuffer = new StringBuffer();
+      if (currentLineBuffer.length() == 0) {
+        testLineBuffer.append(word);
       } else {
-        currentLine = testLine;
+        testLineBuffer.append(currentLineBuffer.toString()).append(" ").append(word);
+      }
+
+      if (font.stringWidth(testLineBuffer.toString()) > maxWidth
+          && currentLineBuffer.length() > 0) {
+        lines.addElement(currentLineBuffer.toString());
+        currentLineBuffer = new StringBuffer(word);
+      } else {
+        currentLineBuffer = testLineBuffer;
       }
     }
 
-    if (currentLine.length() > 0) {
-      lines.addElement(currentLine);
+    if (currentLineBuffer.length() > 0) {
+      lines.addElement(currentLineBuffer.toString());
     }
 
     return lines;
@@ -672,7 +682,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
               new LoadDataListener() {
                 public void loadDataCompleted(Vector data) {
                   String searchResultsTitle = I18N.tr("search_results") + ": " + finalDisplayText;
-                  Playlist searchPlaylist = new Playlist();
+                  Playlist searchPlaylist = PlaylistPool.getInstance().borrowPlaylist();
                   searchPlaylist.setName(searchResultsTitle);
                   searchPlaylist.setId("search");
 
