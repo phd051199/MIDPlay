@@ -5,13 +5,13 @@ import javax.microedition.lcdui.Displayable;
 
 public interface MainObserver {
 
-  Displayable go(Displayable e);
+  Displayable go(Displayable displayable);
 
   Displayable goBack();
 
-  void handle(Song e);
+  void handle(Song song);
 
-  Displayable replaceCurrent(Displayable e);
+  Displayable replaceCurrent(Displayable displayable);
 
   Displayable getCurrentDisplayable();
 }

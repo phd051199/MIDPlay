@@ -52,9 +52,9 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
       this.images.removeAllElements();
       this.deleteAll();
       for (int i = 0; i < this.subItems.size(); ++i) {
-        Category cate = (Category) this.subItems.elementAt(i);
+        Category category = (Category) this.subItems.elementAt(i);
         this.images.addElement(this.defaultImage);
-        this.append(cate.getName(), this.defaultImage);
+        this.append(category.getName(), this.defaultImage);
       }
       if (this.size() > 0) {
         this.setSelectedIndex(0, true);
@@ -80,8 +80,8 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
     } else if (c == List.SELECT_COMMAND) {
       int selected = this.getSelectedIndex();
       if (selected >= 0 && selected < this.subItems.size()) {
-        Category cate = (Category) this.subItems.elementAt(selected);
-        this.gotoPlaylistByCate(cate.getId(), 1, 10, cate.getName());
+        Category category = (Category) this.subItems.elementAt(selected);
+        this.gotoPlaylistByCategory(category.getId(), 1, 10, category.getName());
       }
     } else if (c == this.nowPlayingCommand) {
       MainList.gotoNowPlaying(this.observer);
@@ -96,7 +96,7 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
 
   public void quit() {}
 
-  private void gotoPlaylistByCate(
+  private void gotoPlaylistByCategory(
       final String genKey, final int curPage, final int perPage, final String title) {
     MainList.displayMessage(title, I18N.tr("loading"), "loading", this.observer, this);
 

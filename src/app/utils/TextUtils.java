@@ -5,33 +5,33 @@ import java.util.Random;
 
 public class TextUtils {
 
-  static final String HEX_DIGITS = "0123456789ABCDEF";
-  private static final String CHARS =
+  public static final String HEX_DIGITS = "0123456789ABCDEF";
+  private static final String RANDOM_CHARS =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
   public static String generateRandomId(int length) {
     Random rand = new Random();
     StringBuffer sb = new StringBuffer();
     for (int i = 0; i < length; i++) {
-      int index = Math.abs(rand.nextInt()) % CHARS.length();
-      sb.append(CHARS.charAt(index));
+      int index = Math.abs(rand.nextInt()) % RANDOM_CHARS.length();
+      sb.append(RANDOM_CHARS.charAt(index));
     }
     return sb.toString();
   }
 
-  public static String replace(String _text, String _searchStr, String _replacementStr) {
+  public static String replace(String text, String searchString, String replacement) {
     StringBuffer sb = new StringBuffer();
-    int searchStringPos = _text.indexOf(_searchStr);
+    int searchStringPos = text.indexOf(searchString);
     int startPos = 0;
 
-    for (int searchStringLength = _searchStr.length();
+    for (int searchStringLength = searchString.length();
         searchStringPos != -1;
-        searchStringPos = _text.indexOf(_searchStr, startPos)) {
-      sb.append(_text.substring(startPos, searchStringPos)).append(_replacementStr);
+        searchStringPos = text.indexOf(searchString, startPos)) {
+      sb.append(text.substring(startPos, searchStringPos)).append(replacement);
       startPos = searchStringPos + searchStringLength;
     }
 
-    sb.append(_text.substring(startPos, _text.length()));
+    sb.append(text.substring(startPos, text.length()));
     return sb.toString();
   }
 

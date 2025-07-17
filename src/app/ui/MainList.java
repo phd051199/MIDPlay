@@ -257,11 +257,11 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     this.observer = mObserver;
   }
 
-  private void gotoCate() {
+  private void gotoCategories() {
     loadDataAsync(
         new DataLoader() {
           public Vector load() throws Exception {
-            return DataParser.parseCate(2);
+            return DataParser.parseCategories(2);
           }
         },
         I18N.tr("genres"),
@@ -275,9 +275,9 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void showCategoryList(String title, Vector items, String from, String itemType) {
-    CategoryList cateCanvas = new CategoryList(title, items);
-    cateCanvas.setObserver(this.observer);
-    this.observer.replaceCurrent(cateCanvas);
+    CategoryList categoryCanvas = new CategoryList(title, items);
+    categoryCanvas.setObserver(this.observer);
+    this.observer.replaceCurrent(categoryCanvas);
   }
 
   private void gotoSetting() {
@@ -389,7 +389,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
         this.gotoFavorites();
       } else if (originalIndex == 2) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
-        this.gotoCate();
+        this.gotoCategories();
       } else if (originalIndex == 3) {
         displayMessage(I18N.tr("app_name"), I18N.tr("loading"), "loading", this.observer, this);
         this.gotoBillboard();

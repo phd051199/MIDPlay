@@ -39,7 +39,7 @@ public class DataParser {
     }
   }
 
-  private static String getCate(int type) {
+  private static String getCategories(int type) {
     try {
       return client.get(ApiEndpoints.getCategory(type));
     } catch (IOException e) {
@@ -47,40 +47,40 @@ public class DataParser {
     }
   }
 
-  public static Vector parseCate(int type) {
-    Vector cateItems = new Vector();
-    String result = getCate(type);
+  public static Vector parseCategories(int type) {
+    Vector categoryItems = new Vector();
+    String result = getCategories(type);
     if (result != null && !"".equals(result)) {
       try {
         JSONObject json = new JSONObject(result);
         JSONArray jsonArray = json.getJSONArray("Items");
         int totalGroups = jsonArray.length();
 
-        for (int gi = 0; gi < totalGroups; ++gi) {
-          JSONObject groupObj = new JSONObject(jsonArray.getString(gi));
+        for (int i = 0; i < totalGroups; ++i) {
+          JSONObject groupObj = new JSONObject(jsonArray.getString(i));
 
-          Vector subVec = new Vector();
+          Vector subCategories = new Vector();
           if (groupObj.has("SubItems")) {
             JSONArray subs = groupObj.getJSONArray("SubItems");
             int totalSubs = subs.length();
-            for (int si = 0; si < totalSubs; ++si) {
-              JSONObject subObj = subs.getJSONObject(si);
-              Category subCate = new Category();
-              subCate.setId(subObj.getString("Key"));
-              subCate.setName(subObj.getString("Name"));
-              subVec.addElement(subCate);
+            for (int j = 0; j < totalSubs; ++j) {
+              JSONObject subObj = subs.getJSONObject(j);
+              Category subCategory = new Category();
+              subCategory.setId(subObj.getString("Key"));
+              subCategory.setName(subObj.getString("Name"));
+              subCategories.addElement(subCategory);
             }
           }
 
           if (groupObj.has("Key") && groupObj.has("Name")) {
-            Category groupCate = new Category();
-            groupCate.setId(groupObj.getString("Key"));
-            groupCate.setName(groupObj.getString("Name"));
-            groupCate.setSubItems(subVec);
-            cateItems.addElement(groupCate);
+            Category groupCategory = new Category();
+            groupCategory.setId(groupObj.getString("Key"));
+            groupCategory.setName(groupObj.getString("Name"));
+            groupCategory.setSubItems(subCategories);
+            categoryItems.addElement(groupCategory);
           } else {
-            for (int si = 0; si < subVec.size(); si++) {
-              cateItems.addElement(subVec.elementAt(si));
+            for (int j = 0; j < subCategories.size(); j++) {
+              categoryItems.addElement(subCategories.elementAt(j));
             }
           }
         }
@@ -88,7 +88,7 @@ public class DataParser {
         return null;
       }
 
-      return cateItems;
+      return categoryItems;
     } else {
       return null;
     }
@@ -113,9 +113,9 @@ public class DataParser {
       int total = jsonArray.length();
 
       for (int i = 0; i < total; ++i) {
-        String threadsJSON = jsonArray.getString(i);
+        String playlistJSON = jsonArray.getString(i);
         Playlist playlist = new Playlist();
-        playlist.fromJSON(threadsJSON);
+        playlist.fromJSON(playlistJSON);
         playlistItems.addElement(playlist);
       }
 
@@ -155,23 +155,23 @@ public class DataParser {
   public static Vector parseSearchTracks(String keyword) {
     String result = getSearchTracks(keyword);
     if (result != null && !"".equals(result)) {
-      Vector items = parseSongOfPlaylist(result);
+      Vector items = parsePlaylistSongs(result);
       return items;
     } else {
       return null;
     }
   }
 
-  private static String getPlaylist(int curPare, int pageSize, String type, String genreKey) {
+  private static String getPlaylist(int currentPage, int pageSize, String type, String genreKey) {
     try {
-      return client.get(ApiEndpoints.getPlaylist(curPare, pageSize, type, genreKey));
+      return client.get(ApiEndpoints.getPlaylist(currentPage, pageSize, type, genreKey));
     } catch (IOException e) {
       return "";
     }
   }
 
-  public static Vector parsePlaylist(int curpage, int pagesize, String type, String genreKey) {
-    String result = getPlaylist(curpage, pagesize, type, genreKey);
+  public static Vector parsePlaylist(int currentPage, int pageSize, String type, String genreKey) {
+    String result = getPlaylist(currentPage, pageSize, type, genreKey);
     if (result != null && !"".equals(result)) {
       Vector playlistItems = parsePlaylists("tophot", result);
       return playlistItems;
@@ -193,14 +193,14 @@ public class DataParser {
       String listkey, String username, int curPare, int pageSize, String type) {
     String result = getSongsInPlaylist(listkey, username, curPare, pageSize, type);
     if (result != null && !"".equals(result)) {
-      Vector songItems = parseSongOfPlaylist(result);
+      Vector songItems = parsePlaylistSongs(result);
       return songItems;
     } else {
       return null;
     }
   }
 
-  private static Vector parseSongOfPlaylist(String jsonResult) {
+  private static Vector parsePlaylistSongs(String jsonResult) {
     Vector songItems = new Vector();
 
     if (jsonResult == null || jsonResult.trim().length() == 0) {
