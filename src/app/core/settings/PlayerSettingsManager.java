@@ -83,7 +83,7 @@ public class PlayerSettingsManager {
     return this.repeatMode;
   }
 
-  public boolean getShuffleMode() {
+  public boolean isShuffleMode() {
     return this.shuffleMode;
   }
 

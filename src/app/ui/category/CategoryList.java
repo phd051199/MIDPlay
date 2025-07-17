@@ -56,13 +56,13 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
     } else if (c == List.SELECT_COMMAND) {
       this.selectedItem = this.getSelectedIndex();
       if (this.selectedItem >= 0 && this.selectedItem < this.cateItems.size()) {
-        Category cate = (Category) this.cateItems.elementAt(this.selectedItem);
-        if (cate.getSubItems() != null && cate.getSubItems().size() > 0) {
-          CategorySubList subList = new CategorySubList(cate.getName(), cate.getSubItems());
+        Category category = (Category) this.cateItems.elementAt(this.selectedItem);
+        if (category.getSubItems() != null && category.getSubItems().size() > 0) {
+          CategorySubList subList = new CategorySubList(category.getName(), category.getSubItems());
           subList.setObserver(this.observer);
           this.observer.go(subList);
         } else {
-          this.gotoPlaylistByCate(cate.getId(), 1, 10);
+          this.gotoPlaylistByCategory(category.getId(), 1, 10);
         }
       }
     } else if (c == this.nowPlayingCommand) {
@@ -76,9 +76,9 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
     this.createImages();
     this.deleteAll();
     for (int i = 0; i < this.cateItems.size(); ++i) {
-      Category cate = (Category) this.cateItems.elementAt(i);
+      Category category = (Category) this.cateItems.elementAt(i);
       Image imagePart = this.getImage(i);
-      this.append(cate.getName(), imagePart);
+      this.append(category.getName(), imagePart);
     }
     if (this.size() > 0) {
       this.setSelectedIndex(0, true);
@@ -111,7 +111,7 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
     this.observer = _observer;
   }
 
-  private void gotoPlaylistByCate(final String genKey, final int curPage, final int perPage) {
+  private void gotoPlaylistByCategory(final String genKey, final int curPage, final int perPage) {
     this.displayMessage(I18N.tr("loading"), "loading");
     ThreadManagerIntegration.loadDataAsync(
         new DataLoader() {

@@ -27,11 +27,17 @@ import javax.microedition.midlet.MIDletStateChangeException;
 
 public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
 
-  private static MIDPlay instance;
-
   private static final String EMPTY_STRING = "";
   private static final int MAX_HISTORY_SIZE = 10;
+
+  private static MIDPlay instance;
   private static String appVersion = "";
+
+  private final Vector navigationHistory = new Vector(MAX_HISTORY_SIZE);
+  private Displayable currentDisplayable;
+
+  private Command downloadUpdateCommand;
+  private Command cancelUpdateCommand;
 
   public static MIDPlay getInstance() {
     return instance;
@@ -41,12 +47,6 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
     return appVersion;
   }
 
-  private final Vector history = new Vector();
-  private Displayable currentDisplayable;
-
-  private Command downloadCmd;
-  private Command cancelCmd;
-
   public MIDPlay() {
     instance = this;
     initializeApplication();
@@ -54,8 +54,8 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   }
 
   private void initializeCommands() {
-    downloadCmd = new Command(I18N.tr("update"), Command.OK, 1);
-    cancelCmd = new Command(I18N.tr("cancel"), Command.CANCEL, 2);
+    downloadUpdateCommand = new Command(I18N.tr("update"), Command.OK, 1);
+    cancelUpdateCommand = new Command(I18N.tr("cancel"), Command.CANCEL, 2);
   }
 
   private void initializeApplication() {
@@ -87,7 +87,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
 
   private void cleanup() {
     try {
-      history.removeAllElements();
+      navigationHistory.removeAllElements();
 
       try {
         SettingsManager.getInstance().shutdown();
@@ -152,8 +152,8 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   private void showUpdateDialog(final String updateInfo) {
     Alert updateAlert = new Alert(null, I18N.tr("update_message"), null, AlertType.INFO);
     updateAlert.setTimeout(Alert.FOREVER);
-    updateAlert.addCommand(downloadCmd);
-    updateAlert.addCommand(cancelCmd);
+    updateAlert.addCommand(downloadUpdateCommand);
+    updateAlert.addCommand(cancelUpdateCommand);
     updateAlert.setCommandListener(
         new CommandListener() {
           public void commandAction(Command c, Displayable d) {
@@ -164,7 +164,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   }
 
   private void handleUpdateCommand(Command command, String updateUrl) {
-    if (command == downloadCmd) {
+    if (command == downloadUpdateCommand) {
       try {
         boolean success = platformRequest(updateUrl);
         if (success) {
@@ -173,7 +173,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
       } catch (Exception e) {
         showErrorAlert(e.toString());
       }
-    } else if (command == cancelCmd) {
+    } else if (command == cancelUpdateCommand) {
       Displayable current = getCurrentDisplayable();
       if (current != null) {
         getDisplay().setCurrent(current);
@@ -201,25 +201,25 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
     if (current instanceof Observer) {
       return false;
     }
-    return !history.contains(current);
+    return !navigationHistory.contains(current);
   }
 
   private void addToHistory(Displayable displayable) {
-    if (history.size() >= MAX_HISTORY_SIZE) {
-      history.removeElementAt(0);
+    if (navigationHistory.size() >= MAX_HISTORY_SIZE) {
+      navigationHistory.removeElementAt(0);
     }
-    history.addElement(displayable);
+    navigationHistory.addElement(displayable);
   }
 
   public Displayable goBack() {
-    if (history.isEmpty()) {
+    if (navigationHistory.isEmpty()) {
       exit();
       return null;
     }
     Displayable previous = null;
-    while (!history.isEmpty()) {
-      previous = (Displayable) history.lastElement();
-      history.removeElementAt(history.size() - 1);
+    while (!navigationHistory.isEmpty()) {
+      previous = (Displayable) navigationHistory.lastElement();
+      navigationHistory.removeElementAt(navigationHistory.size() - 1);
       if (!isSameScreenType(previous, getCurrentDisplayable())) {
         break;
       }
@@ -279,7 +279,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   }
 
   public void clearHistory() {
-    history.removeAllElements();
+    navigationHistory.removeAllElements();
   }
 
   public Display getDisplay() {
@@ -298,10 +298,10 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   }
 
   public int getHistorySize() {
-    return history.size();
+    return navigationHistory.size();
   }
 
   public boolean isHistoryEmpty() {
-    return history.isEmpty();
+    return navigationHistory.isEmpty();
   }
 }

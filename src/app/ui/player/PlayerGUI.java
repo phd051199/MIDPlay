@@ -71,7 +71,7 @@ public class PlayerGUI implements PlayerListener {
   private void loadPlayerConfigs() {
     this.currentVolumeLevel = settingsManager.getVolumeLevel();
     this.repeatMode = settingsManager.getRepeatMode();
-    this.shuffleMode = settingsManager.getShuffleMode();
+    this.shuffleMode = settingsManager.isShuffleMode();
   }
 
   private void savePlayerConfigs() {
@@ -91,7 +91,7 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
-  public boolean getIsTransitioning() {
+  public boolean isTransitioning() {
     return isTransitioning;
   }
 
@@ -150,7 +150,7 @@ public class PlayerGUI implements PlayerListener {
     savePlayerConfigs();
   }
 
-  public boolean getShuffleMode() {
+  public boolean isShuffleMode() {
     return this.shuffleMode;
   }
 
@@ -186,7 +186,7 @@ public class PlayerGUI implements PlayerListener {
     return this.index;
   }
 
-  public boolean getIsPlaying() {
+  public boolean isPlaying() {
     return this.player != null && this.player.getState() >= 400;
   }
 

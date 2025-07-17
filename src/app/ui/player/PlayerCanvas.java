@@ -99,27 +99,28 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
 
   private MainObserver observer = null;
   private Playlist playlist;
-  private boolean _play = false;
+  private boolean isPlaying = false;
 
-  private Image _imgPlay = null;
-  private Image _imgPause = null;
-  private Image _imgBack = null;
-  private Image _imgNext = null;
-  private Image _imgBackActive = null;
-  private Image _imgNextActive = null;
-  private Image _imgRepeat = null;
-  private Image _imgRepeatOne = null;
-  private Image _imgRepeatOff = null;
-  private Image _imgShuffle = null;
-  private Image _imgShuffleOff = null;
-  private Image _albumArt = null;
-  private String _albumArtUrl = null;
-  private boolean _loadingAlbumArt = false;
+  private Image playImage = null;
+  private Image pauseImage = null;
+  private Image previousImage = null;
+  private Image nextImage = null;
+  private Image previousActiveImage = null;
+  private Image nextActiveImage = null;
+  private Image repeatImage = null;
+  private Image repeatOneImage = null;
+  private Image repeatOffImage = null;
+  private Image shuffleImage = null;
+  private Image shuffleOffImage = null;
 
-  public long timeBack = 0L;
-  public long timeNext = 0L;
-  public boolean goBack = false;
-  public boolean goNext = false;
+  private Image albumArt = null;
+  private String albumArtUrl = null;
+  private boolean loadingAlbumArt = false;
+
+  private long previousButtonPressTime = 0L;
+  private long nextButtonPressTime = 0L;
+  private boolean showingPreviousActive = false;
+  private boolean showingNextActive = false;
 
   private final SettingsManager settingManager = SettingsManager.getInstance();
   private int cachedThemeColorRGB;
@@ -127,8 +128,8 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   private String lastThemeColor = "";
   private String lastBackgroundColor = "";
 
-  public PlayerCanvas(String title, Vector lst, int index, Playlist _playlist) {
-    this.playlist = _playlist;
+  public PlayerCanvas(String title, Vector songList, int index, Playlist playlist) {
+    this.playlist = playlist;
     this.favoritesManager = FavoritesManager.getInstance();
     this.setTitle(title);
     this.addCommand(this.backCommand);
@@ -138,12 +139,12 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     this.touchSupported = this.hasPointerEvents();
 
     this.setupSleepTimerCallback();
-    this.change(title, lst, index, this.playlist);
+    this.change(title, songList, index, this.playlist);
   }
 
   public void showNotify() {
     if (this.status.equals(I18N.tr("playing")) || this.status.equals(I18N.tr("paused"))) {
-      if (this.getGUI().getIsPlaying()) {
+      if (this.getPlayerGUI().isPlaying()) {
         this.setStatus(I18N.tr("playing"));
       } else {
         this.setStatus(I18N.tr("paused"));
@@ -151,16 +152,16 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     }
   }
 
-  public void change(String title, Vector lst, int index, Playlist _playlist) {
+  public void change(String title, Vector songList, int index, Playlist playlist) {
     this.title = title;
     this.setTitle(title);
-    this.playlist = _playlist;
-    this.getGUI().setListSong(lst, index);
-    this._play = true;
+    this.playlist = playlist;
+    this.getPlayerGUI().setListSong(songList, index);
+    this.isPlaying = true;
 
-    this._albumArt = null;
-    this._albumArtUrl = null;
-    this._loadingAlbumArt = false;
+    this.albumArt = null;
+    this.albumArtUrl = null;
+    this.loadingAlbumArt = false;
   }
 
   public void setupDisplay() {
@@ -231,9 +232,9 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   }
 
   public synchronized void close() {
-    this._albumArt = null;
-    this._albumArtUrl = null;
-    this._loadingAlbumArt = false;
+    this.albumArt = null;
+    this.albumArtUrl = null;
+    this.loadingAlbumArt = false;
 
     if (this.gui != null) {
       this.gui.shutdown();
@@ -245,7 +246,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     ThreadManagerIntegration.clearPlayerQueues();
   }
 
-  private synchronized PlayerGUI getGUI() {
+  private synchronized PlayerGUI getPlayerGUI() {
     if (this.gui == null) {
       this.gui = new PlayerGUI(this);
 
@@ -289,7 +290,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     String commandText;
     if (this.gui != null) {
       commandText =
-          I18N.tr("shuffle") + ": " + (this.gui.getShuffleMode() ? I18N.tr("on") : I18N.tr("off"));
+          I18N.tr("shuffle") + ": " + (this.gui.isShuffleMode() ? I18N.tr("on") : I18N.tr("off"));
     } else {
       commandText = I18N.tr("shuffle") + ": " + I18N.tr("off");
     }
@@ -299,37 +300,37 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   }
 
   public void setAlbumArtUrl(String url) {
-    if (url != null && !url.equals(this._albumArtUrl)) {
-      this._albumArtUrl = url;
-      this._albumArt = null;
-      this._loadingAlbumArt = false;
+    if (url != null && !url.equals(this.albumArtUrl)) {
+      this.albumArtUrl = url;
+      this.albumArt = null;
+      this.loadingAlbumArt = false;
       loadAlbumArt();
     }
   }
 
   private void loadAlbumArt() {
-    if (this._albumArtUrl == null || this._loadingAlbumArt) {
+    if (this.albumArtUrl == null || this.loadingAlbumArt) {
       return;
     }
 
-    this._loadingAlbumArt = true;
+    this.loadingAlbumArt = true;
 
-    final String imageUrl = this._albumArtUrl;
+    final String imageUrl = this.albumArtUrl;
     ThreadManagerIntegration.executePlayerImageLoading(
         imageUrl,
         72,
         new ThreadManagerIntegration.ImageLoadCallback() {
           public void onImageLoaded(Object image) {
-            _albumArt = (javax.microedition.lcdui.Image) image;
-            if (_albumArt != null) {
+            albumArt = (javax.microedition.lcdui.Image) image;
+            if (albumArt != null) {
               updateDisplay();
             }
-            _loadingAlbumArt = false;
+            loadingAlbumArt = false;
           }
 
           public void onImageLoadError(Exception e) {
-            _albumArt = null;
-            _loadingAlbumArt = false;
+            albumArt = null;
+            loadingAlbumArt = false;
           }
         });
   }
@@ -399,13 +400,13 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
           this.gui.togglePlayer();
           break;
         case Canvas.RIGHT:
-          this.goNext = true;
-          this.timeNext = System.currentTimeMillis();
+          this.showingNextActive = true;
+          this.nextButtonPressTime = System.currentTimeMillis();
           this.gui.getNextSong();
           break;
         case Canvas.LEFT:
-          this.goBack = true;
-          this.timeBack = System.currentTimeMillis();
+          this.showingPreviousActive = true;
+          this.previousButtonPressTime = System.currentTimeMillis();
           this.gui.getPrevSong();
           break;
         case Canvas.UP:
@@ -510,125 +511,125 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     return ret.toString();
   }
 
-  public Image imgPlay() {
-    if (this._imgPlay == null) {
+  public Image getPlayImage() {
+    if (this.playImage == null) {
       try {
-        this._imgPlay = Image.createImage("/images/player/play.png");
+        this.playImage = Image.createImage("/images/player/play.png");
       } catch (Exception e) {
-        this._imgPlay = null;
+        this.playImage = null;
       }
     }
-    return this._imgPlay;
+    return this.playImage;
   }
 
-  public Image imgPause() {
-    if (this._imgPause == null) {
+  public Image getPauseImage() {
+    if (this.pauseImage == null) {
       try {
-        this._imgPause = Image.createImage("/images/player/pause.png");
+        this.pauseImage = Image.createImage("/images/player/pause.png");
       } catch (Exception e) {
-        this._imgPause = null;
+        this.pauseImage = null;
       }
     }
-    return this._imgPause;
+    return this.pauseImage;
   }
 
-  public Image imgBack() {
-    if (this._imgBack == null) {
+  public Image getPreviousImage() {
+    if (this.previousImage == null) {
       try {
-        this._imgBack = Image.createImage("/images/player/previous.png");
+        this.previousImage = Image.createImage("/images/player/previous.png");
       } catch (Exception e) {
-        this._imgBack = null;
+        this.previousImage = null;
       }
     }
-    return this._imgBack;
+    return this.previousImage;
   }
 
-  public Image imgNext() {
-    if (this._imgNext == null) {
+  public Image getNextImage() {
+    if (this.nextImage == null) {
       try {
-        this._imgNext = Image.createImage("/images/player/next.png");
+        this.nextImage = Image.createImage("/images/player/next.png");
       } catch (Exception e) {
-        this._imgNext = null;
+        this.nextImage = null;
       }
     }
-    return this._imgNext;
+    return this.nextImage;
   }
 
-  public Image imgBackActive() {
-    if (this._imgBackActive == null) {
+  public Image getPreviousActiveImage() {
+    if (this.previousActiveImage == null) {
       try {
-        this._imgBackActive = Image.createImage("/images/player/previous.png");
+        this.previousActiveImage = Image.createImage("/images/player/previous.png");
       } catch (Exception e) {
-        this._imgBackActive = null;
+        this.previousActiveImage = null;
       }
     }
-    return this._imgBackActive;
+    return this.previousActiveImage;
   }
 
-  public Image imgNextActive() {
-    if (this._imgNextActive == null) {
+  public Image getNextActiveImage() {
+    if (this.nextActiveImage == null) {
       try {
-        this._imgNextActive = Image.createImage("/images/player/next.png");
+        this.nextActiveImage = Image.createImage("/images/player/next.png");
       } catch (Exception e) {
-        this._imgNextActive = null;
+        this.nextActiveImage = null;
       }
     }
-    return this._imgNextActive;
+    return this.nextActiveImage;
   }
 
-  public Image imgRepeat() {
-    if (this._imgRepeat == null) {
+  public Image getRepeatImage() {
+    if (this.repeatImage == null) {
       try {
-        this._imgRepeat = Image.createImage("/images/player/repeat.png");
+        this.repeatImage = Image.createImage("/images/player/repeat.png");
       } catch (Exception e) {
-        this._imgRepeat = null;
+        this.repeatImage = null;
       }
     }
-    return this._imgRepeat;
+    return this.repeatImage;
   }
 
-  public Image imgRepeatOne() {
-    if (this._imgRepeatOne == null) {
+  public Image getRepeatOneImage() {
+    if (this.repeatOneImage == null) {
       try {
-        this._imgRepeatOne = Image.createImage("/images/player/repeat-one.png");
+        this.repeatOneImage = Image.createImage("/images/player/repeat-one.png");
       } catch (Exception e) {
-        this._imgRepeatOne = null;
+        this.repeatOneImage = null;
       }
     }
-    return this._imgRepeatOne;
+    return this.repeatOneImage;
   }
 
-  public Image imgRepeatOff() {
-    if (this._imgRepeatOff == null) {
+  public Image getRepeatOffImage() {
+    if (this.repeatOffImage == null) {
       try {
-        this._imgRepeatOff = Image.createImage("/images/player/repeat-off.png");
+        this.repeatOffImage = Image.createImage("/images/player/repeat-off.png");
       } catch (Exception e) {
-        this._imgRepeatOff = null;
+        this.repeatOffImage = null;
       }
     }
-    return this._imgRepeatOff;
+    return this.repeatOffImage;
   }
 
-  public Image imgShuffle() {
-    if (this._imgShuffle == null) {
+  public Image getShuffleImage() {
+    if (this.shuffleImage == null) {
       try {
-        this._imgShuffle = Image.createImage("/images/player/shuffle.png");
+        this.shuffleImage = Image.createImage("/images/player/shuffle.png");
       } catch (Exception e) {
-        this._imgShuffle = null;
+        this.shuffleImage = null;
       }
     }
-    return this._imgShuffle;
+    return this.shuffleImage;
   }
 
-  public Image imgShuffleOff() {
-    if (this._imgShuffleOff == null) {
+  public Image getShuffleOffImage() {
+    if (this.shuffleOffImage == null) {
       try {
-        this._imgShuffleOff = Image.createImage("/images/player/shuffle-off.png");
+        this.shuffleOffImage = Image.createImage("/images/player/shuffle-off.png");
       } catch (Exception e) {
-        this._imgShuffleOff = null;
+        this.shuffleOffImage = null;
       }
     }
-    return this._imgShuffleOff;
+    return this.shuffleOffImage;
   }
 
   private int getThemeColor() {
@@ -720,9 +721,9 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
       if (this.gui != null) {
         int artTop = PLAYER_STATUS_TOP + this.statusBarHeight + 8;
 
-        if (this._albumArt != null) {
+        if (this.albumArt != null) {
           g.drawImage(
-              this._albumArt,
+              this.albumArt,
               this.artLeft + this.artSize / 2,
               artTop + this.artSize / 2,
               Graphics.HCENTER | Graphics.VCENTER);
@@ -801,43 +802,44 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
           this.shuffleButtonY = this.playtop;
         }
 
-        boolean isPlaying = this.gui.getIsPlaying();
-        Image playPauseImg = isPlaying ? this.imgPause() : this.imgPlay();
+        boolean isPlaying = this.gui.isPlaying();
+        Image playPauseImg = isPlaying ? this.getPauseImage() : this.getPlayImage();
 
         if (playPauseImg != null) {
           g.drawImage(playPauseImg, this.playButtonX, this.playButtonY, 3);
         }
 
-        if (this.goBack || this.goNext) {
+        if (this.showingPreviousActive || this.showingNextActive) {
           long time = System.currentTimeMillis();
-          if (time - this.timeBack >= 1000L) {
-            this.goBack = false;
+          if (time - this.previousButtonPressTime >= 1000L) {
+            this.showingPreviousActive = false;
           }
-          if (time - this.timeNext >= 1000L) {
-            this.goNext = false;
+          if (time - this.nextButtonPressTime >= 1000L) {
+            this.showingNextActive = false;
           }
         }
 
-        Image prevImg = this.goBack ? this.imgBackActive() : this.imgBack();
+        Image prevImg =
+            this.showingPreviousActive ? this.getPreviousActiveImage() : this.getPreviousImage();
         if (prevImg != null) {
           g.drawImage(prevImg, this.prevButtonX, this.prevButtonY, 3);
         }
 
-        Image nextImg = this.goNext ? this.imgNextActive() : this.imgNext();
+        Image nextImg = this.showingNextActive ? this.getNextActiveImage() : this.getNextImage();
         if (nextImg != null) {
           g.drawImage(nextImg, this.nextButtonX, this.nextButtonY, 3);
         }
 
         Image repeatImg = null;
-        switch (this.getGUI().getRepeatMode()) {
+        switch (this.getPlayerGUI().getRepeatMode()) {
           case PlayerGUI.REPEAT_ONE:
-            repeatImg = this.imgRepeatOne();
+            repeatImg = this.getRepeatOneImage();
             break;
           case PlayerGUI.REPEAT_ALL:
-            repeatImg = this.imgRepeat();
+            repeatImg = this.getRepeatImage();
             break;
           default:
-            repeatImg = this.imgRepeatOff();
+            repeatImg = this.getRepeatOffImage();
             break;
         }
 
@@ -846,7 +848,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
         }
 
         Image shuffleImg =
-            this.getGUI().getShuffleMode() ? this.imgShuffle() : this.imgShuffleOff();
+            this.getPlayerGUI().isShuffleMode() ? this.getShuffleImage() : this.getShuffleOffImage();
         if (shuffleImg != null) {
           g.drawImage(shuffleImg, this.shuffleButtonX, this.shuffleButtonY, 3);
         }
@@ -854,15 +856,15 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     } catch (Throwable e4) {
     }
 
-    if (this._play) {
-      this._play = false;
-      this.getGUI().closePlayer();
-      this.getGUI().startPlayer();
+    if (this.isPlaying) {
+      this.isPlaying = false;
+      this.getPlayerGUI().closePlayer();
+      this.getPlayerGUI().startPlayer();
     }
   }
 
-  public void setObserver(MainObserver _observer) {
-    this.observer = _observer;
+  public void setObserver(MainObserver observer) {
+    this.observer = observer;
   }
 
   public void commandAction(Command c, Displayable d) {
@@ -871,33 +873,33 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     } else if (c == this.nextCommand) {
       if (!this.isLoading()) {
         try {
-          this.goNext = true;
-          this.timeNext = System.currentTimeMillis();
-          this.getGUI().getNextSong();
+          this.showingNextActive = true;
+          this.nextButtonPressTime = System.currentTimeMillis();
+          this.getPlayerGUI().getNextSong();
         } catch (Throwable e) {
         }
       }
     } else if (c == this.prevCommand) {
       if (!this.isLoading()) {
         try {
-          this.goBack = true;
-          this.timeBack = System.currentTimeMillis();
-          this.getGUI().getPrevSong();
+          this.showingPreviousActive = true;
+          this.previousButtonPressTime = System.currentTimeMillis();
+          this.getPlayerGUI().getPrevSong();
         } catch (Throwable e) {
         }
       }
     } else if (c == this.playCommand || c == this.pauseCommand) {
       if (!this.isLoading()) {
-        this.getGUI().togglePlayer();
+        this.getPlayerGUI().togglePlayer();
       }
     } else if (c == this.stopCommand) {
       this.gui.pausePlayer();
       this.gui.setMediaTime(0L);
       this.setStatus(I18N.tr("paused"));
     } else if (c == this.repeatCommand) {
-      this.getGUI().toggleRepeatMode();
+      this.getPlayerGUI().toggleRepeatMode();
     } else if (c == this.shuffleCommand) {
-      this.getGUI().toggleShuffleMode();
+      this.getPlayerGUI().toggleShuffleMode();
     } else if (c == this.addToPlaylistCommand) {
       showAddToPlaylistDialog();
     } else if (c == this.showPlaylistCommand) {
