@@ -1,7 +1,7 @@
 package app.ui.player;
 
 import app.core.network.RestClient;
-import app.core.platform.PlayerMethod;
+import app.core.platform.DeviceInfo;
 import app.core.settings.PlayerSettingsManager;
 import app.core.threading.ThreadManagerIntegration;
 import app.models.Song;
@@ -41,6 +41,7 @@ public class PlayerGUI implements PlayerListener {
   private Timer guiTimer = null;
   private TimerTask timeDisplayTask = null;
   private TimerTask volumeStatusTask = null;
+  private final Object timerLock = new Object();
   private final PlayerCanvas parent;
   private Player player = null;
   private Vector listSong = null;
@@ -265,17 +266,17 @@ public class PlayerGUI implements PlayerListener {
   private void assertPlayer() throws Throwable {
     this.setStatus(I18N.tr("loading"));
 
-    this.playerHttpMethod = PlayerMethod.getPlayerHttpMethod();
+    this.playerHttpMethod = DeviceInfo.getPlayerHttpMethod();
     Song s = (Song) this.listSong.elementAt(this.index);
 
     try {
       this.parent.setAlbumArtUrl(s.getImage());
 
       switch (this.playerHttpMethod) {
-        case PlayerMethod.PASS_CONNECTION_STREAM:
+        case DeviceInfo.PLAYER_PASS_CONNECTION_STREAM:
           createPlayerFromStream(s);
           break;
-        case PlayerMethod.PASS_URL:
+        case DeviceInfo.PLAYER_PASS_URL:
           createPlayerFromUrl(s);
           break;
       }
@@ -441,7 +442,10 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void closePlayer() {
-    this.stopDisplayTimer();
+    try {
+      this.stopDisplayTimer();
+    } catch (Exception e) {
+    }
 
     playerTaskRunning = false;
     endOfMediaTaskRunning = false;
@@ -470,10 +474,37 @@ public class PlayerGUI implements PlayerListener {
     }
 
     closeResources();
+    cleanupTimers();
+  }
 
-    if (this.guiTimer != null) {
-      this.guiTimer.cancel();
-      this.guiTimer = null;
+  private void cleanupTimers() {
+    synchronized (timerLock) {
+      if (this.volumeStatusTask != null) {
+        try {
+          this.volumeStatusTask.cancel();
+        } catch (Exception e) {
+        } finally {
+          this.volumeStatusTask = null;
+        }
+      }
+
+      if (this.timeDisplayTask != null) {
+        try {
+          this.timeDisplayTask.cancel();
+        } catch (Exception e) {
+        } finally {
+          this.timeDisplayTask = null;
+        }
+      }
+
+      if (this.guiTimer != null) {
+        try {
+          this.guiTimer.cancel();
+        } catch (Exception e) {
+        } finally {
+          this.guiTimer = null;
+        }
+      }
     }
   }
 
@@ -532,39 +563,53 @@ public class PlayerGUI implements PlayerListener {
   private void setVolumeStatus(int cv) {
     this.parent.setStatus(I18N.tr("volume") + ": " + cv);
 
-    if (volumeStatusTask != null) {
-      volumeStatusTask.cancel();
-    }
+    synchronized (timerLock) {
+      if (volumeStatusTask != null) {
+        volumeStatusTask.cancel();
+      }
 
-    if (this.guiTimer == null) {
-      this.guiTimer = new Timer();
-    }
+      if (this.guiTimer == null) {
+        this.guiTimer = new Timer();
+      }
 
-    volumeStatusTask =
-        new TimerTask() {
-          public void run() {
-            parent.restoreStatusAfterVolume(prevStatus);
-          }
-        };
+      volumeStatusTask =
+          new TimerTask() {
+            public void run() {
+              parent.restoreStatusAfterVolume(prevStatus);
+            }
+          };
 
-    this.guiTimer.schedule(volumeStatusTask, 1000);
-  }
-
-  private synchronized void startDisplayTimer() {
-    if (this.guiTimer == null) {
-      this.guiTimer = new Timer();
-    }
-    if (this.timeDisplayTask == null) {
-      this.timeDisplayTask = new SPTimerTask();
-      this.guiTimer.scheduleAtFixedRate(this.timeDisplayTask, 0L, (long) this.timerInterval);
+      this.guiTimer.schedule(volumeStatusTask, 1000);
     }
   }
 
-  private synchronized void stopDisplayTimer() {
-    if (this.timeDisplayTask != null) {
-      this.timeDisplayTask.cancel();
-      this.timeDisplayTask = null;
+  private void startDisplayTimer() {
+    synchronized (timerLock) {
+      if (this.guiTimer == null) {
+        this.guiTimer = new Timer();
+      }
+      if (this.timeDisplayTask == null) {
+        this.timeDisplayTask = new SPTimerTask();
+        this.guiTimer.scheduleAtFixedRate(this.timeDisplayTask, 0L, (long) this.timerInterval);
+      }
+    }
+  }
+
+  private void stopDisplayTimer() {
+    synchronized (timerLock) {
+      if (this.timeDisplayTask != null) {
+        try {
+          this.timeDisplayTask.cancel();
+        } catch (Exception e) {
+        } finally {
+          this.timeDisplayTask = null;
+        }
+      }
+    }
+
+    try {
       this.parent.updateDisplay();
+    } catch (Exception e) {
     }
   }
 

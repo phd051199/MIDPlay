@@ -16,22 +16,28 @@ public class SettingsManager {
     ServicesConstants.YTMUSIC,
     ServicesConstants.SPOTIFY
   };
-  private static SettingsManager instance;
+  private static volatile SettingsManager instance;
+  private static final Object instanceLock = new Object();
 
   private static final String SETTINGS_STORE_NAME = "settings";
   private static final long SAVE_THROTTLE = 2000;
 
-  public static synchronized SettingsManager getInstance() {
+  public static SettingsManager getInstance() {
     if (instance == null) {
-      instance = new SettingsManager();
+      synchronized (instanceLock) {
+        if (instance == null) {
+          instance = new SettingsManager();
+        }
+      }
     }
     return instance;
   }
 
   private final RecordStoreManager recordStore;
   private boolean isShuttingDown = false;
-  private boolean settingsModified = false;
+  private volatile boolean settingsModified = false;
   private long lastSaveTime = 0;
+  private final Object settingsModifiedLock = new Object();
 
   private String language;
   private String audioQuality;
@@ -132,18 +138,26 @@ public class SettingsManager {
 
   public synchronized void saveConfig(final JSONObject config) {
     if (ThreadManager.getInstance().isThreadAlive("SettingsSave")) {
-      settingsModified = true;
+      synchronized (settingsModifiedLock) {
+        settingsModified = true;
+      }
       return;
     }
 
     long currentTime = System.currentTimeMillis();
     if (currentTime - lastSaveTime < SAVE_THROTTLE) {
-      settingsModified = true;
+      synchronized (settingsModifiedLock) {
+        settingsModified = true;
+      }
 
       ThreadManagerIntegration.scheduleDelayedTask(
           new Runnable() {
             public void run() {
-              if (settingsModified) {
+              boolean shouldSave;
+              synchronized (settingsModifiedLock) {
+                shouldSave = settingsModified;
+              }
+              if (shouldSave) {
                 performSave(config);
               }
             }
@@ -160,7 +174,9 @@ public class SettingsManager {
     ThreadManagerIntegration.executeSettingsSave(
         new Runnable() {
           public void run() {
-            settingsModified = false;
+            synchronized (settingsModifiedLock) {
+              settingsModified = false;
+            }
             lastSaveTime = System.currentTimeMillis();
             RecordEnumeration re = null;
 

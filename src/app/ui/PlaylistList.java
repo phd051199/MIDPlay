@@ -81,14 +81,14 @@ public class PlaylistList extends List
     this.favoritesManager = FavoritesManager.getInstance();
     this.imageLoader = ImageLoader.getInstance();
     this.loadDefaultImage();
-    this.initCommands();
+    this.initializeCommands();
     this.images = new Vector();
     this.playlistItems = items;
     this.type = type;
     this.initComponents();
   }
 
-  private void initCommands() {
+  private void initializeCommands() {
     this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 2);
     this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
     this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 3);

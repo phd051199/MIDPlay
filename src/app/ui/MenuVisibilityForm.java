@@ -29,6 +29,7 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
     this.observer = observer;
     this.service = service;
 
+    this.initializeCommands();
     this.initComponents();
     this.setCommandListener(this);
     this.setItemStateListener(this);
@@ -47,7 +48,9 @@ public class MenuVisibilityForm extends Form implements CommandListener, ItemSta
     }
 
     this.append(menuItemsGroup);
+  }
 
+  private void initializeCommands() {
     saveCommand = new Command(I18N.tr("save"), Command.OK, 1);
     cancelCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
 

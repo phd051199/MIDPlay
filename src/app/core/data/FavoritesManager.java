@@ -12,13 +12,15 @@ import org.json.me.JSONObject;
 
 public class FavoritesManager {
 
-  private static FavoritesManager instance;
+  private static volatile FavoritesManager instance;
   private static final Object instanceLock = new Object();
 
   public static FavoritesManager getInstance() {
-    synchronized (instanceLock) {
-      if (instance == null) {
-        instance = new FavoritesManager();
+    if (instance == null) {
+      synchronized (instanceLock) {
+        if (instance == null) {
+          instance = new FavoritesManager();
+        }
       }
     }
     return instance;

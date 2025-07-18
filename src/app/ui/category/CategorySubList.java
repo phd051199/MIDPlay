@@ -33,12 +33,12 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
     this.subItems = subs;
     this.images = new Vector();
     this.loadDefaultImage();
-    this.initCommands();
+    this.initializeCommands();
     this.initComponents();
     this.setCommandListener(this);
   }
 
-  private void initCommands() {
+  private void initializeCommands() {
     this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 2);
     this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
     this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 3);

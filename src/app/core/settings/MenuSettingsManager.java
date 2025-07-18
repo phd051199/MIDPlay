@@ -8,12 +8,17 @@ import org.json.me.JSONArray;
 import org.json.me.JSONObject;
 
 public class MenuSettingsManager {
-  private static MenuSettingsManager instance;
+  private static volatile MenuSettingsManager instance;
+  private static final Object instanceLock = new Object();
   private static final String MENU_SETTINGS_STORE_NAME = "menu_settings";
 
-  public static synchronized MenuSettingsManager getInstance() {
+  public static MenuSettingsManager getInstance() {
     if (instance == null) {
-      instance = new MenuSettingsManager();
+      synchronized (instanceLock) {
+        if (instance == null) {
+          instance = new MenuSettingsManager();
+        }
+      }
     }
     return instance;
   }

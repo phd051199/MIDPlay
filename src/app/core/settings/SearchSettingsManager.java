@@ -7,12 +7,17 @@ import javax.microedition.rms.RecordEnumeration;
 import org.json.me.JSONObject;
 
 public class SearchSettingsManager {
-  private static SearchSettingsManager instance;
+  private static volatile SearchSettingsManager instance;
+  private static final Object instanceLock = new Object();
   private static final String SEARCH_SETTINGS_STORE_NAME = "search_settings";
 
-  public static synchronized SearchSettingsManager getInstance() {
+  public static SearchSettingsManager getInstance() {
     if (instance == null) {
-      instance = new SearchSettingsManager();
+      synchronized (instanceLock) {
+        if (instance == null) {
+          instance = new SearchSettingsManager();
+        }
+      }
     }
     return instance;
   }

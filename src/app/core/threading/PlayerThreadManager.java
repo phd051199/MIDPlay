@@ -2,16 +2,18 @@ package app.core.threading;
 
 public class PlayerThreadManager {
 
-  private static PlayerThreadManager instance;
+  private static volatile PlayerThreadManager instance;
   private static final Object instanceLock = new Object();
 
   private static final int PLAYER_POOL_SIZE = 3;
   private static final int STATE_POOL_SIZE = 2;
 
   public static PlayerThreadManager getInstance() {
-    synchronized (instanceLock) {
-      if (instance == null) {
-        instance = new PlayerThreadManager();
+    if (instance == null) {
+      synchronized (instanceLock) {
+        if (instance == null) {
+          instance = new PlayerThreadManager();
+        }
       }
     }
     return instance;

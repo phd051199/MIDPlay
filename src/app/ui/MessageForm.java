@@ -13,7 +13,7 @@ import javax.microedition.lcdui.StringItem;
 public class MessageForm extends Form implements CommandListener {
 
   private LoadDataObserver loadDataObserver;
-  Command exitCommand = new Command(I18N.tr("back"), 2, 1);
+  Command exitCommand;
   StringItem message = new StringItem("", "");
   private MainObserver observer;
   private volatile boolean isCancelled = false;
@@ -28,9 +28,14 @@ public class MessageForm extends Form implements CommandListener {
     if (messageType.equals("error")
         || messageType.equals("info")
         || messageType.equals("loading")) {
-      this.addCommand(this.exitCommand);
+      this.initializeCommands();
       this.setCommandListener(this);
     }
+  }
+
+  private void initializeCommands() {
+    this.exitCommand = new Command(I18N.tr("back"), 2, 1);
+    this.addCommand(this.exitCommand);
   }
 
   public void setLoadDataOberserver(LoadDataObserver observer) {

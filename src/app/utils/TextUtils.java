@@ -35,6 +35,31 @@ public class TextUtils {
     return sb.toString();
   }
 
+  public static String[] split(String str, char delimiter) {
+    if (str == null) {
+      return new String[0];
+    }
+
+    int count = 1;
+    for (int i = 0; i < str.length(); i++) {
+      if (str.charAt(i) == delimiter) {
+        count++;
+      }
+    }
+
+    String[] result = new String[count];
+    int start = 0;
+    int end;
+    int index = 0;
+    while ((end = str.indexOf(delimiter, start)) != -1) {
+      result[index++] = str.substring(start, end);
+      start = end + 1;
+    }
+    result[index] = str.substring(start);
+
+    return result;
+  }
+
   protected static String urlEncode(byte[] rs) {
     StringBuffer result = new StringBuffer(rs.length * 2);
 

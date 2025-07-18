@@ -30,17 +30,14 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   private static final int SONG_TITLE_GAP = 5;
   private static final int TIME_GAP = 10;
 
-  private final Command backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
-  private final Command playCommand = new Command(I18N.tr("play"), Command.OK, 1);
-  private final Command pauseCommand = new Command(I18N.tr("pause"), Command.OK, 2);
-  private final Command nextCommand = new Command(I18N.tr("next"), Command.SCREEN, 3);
-  private final Command prevCommand = new Command(I18N.tr("previous"), Command.SCREEN, 4);
-  private final Command stopCommand = new Command(I18N.tr("stop"), Command.SCREEN, 7);
-  private final Command addToPlaylistCommand =
-      new Command(I18N.tr("add_to_playlist"), Command.SCREEN, 8);
-  private final Command showPlaylistCommand =
-      new Command(I18N.tr("show_playlist"), Command.SCREEN, 9);
-  private final Command sleepTimerCommand = new Command(I18N.tr("sleep_timer"), Command.SCREEN, 10);
+  private Command backCommand;
+  private Command playPauseCommand;
+  private Command nextCommand;
+  private Command prevCommand;
+  private Command stopCommand;
+  private Command addToPlaylistCommand;
+  private Command showPlaylistCommand;
+  private Command sleepTimerCommand;
   private Command cancelTimerCommand;
   private Command repeatCommand;
   private Command shuffleCommand;
@@ -132,9 +129,8 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     this.playlist = playlist;
     this.favoritesManager = FavoritesManager.getInstance();
     this.setTitle(title);
-    this.addCommand(this.backCommand);
+    this.initializeCommands();
     this.setCommandListener(this);
-    this.createCommand();
 
     this.touchSupported = this.hasPointerEvents();
 
@@ -149,6 +145,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
       } else {
         this.setStatus(I18N.tr("paused"));
       }
+      this.updatePlayPauseCommand();
     }
   }
 
@@ -189,6 +186,11 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
       this.originalStatus = s;
       this.timerOverrideActive = false;
     }
+
+    if (s != null && (s.equals(I18N.tr("playing")) || s.equals(I18N.tr("paused")))) {
+      this.updatePlayPauseCommand();
+    }
+
     this.updateDisplay();
   }
 
@@ -299,6 +301,22 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     this.addCommand(this.shuffleCommand);
   }
 
+  public void updatePlayPauseCommand() {
+    if (this.playPauseCommand != null) {
+      this.removeCommand(this.playPauseCommand);
+    }
+
+    String commandText;
+    if (this.gui != null && this.gui.isPlaying()) {
+      commandText = I18N.tr("pause");
+    } else {
+      commandText = I18N.tr("play");
+    }
+
+    this.playPauseCommand = new Command(commandText, Command.OK, 1);
+    this.addCommand(this.playPauseCommand);
+  }
+
   public void setAlbumArtUrl(String url) {
     if (url != null && !url.equals(this.albumArtUrl)) {
       this.albumArtUrl = url;
@@ -379,11 +397,6 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
           x, y, shuffleButtonX, shuffleButtonY, controlButtonWidth, controlButtonHeight)) {
         this.gui.toggleShuffleMode();
         this.updateDisplay();
-        return;
-      }
-
-      if (isPointInSlider(x, y)) {
-        seekToPosition(x);
       }
     } catch (Throwable e) {
     }
@@ -398,6 +411,21 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
       switch (action) {
         case Canvas.FIRE:
           this.gui.togglePlayer();
+
+          ThreadManagerIntegration.scheduleDelayedTask(
+              new Runnable() {
+                public void run() {
+                  ThreadManagerIntegration.executeUITask(
+                      new Runnable() {
+                        public void run() {
+                          updatePlayPauseCommand();
+                        }
+                      },
+                      "UpdatePlayPauseCommand");
+                }
+              },
+              "DelayedCommandUpdate",
+              200);
           break;
         case Canvas.RIGHT:
           this.showingNextActive = true;
@@ -426,33 +454,6 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
         && x <= buttonX + buttonW / 2
         && y >= buttonY - buttonH / 2
         && y <= buttonY + buttonH / 2;
-  }
-
-  private boolean isPointInSlider(int x, int y) {
-    return x >= this.sliderLeft
-        && x <= this.sliderLeft + this.sliderWidth
-        && y >= this.sliderTop - 15
-        && y <= this.sliderTop + this.sliderHeight + 15;
-  }
-
-  private void seekToPosition(int x) {
-    if (this.gui == null) {
-      return;
-    }
-
-    int relativeX = x - this.sliderLeft;
-    if (relativeX < 0) {
-      relativeX = 0;
-    }
-    if (relativeX > this.sliderWidth) {
-      relativeX = this.sliderWidth;
-    }
-
-    float percentage = (float) relativeX / (float) this.sliderWidth;
-    long duration = this.gui.getDuration();
-    long seekTime = (long) (duration * percentage);
-
-    this.gui.setMediaTime(seekTime);
   }
 
   private boolean intersects(int clipY, int clipHeight, int y, int h) {
@@ -894,14 +895,30 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
         } catch (Throwable e) {
         }
       }
-    } else if (c == this.playCommand || c == this.pauseCommand) {
+    } else if (c == this.playPauseCommand) {
       if (!this.isLoading()) {
         this.getPlayerGUI().togglePlayer();
+
+        ThreadManagerIntegration.scheduleDelayedTask(
+            new Runnable() {
+              public void run() {
+                ThreadManagerIntegration.executeUITask(
+                    new Runnable() {
+                      public void run() {
+                        updatePlayPauseCommand();
+                      }
+                    },
+                    "UpdatePlayPauseCommand");
+              }
+            },
+            "DelayedCommandUpdate",
+            200);
       }
     } else if (c == this.stopCommand) {
       this.gui.pausePlayer();
       this.gui.setMediaTime(0L);
       this.setStatus(I18N.tr("paused"));
+      this.updatePlayPauseCommand();
     } else if (c == this.repeatCommand) {
       this.getPlayerGUI().toggleRepeatMode();
     } else if (c == this.shuffleCommand) {
@@ -1037,8 +1054,17 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     this.observer.go(songList);
   }
 
-  private void createCommand() {
-    this.addCommand(this.playCommand);
+  private void initializeCommands() {
+    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
+    this.nextCommand = new Command(I18N.tr("next"), Command.SCREEN, 3);
+    this.prevCommand = new Command(I18N.tr("previous"), Command.SCREEN, 4);
+    this.stopCommand = new Command(I18N.tr("stop"), Command.SCREEN, 7);
+    this.addToPlaylistCommand = new Command(I18N.tr("add_to_playlist"), Command.SCREEN, 8);
+    this.showPlaylistCommand = new Command(I18N.tr("show_playlist"), Command.SCREEN, 9);
+    this.sleepTimerCommand = new Command(I18N.tr("sleep_timer"), Command.SCREEN, 10);
+
+    this.addCommand(this.backCommand);
+    updatePlayPauseCommand();
     this.addCommand(this.nextCommand);
     this.addCommand(this.prevCommand);
     this.addCommand(this.stopCommand);
@@ -1140,7 +1166,8 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
             if (action == SleepTimerForm.ACTION_STOP_PLAYBACK) {
               if (gui != null) {
                 gui.pausePlayer();
-                setStatus(I18N.tr("pause"));
+                setStatus(I18N.tr("paused"));
+                updatePlayPauseCommand();
               }
             } else if (action == SleepTimerForm.ACTION_EXIT_APP) {
               setStatus(I18N.tr("timer_expired_exit"));

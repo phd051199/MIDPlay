@@ -21,9 +21,9 @@ public class SleepTimerForm extends Form implements CommandListener {
   public static final int ACTION_STOP_PLAYBACK = 0;
   public static final int ACTION_EXIT_APP = 1;
 
-  private final Command setTimerCommand = new Command(I18N.tr("set_timer"), Command.OK, 1);
-  private final Command cancelCommand = new Command(I18N.tr("cancel"), Command.CANCEL, 2);
-  private final Command backCommand = new Command(I18N.tr("back"), Command.BACK, 3);
+  private Command setTimerCommand;
+  private Command cancelCommand;
+  private Command backCommand;
   private Command switchModeCommand;
 
   private final ChoiceGroup timerActionChoice;
@@ -53,7 +53,7 @@ public class SleepTimerForm extends Form implements CommandListener {
 
     this.modeHintItem = new StringItem("", "");
 
-    setupCommands();
+    initializeCommands();
     setupForm();
   }
 
@@ -62,7 +62,11 @@ public class SleepTimerForm extends Form implements CommandListener {
     updateModeDisplay();
   }
 
-  private void setupCommands() {
+  private void initializeCommands() {
+    this.setTimerCommand = new Command(I18N.tr("set_timer"), Command.OK, 1);
+    this.cancelCommand = new Command(I18N.tr("cancel"), Command.CANCEL, 2);
+    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 3);
+
     addCommand(setTimerCommand);
     addCommand(cancelCommand);
     addCommand(backCommand);
