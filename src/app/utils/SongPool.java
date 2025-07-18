@@ -5,11 +5,16 @@ import java.util.Vector;
 
 public class SongPool {
 
-  private static SongPool instance;
+  private static volatile SongPool instance;
+  private static final Object instanceLock = new Object();
 
-  public static synchronized SongPool getInstance() {
+  public static SongPool getInstance() {
     if (instance == null) {
-      instance = new SongPool();
+      synchronized (instanceLock) {
+        if (instance == null) {
+          instance = new SongPool();
+        }
+      }
     }
     return instance;
   }
@@ -18,7 +23,7 @@ public class SongPool {
   private final int maxPoolSize;
 
   private SongPool() {
-    this.maxPoolSize = 500;
+    this.maxPoolSize = 100;
     this.availableSongs = new Vector();
   }
 

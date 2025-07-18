@@ -5,11 +5,16 @@ import java.util.Vector;
 
 public class PlaylistPool {
 
-  private static PlaylistPool instance;
+  private static volatile PlaylistPool instance;
+  private static final Object instanceLock = new Object();
 
-  public static synchronized PlaylistPool getInstance() {
+  public static PlaylistPool getInstance() {
     if (instance == null) {
-      instance = new PlaylistPool();
+      synchronized (instanceLock) {
+        if (instance == null) {
+          instance = new PlaylistPool();
+        }
+      }
     }
     return instance;
   }
@@ -18,7 +23,7 @@ public class PlaylistPool {
   private final int maxPoolSize;
 
   private PlaylistPool() {
-    this.maxPoolSize = 200;
+    this.maxPoolSize = 100;
     this.availablePlaylists = new Vector();
   }
 

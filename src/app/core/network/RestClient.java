@@ -12,32 +12,39 @@ import javax.microedition.io.HttpConnection;
 public class RestClient {
 
   private static final int MAX_REDIRECT_TIMES = 5;
-  private static final int DEFAULT_TIMEOUT = 30000;
   private static final int BUFFER_SIZE = 8192;
   private static final String CHARSET = "UTF-8";
 
-  private static String USER_AGENT;
-  private static RestClient instance;
+  private static volatile String userAgent;
+  private static volatile RestClient instance;
   private static final Object instanceLock = new Object();
+  private static final Object userAgentLock = new Object();
 
   public static RestClient getInstance() {
-    synchronized (instanceLock) {
-      if (instance == null) {
-        instance = new RestClient();
+    if (instance == null) {
+      synchronized (instanceLock) {
+        if (instance == null) {
+          instance = new RestClient();
+        }
       }
     }
     return instance;
   }
 
   private static String getUserAgent() {
-    if (USER_AGENT == null) {
-      USER_AGENT = System.getProperty("microedition.platform");
-      if (USER_AGENT == null) {
-        USER_AGENT = "GenericJ2ME";
+    if (userAgent == null) {
+      synchronized (userAgentLock) {
+        if (userAgent == null) {
+          userAgent = System.getProperty("microedition.platform");
+          if (userAgent == null) {
+            userAgent = "GenericJ2ME";
+          }
+          userAgent += "/1.0 (MIDP-2.0; CLDC-1.1)";
+        }
       }
-      USER_AGENT += "/1.0 (MIDP-2.0; CLDC-1.1)";
     }
-    return USER_AGENT;
+
+    return userAgent;
   }
 
   private static byte[] readAllBytes(InputStream in, int contentLength) throws IOException {
@@ -103,7 +110,7 @@ public class RestClient {
     try {
       conn = (HttpConnection) Connector.open(url, Connector.READ_WRITE, true);
       conn.setRequestMethod(method);
-      conn.setRequestProperty("User-Agent", getUserAgent());
+      conn.setRequestProperty("user-agent", getUserAgent());
       return conn;
     } catch (Exception e) {
       if (conn != null) {
@@ -202,7 +209,7 @@ public class RestClient {
           ((InputStream) closeable).close();
         } else if (closeable instanceof OutputStream) {
           ((OutputStream) closeable).close();
-        } else if (closeable instanceof HttpConnection) {
+        } else if (closeable instanceof Connection) {
           ((Connection) closeable).close();
         }
       } catch (IOException ignore) {

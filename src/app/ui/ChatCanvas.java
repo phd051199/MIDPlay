@@ -28,7 +28,8 @@ import javax.microedition.lcdui.TextField;
 public class ChatCanvas extends Canvas implements CommandListener, LoadDataObserver {
 
   private static final int MAX_VISIBLE_MESSAGES = 5;
-  private static final int MAX_STORED_MESSAGES = 500;
+  private static final int MAX_STORED_MESSAGES = 100;
+  private static final int CLEANUP_THRESHOLD = 80;
   private static final int MESSAGE_BUFFER = 3;
 
   private static final int RECEIVED_BUBBLE_COLOR = 0xFFFFFF;
@@ -63,9 +64,9 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   private int focusedClickableIndex = -1;
   private int totalContentHeight = 0;
 
-  private final Command backCommand = new Command(I18N.tr("back"), Command.BACK, 0);
-  private final Command inputCommand = new Command(I18N.tr("input"), Command.SCREEN, 1);
-  private final Command selectCommand = new Command(I18N.tr("select"), Command.OK, 1);
+  private Command backCommand;
+  private Command inputCommand;
+  private Command selectCommand;
 
   private TextBox inputBox;
   private Font font;
@@ -76,11 +77,19 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   public ChatCanvas(String title, MainObserver observer) {
     this.observer = observer;
     this.setTitle(title);
+    this.initializeCommands();
+    this.setCommandListener(this);
+    this.sessionId = TextUtils.generateRandomId(12);
+  }
+
+  private void initializeCommands() {
+    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 0);
+    this.inputCommand = new Command(I18N.tr("input"), Command.SCREEN, 1);
+    this.selectCommand = new Command(I18N.tr("select"), Command.OK, 1);
+
     this.addCommand(selectCommand);
     this.addCommand(backCommand);
     this.addCommand(inputCommand);
-    this.setCommandListener(this);
-    this.sessionId = TextUtils.generateRandomId(12);
   }
 
   public void showNotify() {
@@ -98,6 +107,11 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
     currentMessageIndex = messages.size() - 1;
     currentCharIndex = 0;
     msg.displayText = "";
+
+    if (messages.size() > MAX_STORED_MESSAGES) {
+      forceCleanupMessages();
+    }
+
     startTypingEffect();
   }
 
@@ -107,6 +121,11 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
     currentMessageIndex = messages.size() - 1;
     currentCharIndex = 0;
     msg.displayText = "";
+
+    if (messages.size() > MAX_STORED_MESSAGES) {
+      forceCleanupMessages();
+    }
+
     repaint();
   }
 
@@ -264,25 +283,50 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   private void cleanupOldMessages() {
-    if (messages.size() > MAX_STORED_MESSAGES && isScrolledToBottom()) {
+    if (messages.size() > CLEANUP_THRESHOLD) {
       int messagesToRemove = messages.size() - MAX_VISIBLE_MESSAGES;
 
-      if (messagesToRemove > 0 && messagesToRemove < messages.size() / 2) {
-        Vector messagesToKeep = new Vector();
-        for (int i = messagesToRemove; i < messages.size(); i++) {
+      if (messagesToRemove > 0) {
+        Vector messagesToKeep = new Vector(MAX_VISIBLE_MESSAGES);
+        int startIndex = Math.max(0, messages.size() - MAX_VISIBLE_MESSAGES);
+
+        for (int i = startIndex; i < messages.size(); i++) {
           messagesToKeep.addElement(messages.elementAt(i));
         }
 
+        messages.removeAllElements();
         messages = messagesToKeep;
 
-        currentMessageIndex -= messagesToRemove;
-        if (currentMessageIndex < 0) {
-          currentMessageIndex = 0;
-        }
+        currentMessageIndex = Math.max(0, currentMessageIndex - messagesToRemove);
+        firstVisibleMessage = 0;
+        lastVisibleMessage = messages.size() - 1;
 
-        firstVisibleMessage = Math.max(0, firstVisibleMessage - messagesToRemove);
-        lastVisibleMessage = Math.max(0, lastVisibleMessage - messagesToRemove);
+        System.gc();
       }
+    }
+  }
+
+  private void forceCleanupMessages() {
+    if (messages.size() > MAX_STORED_MESSAGES) {
+      Vector messagesToKeep = new Vector(MAX_VISIBLE_MESSAGES);
+      int startIndex = Math.max(0, messages.size() - MAX_VISIBLE_MESSAGES);
+
+      for (int i = startIndex; i < messages.size(); i++) {
+        messagesToKeep.addElement(messages.elementAt(i));
+      }
+
+      messages.removeAllElements();
+      messages = messagesToKeep;
+
+      currentMessageIndex = Math.min(currentMessageIndex, messages.size() - 1);
+      if (currentMessageIndex < 0) {
+        currentMessageIndex = 0;
+      }
+
+      firstVisibleMessage = 0;
+      lastVisibleMessage = messages.size() - 1;
+
+      System.gc();
     }
   }
 

@@ -64,11 +64,11 @@ public class FavoritesList extends List
     this.favoritesManager = FavoritesManager.getInstance();
     this.imageLoader = ImageLoader.getInstance();
     this.loadDefaultImage();
-    initCommands();
+    initializeCommands();
     initComponents();
   }
 
-  private void initCommands() {
+  private void initializeCommands() {
     this.backCommand = new Command(I18N.tr("back"), Command.BACK, 0);
     this.removeCommand = new Command(I18N.tr("remove_from_favorites"), Command.ITEM, 2);
     this.createPlaylistCommand = new Command(I18N.tr("create_playlist"), Command.ITEM, 3);

@@ -3,9 +3,10 @@ package app.core.platform;
 import app.constants.ServicesConstants;
 import app.core.settings.SettingsManager;
 
-public class PlayerMethod {
-  public static final int PASS_URL = 0;
-  public static final int PASS_CONNECTION_STREAM = 1;
+public class DeviceInfo {
+
+  public static final int PLAYER_PASS_URL = 0;
+  public static final int PLAYER_PASS_CONNECTION_STREAM = 1;
 
   private static boolean checkClass(String s) {
     try {
@@ -18,7 +19,7 @@ public class PlayerMethod {
 
   // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
   public static int getPlayerHttpMethod() {
-    int playerHttpMethod = PASS_URL;
+    int playerHttpMethod = PLAYER_PASS_URL;
     // platform
     boolean symbianJrt = false;
     boolean symbian = false;
@@ -58,13 +59,13 @@ public class PlayerMethod {
       try {
         Class.forName("com.sun.mmedia.protocol.CommonDS");
         // s40v1 uses sun impl for media and i/o so it should work fine
-        playerHttpMethod = PASS_URL;
+        playerHttpMethod = PLAYER_PASS_URL;
       } catch (Exception e) {
         // s40v2+ breaks http locator parsing
-        playerHttpMethod = PASS_CONNECTION_STREAM;
+        playerHttpMethod = PLAYER_PASS_CONNECTION_STREAM;
       }
     } catch (Exception e) {
-      playerHttpMethod = PASS_URL;
+      playerHttpMethod = PLAYER_PASS_URL;
       if (symbian) {
         if (symbianJrt
             && (p.indexOf("java_build_version=2.") != -1
@@ -72,21 +73,21 @@ public class PlayerMethod {
           // emc (s60v5+), supports mp3 streaming
         } else if (checkClass("com.symbian.mmapi.PlayerImpl")) {
           // uiq
-          playerHttpMethod = PASS_CONNECTION_STREAM;
+          playerHttpMethod = PLAYER_PASS_CONNECTION_STREAM;
         } else {
           // mmf (s60v3.2-)
-          playerHttpMethod = PASS_CONNECTION_STREAM;
+          playerHttpMethod = PLAYER_PASS_CONNECTION_STREAM;
         }
       }
     }
 
     if (SettingsManager.getInstance().getCurrentService().equals(ServicesConstants.SOUNDCLOUD)
-        && playerHttpMethod == PASS_URL) {
-      playerHttpMethod = PASS_CONNECTION_STREAM;
+        && playerHttpMethod == PLAYER_PASS_URL) {
+      playerHttpMethod = PLAYER_PASS_CONNECTION_STREAM;
     }
 
     return playerHttpMethod;
   }
 
-  private PlayerMethod() {}
+  private DeviceInfo() {}
 }

@@ -69,7 +69,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     super(title, List.IMPLICIT);
     this.setTitle(title);
     this.service = service;
-    this.initCommands();
+    this.initializeCommands();
     this.setCommandListener(this);
   }
 
@@ -78,7 +78,7 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
     this.observer.go(aboutForm);
   }
 
-  private void initCommands() {
+  private void initializeCommands() {
     this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 1);
     this.reorderCommand = new Command(I18N.tr("reorder"), Command.SCREEN, 2);
     this.menuVisibilityCommand = new Command(I18N.tr("menu_visibility"), Command.SCREEN, 3);

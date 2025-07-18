@@ -14,8 +14,9 @@ public class ThreadSafetyUtils {
       throw new IllegalArgumentException("Lock name cannot be null");
     }
 
+    Object lock = namedLocks.get(lockName);
     synchronized (namedLocksLock) {
-      Object lock = namedLocks.get(lockName);
+      lock = namedLocks.get(lockName);
       if (lock == null) {
         if (namedLocks.size() >= MAX_NAMED_LOCKS) {
           namedLocks.clear();
@@ -24,8 +25,8 @@ public class ThreadSafetyUtils {
         lock = new Object();
         namedLocks.put(lockName, lock);
       }
-      return lock;
     }
+    return lock;
   }
 
   public static void removeNamedLock(String lockName) {

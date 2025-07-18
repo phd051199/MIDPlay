@@ -27,8 +27,9 @@ import javax.microedition.midlet.MIDletStateChangeException;
 
 public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
 
-  private static MIDPlay instance;
+  private static volatile MIDPlay instance;
   private static String appVersion = "";
+  private static final Object instanceLock = new Object();
 
   private static final String EMPTY_STRING = "";
   private static final int MAX_HISTORY_SIZE = 10;
@@ -48,7 +49,11 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   private Command cancelUpdateCommand;
 
   public MIDPlay() {
-    instance = this;
+    synchronized (instanceLock) {
+      if (instance == null) {
+        instance = this;
+      }
+    }
     initializeApplication();
     initializeCommands();
   }
@@ -87,7 +92,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
 
   private void cleanup() {
     try {
-      navigationHistory.removeAllElements();
+      clearHistory();
 
       try {
         SettingsManager.getInstance().shutdown();
@@ -246,14 +251,10 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
     if (d1 == null || d2 == null) {
       return false;
     }
-    String class1 = d1.getClass().toString();
-    String class2 = d2.getClass().toString();
-    return class1.equals(class2);
+    return d1.getClass().equals(d2.getClass());
   }
 
-  public void handle(Song song) {
-    throw new RuntimeException("Not implemented");
-  }
+  public void handle(Song song) {}
 
   public Displayable replaceCurrent(Displayable displayable) {
     if (displayable == null) {
@@ -295,13 +296,5 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
     } else {
       getDisplay().setCurrent(alert);
     }
-  }
-
-  public int getHistorySize() {
-    return navigationHistory.size();
-  }
-
-  public boolean isHistoryEmpty() {
-    return navigationHistory.isEmpty();
   }
 }

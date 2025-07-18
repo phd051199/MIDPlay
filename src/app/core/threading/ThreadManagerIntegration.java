@@ -8,15 +8,45 @@ import app.utils.ImageUtils;
 import java.util.Vector;
 
 public class ThreadManagerIntegration {
+  private static final int MAX_NETWORK_POOL_SIZE = 5;
+  private static final int MAX_DATA_POOL_SIZE = 3;
+  private static final int MAX_UI_POOL_SIZE = 3;
 
-  private static final ThreadManager threadManager = ThreadManager.getInstance();
-  private static final ThreadPool networkPool = threadManager.createThreadPool("NetworkPool", 5);
-  private static ThreadPool dataPool = threadManager.createThreadPool("DataPool", 3);
-  private static final ThreadPool uiPool = threadManager.createThreadPool("UIPool", 3);
-  private static final PlayerThreadManager playerThreadManager = PlayerThreadManager.getInstance();
+  private static final Object initLock = new Object();
+  private static volatile boolean initialized = false;
+
+  private static ThreadManager threadManager;
+  private static ThreadPool networkPool;
+  private static ThreadPool dataPool;
+  private static ThreadPool uiPool;
+  private static PlayerThreadManager playerThreadManager;
   private static final Object dataPoolLock = new Object();
 
+  static {
+    initializePools();
+  }
+
+  private static void initializePools() {
+    synchronized (initLock) {
+      if (!initialized) {
+        threadManager = ThreadManager.getInstance();
+        networkPool = threadManager.createThreadPool("NetworkPool", MAX_NETWORK_POOL_SIZE);
+        dataPool = threadManager.createThreadPool("DataPool", MAX_DATA_POOL_SIZE);
+        uiPool = threadManager.createThreadPool("UIPool", MAX_UI_POOL_SIZE);
+        playerThreadManager = PlayerThreadManager.getInstance();
+        initialized = true;
+      }
+    }
+  }
+
+  private static void ensureInitialized() {
+    if (!initialized) {
+      initializePools();
+    }
+  }
+
   public static void executeNetworkRequest(final String url, final RestCallback callback) {
+    ensureInitialized();
     networkPool.executeWithCallback(
         new Runnable() {
           public void run() {
@@ -52,12 +82,14 @@ public class ThreadManagerIntegration {
   }
 
   private static void ensureDataPoolAvailable() {
-    synchronized (dataPoolLock) {
-      if (dataPool == null || dataPool.isShutdown()) {
-        try {
-          dataPool = threadManager.createThreadPool("DataPool", 3);
-        } catch (Exception e) {
-          throw new RuntimeException("Failed to create DataPool: " + e.getMessage());
+    if (dataPool == null || dataPool.isShutdown()) {
+      synchronized (dataPoolLock) {
+        if (dataPool == null || dataPool.isShutdown()) {
+          try {
+            dataPool = threadManager.createThreadPool("DataPool", MAX_DATA_POOL_SIZE);
+          } catch (Exception e) {
+            throw new RuntimeException("Failed to create DataPool: " + e.getMessage());
+          }
         }
       }
     }
@@ -73,10 +105,12 @@ public class ThreadManagerIntegration {
   }
 
   public static void executeUITask(Runnable task, String taskName) {
+    ensureInitialized();
     uiPool.execute(task);
   }
 
   public static void executeBackgroundTask(Runnable task, String taskName) {
+    ensureInitialized();
     threadManager.executeAsync(task, taskName);
   }
 
@@ -163,7 +197,7 @@ public class ThreadManagerIntegration {
     synchronized (dataPoolLock) {
       if (dataPool == null || dataPool.isShutdown()) {
         try {
-          dataPool = threadManager.createThreadPool("DataPool", 3);
+          dataPool = threadManager.createThreadPool("DataPool", MAX_DATA_POOL_SIZE);
         } catch (Exception e) {
           throw new RuntimeException("Failed to recreate DataPool: " + e.getMessage());
         }
