@@ -47,14 +47,14 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     this.curPage = 1;
     this.perPage = 10;
     this.loadDefaultImage();
-    this.initCommands();
+    this.initializeCommands();
     this.images = new Vector();
     this.songItems = items;
     this.initComponents();
     this.setCommandListener(this);
   }
 
-  private void initCommands() {
+  private void initializeCommands() {
     this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 2);
     this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
     this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 3);

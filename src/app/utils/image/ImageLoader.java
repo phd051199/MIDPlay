@@ -5,14 +5,20 @@ import java.util.Vector;
 import javax.microedition.lcdui.Image;
 
 public class ImageLoader {
-  private static ImageLoader instance;
+  private static volatile ImageLoader instance;
+  private static final Object instanceLock = new Object();
 
   private static final int MAX_CONCURRENT_THREADS = 3;
+  private static final int MAX_ACTIVE_REQUESTS = 30;
   private static final int LOAD_DELAY_MS = 50;
 
-  public static synchronized ImageLoader getInstance() {
+  public static ImageLoader getInstance() {
     if (instance == null) {
-      instance = new ImageLoader();
+      synchronized (instanceLock) {
+        if (instance == null) {
+          instance = new ImageLoader();
+        }
+      }
     }
     return instance;
   }
@@ -37,6 +43,21 @@ public class ImageLoader {
     }
 
     synchronized (requestLock) {
+      cleanupCancelledRequests();
+
+      if (activeRequests.size() >= MAX_ACTIVE_REQUESTS) {
+        if (request.getCallback() != null) {
+          request
+              .getCallback()
+              .onImageLoadFailed(
+                  request.getIndex(),
+                  request.getUrl(),
+                  "Too many active requests",
+                  request.getRequestId());
+        }
+        return;
+      }
+
       activeRequests.addElement(request);
     }
 
@@ -78,12 +99,6 @@ public class ImageLoader {
                   },
                   "ImageLoader-UI-" + request.getIndex());
             }
-
-            try {
-              Thread.sleep(LOAD_DELAY_MS);
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-            }
           }
 
           public void onImageLoadError(Exception e) {
@@ -123,6 +138,17 @@ public class ImageLoader {
         ImageLoadRequest request = (ImageLoadRequest) activeRequests.elementAt(i);
         request.cancel();
       }
+      activeRequests.removeAllElements();
+    }
+  }
+
+  private void cleanupCancelledRequests() {
+    for (int i = activeRequests.size() - 1; i >= 0; i--) {
+      ImageLoadRequest request = (ImageLoadRequest) activeRequests.elementAt(i);
+      if (request.isCancelled()
+          || (request.getCallback() != null && !request.getCallback().shouldContinueLoading())) {
+        activeRequests.removeElementAt(i);
+      }
     }
   }
 
@@ -150,18 +176,21 @@ public class ImageLoader {
   public void shutdown() {
     isShutdown = true;
     cancelAllRequests();
+    forceCleanup();
   }
 
   public boolean isShutdown() {
     return isShutdown;
   }
 
-  public void forceGarbageCollection() {
-    System.gc();
-    try {
-      Thread.sleep(100);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+  private void forceCleanup() {
+    synchronized (requestLock) {
+      activeRequests.removeAllElements();
     }
+    System.gc();
+  }
+
+  public void forceGarbageCollection() {
+    forceCleanup();
   }
 }

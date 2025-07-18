@@ -47,7 +47,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
     this.loadSearchConfig();
 
     this.append(this.searchTypeGroup);
-    this.initMenu();
+    this.initializeCommands();
   }
 
   private void loadSearchConfig() {
@@ -167,7 +167,7 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
     MainList.displayMessage(title, message, messageType, this.observer, this);
   }
 
-  private void initMenu() {
+  private void initializeCommands() {
     this.searchCommand = new Command(I18N.tr("search"), Command.OK, 0);
     this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 1);
     this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);

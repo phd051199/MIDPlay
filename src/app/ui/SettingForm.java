@@ -140,14 +140,18 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
   public SettingForm(String title, MainObserver parent) {
     super(title);
     this.parent = parent;
-    initUI();
+    initializeCommands();
+    initializeUI();
 
     populateFormWithSettings();
   }
 
-  private void initUI() {
+  private void initializeCommands() {
     this.backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
     this.saveCommand = new Command(I18N.tr("save"), Command.SCREEN, 2);
+  }
+
+  private void initializeUI() {
 
     languageChoice = new ChoiceGroup(I18N.tr("language"), Choice.POPUP);
     String[] languages = I18N.getLanguages();

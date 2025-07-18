@@ -85,6 +85,23 @@ public class RecordStoreManager {
     return recordStore.enumerateRecords(null, null, false);
   }
 
+  public void safeEnumerateRecords(RecordEnumerationCallback callback) throws RecordStoreException {
+    if (callback == null) {
+      throw new IllegalArgumentException("Callback cannot be null");
+    }
+
+    openRecordStore();
+    RecordEnumeration enumeration = recordStore.enumerateRecords(null, null, false);
+
+    try {
+      callback.processEnumeration(enumeration);
+    } finally {
+      if (enumeration != null) {
+        enumeration.destroy();
+      }
+    }
+  }
+
   public int getNumRecords() throws RecordStoreException {
     openRecordStore();
     return recordStore.getNumRecords();
@@ -150,5 +167,9 @@ public class RecordStoreManager {
     } finally {
       enumeration.destroy();
     }
+  }
+
+  public static interface RecordEnumerationCallback {
+    void processEnumeration(RecordEnumeration enumeration) throws RecordStoreException;
   }
 }

@@ -7,12 +7,17 @@ import javax.microedition.rms.RecordEnumeration;
 import org.json.me.JSONObject;
 
 public class PlayerSettingsManager {
-  private static PlayerSettingsManager instance;
+  private static volatile PlayerSettingsManager instance;
+  private static final Object instanceLock = new Object();
   private static final String PLAYER_SETTINGS_STORE_NAME = "player_settings";
 
-  public static synchronized PlayerSettingsManager getInstance() {
+  public static PlayerSettingsManager getInstance() {
     if (instance == null) {
-      instance = new PlayerSettingsManager();
+      synchronized (instanceLock) {
+        if (instance == null) {
+          instance = new PlayerSettingsManager();
+        }
+      }
     }
     return instance;
   }

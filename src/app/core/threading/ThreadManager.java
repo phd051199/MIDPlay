@@ -5,16 +5,20 @@ import java.util.Vector;
 
 public class ThreadManager {
 
-  private static ThreadManager instance;
+  private static volatile ThreadManager instance;
   private static final Object instanceLock = new Object();
 
   private static final int MAX_POOL_SIZE = 5;
   private static final String DEFAULT_THREAD_PREFIX = "MIDPlay-Thread-";
+  private static final int CLEANUP_INTERVAL_MS = 30000;
+  private static final int MAX_THREAD_AGE_MS = 300000;
 
   public static ThreadManager getInstance() {
-    synchronized (instanceLock) {
-      if (instance == null) {
-        instance = new ThreadManager();
+    if (instance == null) {
+      synchronized (instanceLock) {
+        if (instance == null) {
+          instance = new ThreadManager();
+        }
       }
     }
     return instance;
@@ -25,6 +29,7 @@ public class ThreadManager {
   private final Object threadsLock;
   private volatile boolean isShuttingDown;
   private int nextThreadId;
+  private long lastCleanupTime;
 
   private ThreadManager() {
     managedThreads = new Hashtable();
@@ -32,6 +37,7 @@ public class ThreadManager {
     threadsLock = new Object();
     nextThreadId = 1;
     isShuttingDown = false;
+    lastCleanupTime = System.currentTimeMillis();
 
     addShutdownHook();
   }
@@ -40,6 +46,8 @@ public class ThreadManager {
     if (isShuttingDown) {
       throw new IllegalStateException("ThreadManager is shutting down");
     }
+
+    performPeriodicCleanup();
 
     if (name == null || name.trim().length() == 0) {
       name = DEFAULT_THREAD_PREFIX + getNextThreadId();
@@ -137,18 +145,37 @@ public class ThreadManager {
     synchronized (threadsLock) {
       Vector keysToRemove = new Vector();
       java.util.Enumeration keys = managedThreads.keys();
+      long currentTime = System.currentTimeMillis();
 
       while (keys.hasMoreElements()) {
         String key = (String) keys.nextElement();
         ThreadInfo info = (ThreadInfo) managedThreads.get(key);
-        if (!info.thread.isAlive()) {
+
+        if (!info.thread.isAlive() || (currentTime - info.createdTime) > MAX_THREAD_AGE_MS) {
           keysToRemove.addElement(key);
         }
       }
 
       for (int i = 0; i < keysToRemove.size(); i++) {
-        managedThreads.remove(keysToRemove.elementAt(i));
+        String key = (String) keysToRemove.elementAt(i);
+        ThreadInfo info = (ThreadInfo) managedThreads.get(key);
+        if (info != null && info.thread.isAlive()) {
+          try {
+            info.thread.interrupt();
+          } catch (Exception e) {
+          }
+        }
+        managedThreads.remove(key);
       }
+
+      lastCleanupTime = currentTime;
+    }
+  }
+
+  private void performPeriodicCleanup() {
+    long currentTime = System.currentTimeMillis();
+    if (currentTime - lastCleanupTime > CLEANUP_INTERVAL_MS) {
+      cleanupDeadThreads();
     }
   }
 
