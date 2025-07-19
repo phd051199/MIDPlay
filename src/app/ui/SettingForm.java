@@ -147,8 +147,8 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
   }
 
   private void initializeCommands() {
-    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
-    this.saveCommand = new Command(I18N.tr("save"), Command.SCREEN, 2);
+    this.saveCommand = new Command(I18N.tr("save"), Command.SCREEN, 1);
+    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 2);
   }
 
   private void initializeUI() {

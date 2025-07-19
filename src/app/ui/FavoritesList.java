@@ -69,11 +69,11 @@ public class FavoritesList extends List
   }
 
   private void initializeCommands() {
-    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 0);
+    this.createPlaylistCommand = new Command(I18N.tr("create_playlist"), Command.SCREEN, 1);
     this.removeCommand = new Command(I18N.tr("remove_from_favorites"), Command.ITEM, 2);
-    this.createPlaylistCommand = new Command(I18N.tr("create_playlist"), Command.ITEM, 3);
-    this.renamePlaylistCommand = new Command(I18N.tr("rename_playlist"), Command.ITEM, 4);
-    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 1);
+    this.renamePlaylistCommand = new Command(I18N.tr("rename_playlist"), Command.ITEM, 3);
+    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 4);
+    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 5);
 
     this.addCommand(backCommand);
     this.addCommand(removeCommand);

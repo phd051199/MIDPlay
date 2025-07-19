@@ -79,9 +79,9 @@ public class MainList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void initializeCommands() {
-    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 1);
-    this.reorderCommand = new Command(I18N.tr("reorder"), Command.SCREEN, 2);
-    this.menuVisibilityCommand = new Command(I18N.tr("menu_visibility"), Command.SCREEN, 3);
+    this.reorderCommand = new Command(I18N.tr("reorder"), Command.SCREEN, 1);
+    this.menuVisibilityCommand = new Command(I18N.tr("menu_visibility"), Command.SCREEN, 2);
+    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 3);
     this.exitCommand = new Command(I18N.tr("exit"), Command.EXIT, 4);
 
     this.addCommand(this.nowPlayingCommand);

@@ -55,11 +55,11 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   }
 
   private void initializeCommands() {
-    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 2);
-    this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
-    this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 3);
-    this.addToPlaylistCommand = new Command(I18N.tr("add_to_playlist"), Command.ITEM, 4);
-    this.removeFromPlaylistCommand = new Command(I18N.tr("remove_from_playlist"), Command.ITEM, 5);
+    this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 1);
+    this.addToPlaylistCommand = new Command(I18N.tr("add_to_playlist"), Command.ITEM, 2);
+    this.removeFromPlaylistCommand = new Command(I18N.tr("remove_from_playlist"), Command.ITEM, 3);
+    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 4);
+    this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 5);
 
     this.addCommand(this.exitCommand);
     this.addCommand(this.searchCommand);
