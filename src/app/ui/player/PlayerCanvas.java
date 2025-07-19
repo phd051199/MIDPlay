@@ -248,7 +248,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     ThreadManagerIntegration.clearPlayerQueues();
   }
 
-  private synchronized PlayerGUI getPlayerGUI() {
+  public synchronized PlayerGUI getPlayerGUI() {
     if (this.gui == null) {
       this.gui = new PlayerGUI(this);
 

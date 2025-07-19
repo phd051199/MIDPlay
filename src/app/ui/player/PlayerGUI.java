@@ -5,6 +5,7 @@ import app.core.platform.DeviceInfo;
 import app.core.settings.PlayerSettingsManager;
 import app.core.threading.ThreadManagerIntegration;
 import app.models.Song;
+import app.ui.TickerManager;
 import app.utils.I18N;
 import java.io.IOException;
 import java.io.InputStream;
@@ -83,7 +84,7 @@ public class PlayerGUI implements PlayerListener {
     this.index = index;
     this.listSong = lst;
     this.closePlayer();
-    this.setStatus("");
+    this.setStatus(I18N.tr("loading"));
     this.parent.updateDisplay();
 
     if (this.shuffleMode) {
@@ -188,7 +189,7 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public boolean isPlaying() {
-    return this.player != null && this.player.getState() >= 400;
+    return this.player != null && this.player.getState() >= Player.STARTED;
   }
 
   public long getDuration() {
@@ -387,6 +388,7 @@ public class PlayerGUI implements PlayerListener {
               if (!playerTaskRunning) {
                 return;
               }
+
               if (PlayerGUI.this.player == null
                   || PlayerGUI.this.player.getState() < Player.PREFETCHED) {
                 PlayerGUI.this.assertPlayer();
@@ -395,6 +397,7 @@ public class PlayerGUI implements PlayerListener {
                   || PlayerGUI.this.player.getState() >= Player.STARTED) {
                 return;
               }
+
               try {
                 long duration = PlayerGUI.this.getDuration();
                 if (duration != -1L && PlayerGUI.this.player.getMediaTime() >= duration) {
@@ -402,9 +405,12 @@ public class PlayerGUI implements PlayerListener {
                 }
               } catch (MediaException e) {
               }
+
               PlayerGUI.this.player.start();
-              if (PlayerGUI.this.player.getState() >= Player.STARTED) {
+
+              if (PlayerGUI.this.isPlaying()) {
                 PlayerGUI.this.setStatus(I18N.tr("playing"));
+                TickerManager.getInstance().notifySongChanged();
               }
             } catch (Throwable e) {
             } finally {
@@ -473,6 +479,7 @@ public class PlayerGUI implements PlayerListener {
       this.setStatus("");
     }
 
+    TickerManager.getInstance().notifySongChanged();
     closeResources();
     cleanupTimers();
   }
@@ -673,7 +680,7 @@ public class PlayerGUI implements PlayerListener {
                     if (shuffleMode) {
                       if (shufflePlayedCount >= shuffleIndices.length) {
                         closePlayer();
-                        setStatus("");
+                        setStatus(I18N.tr("finished"));
                       } else {
                         getNextShuffleSong();
                         closePlayer();
@@ -683,7 +690,7 @@ public class PlayerGUI implements PlayerListener {
                       getNextSong();
                     } else {
                       closePlayer();
-                      setStatus("");
+                      setStatus(I18N.tr("finished"));
                     }
                     break;
                 }
