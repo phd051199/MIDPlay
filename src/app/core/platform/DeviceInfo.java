@@ -7,6 +7,7 @@ public class DeviceInfo {
 
   public static final int PLAYER_PASS_URL = 0;
   public static final int PLAYER_PASS_CONNECTION_STREAM = 1;
+  public static String deviceId = null;
 
   private static boolean checkClass(String s) {
     try {
@@ -19,6 +20,16 @@ public class DeviceInfo {
 
   // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
   public static int getPlayerHttpMethod() {
+    SettingsManager settingsManager = SettingsManager.getInstance();
+
+    if (settingsManager.isForcePassConnectionEnabled()) {
+      return PLAYER_PASS_CONNECTION_STREAM;
+    }
+
+    if (settingsManager.getCurrentService().equals(ServicesConstants.SOUNDCLOUD)) {
+      return PLAYER_PASS_CONNECTION_STREAM;
+    }
+
     int playerHttpMethod = PLAYER_PASS_URL;
     // platform
     boolean symbianJrt = false;
@@ -78,12 +89,10 @@ public class DeviceInfo {
           // mmf (s60v3.2-)
           playerHttpMethod = PLAYER_PASS_CONNECTION_STREAM;
         }
+      } else {
+        // non-symbian
+        playerHttpMethod = PLAYER_PASS_CONNECTION_STREAM;
       }
-    }
-
-    if (SettingsManager.getInstance().getCurrentService().equals(ServicesConstants.SOUNDCLOUD)
-        && playerHttpMethod == PLAYER_PASS_URL) {
-      playerHttpMethod = PLAYER_PASS_CONNECTION_STREAM;
     }
 
     return playerHttpMethod;

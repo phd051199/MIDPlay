@@ -46,6 +46,7 @@ public class SettingsManager {
   private boolean loadPlaylistArt;
   private String themeColor;
   private String backgroundColor;
+  private boolean forcePassConnection;
   private int cachedThemeColorRGB = -1;
   private int cachedBackgroundColorRGB = -1;
   private String lastThemeColor = "";
@@ -72,6 +73,7 @@ public class SettingsManager {
         this.loadPlaylistArt = settings.optBoolean("loadPlaylistArt", true);
         this.themeColor = settings.optString("themeColor", "410A4A");
         this.backgroundColor = settings.optString("backgroundColor", "F0F0F0");
+        this.forcePassConnection = settings.optBoolean("forcePassConnection", false);
 
         re.destroy();
       } else {
@@ -95,6 +97,7 @@ public class SettingsManager {
     this.loadPlaylistArt = true;
     this.themeColor = "410A4A";
     this.backgroundColor = "F0F0F0";
+    this.forcePassConnection = false;
   }
 
   public String[] getAudioQualities() {
@@ -112,7 +115,8 @@ public class SettingsManager {
       String autoUpdate,
       String loadPlaylistArt,
       String themeColor,
-      String backgroundColor) {
+      String backgroundColor,
+      String forcePassConnection) {
     this.language = language;
     this.audioQuality = audioQuality;
     this.service = service;
@@ -120,6 +124,7 @@ public class SettingsManager {
     this.loadPlaylistArt = "true".equals(loadPlaylistArt);
     this.themeColor = themeColor;
     this.backgroundColor = backgroundColor;
+    this.forcePassConnection = "true".equals(forcePassConnection);
 
     JSONObject settings = new JSONObject();
     try {
@@ -130,6 +135,7 @@ public class SettingsManager {
       settings.put("loadPlaylistArt", this.loadPlaylistArt);
       settings.put("themeColor", this.themeColor);
       settings.put("backgroundColor", this.backgroundColor);
+      settings.put("forcePassConnection", this.forcePassConnection);
     } catch (Exception e) {
     }
 
@@ -295,7 +301,8 @@ public class SettingsManager {
       this.autoUpdate ? "true" : "false",
       this.loadPlaylistArt ? "true" : "false",
       this.themeColor,
-      this.backgroundColor
+      this.backgroundColor,
+      this.forcePassConnection ? "true" : "false"
     };
   }
 
@@ -317,6 +324,10 @@ public class SettingsManager {
 
   public boolean isLoadPlaylistArtEnabled() {
     return this.loadPlaylistArt;
+  }
+
+  public boolean isForcePassConnectionEnabled() {
+    return this.forcePassConnection;
   }
 
   public void setLoadPlaylistArt(boolean loadPlaylistArt) {

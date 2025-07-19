@@ -168,9 +168,9 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
   }
 
   private void initializeCommands() {
-    this.searchCommand = new Command(I18N.tr("search"), Command.OK, 0);
-    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 1);
-    this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
+    this.searchCommand = new Command(I18N.tr("search"), Command.OK, 1);
+    this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 2);
+    this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 3);
     this.addCommand(this.searchCommand);
     this.addCommand(this.exitCommand);
     this.addCommand(this.nowPlayingCommand);

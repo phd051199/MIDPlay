@@ -83,9 +83,9 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   private void initializeCommands() {
-    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 0);
     this.inputCommand = new Command(I18N.tr("input"), Command.SCREEN, 1);
-    this.selectCommand = new Command(I18N.tr("select"), Command.OK, 1);
+    this.selectCommand = new Command(I18N.tr("select"), Command.OK, 2);
+    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 3);
 
     this.addCommand(selectCommand);
     this.addCommand(backCommand);

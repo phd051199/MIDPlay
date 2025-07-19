@@ -22,6 +22,7 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
   private static ChoiceGroup serviceChoice;
   private static ChoiceGroup autoUpdateChoice;
   private static ChoiceGroup performanceChoice;
+  private static ChoiceGroup playerMethodChoice;
   private static TextField themeColorField;
   private static TextField backgroundColorField;
 
@@ -93,6 +94,13 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
           backgroundColorField.setString(backgroundColor);
         }
       }
+
+      if (settings.length > 7) {
+        boolean forcePassConnection = "true".equals(settings[7]);
+        if (playerMethodChoice != null) {
+          playerMethodChoice.setSelectedIndex(0, forcePassConnection);
+        }
+      }
     } catch (Exception e) {
       setDefaultSettings();
     }
@@ -129,6 +137,9 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
       if (backgroundColorField != null) {
         backgroundColorField.setString("F0F0F0");
       }
+      if (playerMethodChoice != null) {
+        playerMethodChoice.setSelectedIndex(0, false);
+      }
     } catch (Exception e) {
     }
   }
@@ -147,8 +158,8 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
   }
 
   private void initializeCommands() {
-    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
-    this.saveCommand = new Command(I18N.tr("save"), Command.SCREEN, 2);
+    this.saveCommand = new Command(I18N.tr("save"), Command.SCREEN, 1);
+    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 2);
   }
 
   private void initializeUI() {
@@ -177,6 +188,9 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
     performanceChoice = new ChoiceGroup(I18N.tr("performance"), Choice.MULTIPLE);
     performanceChoice.append(I18N.tr("load_playlist_art"), null);
 
+    playerMethodChoice = new ChoiceGroup(I18N.tr("player_method"), Choice.MULTIPLE);
+    playerMethodChoice.append(I18N.tr("force_pass_connection"), null);
+
     themeColorField =
         new TextField(I18N.tr("theme_color"), settingManager.getThemeColor(), 6, TextField.ANY);
     backgroundColorField =
@@ -188,6 +202,7 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
     append(serviceChoice);
     append(autoUpdateChoice);
     append(performanceChoice);
+    append(playerMethodChoice);
     append(themeColorField);
     append(backgroundColorField);
 
@@ -228,7 +243,8 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
           isAutoUpdateEnabled() ? "true" : "false",
           isLoadPlaylistArtEnabled() ? "true" : "false",
           themeColor,
-          backgroundColor);
+          backgroundColor,
+          isForcePassConnectionEnabled() ? "true" : "false");
 
       if (languageChanged) {
         I18N.setLanguage(selectedLanguage);
@@ -313,6 +329,10 @@ public class SettingForm extends Form implements MainObserver, CommandListener {
 
   public boolean isLoadPlaylistArtEnabled() {
     return performanceChoice.isSelected(0);
+  }
+
+  public boolean isForcePassConnectionEnabled() {
+    return playerMethodChoice.isSelected(0);
   }
 
   public String getThemeColor() {

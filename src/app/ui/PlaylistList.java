@@ -32,7 +32,6 @@ public class PlaylistList extends List
   private static final int SELECTION_MONITOR_DELAY_MS = 50;
 
   private Command exitCommand;
-  private Command selectCommand;
   private Command nowPlayingCommand;
   private Command searchCommand;
   private Command addToFavoritesCommand;
@@ -89,13 +88,13 @@ public class PlaylistList extends List
   }
 
   private void initializeCommands() {
+    this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 1);
     this.nowPlayingCommand = new Command(I18N.tr("now_playing"), Command.SCREEN, 2);
-    this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 0);
-    this.searchCommand = new Command(I18N.tr("search"), Command.SCREEN, 3);
+    this.addToFavoritesCommand = new Command(I18N.tr("add_to_favorites"), Command.ITEM, 3);
+    this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 4);
     this.addCommand(this.nowPlayingCommand);
 
     if (showAddToFavorites) {
-      this.addToFavoritesCommand = new Command(I18N.tr("add_to_favorites"), Command.ITEM, 3);
       this.addCommand(this.addToFavoritesCommand);
     }
 
