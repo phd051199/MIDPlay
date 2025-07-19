@@ -26,14 +26,6 @@ public class ApiEndpoints {
   }
 
   public static String getBillboard(int pageIndex, int pageSize) {
-    if (pageIndex < 0) {
-      throw new IllegalArgumentException("Page index cannot be negative: " + pageIndex);
-    }
-
-    if (pageSize <= 0 || pageSize > 500) {
-      throw new IllegalArgumentException("Page size must be between 1 and 500: " + pageSize);
-    }
-
     try {
       String baseUrl = AppConstants.SERVICE_URL + "/charts?";
       if (baseUrl != null) {
@@ -54,14 +46,6 @@ public class ApiEndpoints {
   }
 
   public static String getPlaylist(int pageIndex, int pageSize, String type, String genreKey) {
-    if (pageIndex < 0) {
-      throw new IllegalArgumentException("Page index cannot be negative: " + pageIndex);
-    }
-
-    if (pageSize <= 0 || pageSize > 500) {
-      throw new IllegalArgumentException("Page size must be between 1 and 500: " + pageSize);
-    }
-
     try {
       String baseUrl = AppConstants.SERVICE_URL + "/playlist?";
       if (baseUrl != null) {

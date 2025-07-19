@@ -146,5 +146,7 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
     this.quit();
   }
 
-  public void quit() {}
+  public void quit() {
+    ThreadManagerIntegration.cancelPendingDataOperations();
+  }
 }

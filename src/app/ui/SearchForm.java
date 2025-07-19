@@ -189,6 +189,8 @@ public class SearchForm extends Form implements CommandListener, LoadDataObserve
 
   public void quit() {
     try {
+      ThreadManagerIntegration.cancelPendingDataOperations();
+
       if (searchSettingsManager != null) {
         searchSettingsManager.shutdown();
       }
