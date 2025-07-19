@@ -14,6 +14,7 @@ import app.ui.MainObserver;
 import app.ui.MenuFactory;
 import app.ui.PlaylistList;
 import app.ui.SettingForm;
+import app.ui.TickerManager;
 import app.utils.I18N;
 import java.util.Vector;
 import javax.microedition.lcdui.Alert;
@@ -260,6 +261,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
     if (displayable == null) {
       return getCurrentDisplayable();
     }
+    TickerManager.getInstance().updateTicker(displayable);
     getDisplay().setCurrent(displayable);
     if (!(displayable instanceof Alert)) {
       this.currentDisplayable = displayable;
