@@ -34,7 +34,7 @@ public class MessageForm extends Form implements CommandListener {
   }
 
   private void initializeCommands() {
-    this.exitCommand = new Command(I18N.tr("back"), 2, 1);
+    this.exitCommand = new Command(I18N.tr("back"), Command.BACK, 1);
     this.addCommand(this.exitCommand);
   }
 

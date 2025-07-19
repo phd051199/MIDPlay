@@ -7,6 +7,7 @@ public class DeviceInfo {
 
   public static final int PLAYER_PASS_URL = 0;
   public static final int PLAYER_PASS_CONNECTION_STREAM = 1;
+  public static String deviceId = null;
 
   private static boolean checkClass(String s) {
     try {
@@ -27,33 +28,55 @@ public class DeviceInfo {
     return null;
   }
 
+  private static void setDeviceId() {
+    try {
+      if (checkClass("emulator.custom.CustomMethod")) {
+        deviceId = "emulator";
+        return;
+      }
+
+      String id =
+          getPropertyValue(
+              new String[] {
+                "phone.imei",
+                "com.nokia.imei",
+                "com.nokia.mid.imei",
+                "IMEI",
+                "com.motorola.IMEI",
+                "com.lge.imei",
+                "com.siemens.IMEI",
+                "com.samsung.imei",
+                "com.sonyericsson.imei"
+              });
+      if (id != null) {
+        deviceId = id;
+      } else {
+        deviceId = "unknown";
+      }
+    } catch (Exception e) {
+      deviceId = "unknown";
+    }
+  }
+
   public static String getDeviceId() {
-    if (checkClass("emulator.custom.CustomMethod")) {
-      return "emulator";
+    if (deviceId == null) {
+      setDeviceId();
     }
-
-    String deviceId =
-        getPropertyValue(
-            new String[] {
-              "phone.imei",
-              "com.nokia.imei",
-              "com.nokia.mid.imei",
-              "IMEI",
-              "com.motorola.IMEI",
-              "com.lge.imei",
-              "com.siemens.IMEI",
-              "com.samsung.imei",
-              "com.sonyericsson.imei"
-            });
-    if (deviceId != null) {
-      return deviceId;
-    }
-
-    return "unknown";
+    return deviceId;
   }
 
   // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
   public static int getPlayerHttpMethod() {
+    SettingsManager settingsManager = SettingsManager.getInstance();
+
+    if (settingsManager.isForcePassConnectionEnabled()) {
+      return PLAYER_PASS_CONNECTION_STREAM;
+    }
+
+    if (settingsManager.getCurrentService().equals(ServicesConstants.SOUNDCLOUD)) {
+      return PLAYER_PASS_CONNECTION_STREAM;
+    }
+
     int playerHttpMethod = PLAYER_PASS_URL;
     // platform
     boolean symbianJrt = false;
@@ -114,11 +137,6 @@ public class DeviceInfo {
           playerHttpMethod = PLAYER_PASS_CONNECTION_STREAM;
         }
       }
-    }
-
-    if (SettingsManager.getInstance().getCurrentService().equals(ServicesConstants.SOUNDCLOUD)
-        && playerHttpMethod == PLAYER_PASS_URL) {
-      playerHttpMethod = PLAYER_PASS_CONNECTION_STREAM;
     }
 
     return playerHttpMethod;
