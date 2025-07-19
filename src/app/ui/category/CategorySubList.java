@@ -94,7 +94,9 @@ public class CategorySubList extends List implements CommandListener, LoadDataOb
     this.quit();
   }
 
-  public void quit() {}
+  public void quit() {
+    ThreadManagerIntegration.cancelPendingDataOperations();
+  }
 
   private void gotoPlaylistByCategory(
       final String genKey, final int curPage, final int perPage, final String title) {

@@ -828,9 +828,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
         handlePointerEvent(getWidth() / 2, screenY);
       }
     } else if (c == backCommand && observer != null) {
-      if (timer != null) {
-        timer.cancel();
-      }
+      cleanupTimerAndOperations();
       observer.goBack();
     } else if (c == inputCommand) {
       previousDisplay = MIDPlay.getInstance().getDisplay().getCurrent();
@@ -885,12 +883,25 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
     MIDPlay.getInstance().getDisplay().setCurrent(inputBox);
   }
 
+  public void hideNotify() {
+    cleanupTimerAndOperations();
+  }
+
   public void cancel() {
     this.quit();
   }
 
   public void quit() {
+    cleanupTimerAndOperations();
     this.sessionId = null;
+  }
+
+  private void cleanupTimerAndOperations() {
+    if (timer != null) {
+      timer.cancel();
+      timer = null;
+    }
+    ThreadManagerIntegration.cancelPendingDataOperations();
   }
 
   private void displayAlert(String message, AlertType messageType) {
