@@ -89,9 +89,6 @@ public class DeviceInfo {
           // mmf (s60v3.2-)
           playerHttpMethod = PLAYER_PASS_CONNECTION_STREAM;
         }
-      } else {
-        // non-symbian
-        playerHttpMethod = PLAYER_PASS_CONNECTION_STREAM;
       }
     }
 

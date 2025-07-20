@@ -1,5 +1,6 @@
 package app.core.threading;
 
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -7,7 +8,7 @@ public class ThreadSafetyUtils {
 
   private static final Hashtable namedLocks = new Hashtable();
   private static final Object namedLocksLock = new Object();
-  private static final int MAX_NAMED_LOCKS = 100;
+  private static final int MAX_NAMED_LOCKS = 50;
 
   public static Object getNamedLock(String lockName) {
     if (lockName == null) {
@@ -143,49 +144,49 @@ public class ThreadSafetyUtils {
   private static class SynchronizedVector extends Vector {
     private final Object lock = new Object();
 
-    public synchronized void addElement(Object obj) {
+    public void addElement(Object obj) {
       synchronized (lock) {
         super.addElement(obj);
       }
     }
 
-    public synchronized boolean removeElement(Object obj) {
+    public boolean removeElement(Object obj) {
       synchronized (lock) {
         return super.removeElement(obj);
       }
     }
 
-    public synchronized Object elementAt(int index) {
+    public Object elementAt(int index) {
       synchronized (lock) {
         return super.elementAt(index);
       }
     }
 
-    public synchronized void removeElementAt(int index) {
+    public void removeElementAt(int index) {
       synchronized (lock) {
         super.removeElementAt(index);
       }
     }
 
-    public synchronized int size() {
+    public int size() {
       synchronized (lock) {
         return super.size();
       }
     }
 
-    public synchronized boolean isEmpty() {
+    public boolean isEmpty() {
       synchronized (lock) {
         return super.isEmpty();
       }
     }
 
-    public synchronized void removeAllElements() {
+    public void removeAllElements() {
       synchronized (lock) {
         super.removeAllElements();
       }
     }
 
-    public synchronized boolean contains(Object elem) {
+    public boolean contains(Object elem) {
       synchronized (lock) {
         return super.contains(elem);
       }
@@ -195,55 +196,55 @@ public class ThreadSafetyUtils {
   private static class SynchronizedHashtable extends Hashtable {
     private final Object lock = new Object();
 
-    public synchronized Object put(Object key, Object value) {
+    public Object put(Object key, Object value) {
       synchronized (lock) {
         return super.put(key, value);
       }
     }
 
-    public synchronized Object get(Object key) {
+    public Object get(Object key) {
       synchronized (lock) {
         return super.get(key);
       }
     }
 
-    public synchronized Object remove(Object key) {
+    public Object remove(Object key) {
       synchronized (lock) {
         return super.remove(key);
       }
     }
 
-    public synchronized boolean containsKey(Object key) {
+    public boolean containsKey(Object key) {
       synchronized (lock) {
         return super.containsKey(key);
       }
     }
 
-    public synchronized int size() {
+    public int size() {
       synchronized (lock) {
         return super.size();
       }
     }
 
-    public synchronized boolean isEmpty() {
+    public boolean isEmpty() {
       synchronized (lock) {
         return super.isEmpty();
       }
     }
 
-    public synchronized void clear() {
+    public void clear() {
       synchronized (lock) {
         super.clear();
       }
     }
 
-    public synchronized java.util.Enumeration keys() {
+    public Enumeration keys() {
       synchronized (lock) {
         return super.keys();
       }
     }
 
-    public synchronized java.util.Enumeration elements() {
+    public Enumeration elements() {
       synchronized (lock) {
         return super.elements();
       }

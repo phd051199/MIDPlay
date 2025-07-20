@@ -10,10 +10,6 @@ public class TickerManager {
 
   private static TickerManager instance;
   private static final Object instanceLock = new Object();
-  private String currentSongInfo = null;
-  private final Hashtable displayableTickerTexts = new Hashtable();
-
-  private TickerManager() {}
 
   public static TickerManager getInstance() {
     if (instance == null) {
@@ -25,6 +21,11 @@ public class TickerManager {
     }
     return instance;
   }
+
+  private String currentSongInfo = null;
+  private final Hashtable displayableTickerTexts = new Hashtable();
+
+  private TickerManager() {}
 
   public void updateTicker(Displayable displayable) {
     if (displayable == null) {

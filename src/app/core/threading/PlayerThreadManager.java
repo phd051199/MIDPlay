@@ -7,6 +7,7 @@ public class PlayerThreadManager {
 
   private static final int PLAYER_POOL_SIZE = 3;
   private static final int STATE_POOL_SIZE = 2;
+  private static final int POLL_SLEEP_MS = 50;
 
   public static PlayerThreadManager getInstance() {
     if (instance == null) {
@@ -137,14 +138,14 @@ public class PlayerThreadManager {
     if (!isShutdown) {
       while (playerPool.getQueueSize() > 0) {
         try {
-          Thread.sleep(10);
+          Thread.sleep(POLL_SLEEP_MS);
         } catch (InterruptedException e) {
           break;
         }
       }
       while (statePool.getQueueSize() > 0) {
         try {
-          Thread.sleep(10);
+          Thread.sleep(POLL_SLEEP_MS);
         } catch (InterruptedException e) {
           break;
         }

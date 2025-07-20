@@ -1,5 +1,6 @@
 package app.core.threading;
 
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -129,7 +130,7 @@ public class ThreadManager {
   public int getActiveThreadCount() {
     synchronized (threadsLock) {
       int count = 0;
-      java.util.Enumeration keys = managedThreads.keys();
+      Enumeration keys = managedThreads.keys();
       while (keys.hasMoreElements()) {
         String key = (String) keys.nextElement();
         ThreadInfo info = (ThreadInfo) managedThreads.get(key);
@@ -144,7 +145,7 @@ public class ThreadManager {
   private void cleanupDeadThreads() {
     synchronized (threadsLock) {
       Vector keysToRemove = new Vector();
-      java.util.Enumeration keys = managedThreads.keys();
+      Enumeration keys = managedThreads.keys();
       long currentTime = System.currentTimeMillis();
 
       while (keys.hasMoreElements()) {
@@ -209,7 +210,7 @@ public class ThreadManager {
 
   private void interruptAllThreads() {
     synchronized (threadsLock) {
-      java.util.Enumeration keys = managedThreads.keys();
+      Enumeration keys = managedThreads.keys();
       while (keys.hasMoreElements()) {
         String key = (String) keys.nextElement();
         ThreadInfo info = (ThreadInfo) managedThreads.get(key);

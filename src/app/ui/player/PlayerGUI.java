@@ -463,11 +463,9 @@ public class PlayerGUI implements PlayerListener {
         if (this.player.getState() != Player.CLOSED) {
           this.player.removePlayerListener(this);
 
-          if (this.player.getState() != Player.CLOSED) {
-            try {
-              this.player.stop();
-            } catch (MediaException e) {
-            }
+          try {
+            this.player.stop();
+          } catch (MediaException e) {
           }
 
           this.player.close();
@@ -527,7 +525,7 @@ public class PlayerGUI implements PlayerListener {
 
   public void togglePlayer() {
     if (this.player != null) {
-      if (this.player.getState() >= 400) {
+      if (this.player.getState() >= Player.STARTED) {
         this.pausePlayer();
       } else {
         this.startPlayer();
@@ -626,14 +624,16 @@ public class PlayerGUI implements PlayerListener {
         return;
       }
 
-      if ("closed".equals(evt) || "error".equals(evt) || "stopped".equals(evt)) {
+      if (PlayerListener.CLOSED.equals(evt)
+          || PlayerListener.ERROR.equals(evt)
+          || PlayerListener.STOPPED.equals(evt)) {
         this.stopDisplayTimer();
         this.parent.updateDisplay();
-      } else if ("endOfMedia".equals(evt)) {
+      } else if (PlayerListener.END_OF_MEDIA.equals(evt)) {
         handleEndOfMedia(plyr);
-      } else if ("started".equals(evt)) {
+      } else if (PlayerListener.STARTED.equals(evt)) {
         this.startDisplayTimer();
-      } else if ("durationUpdated".equals(evt)) {
+      } else if (PlayerListener.DURATION_UPDATED.equals(evt)) {
         this.parent.updateDisplay();
       }
     } catch (Throwable t) {
@@ -736,7 +736,7 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public synchronized void pauseApp() {
-    if (this.player != null && this.player.getState() >= 400) {
+    if (this.player != null && this.player.getState() >= Player.STARTED) {
       try {
         this.player.stop();
       } catch (MediaException e) {

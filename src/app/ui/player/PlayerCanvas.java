@@ -29,86 +29,32 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   private static final int PLAYER_STATUS_TOP = 2;
   private static final int SONG_TITLE_GAP = 5;
   private static final int TIME_GAP = 10;
+  private static final int ART_SIZE = 72;
+  private static final int ART_LEFT = 8;
+  private static final int SLIDER_HEIGHT = 6;
+  private static final int BUTTON_WIDTH = 40;
+  private static final int BUTTON_HEIGHT = 40;
+  private static final int PLAY_BUTTON_WIDTH = 50;
+  private static final int PLAY_BUTTON_HEIGHT = 50;
+  private static final long BUTTON_ACTIVE_DURATION = 1000L;
 
-  private Command backCommand;
-  private Command playPauseCommand;
-  private Command nextCommand;
-  private Command prevCommand;
-  private Command stopCommand;
-  private Command addToPlaylistCommand;
-  private Command showPlaylistCommand;
-  private Command sleepTimerCommand;
-  private Command cancelTimerCommand;
-  private Command repeatCommand;
-  private Command shuffleCommand;
+  private final Commands commands = new Commands();
+  private final DisplayMetrics displayMetrics = new DisplayMetrics();
+  private final ButtonPositions buttonPositions = new ButtonPositions();
+  private final ImageCache imageCache = new ImageCache();
+  private final ColorCache colorCache = new ColorCache();
+  private final StatusManager statusManager = new StatusManager();
 
   private String title;
   private PlayerGUI gui;
-  private MainObserver parent;
-  private String status = "";
-  private final FavoritesManager favoritesManager;
-  private final SleepTimerManager sleepTimerManager = SleepTimerManager.getInstance();
-  private String originalStatus = "";
-  private String realPlayerStatus = "";
-  private boolean timerOverrideActive = false;
-
-  int displayWidth = -1;
-  int displayHeight = -1;
-  int textHeight = 10;
-
-  int logoTop = 0;
-  int songTitleTop = 0;
-  int timeRateTop = 0;
-  int timeWidth = 0;
-  int feedbackTop = 0;
-  int statusTop = 0;
-  int artSize = 72;
-  int artLeft = 8;
-  int songInfoLeft = 0;
-  int statusBarTop = 0;
-  int statusBarHeight = 0;
-  int songNameTop = 0;
-  int SignerNameTop = 0;
-  int sliderTop = 0;
-  int sliderLeft = 0;
-  int sliderHeight = 6;
-  int sliderWidth = 12;
-  float slidervalue = 0.0F;
-  int playtop = 0;
-
-  private boolean touchSupported = false;
-  private int playButtonX = 0;
-  private int playButtonY = 0;
-  private final int playButtonWidth = 50;
-  private final int playButtonHeight = 50;
-  private int prevButtonX = 0;
-  private int prevButtonY = 0;
-  private int nextButtonX = 0;
-  private int nextButtonY = 0;
-  private int repeatButtonX = 0;
-  private int repeatButtonY = 0;
-  private int shuffleButtonX = 0;
-  private int shuffleButtonY = 0;
-  private final int buttonWidth = 40;
-  private final int buttonHeight = 40;
-  private final int controlButtonWidth = 40;
-  private final int controlButtonHeight = 40;
-
-  private MainObserver observer = null;
+  private MainObserver observer;
   private Playlist playlist;
   private boolean isPlaying = false;
+  private boolean touchSupported = false;
 
-  private Image playImage = null;
-  private Image pauseImage = null;
-  private Image previousImage = null;
-  private Image nextImage = null;
-  private Image previousActiveImage = null;
-  private Image nextActiveImage = null;
-  private Image repeatImage = null;
-  private Image repeatOneImage = null;
-  private Image repeatOffImage = null;
-  private Image shuffleImage = null;
-  private Image shuffleOffImage = null;
+  private final FavoritesManager favoritesManager;
+  private final SleepTimerManager sleepTimerManager = SleepTimerManager.getInstance();
+  private final SettingsManager settingManager = SettingsManager.getInstance();
 
   private Image albumArt = null;
   private String albumArtUrl = null;
@@ -119,33 +65,25 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   private boolean showingPreviousActive = false;
   private boolean showingNextActive = false;
 
-  private final SettingsManager settingManager = SettingsManager.getInstance();
-  private int cachedThemeColorRGB;
-  private int cachedBackgroundColorRGB;
-  private String lastThemeColor = "";
-  private String lastBackgroundColor = "";
-
   public PlayerCanvas(String title, Vector songList, int index, Playlist playlist) {
     this.playlist = playlist;
     this.favoritesManager = FavoritesManager.getInstance();
     this.setTitle(title);
     this.initializeCommands();
     this.setCommandListener(this);
-
     this.touchSupported = this.hasPointerEvents();
-
     this.setupSleepTimerCallback();
     this.change(title, songList, index, this.playlist);
   }
 
   public void showNotify() {
-    if (this.status.equals(I18N.tr("playing")) || this.status.equals(I18N.tr("paused"))) {
+    String currentStatus = statusManager.current;
+    if (currentStatus.equals(I18N.tr("playing")) || currentStatus.equals(I18N.tr("paused"))) {
       if (this.getPlayerGUI().isPlaying()) {
         this.setStatus(I18N.tr("playing"));
       } else {
         this.setStatus(I18N.tr("paused"));
       }
-      this.updatePlayPauseCommand();
     }
   }
 
@@ -155,14 +93,11 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     this.playlist = playlist;
     this.getPlayerGUI().setListSong(songList, index);
     this.isPlaying = true;
-
-    this.albumArt = null;
-    this.albumArtUrl = null;
-    this.loadingAlbumArt = false;
+    this.resetAlbumArt();
   }
 
   public void setupDisplay() {
-    this.displayHeight = -1;
+    this.displayMetrics.height = -1;
     this.updateDisplay();
   }
 
@@ -171,26 +106,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   }
 
   public void setStatus(String s) {
-
-    if (s != null
-        && s.indexOf(I18N.tr("timer_remaining").substring(0, 3)) == -1
-        && s.indexOf(I18N.tr("volume")) == -1) {
-      this.realPlayerStatus = s;
-    }
-
-    if (!timerOverrideActive) {
-      this.status = s;
-      this.originalStatus = s;
-    } else if (isCriticalStatus(s)) {
-      this.status = s;
-      this.originalStatus = s;
-      this.timerOverrideActive = false;
-    }
-
-    if (s != null && (s.equals(I18N.tr("playing")) || s.equals(I18N.tr("paused")))) {
-      this.updatePlayPauseCommand();
-    }
-
+    statusManager.updateStatus(s);
     this.updateDisplay();
   }
 
@@ -202,27 +118,29 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   }
 
   public String getStatus() {
-    return this.status;
+    return statusManager.current;
+  }
+
+  private void resetAlbumArt() {
+    this.albumArt = null;
+    this.albumArtUrl = null;
+    this.loadingAlbumArt = false;
   }
 
   public void restoreStatusAfterVolume(String previousStatus) {
-
-    this.originalStatus = this.realPlayerStatus;
+    statusManager.original = statusManager.realPlayerStatus;
 
     if (sleepTimerManager.isActive()) {
-      if (realPlayerStatus.equals(I18N.tr("playing"))
-          || realPlayerStatus.equals(I18N.tr("paused"))) {
+      if (statusManager.realPlayerStatus.equals(I18N.tr("playing"))
+          || statusManager.realPlayerStatus.equals(I18N.tr("paused"))) {
         String remaining = sleepTimerManager.getRemainingTime();
         String timerStatus = TextUtils.replace(I18N.tr("timer_remaining"), "{0}", remaining);
-        this.timerOverrideActive = true;
-        this.status = timerStatus;
+        statusManager.setTimerOverride(timerStatus);
       } else {
-        this.timerOverrideActive = false;
-        this.status = realPlayerStatus;
+        statusManager.clearTimerOverride();
       }
     } else {
-      this.timerOverrideActive = false;
-      this.status = realPlayerStatus;
+      statusManager.clearTimerOverride();
     }
 
     this.updateDisplay();
@@ -234,9 +152,8 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   }
 
   public synchronized void close() {
-    this.albumArt = null;
-    this.albumArtUrl = null;
-    this.loadingAlbumArt = false;
+    this.resetAlbumArt();
+    this.imageCache.clearAll();
 
     if (this.gui != null) {
       this.gui.shutdown();
@@ -251,7 +168,6 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   public synchronized PlayerGUI getPlayerGUI() {
     if (this.gui == null) {
       this.gui = new PlayerGUI(this);
-
       updateRepeatCommand();
       updateShuffleCommand();
     }
@@ -259,62 +175,45 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   }
 
   public void updateRepeatCommand() {
-    if (this.repeatCommand != null) {
-      this.removeCommand(this.repeatCommand);
+    if (commands.repeat != null) {
+      this.removeCommand(commands.repeat);
     }
 
-    String commandText = "";
+    String commandText = I18N.tr("repeat") + ": ";
     if (this.gui != null) {
       switch (this.gui.getRepeatMode()) {
         case PlayerGUI.REPEAT_OFF:
-          commandText = I18N.tr("repeat") + ": " + I18N.tr("off");
+          commandText += I18N.tr("off");
           break;
         case PlayerGUI.REPEAT_ONE:
-          commandText = I18N.tr("repeat") + ": " + I18N.tr("one");
+          commandText += I18N.tr("one");
           break;
         case PlayerGUI.REPEAT_ALL:
-          commandText = I18N.tr("repeat") + ": " + I18N.tr("all");
+          commandText += I18N.tr("all");
           break;
       }
     } else {
-      commandText = I18N.tr("repeat") + ": " + I18N.tr("all");
+      commandText += I18N.tr("all");
     }
 
-    this.repeatCommand = new Command(commandText, Command.SCREEN, 5);
-    this.addCommand(this.repeatCommand);
+    commands.repeat = new Command(commandText, Command.SCREEN, 7);
+    this.addCommand(commands.repeat);
   }
 
   public void updateShuffleCommand() {
-    if (this.shuffleCommand != null) {
-      this.removeCommand(this.shuffleCommand);
+    if (commands.shuffle != null) {
+      this.removeCommand(commands.shuffle);
     }
 
-    String commandText;
+    String commandText = I18N.tr("shuffle") + ": ";
     if (this.gui != null) {
-      commandText =
-          I18N.tr("shuffle") + ": " + (this.gui.isShuffleMode() ? I18N.tr("on") : I18N.tr("off"));
+      commandText += (this.gui.isShuffleMode() ? I18N.tr("on") : I18N.tr("off"));
     } else {
-      commandText = I18N.tr("shuffle") + ": " + I18N.tr("off");
+      commandText += I18N.tr("off");
     }
 
-    this.shuffleCommand = new Command(commandText, Command.SCREEN, 6);
-    this.addCommand(this.shuffleCommand);
-  }
-
-  public void updatePlayPauseCommand() {
-    if (this.playPauseCommand != null) {
-      this.removeCommand(this.playPauseCommand);
-    }
-
-    String commandText;
-    if (this.gui != null && this.gui.isPlaying()) {
-      commandText = I18N.tr("pause");
-    } else {
-      commandText = I18N.tr("play");
-    }
-
-    this.playPauseCommand = new Command(commandText, Command.OK, 1);
-    this.addCommand(this.playPauseCommand);
+    commands.shuffle = new Command(commandText, Command.SCREEN, 8);
+    this.addCommand(commands.shuffle);
   }
 
   public void setAlbumArtUrl(String url) {
@@ -336,7 +235,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     final String imageUrl = this.albumArtUrl;
     ThreadManagerIntegration.executePlayerImageLoading(
         imageUrl,
-        72,
+        ART_SIZE,
         new ThreadManagerIntegration.ImageLoadCallback() {
           public void onImageLoaded(Object image) {
             albumArt = (javax.microedition.lcdui.Image) image;
@@ -362,7 +261,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   }
 
   private boolean isLoading() {
-    return this.status != null && this.status.indexOf(I18N.tr("loading")) != -1;
+    return statusManager.current != null && statusManager.current.indexOf(I18N.tr("loading")) != -1;
   }
 
   protected void pointerPressed(int x, int y) {
@@ -371,30 +270,38 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     }
 
     try {
-      if (isPointInButton(x, y, playButtonX, playButtonY, playButtonWidth, playButtonHeight)) {
+      if (isPointInButton(
+          x,
+          y,
+          buttonPositions.playX,
+          buttonPositions.playY,
+          PLAY_BUTTON_WIDTH,
+          PLAY_BUTTON_HEIGHT)) {
         handleAction(Canvas.FIRE);
         return;
       }
 
-      if (isPointInButton(x, y, prevButtonX, prevButtonY, buttonWidth, buttonHeight)) {
+      if (isPointInButton(
+          x, y, buttonPositions.prevX, buttonPositions.prevY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
         handleAction(Canvas.LEFT);
         return;
       }
 
-      if (isPointInButton(x, y, nextButtonX, nextButtonY, buttonWidth, buttonHeight)) {
+      if (isPointInButton(
+          x, y, buttonPositions.nextX, buttonPositions.nextY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
         handleAction(Canvas.RIGHT);
         return;
       }
 
       if (isPointInButton(
-          x, y, repeatButtonX, repeatButtonY, controlButtonWidth, controlButtonHeight)) {
+          x, y, buttonPositions.repeatX, buttonPositions.repeatY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
         this.gui.toggleRepeatMode();
         this.updateDisplay();
         return;
       }
 
       if (isPointInButton(
-          x, y, shuffleButtonX, shuffleButtonY, controlButtonWidth, controlButtonHeight)) {
+          x, y, buttonPositions.shuffleX, buttonPositions.shuffleY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
         this.gui.toggleShuffleMode();
         this.updateDisplay();
       }
@@ -411,21 +318,6 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
       switch (action) {
         case Canvas.FIRE:
           this.gui.togglePlayer();
-
-          ThreadManagerIntegration.scheduleDelayedTask(
-              new Runnable() {
-                public void run() {
-                  ThreadManagerIntegration.executeUITask(
-                      new Runnable() {
-                        public void run() {
-                          updatePlayPauseCommand();
-                        }
-                      },
-                      "UpdatePlayPauseCommand");
-                }
-              },
-              "DelayedCommandUpdate",
-              200);
           break;
         case Canvas.RIGHT:
           this.showingNextActive = true;
@@ -494,373 +386,98 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
 
   private String timeDisplay(long us) {
     long ts = us / 100000L;
-    StringBuffer timeBuffer = new StringBuffer();
-    timeBuffer.append(this.formatNumber(ts / 600L, 2, true));
-    timeBuffer.append(":");
-    timeBuffer.append(this.formatNumber(ts % 600L / 10L, 2, true));
+    long minutes = ts / 600L;
+    long seconds = ts % 600L / 10L;
+
+    StringBuffer timeBuffer = new StringBuffer(8);
+    if (minutes < 10) {
+      timeBuffer.append('0');
+    }
+    timeBuffer.append(minutes);
+    timeBuffer.append(':');
+    if (seconds < 10) {
+      timeBuffer.append('0');
+    }
+    timeBuffer.append(seconds);
     return timeBuffer.toString();
   }
 
   private String formatNumber(long num, int len, boolean leadingZeros) {
-    StringBuffer ret = new StringBuffer(String.valueOf(num));
+    String numStr = String.valueOf(num);
+    if (numStr.length() >= len) {
+      return numStr;
+    }
+
+    StringBuffer ret = new StringBuffer(len);
     if (leadingZeros) {
-      while (ret.length() < len) {
-        ret.insert(0, '0');
+      for (int i = numStr.length(); i < len; i++) {
+        ret.append('0');
       }
+      ret.append(numStr);
     } else {
-      while (ret.length() < len) {
+      ret.append(numStr);
+      for (int i = numStr.length(); i < len; i++) {
         ret.append('0');
       }
     }
-
     return ret.toString();
-  }
-
-  public Image getPlayImage() {
-    if (this.playImage == null) {
-      try {
-        this.playImage = Image.createImage("/images/player/play.png");
-      } catch (Exception e) {
-        this.playImage = null;
-      }
-    }
-    return this.playImage;
-  }
-
-  public Image getPauseImage() {
-    if (this.pauseImage == null) {
-      try {
-        this.pauseImage = Image.createImage("/images/player/pause.png");
-      } catch (Exception e) {
-        this.pauseImage = null;
-      }
-    }
-    return this.pauseImage;
-  }
-
-  public Image getPreviousImage() {
-    if (this.previousImage == null) {
-      try {
-        this.previousImage = Image.createImage("/images/player/previous.png");
-      } catch (Exception e) {
-        this.previousImage = null;
-      }
-    }
-    return this.previousImage;
-  }
-
-  public Image getNextImage() {
-    if (this.nextImage == null) {
-      try {
-        this.nextImage = Image.createImage("/images/player/next.png");
-      } catch (Exception e) {
-        this.nextImage = null;
-      }
-    }
-    return this.nextImage;
-  }
-
-  public Image getPreviousActiveImage() {
-    if (this.previousActiveImage == null) {
-      try {
-        this.previousActiveImage = Image.createImage("/images/player/previous.png");
-      } catch (Exception e) {
-        this.previousActiveImage = null;
-      }
-    }
-    return this.previousActiveImage;
-  }
-
-  public Image getNextActiveImage() {
-    if (this.nextActiveImage == null) {
-      try {
-        this.nextActiveImage = Image.createImage("/images/player/next.png");
-      } catch (Exception e) {
-        this.nextActiveImage = null;
-      }
-    }
-    return this.nextActiveImage;
-  }
-
-  public Image getRepeatImage() {
-    if (this.repeatImage == null) {
-      try {
-        this.repeatImage = Image.createImage("/images/player/repeat.png");
-      } catch (Exception e) {
-        this.repeatImage = null;
-      }
-    }
-    return this.repeatImage;
-  }
-
-  public Image getRepeatOneImage() {
-    if (this.repeatOneImage == null) {
-      try {
-        this.repeatOneImage = Image.createImage("/images/player/repeat-one.png");
-      } catch (Exception e) {
-        this.repeatOneImage = null;
-      }
-    }
-    return this.repeatOneImage;
-  }
-
-  public Image getRepeatOffImage() {
-    if (this.repeatOffImage == null) {
-      try {
-        this.repeatOffImage = Image.createImage("/images/player/repeat-off.png");
-      } catch (Exception e) {
-        this.repeatOffImage = null;
-      }
-    }
-    return this.repeatOffImage;
-  }
-
-  public Image getShuffleImage() {
-    if (this.shuffleImage == null) {
-      try {
-        this.shuffleImage = Image.createImage("/images/player/shuffle.png");
-      } catch (Exception e) {
-        this.shuffleImage = null;
-      }
-    }
-    return this.shuffleImage;
-  }
-
-  public Image getShuffleOffImage() {
-    if (this.shuffleOffImage == null) {
-      try {
-        this.shuffleOffImage = Image.createImage("/images/player/shuffle-off.png");
-      } catch (Exception e) {
-        this.shuffleOffImage = null;
-      }
-    }
-    return this.shuffleOffImage;
   }
 
   private int getThemeColor() {
     String currentThemeColor = settingManager.getThemeColor();
-    if (!currentThemeColor.equals(lastThemeColor)) {
+    if (!currentThemeColor.equals(colorCache.lastThemeColor)) {
       try {
-        cachedThemeColorRGB = Integer.parseInt(currentThemeColor, 16);
-        lastThemeColor = currentThemeColor;
+        colorCache.themeColorRGB = Integer.parseInt(currentThemeColor, 16);
+        colorCache.lastThemeColor = currentThemeColor;
       } catch (Exception e) {
-        cachedThemeColorRGB = 0x410A4A;
+        colorCache.themeColorRGB = 0x410A4A;
       }
     }
-    return cachedThemeColorRGB;
+    return colorCache.themeColorRGB;
   }
 
   private void setThemeColor(Graphics g) {
     int color = getThemeColor();
-    int r = (color >> 16) & 0xFF;
-    int g1 = (color >> 8) & 0xFF;
-    int b = color & 0xFF;
-    g.setColor(r, g1, b);
+    g.setColor((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF);
   }
 
   private int getBackgroundColor() {
     String currentBackgroundColor = settingManager.getBackgroundColor();
-    if (!currentBackgroundColor.equals(lastBackgroundColor)) {
+    if (!currentBackgroundColor.equals(colorCache.lastBackgroundColor)) {
       try {
-        cachedBackgroundColorRGB = Integer.parseInt(currentBackgroundColor, 16);
-        lastBackgroundColor = currentBackgroundColor;
+        colorCache.backgroundColorRGB = Integer.parseInt(currentBackgroundColor, 16);
+        colorCache.lastBackgroundColor = currentBackgroundColor;
       } catch (Exception e) {
-        cachedBackgroundColorRGB = 0xF0F0F0;
+        colorCache.backgroundColorRGB = 0xF0F0F0;
       }
     }
-    return cachedBackgroundColorRGB;
+    return colorCache.backgroundColorRGB;
   }
 
   private void setBackgroundColor(Graphics g) {
     int color = getBackgroundColor();
-    int r = (color >> 16) & 0xFF;
-    int g1 = (color >> 8) & 0xFF;
-    int b = color & 0xFF;
-    g.setColor(r, g1, b);
+    g.setColor((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF);
   }
 
   public void paint(Graphics g) {
     try {
-      int clipX;
-      if (this.displayHeight == -1) {
-        this.displayWidth = this.getWidth();
-        this.displayHeight = this.getHeight();
-        this.textHeight = g.getFont().getHeight();
-        this.statusBarHeight = this.textHeight + 5;
-
-        this.songInfoLeft = this.artLeft + this.artSize + 15;
-
-        clipX = PLAYER_STATUS_TOP + this.statusBarHeight + 15;
-        this.songNameTop = clipX;
-        clipX += SONG_TITLE_GAP + this.textHeight;
-        this.SignerNameTop = clipX;
-        clipX += TIME_GAP + this.textHeight + 24;
-
-        this.timeRateTop = clipX;
-        this.timeWidth = g.getFont().stringWidth("0:00:0  ");
-
-        this.sliderWidth = this.displayWidth - (this.timeWidth * 2) - 8;
-        this.sliderTop = this.timeRateTop + (this.textHeight - this.sliderHeight) / 2;
-        this.sliderLeft = this.timeWidth + 4;
-
-        this.playtop = this.timeRateTop + this.textHeight + 24;
-        this.feedbackTop = this.timeRateTop + this.textHeight;
+      if (displayMetrics.height == -1) {
+        initializeDisplayMetrics(g);
       }
 
-      clipX = g.getClipX();
       int clipY = g.getClipY();
-      int clipWidth = g.getClipWidth();
       int clipHeight = g.getClipHeight();
 
-      setBackgroundColor(g);
-      g.fillRect(0, 0, this.displayWidth, this.displayHeight);
-
-      setThemeColor(g);
-      g.fillRect(0, 0, this.displayWidth, this.statusBarHeight);
-
-      if (this.intersects(clipY, clipHeight, PLAYER_STATUS_TOP, this.textHeight)) {
-        g.setColor(255, 255, 255);
-        g.drawString(this.status, this.displayWidth >> 1, PLAYER_STATUS_TOP, 17);
-      }
+      paintBackground(g);
+      paintStatusBar(g, clipY, clipHeight);
 
       if (this.gui != null) {
-        int artTop = PLAYER_STATUS_TOP + this.statusBarHeight + 8;
-
-        if (this.albumArt != null) {
-          g.drawImage(
-              this.albumArt,
-              this.artLeft + this.artSize / 2,
-              artTop + this.artSize / 2,
-              Graphics.HCENTER | Graphics.VCENTER);
-
-          g.setColor(150, 150, 150);
-          g.drawRect(this.artLeft, artTop, this.artSize, this.artSize);
-        } else {
-          g.setColor(200, 200, 200);
-          g.fillRect(this.artLeft, artTop, this.artSize, this.artSize);
-          g.setColor(150, 150, 150);
-          g.drawRect(this.artLeft, artTop, this.artSize, this.artSize);
-
-          g.setColor(100, 100, 100);
-          g.drawString("♪", this.artLeft + this.artSize / 2, artTop + this.artSize / 2, 17);
-        }
-
-        if (this.intersects(clipY, clipHeight, this.songNameTop, this.textHeight)) {
-          setThemeColor(g);
-          int maxSongNameWidth = this.displayWidth - this.songInfoLeft - 10;
-          String truncatedSongName = this.truncateText(this.gui.getSongName(), g, maxSongNameWidth);
-          g.drawString(truncatedSongName, this.songInfoLeft, this.songNameTop, 20);
-        }
-
-        if (this.intersects(clipY, clipHeight, this.SignerNameTop, this.textHeight)) {
-          g.setColor(140, 140, 140);
-          int maxSingerWidth = this.displayWidth - this.songInfoLeft - 10;
-          String truncatedSinger = this.truncateText(this.gui.getSinger(), g, maxSingerWidth);
-          g.drawString(truncatedSinger, this.songInfoLeft, this.SignerNameTop, 20);
-        }
-
-        long duration = this.gui.getDuration();
-        long current = this.gui.getCurrentTime();
-        String strDuration = this.timeDisplay(duration);
-        String strCurrent = this.timeDisplay(current);
-
-        if (duration > 0) {
-          this.slidervalue = (float) this.sliderWidth * ((float) current / (float) duration);
-        } else {
-          this.slidervalue = 0;
-        }
-
-        if (this.intersects(clipY, clipHeight, this.timeRateTop, this.textHeight)) {
-          g.setColor(140, 140, 140);
-          g.drawString(strCurrent, 5, this.timeRateTop, 20);
-        }
-
-        g.setColor(220, 220, 220);
-        g.fillRect(this.sliderLeft, this.sliderTop, this.sliderWidth, this.sliderHeight);
-
-        setThemeColor(g);
-        g.fillRect(this.sliderLeft, this.sliderTop, (int) this.slidervalue, this.sliderHeight);
-
-        if (this.intersects(clipY, clipHeight, this.timeRateTop, this.textHeight)) {
-          g.setColor(140, 140, 140);
-          g.drawString(strDuration, this.displayWidth - 5, this.timeRateTop, 24);
-        }
-
-        if (this.playButtonX == 0) {
-          int screenCenter = this.displayWidth >> 1;
-          int buttonGap = this.displayWidth / 5;
-          int margin = 8;
-
-          this.playButtonX = screenCenter;
-          this.playButtonY = this.playtop;
-
-          this.prevButtonX = screenCenter - buttonGap;
-          this.prevButtonY = this.playtop;
-
-          this.nextButtonX = screenCenter + buttonGap;
-          this.nextButtonY = this.playtop;
-
-          this.repeatButtonX = margin + (this.controlButtonWidth / 2);
-          this.repeatButtonY = this.playtop;
-
-          this.shuffleButtonX = this.displayWidth - margin - (this.controlButtonWidth / 2);
-          this.shuffleButtonY = this.playtop;
-        }
-
-        boolean isPlaying = this.gui.isPlaying();
-        Image playPauseImg = isPlaying ? this.getPauseImage() : this.getPlayImage();
-
-        if (playPauseImg != null) {
-          g.drawImage(playPauseImg, this.playButtonX, this.playButtonY, 3);
-        }
-
-        if (this.showingPreviousActive || this.showingNextActive) {
-          long time = System.currentTimeMillis();
-          if (time - this.previousButtonPressTime >= 1000L) {
-            this.showingPreviousActive = false;
-          }
-          if (time - this.nextButtonPressTime >= 1000L) {
-            this.showingNextActive = false;
-          }
-        }
-
-        Image prevImg =
-            this.showingPreviousActive ? this.getPreviousActiveImage() : this.getPreviousImage();
-        if (prevImg != null) {
-          g.drawImage(prevImg, this.prevButtonX, this.prevButtonY, 3);
-        }
-
-        Image nextImg = this.showingNextActive ? this.getNextActiveImage() : this.getNextImage();
-        if (nextImg != null) {
-          g.drawImage(nextImg, this.nextButtonX, this.nextButtonY, 3);
-        }
-
-        Image repeatImg = null;
-        switch (this.getPlayerGUI().getRepeatMode()) {
-          case PlayerGUI.REPEAT_ONE:
-            repeatImg = this.getRepeatOneImage();
-            break;
-          case PlayerGUI.REPEAT_ALL:
-            repeatImg = this.getRepeatImage();
-            break;
-          default:
-            repeatImg = this.getRepeatOffImage();
-            break;
-        }
-
-        if (repeatImg != null) {
-          g.drawImage(repeatImg, this.repeatButtonX, this.repeatButtonY, 3);
-        }
-
-        Image shuffleImg =
-            this.getPlayerGUI().isShuffleMode()
-                ? this.getShuffleImage()
-                : this.getShuffleOffImage();
-        if (shuffleImg != null) {
-          g.drawImage(shuffleImg, this.shuffleButtonX, this.shuffleButtonY, 3);
-        }
+        paintAlbumArt(g);
+        paintSongInfo(g, clipY, clipHeight);
+        paintTimeSlider(g, clipY, clipHeight);
+        paintControlButtons(g);
       }
-    } catch (Throwable e4) {
+    } catch (Throwable e) {
     }
 
     if (this.isPlaying) {
@@ -870,67 +487,248 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     }
   }
 
+  private void initializeDisplayMetrics(Graphics g) {
+    displayMetrics.width = this.getWidth();
+    displayMetrics.height = this.getHeight();
+    displayMetrics.textHeight = g.getFont().getHeight();
+    displayMetrics.statusBarHeight = displayMetrics.textHeight + 5;
+    displayMetrics.songInfoLeft = ART_LEFT + ART_SIZE + 15;
+
+    int currentTop = PLAYER_STATUS_TOP + displayMetrics.statusBarHeight + 15;
+    displayMetrics.songNameTop = currentTop;
+    currentTop += SONG_TITLE_GAP + displayMetrics.textHeight;
+    displayMetrics.singerNameTop = currentTop;
+    currentTop += TIME_GAP + displayMetrics.textHeight + 24;
+
+    displayMetrics.timeRateTop = currentTop;
+    displayMetrics.timeWidth = g.getFont().stringWidth("0:00:0  ");
+    displayMetrics.sliderWidth = displayMetrics.width - (displayMetrics.timeWidth * 2) - 8;
+    displayMetrics.sliderTop =
+        displayMetrics.timeRateTop + (displayMetrics.textHeight - SLIDER_HEIGHT) / 2;
+    displayMetrics.sliderLeft = displayMetrics.timeWidth + 4;
+    displayMetrics.playTop = displayMetrics.timeRateTop + displayMetrics.textHeight + 24;
+  }
+
+  private void paintBackground(Graphics g) {
+    setBackgroundColor(g);
+    g.fillRect(0, 0, displayMetrics.width, displayMetrics.height);
+  }
+
+  private void paintStatusBar(Graphics g, int clipY, int clipHeight) {
+    setThemeColor(g);
+    g.fillRect(0, 0, displayMetrics.width, displayMetrics.statusBarHeight);
+
+    if (intersects(clipY, clipHeight, PLAYER_STATUS_TOP, displayMetrics.textHeight)) {
+      g.setColor(255, 255, 255);
+      g.drawString(statusManager.current, displayMetrics.width >> 1, PLAYER_STATUS_TOP, 17);
+    }
+  }
+
+  private void paintAlbumArt(Graphics g) {
+    int artTop = PLAYER_STATUS_TOP + displayMetrics.statusBarHeight + 8;
+
+    if (this.albumArt != null) {
+      g.drawImage(
+          this.albumArt,
+          ART_LEFT + ART_SIZE / 2,
+          artTop + ART_SIZE / 2,
+          Graphics.HCENTER | Graphics.VCENTER);
+      g.setColor(150, 150, 150);
+      g.drawRect(ART_LEFT, artTop, ART_SIZE, ART_SIZE);
+    } else {
+      g.setColor(200, 200, 200);
+      g.fillRect(ART_LEFT, artTop, ART_SIZE, ART_SIZE);
+      g.setColor(150, 150, 150);
+      g.drawRect(ART_LEFT, artTop, ART_SIZE, ART_SIZE);
+      g.setColor(100, 100, 100);
+      g.drawString("♪", ART_LEFT + ART_SIZE / 2, artTop + ART_SIZE / 2, 17);
+    }
+  }
+
+  private void paintSongInfo(Graphics g, int clipY, int clipHeight) {
+    if (intersects(clipY, clipHeight, displayMetrics.songNameTop, displayMetrics.textHeight)) {
+      setThemeColor(g);
+      int maxSongNameWidth = displayMetrics.width - displayMetrics.songInfoLeft - 10;
+      String truncatedSongName = truncateText(this.gui.getSongName(), g, maxSongNameWidth);
+      g.drawString(truncatedSongName, displayMetrics.songInfoLeft, displayMetrics.songNameTop, 20);
+    }
+
+    if (intersects(clipY, clipHeight, displayMetrics.singerNameTop, displayMetrics.textHeight)) {
+      g.setColor(140, 140, 140);
+      int maxSingerWidth = displayMetrics.width - displayMetrics.songInfoLeft - 10;
+      String truncatedSinger = truncateText(this.gui.getSinger(), g, maxSingerWidth);
+      g.drawString(truncatedSinger, displayMetrics.songInfoLeft, displayMetrics.singerNameTop, 20);
+    }
+  }
+
+  private void paintTimeSlider(Graphics g, int clipY, int clipHeight) {
+    long duration = this.gui.getDuration();
+    long current = this.gui.getCurrentTime();
+    String strDuration = timeDisplay(duration);
+    String strCurrent = timeDisplay(current);
+
+    if (duration > 0) {
+      displayMetrics.sliderValue =
+          (float) displayMetrics.sliderWidth * ((float) current / (float) duration);
+    } else {
+      displayMetrics.sliderValue = 0;
+    }
+
+    if (intersects(clipY, clipHeight, displayMetrics.timeRateTop, displayMetrics.textHeight)) {
+      g.setColor(140, 140, 140);
+      g.drawString(strCurrent, 5, displayMetrics.timeRateTop, 20);
+    }
+
+    g.setColor(220, 220, 220);
+    g.fillRect(
+        displayMetrics.sliderLeft,
+        displayMetrics.sliderTop,
+        displayMetrics.sliderWidth,
+        SLIDER_HEIGHT);
+
+    setThemeColor(g);
+    g.fillRect(
+        displayMetrics.sliderLeft,
+        displayMetrics.sliderTop,
+        (int) displayMetrics.sliderValue,
+        SLIDER_HEIGHT);
+
+    if (intersects(clipY, clipHeight, displayMetrics.timeRateTop, displayMetrics.textHeight)) {
+      g.setColor(140, 140, 140);
+      g.drawString(strDuration, displayMetrics.width - 5, displayMetrics.timeRateTop, 24);
+    }
+  }
+
+  private void paintControlButtons(Graphics g) {
+    initializeButtonPositions();
+    updateButtonActiveStates();
+
+    boolean isPlaying = this.gui.isPlaying();
+    Image playPauseImg = isPlaying ? imageCache.getPauseImage() : imageCache.getPlayImage();
+    if (playPauseImg != null) {
+      g.drawImage(playPauseImg, buttonPositions.playX, buttonPositions.playY, 3);
+    }
+
+    Image prevImg =
+        showingPreviousActive ? imageCache.getPreviousActiveImage() : imageCache.getPreviousImage();
+    if (prevImg != null) {
+      g.drawImage(prevImg, buttonPositions.prevX, buttonPositions.prevY, 3);
+    }
+
+    Image nextImg = showingNextActive ? imageCache.getNextActiveImage() : imageCache.getNextImage();
+    if (nextImg != null) {
+      g.drawImage(nextImg, buttonPositions.nextX, buttonPositions.nextY, 3);
+    }
+
+    Image repeatImg = getRepeatModeImage();
+    if (repeatImg != null) {
+      g.drawImage(repeatImg, buttonPositions.repeatX, buttonPositions.repeatY, 3);
+    }
+
+    Image shuffleImg =
+        this.getPlayerGUI().isShuffleMode()
+            ? imageCache.getShuffleImage()
+            : imageCache.getShuffleOffImage();
+    if (shuffleImg != null) {
+      g.drawImage(shuffleImg, buttonPositions.shuffleX, buttonPositions.shuffleY, 3);
+    }
+  }
+
+  private void initializeButtonPositions() {
+    if (buttonPositions.playX == 0) {
+      int screenCenter = displayMetrics.width >> 1;
+      int buttonGap = displayMetrics.width / 5;
+      int margin = 8;
+
+      buttonPositions.playX = screenCenter;
+      buttonPositions.playY = displayMetrics.playTop;
+      buttonPositions.prevX = screenCenter - buttonGap;
+      buttonPositions.prevY = displayMetrics.playTop;
+      buttonPositions.nextX = screenCenter + buttonGap;
+      buttonPositions.nextY = displayMetrics.playTop;
+      buttonPositions.repeatX = margin + (BUTTON_WIDTH / 2);
+      buttonPositions.repeatY = displayMetrics.playTop;
+      buttonPositions.shuffleX = displayMetrics.width - margin - (BUTTON_WIDTH / 2);
+      buttonPositions.shuffleY = displayMetrics.playTop;
+    }
+  }
+
+  private void updateButtonActiveStates() {
+    if (showingPreviousActive || showingNextActive) {
+      long time = System.currentTimeMillis();
+      if (time - previousButtonPressTime >= BUTTON_ACTIVE_DURATION) {
+        showingPreviousActive = false;
+      }
+      if (time - nextButtonPressTime >= BUTTON_ACTIVE_DURATION) {
+        showingNextActive = false;
+      }
+    }
+  }
+
+  private Image getRepeatModeImage() {
+    switch (this.getPlayerGUI().getRepeatMode()) {
+      case PlayerGUI.REPEAT_ONE:
+        return imageCache.getRepeatOneImage();
+      case PlayerGUI.REPEAT_ALL:
+        return imageCache.getRepeatImage();
+      default:
+        return imageCache.getRepeatOffImage();
+    }
+  }
+
   public void setObserver(MainObserver observer) {
     this.observer = observer;
   }
 
   public void commandAction(Command c, Displayable d) {
-    if (c == this.backCommand) {
+    if (c == commands.back) {
       this.observer.goBack();
-    } else if (c == this.nextCommand) {
-      if (!this.isLoading()) {
-        try {
-          this.showingNextActive = true;
-          this.nextButtonPressTime = System.currentTimeMillis();
-          this.getPlayerGUI().getNextSong();
-        } catch (Throwable e) {
-        }
-      }
-    } else if (c == this.prevCommand) {
-      if (!this.isLoading()) {
-        try {
-          this.showingPreviousActive = true;
-          this.previousButtonPressTime = System.currentTimeMillis();
-          this.getPlayerGUI().getPrevSong();
-        } catch (Throwable e) {
-        }
-      }
-    } else if (c == this.playPauseCommand) {
+    } else if (c == commands.next) {
+      handleNextCommand();
+    } else if (c == commands.prev) {
+      handlePrevCommand();
+    } else if (c == commands.playPause) {
       if (!this.isLoading()) {
         this.getPlayerGUI().togglePlayer();
-
-        ThreadManagerIntegration.scheduleDelayedTask(
-            new Runnable() {
-              public void run() {
-                ThreadManagerIntegration.executeUITask(
-                    new Runnable() {
-                      public void run() {
-                        updatePlayPauseCommand();
-                      }
-                    },
-                    "UpdatePlayPauseCommand");
-              }
-            },
-            "DelayedCommandUpdate",
-            200);
       }
-    } else if (c == this.stopCommand) {
+    } else if (c == commands.stop) {
       this.gui.pausePlayer();
       this.gui.setMediaTime(0L);
       this.setStatus(I18N.tr("paused"));
-      this.updatePlayPauseCommand();
-    } else if (c == this.repeatCommand) {
+    } else if (c == commands.repeat) {
       this.getPlayerGUI().toggleRepeatMode();
-    } else if (c == this.shuffleCommand) {
+    } else if (c == commands.shuffle) {
       this.getPlayerGUI().toggleShuffleMode();
-    } else if (c == this.addToPlaylistCommand) {
+    } else if (c == commands.addToPlaylist) {
       showAddToPlaylistDialog();
-    } else if (c == this.showPlaylistCommand) {
+    } else if (c == commands.showPlaylist) {
       showCurrentPlaylist();
-    } else if (c == this.sleepTimerCommand) {
+    } else if (c == commands.sleepTimer) {
       showSleepTimerDialog();
-    } else if (c == this.cancelTimerCommand) {
+    } else if (c == commands.cancelTimer) {
       sleepTimerManager.cancelTimer();
+    }
+  }
+
+  private void handleNextCommand() {
+    if (!this.isLoading()) {
+      try {
+        this.showingNextActive = true;
+        this.nextButtonPressTime = System.currentTimeMillis();
+        this.getPlayerGUI().getNextSong();
+      } catch (Throwable e) {
+      }
+    }
+  }
+
+  private void handlePrevCommand() {
+    if (!this.isLoading()) {
+      try {
+        this.showingPreviousActive = true;
+        this.previousButtonPressTime = System.currentTimeMillis();
+        this.getPlayerGUI().getPrevSong();
+      } catch (Throwable e) {
+      }
     }
   }
 
@@ -958,7 +756,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
       }
     }
 
-    final Command cancelAddToPlaylistCommand = new Command(I18N.tr("cancel"), Command.BACK, 2);
+    final Command cancelAddToPlaylistCommand = new Command(I18N.tr("cancel"), Command.BACK, 1);
     playlistList.addCommand(cancelAddToPlaylistCommand);
 
     final Song finalCurrentSong = currentSong;
@@ -1055,33 +853,32 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   }
 
   private void initializeCommands() {
-    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 1);
-    this.nextCommand = new Command(I18N.tr("next"), Command.SCREEN, 3);
-    this.prevCommand = new Command(I18N.tr("previous"), Command.SCREEN, 4);
-    this.stopCommand = new Command(I18N.tr("stop"), Command.SCREEN, 7);
-    this.addToPlaylistCommand = new Command(I18N.tr("add_to_playlist"), Command.SCREEN, 8);
-    this.showPlaylistCommand = new Command(I18N.tr("show_playlist"), Command.SCREEN, 9);
-    this.sleepTimerCommand = new Command(I18N.tr("sleep_timer"), Command.SCREEN, 10);
+    commands.playPause = new Command(I18N.tr("play"), Command.OK, 1);
+    commands.next = new Command(I18N.tr("next"), Command.SCREEN, 2);
+    commands.prev = new Command(I18N.tr("previous"), Command.SCREEN, 3);
+    commands.stop = new Command(I18N.tr("stop"), Command.SCREEN, 4);
+    commands.addToPlaylist = new Command(I18N.tr("add_to_playlist"), Command.SCREEN, 5);
+    commands.showPlaylist = new Command(I18N.tr("show_playlist"), Command.SCREEN, 6);
+    commands.sleepTimer = new Command(I18N.tr("sleep_timer"), Command.SCREEN, 9);
+    commands.back = new Command(I18N.tr("back"), Command.BACK, 11);
 
-    this.addCommand(this.backCommand);
-    updatePlayPauseCommand();
-    this.addCommand(this.nextCommand);
-    this.addCommand(this.prevCommand);
-    this.addCommand(this.stopCommand);
-    this.addCommand(this.addToPlaylistCommand);
-    this.addCommand(this.showPlaylistCommand);
+    this.addCommand(commands.back);
+    this.addCommand(commands.playPause);
+    this.addCommand(commands.next);
+    this.addCommand(commands.prev);
+    this.addCommand(commands.stop);
+    this.addCommand(commands.addToPlaylist);
+    this.addCommand(commands.showPlaylist);
     updateTimerCommands();
 
-    if (this.repeatCommand == null) {
-      this.repeatCommand =
-          new Command(I18N.tr("repeat") + ": " + I18N.tr("all"), Command.SCREEN, 5);
-      this.addCommand(this.repeatCommand);
+    if (commands.repeat == null) {
+      commands.repeat = new Command(I18N.tr("repeat") + ": " + I18N.tr("all"), Command.SCREEN, 7);
+      this.addCommand(commands.repeat);
     }
 
-    if (this.shuffleCommand == null) {
-      this.shuffleCommand =
-          new Command(I18N.tr("shuffle") + ": " + I18N.tr("off"), Command.SCREEN, 6);
-      this.addCommand(this.shuffleCommand);
+    if (commands.shuffle == null) {
+      commands.shuffle = new Command(I18N.tr("shuffle") + ": " + I18N.tr("off"), Command.SCREEN, 8);
+      this.addCommand(commands.shuffle);
     }
   }
 
@@ -1162,12 +959,11 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     sleepTimerManager.setCallback(
         new SleepTimerManager.SleepTimerCallback() {
           public void onTimerExpired(int action) {
-            timerOverrideActive = false;
+            statusManager.clearTimerOverride();
             if (action == SleepTimerForm.ACTION_STOP_PLAYBACK) {
               if (gui != null) {
                 gui.pausePlayer();
                 setStatus(I18N.tr("paused"));
-                updatePlayPauseCommand();
               }
             } else if (action == SleepTimerForm.ACTION_EXIT_APP) {
               setStatus(I18N.tr("timer_expired_exit"));
@@ -1176,35 +972,33 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
           }
 
           public void onTimerUpdate(String remainingTime) {
-
             if (!isVolumeStatusShowing()) {
               updateSleepTimerDisplay();
             } else {
-
               scheduleDelayedTimerUpdate();
             }
           }
 
           public void onTimerCancelled() {
-            timerOverrideActive = false;
-            setStatus(originalStatus);
+            statusManager.clearTimerOverride();
+            setStatus(statusManager.original);
             updateTimerCommands();
           }
         });
   }
 
   private void updateTimerCommands() {
-    if (this.cancelTimerCommand != null) {
-      this.removeCommand(this.cancelTimerCommand);
-      this.cancelTimerCommand = null;
+    if (commands.cancelTimer != null) {
+      this.removeCommand(commands.cancelTimer);
+      commands.cancelTimer = null;
     }
 
     if (sleepTimerManager.isActive()) {
-      this.removeCommand(this.sleepTimerCommand);
-      this.cancelTimerCommand = new Command(I18N.tr("cancel_timer"), Command.SCREEN, 11);
-      this.addCommand(this.cancelTimerCommand);
+      this.removeCommand(commands.sleepTimer);
+      commands.cancelTimer = new Command(I18N.tr("cancel_timer"), Command.SCREEN, 10);
+      this.addCommand(commands.cancelTimer);
     } else {
-      this.addCommand(this.sleepTimerCommand);
+      this.addCommand(commands.sleepTimer);
     }
   }
 
@@ -1213,32 +1007,30 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
       String remaining = sleepTimerManager.getRemainingTime();
       String timerStatus = TextUtils.replace(I18N.tr("timer_remaining"), "{0}", remaining);
 
-      if (originalStatus.equals(I18N.tr("playing")) || originalStatus.equals(I18N.tr("paused"))) {
-        boolean wasActive = timerOverrideActive;
-        String previousStatus = status;
+      if (statusManager.original.equals(I18N.tr("playing"))
+          || statusManager.original.equals(I18N.tr("paused"))) {
+        boolean wasActive = statusManager.isTimerOverrideActive();
+        String previousStatus = statusManager.current;
 
-        timerOverrideActive = true;
-        status = timerStatus;
+        statusManager.setTimerOverride(timerStatus);
 
         if (!wasActive || !timerStatus.equals(previousStatus)) {
           updateDisplay();
         }
       }
     } else {
-      if (timerOverrideActive) {
-        timerOverrideActive = false;
-        status = originalStatus;
+      if (statusManager.isTimerOverrideActive()) {
+        statusManager.clearTimerOverride();
         updateDisplay();
       }
     }
   }
 
   private boolean isVolumeStatusShowing() {
-    return status != null && status.indexOf(I18N.tr("volume")) != -1;
+    return statusManager.current != null && statusManager.current.indexOf(I18N.tr("volume")) != -1;
   }
 
   private void scheduleDelayedTimerUpdate() {
-
     ThreadManagerIntegration.scheduleDelayedTask(
         new Runnable() {
           public void run() {
@@ -1262,15 +1054,13 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
       String remaining = sleepTimerManager.getRemainingTime();
       String timerStatus = TextUtils.replace(I18N.tr("timer_remaining"), "{0}", remaining);
 
-      if (!isCriticalStatus(status)) {
-        timerOverrideActive = true;
-        status = timerStatus;
+      if (!isCriticalStatus(statusManager.current)) {
+        statusManager.setTimerOverride(timerStatus);
         updateDisplay();
       }
     } else {
-      if (timerOverrideActive) {
-        timerOverrideActive = false;
-        status = originalStatus;
+      if (statusManager.isTimerOverrideActive()) {
+        statusManager.clearTimerOverride();
         updateDisplay();
       }
     }
@@ -1283,5 +1073,211 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
 
   public void cancel() {
     ThreadManagerIntegration.cancelPendingDataOperations();
+  }
+
+  private static class Commands {
+    Command back, playPause, next, prev, stop;
+    Command addToPlaylist, showPlaylist, sleepTimer, cancelTimer;
+    Command repeat, shuffle;
+  }
+
+  private static class DisplayMetrics {
+    int width = -1, height = -1, textHeight = 10;
+    int songInfoLeft = 0, statusBarHeight = 0;
+    int songNameTop = 0, singerNameTop = 0;
+    int timeRateTop = 0, timeWidth = 0, playTop = 0;
+    int sliderTop = 0, sliderLeft = 0, sliderWidth = 12;
+    float sliderValue = 0.0F;
+  }
+
+  private static class ButtonPositions {
+    int playX = 0, playY = 0;
+    int prevX = 0, prevY = 0;
+    int nextX = 0, nextY = 0;
+    int repeatX = 0, repeatY = 0;
+    int shuffleX = 0, shuffleY = 0;
+  }
+
+  private static class ColorCache {
+    int themeColorRGB, backgroundColorRGB;
+    String lastThemeColor = "", lastBackgroundColor = "";
+  }
+
+  private static class StatusManager {
+    String current = "", original = "", realPlayerStatus = "";
+    boolean timerOverrideActive = false;
+
+    void updateStatus(String s) {
+      if (s != null
+          && s.indexOf(I18N.tr("timer_remaining").substring(0, 3)) == -1
+          && s.indexOf(I18N.tr("volume")) == -1) {
+        this.realPlayerStatus = s;
+      }
+
+      if (!timerOverrideActive) {
+        this.current = s;
+        this.original = s;
+      } else if (isCriticalStatus(s)) {
+        this.current = s;
+        this.original = s;
+        this.timerOverrideActive = false;
+      }
+    }
+
+    private boolean isCriticalStatus(String status) {
+      return status != null
+          && (status.indexOf(I18N.tr("loading")) != -1
+              || status.toLowerCase().indexOf("error") != -1
+              || status.indexOf(I18N.tr("volume")) != -1);
+    }
+
+    void setTimerOverride(String timerStatus) {
+      this.timerOverrideActive = true;
+      this.current = timerStatus;
+    }
+
+    void clearTimerOverride() {
+      this.timerOverrideActive = false;
+      this.current = this.realPlayerStatus;
+    }
+
+    boolean isTimerOverrideActive() {
+      return timerOverrideActive;
+    }
+  }
+
+  private static class ImageCache {
+    Image play, pause, previous, next;
+    Image previousActive, nextActive;
+    Image repeat, repeatOne, repeatOff;
+    Image shuffle, shuffleOff;
+
+    Image getPlayImage() {
+      if (play == null) {
+        try {
+          play = Image.createImage("/images/player/play.png");
+        } catch (Exception e) {
+          play = null;
+        }
+      }
+      return play;
+    }
+
+    Image getPauseImage() {
+      if (pause == null) {
+        try {
+          pause = Image.createImage("/images/player/pause.png");
+        } catch (Exception e) {
+          pause = null;
+        }
+      }
+      return pause;
+    }
+
+    Image getPreviousImage() {
+      if (previous == null) {
+        try {
+          previous = Image.createImage("/images/player/previous.png");
+        } catch (Exception e) {
+          previous = null;
+        }
+      }
+      return previous;
+    }
+
+    Image getNextImage() {
+      if (next == null) {
+        try {
+          next = Image.createImage("/images/player/next.png");
+        } catch (Exception e) {
+          next = null;
+        }
+      }
+      return next;
+    }
+
+    Image getPreviousActiveImage() {
+      if (previousActive == null) {
+        try {
+          previousActive = Image.createImage("/images/player/previous.png");
+        } catch (Exception e) {
+          previousActive = null;
+        }
+      }
+      return previousActive;
+    }
+
+    Image getNextActiveImage() {
+      if (nextActive == null) {
+        try {
+          nextActive = Image.createImage("/images/player/next.png");
+        } catch (Exception e) {
+          nextActive = null;
+        }
+      }
+      return nextActive;
+    }
+
+    Image getRepeatImage() {
+      if (repeat == null) {
+        try {
+          repeat = Image.createImage("/images/player/repeat.png");
+        } catch (Exception e) {
+          repeat = null;
+        }
+      }
+      return repeat;
+    }
+
+    Image getRepeatOneImage() {
+      if (repeatOne == null) {
+        try {
+          repeatOne = Image.createImage("/images/player/repeat-one.png");
+        } catch (Exception e) {
+          repeatOne = null;
+        }
+      }
+      return repeatOne;
+    }
+
+    Image getRepeatOffImage() {
+      if (repeatOff == null) {
+        try {
+          repeatOff = Image.createImage("/images/player/repeat-off.png");
+        } catch (Exception e) {
+          repeatOff = null;
+        }
+      }
+      return repeatOff;
+    }
+
+    Image getShuffleImage() {
+      if (shuffle == null) {
+        try {
+          shuffle = Image.createImage("/images/player/shuffle.png");
+        } catch (Exception e) {
+          shuffle = null;
+        }
+      }
+      return shuffle;
+    }
+
+    Image getShuffleOffImage() {
+      if (shuffleOff == null) {
+        try {
+          shuffleOff = Image.createImage("/images/player/shuffle-off.png");
+        } catch (Exception e) {
+          shuffleOff = null;
+        }
+      }
+      return shuffleOff;
+    }
+
+    void clearAll() {
+      play = pause = previous = next = null;
+      previousActive = nextActive = null;
+      repeat = repeatOne = repeatOff = null;
+      shuffle = shuffleOff = null;
+    }
   }
 }

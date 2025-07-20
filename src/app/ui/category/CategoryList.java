@@ -34,7 +34,6 @@ public class CategoryList extends List implements CommandListener, LoadDataObser
 
     this.loadDefaultImage();
     this.initializeCommands();
-    this.cateItems = new Vector();
     this.cateItems = items;
     this.initComponents();
     this.setCommandListener(this);
