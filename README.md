@@ -2,7 +2,7 @@
 
 A feature-rich online music player application developed using J2ME (Java Micro Edition) for mobile devices.
 
-![AppIcon](/res/images/AppIcon.png)
+![AppIcon](/res/Icon.png)
 
 ## Features
 

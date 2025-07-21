@@ -1,0 +1,195 @@
+{
+  "action": {
+    "back": "Geri",
+    "cancel": "İptal",
+    "exit": "Çık",
+    "no": "Hayır",
+    "ok": "Tamam",
+    "save": "Kaydet",
+    "yes": "Evet"
+  },
+  "app": {
+    "name": "MIDPlay"
+  },
+  "confirm": {
+    "exit": "Çıkmak istediğinizden emin misiniz?"
+  },
+  "favorites": {
+    "add": "Favorilere Ekle",
+    "error": {
+      "remove_failed": "Favori çıkarma hatası",
+      "save_failed": "Favori kaydetme hatası"
+    },
+    "remove": "Favorilerden Çıkar",
+    "status": {
+      "added": "Favorilere eklendi",
+      "already_exists": "Zaten favorilerde",
+      "removed": "Favorilerden çıkarıldı"
+    }
+  },
+  "language": {
+    "en": "English",
+    "tr": "Türkçe",
+    "vi": "Tiếng Việt"
+  },
+  "media": {
+    "album": "Albüm",
+    "playlist": "Çalma Listesi",
+    "track": "Şarkı",
+    "tracks": "Şarkılar"
+  },
+  "menu": {
+    "discover_playlists": "Çalma Listelerini Keşfet",
+    "favorites": "Favoriler",
+    "hot_playlists": "Popüler Çalma Listeleri",
+    "main": "Ana Menü",
+    "now_playing": "Şimdi Çalıyor",
+    "reorder": "Menüyü Yeniden Sırala",
+    "search": "Arama",
+    "chat": "AI Sohbeti",
+    "settings": "Ayarlar",
+    "about": "Hakkında",
+    "visibility": "Menü Görünürlüğü"
+  },
+  "player": {
+    "next": "Sonraki",
+    "play": "Çal",
+    "previous": "Önceki",
+    "repeat": "Tekrarla",
+    "show_playlist": "Çalma Listesini Göster",
+    "shuffle": "Karıştır",
+    "status": {
+      "loading": "Yükleniyor...",
+      "paused": "Duraklatıldı",
+      "playing": "Çalıyor...",
+      "starting": "Başlatılıyor...",
+      "stopped": "Durduruldu",
+      "stopping": "Durduruluyor...",
+      "finished": "Tamamlandı",
+      "ready": "Hazır"
+    },
+    "stop": "Durdur",
+    "volume": "Ses"
+  },
+  "playlist": {
+    "add_track": "Çalma Listesine Ekle",
+    "create": "Çalma Listesi Oluştur",
+    "confirm": {
+      "delete_with_tracks": "Bu çalma listesinde şarkılar var. Çalma listesini ve tüm şarkıları sil?"
+    },
+    "error": {
+      "add_track_failed": "Şarkı çalma listesine eklenemedi",
+      "track_already_exists": "Şarkı zaten çalma listesinde mevcut",
+      "cannot_rename_system": "Sistem çalma listesi yeniden adlandırılamaz",
+      "create_failed": "Çalma listesi oluşturulamadı",
+      "empty_name": "Çalma listesi adı boş olamaz",
+      "remove_track_failed": "Şarkı çalma listesinden çıkarılamadı",
+      "rename_failed": "Çalma listesi yeniden adlandırılamadı"
+    },
+    "name": "Çalma Listesi Adı",
+    "rename": "Çalma Listesini Yeniden Adlandır",
+    "select": "Çalma Listesi Seç",
+    "status": {
+      "created": "Çalma listesi başarıyla oluşturuldu",
+      "no_custom": "Özel çalma listesi yok",
+      "renamed": "Çalma listesi başarıyla yeniden adlandırıldı",
+      "track_added": "Şarkı çalma listesine eklendi",
+      "track_removed": "Şarkı çalma listesinden çıkarıldı"
+    }
+  },
+  "search": {
+    "error": {
+      "empty_keyword": "Lütfen arama için bir anahtar kelime girin"
+    },
+    "placeholder": "Arama için anahtar kelime girin...",
+    "results": "Arama Sonuçları",
+    "status": {
+      "no_results": "Sonuç bulunamadı",
+      "searching": "Aranan: {0}"
+    },
+    "type": "Arama Türü"
+  },
+  "settings": {
+    "audio_quality": "Ses Kalitesi",
+    "auto_update": "Otomatik Güncellemeler",
+    "check_update": "Güncellemeleri Kontrol Et",
+    "player_method": "Oynatıcı Yöntemi",
+    "player_method_options": {
+      "pass_inputstream": "Input Stream Geçir",
+      "pass_url": "URL Geçir"
+    },
+    "error": {
+      "save_failed": "Ayarlar kaydedilemedi"
+    },
+    "language": "Dil",
+    "reorder": {
+      "instructions": "Taşınacak öğeyi seçin, sonra hedef konumu seçin",
+      "saved": "Sıralama kaydedildi"
+    },
+    "service": "Servis",
+    "status": {
+      "saved": "Ayarlar başarıyla kaydedildi"
+    },
+    "visibility": {
+      "instructions": "Gizle/göster öğeleri seçin. [x] = göster, [] = gizle. Tamamlamak için Kaydet'e basın.",
+      "saved": "Görünürlük ayarları kaydedildi"
+    }
+  },
+  "status": {
+    "error": "Bir hata oluştu",
+    "loading": "Yükleniyor...",
+    "load_more": "Daha fazla yükle...",
+    "no_data": "Veri yok!",
+    "no_updates": "Güncelleme yok. En son sürümü kullanıyorsunuz.",
+    "update_available": "Yeni sürüm mevcut. Şimdi güncellensin mi?"
+  },
+  "symbol": {
+    "arrow": "→ ",
+    "checked": "[x] ",
+    "unchecked": "[  ] "
+  },
+  "time": {
+    "error": {
+      "invalid_duration": "Süre 1-999 dakika arasında olmalı",
+      "invalid_format": "Geçersiz zaman formatı",
+      "invalid_hour": "Saat 0-23 arasında olmalı",
+      "invalid_minute": "Dakika 0-59 arasında olmalı"
+    },
+    "hours": "Saat",
+    "input": {
+      "minutes": "Süre girin (1-999 dakika)",
+      "time": "Zaman girin (24 saat formatı)"
+    },
+    "minutes": "Dakika"
+  },
+  "timer": {
+    "action": "Zamanlayıcı Eylemi",
+    "actions": {
+      "exit_app": "Uygulamadan Çık",
+      "stop_playback": "Çalmayı Durdur"
+    },
+    "cancel": "Zamanlayıcıyı İptal Et",
+    "confirm": {
+      "exit": "Zamanlayıcı süresi dolduğunda uygulamadan çıkacak. Devam et?"
+    },
+    "mode": {
+      "absolute": "Mutlak Zaman",
+      "countdown": "Geri Sayım Modu"
+    },
+    "set": "Zamanlayıcı Ayarla",
+    "sleep_timer": "Uyku Zamanlayıcısı",
+    "status": {
+      "cancelled": "Uyku zamanlayıcısı iptal edildi",
+      "expired": "Uyku zamanlayıcısı süresi doldu",
+      "remaining": "Kalan Süre: {0}",
+      "set": "Uyku zamanlayıcısı etkinleştirildi"
+    }
+  },
+  "chat": {
+    "input": "Mesaj girin",
+    "welcome_message": "Merhaba! Size nasıl yardımcı olabilirim?"
+  },
+  "error": {
+    "connection": "Bağlantı hatası. Lütfen tekrar deneyin."
+  }
+}
