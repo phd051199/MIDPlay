@@ -33,6 +33,7 @@ public class SettingsManager {
     return instance;
   }
 
+  private final ThreadManager threadManager;
   private final RecordStoreManager recordStore;
   private boolean isShuttingDown = false;
   private volatile boolean settingsModified = false;
@@ -53,6 +54,7 @@ public class SettingsManager {
   private String lastBackgroundColor = "";
 
   private SettingsManager() {
+    threadManager = ThreadManager.getInstance();
     recordStore = new RecordStoreManager(SETTINGS_STORE_NAME);
     loadSettingsFromRMS();
   }
@@ -143,7 +145,7 @@ public class SettingsManager {
   }
 
   public synchronized void saveConfig(final JSONObject config) {
-    if (ThreadManager.getInstance().isThreadAlive("SettingsSave")) {
+    if (threadManager.isThreadAlive("SettingsSave")) {
       synchronized (settingsModifiedLock) {
         settingsModified = true;
       }
@@ -216,7 +218,7 @@ public class SettingsManager {
   }
 
   public synchronized void loadConfig(final ConfigCallback callback) {
-    ThreadManager.getInstance().interruptThread("SettingsLoad");
+    threadManager.interruptThread("SettingsLoad");
 
     ThreadManagerIntegration.executeBackgroundTask(
         new Runnable() {
@@ -287,8 +289,8 @@ public class SettingsManager {
   public synchronized void shutdown() {
     isShuttingDown = true;
 
-    ThreadManager.getInstance().interruptThread("SettingsSave");
-    ThreadManager.getInstance().interruptThread("SettingsLoad");
+    threadManager.interruptThread("SettingsSave");
+    threadManager.interruptThread("SettingsLoad");
 
     recordStore.closeRecordStore();
   }

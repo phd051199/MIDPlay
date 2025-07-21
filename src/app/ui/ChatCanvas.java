@@ -19,6 +19,7 @@ import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
@@ -64,6 +65,11 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   private int focusedClickableIndex = -1;
   private int totalContentHeight = 0;
 
+  private int lastPointerY = -1;
+  private boolean isDragging = false;
+  private int dragStartY = -1;
+  private int dragStartScrollOffset = -1;
+
   private Command backCommand;
   private Command inputCommand;
   private Command selectCommand;
@@ -99,6 +105,10 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
       addAIMessage(I18N.tr("welcome_message"));
       startTypingEffect();
     }
+  }
+
+  private Display getDisplay() {
+    return MIDPlay.getInstance().getDisplay();
   }
 
   private void addAIMessage(String text) {
@@ -693,7 +703,48 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   protected void pointerPressed(int x, int y) {
-    handlePointerEvent(x, y);
+    lastPointerY = y;
+    isDragging = false;
+    dragStartY = y;
+    dragStartScrollOffset = scrollOffset;
+  }
+
+  protected void pointerDragged(int x, int y) {
+    if (lastPointerY != -1) {
+      int deltaY = y - dragStartY;
+
+      if (!isDragging && Math.abs(deltaY) > 5) {
+        isDragging = true;
+      }
+
+      if (isDragging) {
+        int newScrollOffset = dragStartScrollOffset - deltaY;
+        int maxScroll = Math.max(0, totalContentHeight - getHeight());
+
+        if (newScrollOffset < 0) {
+          newScrollOffset = 0;
+        } else if (newScrollOffset > maxScroll) {
+          newScrollOffset = maxScroll;
+        }
+
+        if (newScrollOffset != scrollOffset) {
+          scrollOffset = newScrollOffset;
+          repaint();
+        }
+      }
+    }
+    lastPointerY = y;
+  }
+
+  protected void pointerReleased(int x, int y) {
+    if (!isDragging) {
+      handlePointerEvent(x, y);
+    }
+
+    lastPointerY = -1;
+    isDragging = false;
+    dragStartY = -1;
+    dragStartScrollOffset = -1;
   }
 
   private void handlePointerEvent(int x, int y) {
@@ -809,7 +860,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
   }
 
   private void scrollDown() {
-    int maxScroll = Math.max(0, totalContentHeight - getHeight() + BUBBLE_MARGIN);
+    int maxScroll = Math.max(0, totalContentHeight - getHeight());
     int oldScroll = scrollOffset;
     scrollOffset = Math.min(maxScroll, scrollOffset + 20);
     if (oldScroll != scrollOffset) {
@@ -831,7 +882,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
       cleanupTimerAndOperations();
       observer.goBack();
     } else if (c == inputCommand) {
-      previousDisplay = MIDPlay.getInstance().getDisplay().getCurrent();
+      previousDisplay = getDisplay().getCurrent();
       openInputBox();
     } else if (d == inputBox && c.getCommandType() == Command.OK) {
       final String text = inputBox.getString().trim();
@@ -869,9 +920,9 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
               }
             });
       }
-      MIDPlay.getInstance().getDisplay().setCurrent(previousDisplay);
+      getDisplay().setCurrent(previousDisplay);
     } else if (d == inputBox && c.getCommandType() == Command.CANCEL) {
-      MIDPlay.getInstance().getDisplay().setCurrent(previousDisplay);
+      getDisplay().setCurrent(previousDisplay);
     }
   }
 
@@ -880,7 +931,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
     inputBox.addCommand(new Command(I18N.tr("send"), Command.OK, 1));
     inputBox.addCommand(new Command(I18N.tr("cancel"), Command.CANCEL, 2));
     inputBox.setCommandListener(this);
-    MIDPlay.getInstance().getDisplay().setCurrent(inputBox);
+    getDisplay().setCurrent(inputBox);
   }
 
   public void hideNotify() {
@@ -906,7 +957,7 @@ public class ChatCanvas extends Canvas implements CommandListener, LoadDataObser
 
   private void displayAlert(String message, AlertType messageType) {
     Alert alert = new Alert(null, message, null, messageType);
-    MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
+    getDisplay().setCurrent(alert, this);
   }
 
   private class Message {

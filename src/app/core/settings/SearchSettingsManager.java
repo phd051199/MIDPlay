@@ -22,6 +22,7 @@ public class SearchSettingsManager {
     return instance;
   }
 
+  private final ThreadManager threadManager;
   private final RecordStoreManager recordStore;
   private final Thread loadThread = null;
   private boolean isShuttingDown = false;
@@ -29,6 +30,7 @@ public class SearchSettingsManager {
   private int searchTypeIndex = 0;
 
   private SearchSettingsManager() {
+    threadManager = ThreadManager.getInstance();
     recordStore = new RecordStoreManager(SEARCH_SETTINGS_STORE_NAME);
     loadSettingsFromRMS();
   }
@@ -75,7 +77,7 @@ public class SearchSettingsManager {
   }
 
   public synchronized void saveConfig(final JSONObject config) {
-    ThreadManager.getInstance().interruptThread("SearchSettingsSave");
+    threadManager.interruptThread("SearchSettingsSave");
 
     ThreadManagerIntegration.executeSettingsSave(
         new Runnable() {
@@ -145,7 +147,7 @@ public class SearchSettingsManager {
   public synchronized void shutdown() {
     isShuttingDown = true;
 
-    ThreadManager.getInstance().interruptThread("SearchSettingsSave");
+    threadManager.interruptThread("SearchSettingsSave");
 
     recordStore.closeRecordStore();
   }

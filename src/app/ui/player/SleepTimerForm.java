@@ -8,6 +8,7 @@ import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.StringItem;
@@ -23,7 +24,6 @@ public class SleepTimerForm extends Form implements CommandListener {
 
   private Command setTimerCommand;
   private Command cancelCommand;
-  private Command backCommand;
   private Command switchModeCommand;
 
   private final ChoiceGroup timerActionChoice;
@@ -64,12 +64,10 @@ public class SleepTimerForm extends Form implements CommandListener {
 
   private void initializeCommands() {
     this.setTimerCommand = new Command(I18N.tr("set_timer"), Command.OK, 1);
-    this.cancelCommand = new Command(I18N.tr("cancel"), Command.CANCEL, 2);
-    this.backCommand = new Command(I18N.tr("back"), Command.BACK, 3);
+    this.cancelCommand = new Command(I18N.tr("cancel"), Command.CANCEL, 3);
 
     addCommand(setTimerCommand);
     addCommand(cancelCommand);
-    addCommand(backCommand);
     updateSwitchModeCommand();
     setCommandListener(this);
   }
@@ -77,11 +75,15 @@ public class SleepTimerForm extends Form implements CommandListener {
   public void commandAction(Command c, Displayable d) {
     if (c == setTimerCommand) {
       handleSetTimer();
-    } else if (c == cancelCommand || c == backCommand) {
+    } else if (c == cancelCommand) {
       handleCancel();
     } else if (c == switchModeCommand) {
       handleModeSwitch();
     }
+  }
+
+  private Display getDisplay() {
+    return MIDPlay.getInstance().getDisplay();
   }
 
   private void handleModeSwitch() {
@@ -97,7 +99,7 @@ public class SleepTimerForm extends Form implements CommandListener {
     }
     String nextModeText =
         (currentMode == MODE_COUNTDOWN) ? I18N.tr("absolute_mode") : I18N.tr("countdown_mode");
-    switchModeCommand = new Command(nextModeText, Command.SCREEN, 4);
+    switchModeCommand = new Command(nextModeText, Command.SCREEN, 2);
     addCommand(switchModeCommand);
   }
 
@@ -195,14 +197,14 @@ public class SleepTimerForm extends Form implements CommandListener {
     confirmAlert.setCommandListener(
         new CommandListener() {
           public void commandAction(Command c, Displayable d) {
-            MIDPlay.getInstance().getDisplay().setCurrent(SleepTimerForm.this);
+            getDisplay().setCurrent(SleepTimerForm.this);
             if (c.getCommandType() == Command.OK) {
               proceedWithTimerSet(action);
             }
           }
         });
 
-    MIDPlay.getInstance().getDisplay().setCurrent(confirmAlert, this);
+    getDisplay().setCurrent(confirmAlert, this);
   }
 
   private void proceedWithTimerSet(int action) {
@@ -264,7 +266,7 @@ public class SleepTimerForm extends Form implements CommandListener {
   private void showAlert(String message, AlertType type) {
     Alert alert = new Alert(null, message, null, type);
     alert.setTimeout(2000);
-    MIDPlay.getInstance().getDisplay().setCurrent(alert, this);
+    getDisplay().setCurrent(alert, this);
   }
 
   public void updateModeDisplay() {

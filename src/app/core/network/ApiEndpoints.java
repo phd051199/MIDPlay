@@ -8,6 +8,8 @@ import app.utils.TextUtils;
 
 public class ApiEndpoints {
 
+  private static final SettingsManager settingsManager = SettingsManager.getInstance();
+
   public static String checkForUpdate() {
     try {
       String baseUrl = AppConstants.SERVICE_URL + "/update?";
@@ -66,7 +68,7 @@ public class ApiEndpoints {
           urlBuffer.append("&lang=").append(language);
         }
 
-        String service = SettingsManager.getInstance().getCurrentService();
+        String service = settingsManager.getCurrentService();
         if (service != null && service.length() > 0) {
           urlBuffer.append("&service=").append(service);
         }
@@ -101,12 +103,10 @@ public class ApiEndpoints {
       try {
         StringBuffer urlBuffer = new StringBuffer(baseUrl);
         urlBuffer.append("listkey=").append(listKey);
-        urlBuffer
-            .append("&quality=")
-            .append(SettingsManager.getInstance().getCurrentAudioQuality());
+        urlBuffer.append("&quality=").append(settingsManager.getCurrentAudioQuality());
         urlBuffer.append("&type=").append(type);
         urlBuffer.append("&lang=").append(I18N.getLanguage());
-        urlBuffer.append("&service=").append(SettingsManager.getInstance().getCurrentService());
+        urlBuffer.append("&service=").append(settingsManager.getCurrentService());
         return urlBuffer.toString();
       } catch (Exception e) {
       }
@@ -139,7 +139,7 @@ public class ApiEndpoints {
         urlBuffer.append("&page=").append(pageIndex);
         urlBuffer.append("&type=").append(type);
         urlBuffer.append("&lang=").append(I18N.getLanguage());
-        urlBuffer.append("&service=").append(SettingsManager.getInstance().getCurrentService());
+        urlBuffer.append("&service=").append(settingsManager.getCurrentService());
         return urlBuffer.toString();
       } catch (Exception e) {
       }
@@ -155,10 +155,8 @@ public class ApiEndpoints {
         StringBuffer urlBuffer = new StringBuffer(baseUrl);
         urlBuffer.append("q=").append(TextUtils.urlEncodeUTF8(keyword));
         urlBuffer.append("&lang=").append(I18N.getLanguage());
-        urlBuffer.append("&service=").append(SettingsManager.getInstance().getCurrentService());
-        urlBuffer
-            .append("&quality=")
-            .append(SettingsManager.getInstance().getCurrentAudioQuality());
+        urlBuffer.append("&service=").append(settingsManager.getCurrentService());
+        urlBuffer.append("&quality=").append(settingsManager.getCurrentAudioQuality());
         return urlBuffer.toString();
       } catch (Exception e) {
       }

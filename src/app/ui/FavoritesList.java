@@ -22,6 +22,7 @@ import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Image;
@@ -97,6 +98,10 @@ public class FavoritesList extends List
       this.defaultImage = Image.createImage("/images/FolderSound.png");
     } catch (Exception e) {
     }
+  }
+
+  private Display getDisplay() {
+    return MIDPlay.getInstance().getDisplay();
   }
 
   private void loadFavorites() {
@@ -536,12 +541,12 @@ public class FavoritesList extends List
                 createCustomPlaylist(playlistName);
               }
             } else if (c == cancelCommand) {
-              MIDPlay.getInstance().getDisplay().setCurrent(FavoritesList.this);
+              getDisplay().setCurrent(FavoritesList.this);
             }
           }
         });
 
-    MIDPlay.getInstance().getDisplay().setCurrent(createForm);
+    getDisplay().setCurrent(createForm);
   }
 
   private void createCustomPlaylist(String name) {
@@ -612,12 +617,12 @@ public class FavoritesList extends List
                   renameCustomPlaylist(selectedItem, newName);
                 }
               } else if (c == cancelCommand) {
-                MIDPlay.getInstance().getDisplay().setCurrent(FavoritesList.this);
+                getDisplay().setCurrent(FavoritesList.this);
               }
             }
           });
 
-      MIDPlay.getInstance().getDisplay().setCurrent(renameForm);
+      getDisplay().setCurrent(renameForm);
 
     } catch (Exception e) {
       showAlert(I18N.tr("alert_error_renaming_playlist"), AlertType.ERROR);
@@ -667,7 +672,7 @@ public class FavoritesList extends List
   private void showAlert(String message, AlertType type) {
     Alert alert = new Alert(null, message, null, type);
     alert.setTimeout(2000);
-    MIDPlay.getInstance().getDisplay().setCurrent(alert, FavoritesList.this);
+    getDisplay().setCurrent(alert, FavoritesList.this);
   }
 
   public Image getImage(int index) {

@@ -23,6 +23,7 @@ public class MenuSettingsManager {
     return instance;
   }
 
+  private final ThreadManager threadManager;
   private final RecordStoreManager recordStore;
   private boolean isShuttingDown = false;
 
@@ -32,6 +33,7 @@ public class MenuSettingsManager {
   private boolean[] soundcloudMenuVisibility = null;
 
   private MenuSettingsManager() {
+    threadManager = ThreadManager.getInstance();
     recordStore = new RecordStoreManager(MENU_SETTINGS_STORE_NAME);
     loadSettingsFromRMS();
   }
@@ -203,7 +205,7 @@ public class MenuSettingsManager {
   }
 
   public synchronized void saveConfig(final JSONObject config) {
-    ThreadManager.getInstance().interruptThread("MenuSettingsSave");
+    threadManager.interruptThread("MenuSettingsSave");
 
     ThreadManagerIntegration.executeSettingsSave(
         new Runnable() {
@@ -242,7 +244,7 @@ public class MenuSettingsManager {
   public synchronized void shutdown() {
     isShuttingDown = true;
 
-    ThreadManager.getInstance().interruptThread("MenuSettingsSave");
+    threadManager.interruptThread("MenuSettingsSave");
 
     recordStore.closeRecordStore();
   }

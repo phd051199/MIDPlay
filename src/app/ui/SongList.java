@@ -16,6 +16,7 @@ import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
@@ -95,6 +96,10 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
     }
   }
 
+  private Display getDisplay() {
+    return MIDPlay.getInstance().getDisplay();
+  }
+
   private void showAddToPlaylistDialog() {
     int selectedIndex = this.getSelectedIndex();
     if (selectedIndex < 0 || selectedIndex >= this.songItems.size()) {
@@ -132,7 +137,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
                 final FavoritesList.FavoriteItem selectedPlaylist =
                     (FavoritesList.FavoriteItem) customPlaylists.elementAt(selectedIndex);
 
-                MIDPlay.getInstance().getDisplay().setCurrent(SongList.this);
+                getDisplay().setCurrent(SongList.this);
 
                 ThreadManagerIntegration.executeBackgroundTask(
                     new Runnable() {
@@ -146,15 +151,15 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
                     },
                     "AddSongToPlaylist");
               } else {
-                MIDPlay.getInstance().getDisplay().setCurrent(SongList.this);
+                getDisplay().setCurrent(SongList.this);
               }
             } else if (c == cancelAddToPlaylistCommand) {
-              MIDPlay.getInstance().getDisplay().setCurrent(SongList.this);
+              getDisplay().setCurrent(SongList.this);
             }
           }
         });
 
-    MIDPlay.getInstance().getDisplay().setCurrent(playlistList);
+    getDisplay().setCurrent(playlistList);
   }
 
   private Vector getCustomPlaylists() {
@@ -196,7 +201,7 @@ public class SongList extends List implements CommandListener, LoadDataObserver 
   private void showAlert(String message, AlertType type) {
     Alert alert = new Alert(null, message, null, type);
     alert.setTimeout(2000);
-    MIDPlay.getInstance().getDisplay().setCurrent(alert, SongList.this);
+    getDisplay().setCurrent(alert, SongList.this);
   }
 
   private void loadDefaultImage() {

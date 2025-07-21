@@ -7,7 +7,6 @@ public class DeviceInfo {
 
   public static final int PLAYER_PASS_URL = 0;
   public static final int PLAYER_PASS_CONNECTION_STREAM = 1;
-  public static String deviceId = null;
 
   private static boolean checkClass(String s) {
     try {

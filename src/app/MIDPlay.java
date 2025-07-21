@@ -33,7 +33,7 @@ public class MIDPlay extends MIDlet implements CommandListener, MainObserver {
   private static final Object instanceLock = new Object();
 
   private static final String EMPTY_STRING = "";
-  private static final int MAX_HISTORY_SIZE = 10;
+  private static final int MAX_HISTORY_SIZE = 15;
 
   public static MIDPlay getInstance() {
     return instance;

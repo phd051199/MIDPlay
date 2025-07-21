@@ -19,6 +19,7 @@ import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
@@ -125,6 +126,10 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
     this.albumArt = null;
     this.albumArtUrl = null;
     this.loadingAlbumArt = false;
+  }
+
+  private Display getDisplay() {
+    return MIDPlay.getInstance().getDisplay();
   }
 
   public void restoreStatusAfterVolume(String previousStatus) {
@@ -769,7 +774,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
                 final FavoritesList.FavoriteItem selectedPlaylist =
                     (FavoritesList.FavoriteItem) customPlaylists.elementAt(selectedIndex);
 
-                MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
+                getDisplay().setCurrent(PlayerCanvas.this);
 
                 ThreadManagerIntegration.executeBackgroundTask(
                     new Runnable() {
@@ -783,15 +788,15 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
                     },
                     "AddSongToPlaylist");
               } else {
-                MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
+                getDisplay().setCurrent(PlayerCanvas.this);
               }
             } else if (c == cancelAddToPlaylistCommand) {
-              MIDPlay.getInstance().getDisplay().setCurrent(PlayerCanvas.this);
+              getDisplay().setCurrent(PlayerCanvas.this);
             }
           }
         });
 
-    MIDPlay.getInstance().getDisplay().setCurrent(playlistList);
+    getDisplay().setCurrent(playlistList);
   }
 
   private Vector getCustomPlaylists() {
@@ -832,7 +837,7 @@ public class PlayerCanvas extends Canvas implements CommandListener, LoadDataObs
   private void showAlert(String message, AlertType type) {
     Alert alert = new Alert(null, message, null, type);
     alert.setTimeout(2000);
-    MIDPlay.getInstance().getDisplay().setCurrent(alert, PlayerCanvas.this);
+    getDisplay().setCurrent(alert, PlayerCanvas.this);
   }
 
   private void showCurrentPlaylist() {

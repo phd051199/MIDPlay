@@ -22,6 +22,7 @@ public class PlayerSettingsManager {
     return instance;
   }
 
+  private final ThreadManager threadManager;
   private final RecordStoreManager recordStore;
   private final Thread loadThread = null;
   private boolean isShuttingDown = false;
@@ -31,6 +32,7 @@ public class PlayerSettingsManager {
   private boolean shuffleMode = false;
 
   private PlayerSettingsManager() {
+    threadManager = ThreadManager.getInstance();
     recordStore = new RecordStoreManager(PLAYER_SETTINGS_STORE_NAME);
     loadSettingsFromRMS();
   }
@@ -93,7 +95,7 @@ public class PlayerSettingsManager {
   }
 
   public synchronized void saveConfig(final JSONObject config) {
-    ThreadManager.getInstance().interruptThread("PlayerSettingsSave");
+    threadManager.interruptThread("PlayerSettingsSave");
 
     ThreadManagerIntegration.executeSettingsSave(
         new Runnable() {
@@ -151,7 +153,7 @@ public class PlayerSettingsManager {
   public synchronized void shutdown() {
     isShuttingDown = true;
 
-    ThreadManager.getInstance().interruptThread("PlayerSettingsSave");
+    threadManager.interruptThread("PlayerSettingsSave");
 
     recordStore.closeRecordStore();
   }
