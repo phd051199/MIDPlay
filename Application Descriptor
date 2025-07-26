@@ -1,0 +1,10 @@
+MIDlet-1: MIDPlay,/Icon.png,MIDPlay
+MIDlet-Vendor: Duy Pham
+MIDlet-Version: 1.4.3
+MIDlet-Name: MIDPlay
+Nokia-UI-Enhancement: IgnoreProfilesBasedSoundMuting
+progressive_download: enabled
+Nokia-MIDlet-S60-Selection-Key-Compatibility: true
+Nokia-Scalable-Icon: /Icon.svg
+Nokia-Scalable-Icon-MIDlet-1: /Icon.svg
+MIDlet-Permissions: javax.microedition.io.Connector.http

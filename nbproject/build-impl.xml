@@ -778,6 +778,9 @@
         <opennetmon device="${platform.device}"/>
     </target>
     <!--cldc-run-->
+    <!-- <target name="cldc-run" if="cldc-platform.trigger">
+        <nb-run jadfile="${dist.dir}/${dist.jad}" jarfile="${dist.dir}/${dist.jar}" jadurl="${dist.jad.url}" device="${platform.device}" platformhome="${platform.home}" platformtype="${platform.type}" execmethod="${run.method}" securitydomain="${evaluated.run.security.domain}" commandline="${platform.runcommandline}" classpath="${platform.bootclasspath}:${dist.dir}/${dist.jar}" cmdoptions="${run.cmd.options}"/>
+    </target> -->
     <target name="cldc-run" if="cldc-platform.trigger">
         <exec executable="${platform.java.home}" dir="${basedir}">
             <arg value="-jar"/>
@@ -894,6 +897,15 @@
     <target name="run" depends="jar,pre-run,open-netmon,cldc-run,semc-run,savaje-run,sjmc-run,ojec-run,nokiaS80-run,cdc-hi-run,open-profiler" description="Run MIDlet suite."/>
     <target name="run-no-build" depends="init,pre-run,open-netmon,cldc-run,semc-run,savaje-run,sjmc-run,ojec-run,nokiaS80-run,cdc-hi-run,open-profiler" description="Quick Run already built MIDlet suite."/>
     <!--cldc-debug-->
+    <!-- <target name="cldc-debug" if="cldc-platform.trigger">
+        <parallel>
+            <nb-run debug="true" debugsuspend="true" debugserver="true" debuggeraddressproperty="jpda.port" platformtype="${platform.type}" platformhome="${platform.home}" device="${platform.device}" jadfile="${dist.dir}/${dist.jad}" jadurl="${dist.jad.url}" jarfile="${dist.dir}/${dist.jar}" execmethod="${run.method}" securitydomain="${evaluated.run.security.domain}" commandline="${platform.debugcommandline}" classpath="${platform.bootclasspath}:${dist.dir}/${dist.jar}" cmdoptions="${run.cmd.options}"/>
+            <sequential>
+                <sleep seconds="5"/>
+                <antcall target="nbdebug"/>
+            </sequential>
+        </parallel>
+    </target> -->
     <target name="cldc-debug" if="cldc-platform.trigger">
         <taskdef name="freePortRetriever" classname="org.netbeans.modules.j2me.cdc.project.savaje.FreePortRetriever" classpath="${libs.savaje-ant-utils.classpath}"/>
         <fail unless="libs.savaje-ant-utils.classpath" message="Could not find Savaje Ant Utilities. Cannot determine free debug port."/>
