@@ -13,8 +13,12 @@ public class Network implements Runnable {
   private String userAgent;
   private volatile boolean cancelled = false;
 
-  Network(NetworkListener listener) {
+  public Network(NetworkListener listener) {
     this.listener = listener;
+  }
+
+  public Network() {
+    this(null);
   }
 
   private String getUserAgent() {
@@ -143,12 +147,6 @@ public class Network implements Runnable {
 
   public boolean isCancelled() {
     return cancelled;
-  }
-
-  public class NetworkError extends Exception {
-    NetworkError(String message) {
-      super(message);
-    }
   }
 
   public interface NetworkListener {

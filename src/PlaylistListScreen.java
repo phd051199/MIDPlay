@@ -23,16 +23,16 @@ public final class PlaylistListScreen extends BaseList {
     this.favoritesManager = FavoritesManager.getInstance();
     this.keyword = keyword;
     this.searchType = searchType;
-    addCommand(Commands.Favorites.add());
+    addCommand(Commands.playlistAdd());
     populateItems();
   }
 
   protected void populateItems() {
     for (int i = 0; i < items.getPlaylists().length; i++) {
-      this.append(items.getPlaylists()[i].getName(), Configuration.Images.folderIcon);
+      this.append(items.getPlaylists()[i].getName(), Configuration.folderIcon);
     }
     if (items.hasMore()) {
-      this.append(Lang.tr("status.load_more"), Configuration.Images.folderIcon);
+      this.append(Lang.tr("status.load_more"), Configuration.folderIcon);
     }
   }
 
@@ -46,7 +46,7 @@ public final class PlaylistListScreen extends BaseList {
       return;
     }
     final Playlist selectedPlaylist = items.getPlaylists()[selectedIndex];
-    navigator.showLoadingAlert(Lang.tr("app.loading"));
+    navigator.showLoadingAlert(Lang.tr("status.loading"));
     MIDPlay.startOperation(
         TracksOperation.getTracks(
             selectedPlaylist.getKey(),
@@ -68,7 +68,7 @@ public final class PlaylistListScreen extends BaseList {
   }
 
   protected void handleCommand(Command c, Displayable d) {
-    if (c == Commands.Favorites.add()) {
+    if (c == Commands.playlistAdd()) {
       addToFavorites();
     }
   }
@@ -76,7 +76,7 @@ public final class PlaylistListScreen extends BaseList {
   private void loadMore() {
     currentPage++;
     removeLoadMoreItem();
-    navigator.showLoadingAlert(Lang.tr("app.loading"));
+    navigator.showLoadingAlert(Lang.tr("status.loading"));
     MIDPlay.startOperation(
         PlaylistsOperation.searchPlaylists(
             keyword,
@@ -112,14 +112,13 @@ public final class PlaylistListScreen extends BaseList {
       return;
     }
     Playlist selectedPlaylist = items.getPlaylists()[selectedIndex];
-    if (favoritesManager.isFavorite(selectedPlaylist)) {
+    int result = favoritesManager.addPlaylist(selectedPlaylist);
+    if (result == FavoritesManager.SUCCESS) {
+      navigator.showAlert(Lang.tr("favorites.status.added"), AlertType.CONFIRMATION);
+    } else if (result == FavoritesManager.ALREADY_EXISTS) {
       navigator.showAlert(Lang.tr("favorites.status.already_exists"), AlertType.INFO);
     } else {
-      if (favoritesManager.addFavorite(selectedPlaylist)) {
-        navigator.showAlert(Lang.tr("favorites.status.added"), AlertType.CONFIRMATION);
-      } else {
-        navigator.showAlert(Lang.tr("favorites.error.save_failed"), AlertType.ERROR);
-      }
+      navigator.showAlert(Lang.tr("favorites.error.save_failed"), AlertType.ERROR);
     }
   }
 
@@ -140,13 +139,13 @@ public final class PlaylistListScreen extends BaseList {
 
   private void addNewItems(Playlist[] newPlaylists) {
     for (int i = 0; i < newPlaylists.length; i++) {
-      this.append(newPlaylists[i].getName(), Configuration.Images.folderIcon);
+      this.append(newPlaylists[i].getName(), Configuration.folderIcon);
     }
   }
 
   private void addLoadMoreIfNeeded() {
     if (items.hasMore()) {
-      this.append(Lang.tr("status.load_more"), Configuration.Images.folderIcon);
+      this.append(Lang.tr("status.load_more"), Configuration.folderIcon);
     }
   }
 }

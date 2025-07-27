@@ -1,5 +1,6 @@
 import cc.nnproject.json.JSON;
 import cc.nnproject.json.JSONArray;
+import cc.nnproject.json.JSONException;
 import cc.nnproject.json.JSONObject;
 import java.util.Vector;
 import javax.microedition.rms.RecordEnumeration;
@@ -12,9 +13,9 @@ import model.Tracks;
 public class FavoritesManager {
   private static FavoritesManager instance;
 
-  public static final int ADD_TRACK_SUCCESS = 0;
-  public static final int ADD_TRACK_ALREADY_EXISTS = 1;
-  public static final int ADD_TRACK_FAILED = 2;
+  public static final int SUCCESS = 0;
+  public static final int ALREADY_EXISTS = 1;
+  public static final int FAILED = 2;
 
   public static FavoritesManager getInstance() {
     if (instance == null) {
@@ -27,57 +28,64 @@ public class FavoritesManager {
   private final RecordStoreManager tracksStorage;
 
   private FavoritesManager() {
-    storage = new RecordStoreManager(Configuration.StorageKeys.FAVORITES);
-    tracksStorage = new RecordStoreManager(Configuration.StorageKeys.TRACKS);
+    storage = new RecordStoreManager(Configuration.STORAGE_FAVORITES);
+    tracksStorage = new RecordStoreManager(Configuration.STORAGE_TRACKS);
   }
 
-  public boolean addFavorite(Playlist playlist) {
+  public int addPlaylist(Playlist playlist) {
     if (playlist == null) {
-      return false;
+      return FAILED;
     }
     try {
-      if (isFavorite(playlist)) {
-        return false;
+      if (findPlaylistRecord(playlist) != -1) {
+        return ALREADY_EXISTS;
       }
       if (playlist.getId() == 0) {
         playlist.setId(System.currentTimeMillis());
       }
       String jsonString = playlist.toJSON().toString();
       storage.addRecord(jsonString);
-      return true;
+      return SUCCESS;
     } catch (RecordStoreException e) {
-      return false;
+      return FAILED;
     }
   }
 
-  public boolean removeFavorite(Playlist playlist) {
+  public boolean removePlaylistWithTracks(Playlist playlist) {
+    return removePlaylistInternal(playlist, true);
+  }
+
+  public boolean removePlaylist(Playlist playlist) {
+    return removePlaylistInternal(playlist, false);
+  }
+
+  private boolean removePlaylistInternal(Playlist playlist, boolean removeTracks) {
     if (playlist == null) {
       return false;
     }
-    int recordId = findPlaylistRecord(playlist.getKey());
+    int recordId = findPlaylistRecord(playlist);
     if (recordId == -1) {
       return false;
     }
     try {
       storage.deleteRecord(recordId);
+      if (removeTracks && playlist.isCustom()) {
+        removeCustomPlaylistTracks(playlist.getKey());
+      }
       return true;
     } catch (RecordStoreException e) {
       return false;
     }
   }
 
-  public boolean isFavorite(Playlist playlist) {
-    return playlist != null && findPlaylistRecord(playlist.getKey()) != -1;
-  }
-
-  public Playlists getFavorites() {
+  public Playlists getPlaylists() {
     Vector playlistVector = new Vector();
     try {
       RecordEnumeration enumeration = storage.enumerateRecords();
       try {
         while (enumeration.hasNextElement()) {
-          String recordData = storage.getRecordAsString(enumeration.nextRecordId());
-          Playlist playlist = new Playlist().fromJSON(recordData);
+          String data = storage.getRecordAsString(enumeration.nextRecordId());
+          Playlist playlist = new Playlist().fromJSON(data);
           if (playlist != null) {
             playlistVector.addElement(playlist);
           }
@@ -99,22 +107,20 @@ public class FavoritesManager {
 
   public int addTrackToCustomPlaylist(Playlist playlist, Track track) {
     if (playlist == null || track == null || !playlist.isCustom()) {
-      return ADD_TRACK_FAILED;
+      return FAILED;
     }
     try {
       Vector trackList = getPlaylistTracksList(playlist.getKey());
       for (int i = 0; i < trackList.size(); i++) {
         Track existingTrack = (Track) trackList.elementAt(i);
-        if (existingTrack != null && existingTrack.getName().equals(track.getName())) {
-          return ADD_TRACK_ALREADY_EXISTS;
+        if (existingTrack.isSame(track)) {
+          return ALREADY_EXISTS;
         }
       }
       trackList.addElement(track);
-      return savePlaylistTracks(playlist.getKey(), trackList)
-          ? ADD_TRACK_SUCCESS
-          : ADD_TRACK_FAILED;
+      return savePlaylistTracks(playlist.getKey(), trackList) ? SUCCESS : FAILED;
     } catch (Exception e) {
-      return ADD_TRACK_FAILED;
+      return FAILED;
     }
   }
 
@@ -126,7 +132,7 @@ public class FavoritesManager {
       Vector trackList = getPlaylistTracksList(playlist.getKey());
       for (int i = 0; i < trackList.size(); i++) {
         Track existingTrack = (Track) trackList.elementAt(i);
-        if (existingTrack != null && existingTrack.getKey().equals(track.getKey())) {
+        if (existingTrack.isSame(track)) {
           trackList.removeElementAt(i);
           return savePlaylistTracks(playlist.getKey(), trackList);
         }
@@ -179,7 +185,9 @@ public class FavoritesManager {
       } finally {
         enumeration.destroy();
       }
-    } catch (Exception e) {
+    } catch (RecordStoreException e) {
+      e.printStackTrace();
+    } catch (JSONException e) {
       e.printStackTrace();
     }
     return tracks;
@@ -224,21 +232,33 @@ public class FavoritesManager {
       } finally {
         enumeration.destroy();
       }
-    } catch (Exception e) {
+    } catch (RecordStoreException e) {
+      e.printStackTrace();
+    } catch (JSONException e) {
       e.printStackTrace();
     }
     return -1;
   }
 
-  private int findPlaylistRecord(String playlistKey) {
+  private void removeCustomPlaylistTracks(String playlistKey) {
+    int recordId = findPlaylistTracksRecord(playlistKey);
+    if (recordId != -1) {
+      try {
+        tracksStorage.deleteRecord(recordId);
+      } catch (RecordStoreException e) {
+      }
+    }
+  }
+
+  private int findPlaylistRecord(Playlist playlist) {
     try {
       RecordEnumeration enumeration = storage.enumerateRecords();
       try {
         while (enumeration.hasNextElement()) {
           int recordId = enumeration.nextRecordId();
-          String recordData = storage.getRecordAsString(recordId);
-          Playlist storedPlaylist = new Playlist().fromJSON(recordData);
-          if (storedPlaylist != null && playlistKey.equals(storedPlaylist.getKey())) {
+          String data = storage.getRecordAsString(recordId);
+          Playlist storedPlaylist = new Playlist().fromJSON(data);
+          if (playlist.isSame(storedPlaylist)) {
             return recordId;
           }
         }

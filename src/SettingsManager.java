@@ -26,21 +26,21 @@ public class SettingsManager {
   private final RecordStoreManager storage;
 
   private SettingsManager() {
-    storage = new RecordStoreManager(Configuration.StorageKeys.SETTINGS);
+    storage = new RecordStoreManager(Configuration.STORAGE_SETTINGS);
   }
 
   public void loadSettings() {
     JSONObject settings = getSettingsJSON();
     currentLanguage = settings.getString("language", "en");
-    currentService = settings.getString("service", Configuration.Services.NCT);
-    currentQuality = settings.getString("quality", Configuration.Quality.QUALITY_128);
-    currentSearchType = settings.getString("searchType", Configuration.SearchType.PLAYLIST);
-    currentAutoUpdate = settings.getInt("autoUpdate", Configuration.AutoUpdate.ENABLED);
+    currentService = settings.getString("service", Configuration.SERVICE_NCT);
+    currentQuality = settings.getString("quality", Configuration.QUALITY_128);
+    currentSearchType = settings.getString("searchType", Configuration.SEARCH_PLAYLIST);
+    currentAutoUpdate = settings.getInt("autoUpdate", Configuration.AUTO_UPDATE_ENABLED);
     currentPlayerMethod =
-        settings.getInt("playerMethod", Configuration.PlayerMethodInputStream.DISABLED);
-    currentRepeatMode = settings.getInt("repeatMode", Configuration.Player.RepeatMode.ALL);
-    currentShuffleMode = settings.getInt("shuffleMode", Configuration.Player.ShuffleMode.OFF);
-    currentVolumeLevel = settings.getInt("volumeLevel", Configuration.Player.MAX_VOLUME);
+        settings.getInt("playerMethod", Configuration.PLAYER_INPUTSTREAM_DISABLED);
+    currentRepeatMode = settings.getInt("repeatMode", Configuration.PLAYER_REPEAT_ALL);
+    currentShuffleMode = settings.getInt("shuffleMode", Configuration.PLAYER_SHUFFLE_OFF);
+    currentVolumeLevel = settings.getInt("volumeLevel", Configuration.PLAYER_MAX_VOLUME);
     Lang.setLang(currentLanguage);
   }
 
@@ -59,14 +59,14 @@ public class SettingsManager {
   private JSONObject createDefaultSettings() {
     JSONObject settings = new JSONObject();
     settings.put("language", "en");
-    settings.put("service", Configuration.Services.NCT);
-    settings.put("quality", Configuration.Quality.QUALITY_128);
-    settings.put("repeatMode", Configuration.Player.RepeatMode.ALL);
-    settings.put("shuffleMode", Configuration.Player.ShuffleMode.OFF);
-    settings.put("volumeLevel", Configuration.Player.MAX_VOLUME);
-    settings.put("searchType", Configuration.SearchType.PLAYLIST);
-    settings.put("autoUpdate", Configuration.AutoUpdate.ENABLED);
-    settings.put("playerMethod", Configuration.PlayerMethodInputStream.DISABLED);
+    settings.put("service", Configuration.SERVICE_NCT);
+    settings.put("quality", Configuration.QUALITY_128);
+    settings.put("repeatMode", Configuration.PLAYER_REPEAT_ALL);
+    settings.put("shuffleMode", Configuration.PLAYER_SHUFFLE_OFF);
+    settings.put("volumeLevel", Configuration.PLAYER_MAX_VOLUME);
+    settings.put("searchType", Configuration.SEARCH_PLAYLIST);
+    settings.put("autoUpdate", Configuration.AUTO_UPDATE_ENABLED);
+    settings.put("playerMethod", Configuration.PLAYER_INPUTSTREAM_DISABLED);
     return settings;
   }
 

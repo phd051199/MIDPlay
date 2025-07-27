@@ -1,127 +1,192 @@
 {
-  "action.back": "Quay lại",
-  "action.cancel": "Hủy",
-  "action.exit": "Thoát",
-  "action.no": "Không",
-  "action.ok": "OK",
-  "action.save": "Lưu",
-  "action.yes": "Có",
-  "app.loading": "Đang tải...",
-  "app.name": "MIDPlay",
-  "confirm.exit": "Bạn có chắc muốn thoát?",
-  "favorites.add": "Thêm vào yêu thích",
-  "favorites.error.remove_failed": "Lỗi xóa yêu thích",
-  "favorites.error.save_failed": "Lỗi lưu yêu thích",
-  "favorites.remove": "Xóa khỏi yêu thích",
-  "favorites.status.added": "Đã thêm vào yêu thích",
-  "favorites.status.already_exists": "Đã có trong yêu thích",
-  "favorites.status.removed": "Đã xóa khỏi yêu thích",
-  "language.en": "English",
-  "language.tr": "Türkçe",
-  "language.vi": "Tiếng Việt",
-  "media.album": "Album",
-  "media.playlist": "Playlist",
-  "media.track": "Bài hát",
-  "media.tracks": "Bài hát",
-  "menu.discover_playlists": "Khám phá playlist",
-  "menu.favorites": "Yêu thích",
-  "menu.hot_playlists": "Playlist nổi bật",
-  "menu.main": "Menu chính",
-  "menu.now_playing": "Đang phát",
-  "menu.reorder": "Sắp xếp menu",
-  "menu.search": "Tìm kiếm",
-  "menu.chat": "Trò chuyện AI",
-  "menu.settings": "Cài đặt",
-  "menu.about": "Giới thiệu",
-  "menu.visibility": "Hiển thị menu",
-  "player.next": "Tiếp theo",
-  "player.play": "Phát",
-  "player.previous": "Trước đó",
-  "player.repeat": "Lặp lại",
-  "player.show_playlist": "Hiện playlist",
-  "player.shuffle": "Phát ngẫu nhiên",
-  "player.status.loading": "Đang tải...",
-  "player.status.paused": "Đã tạm dừng",
-  "player.status.playing": "Đang phát...",
-  "player.status.starting": "Đang khởi động...",
-  "player.status.stopped": "Đã dừng",
-  "player.status.stopping": "Đang dừng...",
-  "player.status.finished": "Đã hoàn thành",
-  "player.status.ready": "Sẵn sàng",
-  "player.stop": "Dừng",
-  "player.volume": "Âm lượng",
-  "playlist.add_track": "Thêm vào playlist",
-  "playlist.create": "Tạo playlist",
-  "playlist.error.add_track_failed": "Lỗi thêm bài hát vào playlist",
-  "playlist.error.track_already_exists": "Bài hát đã có trong playlist",
-  "playlist.error.cannot_rename_system": "Không thể đổi tên playlist hệ thống",
-  "playlist.error.create_failed": "Lỗi tạo playlist",
-  "playlist.error.empty_name": "Tên playlist không được để trống",
-  "playlist.error.remove_track_failed": "Lỗi xóa bài hát khỏi playlist",
-  "playlist.error.rename_failed": "Lỗi đổi tên playlist",
-  "playlist.name": "Tên playlist",
-  "playlist.rename": "Đổi tên playlist",
-  "playlist.select": "Chọn playlist",
-  "playlist.status.created": "Tạo playlist thành công",
-  "playlist.status.no_custom": "Không có playlist tùy chỉnh",
-  "playlist.status.renamed": "Đổi tên playlist thành công",
-  "playlist.status.track_added": "Đã thêm bài hát vào playlist",
-  "playlist.status.track_removed": "Đã xóa bài hát khỏi playlist",
-  "quality.128kbps": "128kbps",
-  "quality.320kbps": "320kbps",
-  "search.error.empty_keyword": "Vui lòng nhập từ khóa",
-  "search.placeholder": "Nhập từ khóa để tìm kiếm...",
-  "search.results": "Kết quả tìm kiếm",
-  "search.status.no_results": "Không tìm thấy kết quả",
-  "search.status.searching": "Đang tìm: {0}",
-  "search.type": "Loại tìm kiếm",
-  "service.nct": "NCT",
-  "service.soundcloud": "SoundCloud",
-  "service.spotify": "Spotify",
-  "service.ytmusic": "YTMusic",
-  "settings.audio_quality": "Chất lượng âm thanh",
-  "settings.auto_update": "Tự động cập nhật",
-  "settings.check_update": "Kiểm tra cập nhật",
-  "settings.player_method": "Phương thức phát",
-  "settings.force_pass_connection": "Ép buộc truyền kết nối",
-  "settings.error.save_failed": "Lỗi lưu cài đặt",
-  "settings.language": "Ngôn ngữ",
-  "settings.reorder.instructions": "Chọn mục để di chuyển, sau đó chọn vị trí đích",
-  "settings.reorder.saved": "Đã lưu thứ tự",
-  "settings.service": "Dịch vụ",
-  "settings.status.saved": "Lưu cài đặt thành công",
-  "settings.visibility.instructions": "Chọn mục để ẩn/hiện. [x] = hiện, [] = ẩn. Nhấn Lưu để hoàn tất.",
-  "settings.visibility.saved": "Đã lưu cài đặt hiển thị",
-  "status.error": "Đã xảy ra lỗi",
-  "status.load_more": "Tải thêm...",
-  "status.no_data": "Không có dữ liệu!",
-  "status.no_updates": "Không có cập nhật. Bạn đang dùng phiên bản mới nhất.",
-  "status.update_available": "Có phiên bản mới. Cập nhật ngay?",
-  "symbol.arrow": "→ ",
-  "symbol.checked": "[x] ",
-  "symbol.unchecked": "[  ] ",
-  "time.error.invalid_duration": "Thời lượng phải từ 1-999 phút",
-  "time.error.invalid_format": "Định dạng thời gian không hợp lệ",
-  "time.error.invalid_hour": "Giờ phải từ 0-23",
-  "time.error.invalid_minute": "Phút phải từ 0-59",
-  "time.hours": "Giờ",
-  "time.input.minutes": "Nhập thời lượng (1-999 phút)",
-  "time.input.time": "Nhập thời gian (định dạng 24 giờ)",
-  "time.minutes": "Phút",
-  "timer.action": "Hành động khi hết giờ",
-  "timer.action.exit_app": "Thoát ứng dụng",
-  "timer.action.stop_playback": "Dừng phát nhạc",
-  "timer.cancel": "Hủy hẹn giờ",
-  "timer.confirm.exit": "Hẹn giờ sẽ thoát ứng dụng khi hết thời gian. Tiếp tục?",
-  "timer.mode.absolute": "Thời gian tuyệt đối",
-  "timer.mode.countdown": "Chế độ đếm ngược",
-  "timer.set": "Đặt hẹn giờ",
-  "timer.sleep_timer": "Hẹn giờ tắt",
-  "timer.status.cancelled": "Đã hủy hẹn giờ tắt",
-  "timer.status.expired": "Hẹn giờ tắt đã hết thời gian",
-  "timer.status.remaining": "Thời gian còn lại: {0}",
-  "timer.status.set": "Đã kích hoạt hẹn giờ tắt",
-  "input.message": "Nhập tin nhắn",
-  "welcome_message": "Xin chào! Tôi có thể giúp gì cho bạn?",
-  "error.connection": "Lỗi kết nối. Vui lòng thử lại."
+  "action": {
+    "back": "Quay lại",
+    "cancel": "Hủy",
+    "exit": "Thoát",
+    "no": "Không",
+    "ok": "OK",
+    "save": "Lưu",
+    "yes": "Có"
+  },
+  "app": {
+    "name": "MIDPlay"
+  },
+  "confirm": {
+    "exit": "Bạn có chắc muốn thoát?"
+  },
+  "favorites": {
+    "add": "Thêm vào yêu thích",
+    "error": {
+      "remove_failed": "Lỗi xóa yêu thích",
+      "save_failed": "Lỗi lưu yêu thích"
+    },
+    "remove": "Xóa khỏi yêu thích",
+    "status": {
+      "added": "Đã thêm vào yêu thích",
+      "already_exists": "Đã có trong yêu thích",
+      "removed": "Đã xóa khỏi yêu thích"
+    }
+  },
+  "language": {
+    "en": "English",
+    "tr": "Türkçe",
+    "vi": "Tiếng Việt"
+  },
+  "media": {
+    "album": "Album",
+    "playlist": "Playlist",
+    "track": "Bài hát",
+    "tracks": "Bài hát"
+  },
+  "menu": {
+    "discover_playlists": "Khám phá playlist",
+    "favorites": "Yêu thích",
+    "hot_playlists": "Playlist nổi bật",
+    "main": "Menu chính",
+    "now_playing": "Đang phát",
+    "reorder": "Sắp xếp menu",
+    "search": "Tìm kiếm",
+    "chat": "Trò chuyện AI",
+    "settings": "Cài đặt",
+    "about": "Giới thiệu",
+    "visibility": "Hiển thị menu"
+  },
+  "player": {
+    "next": "Tiếp theo",
+    "play": "Phát",
+    "previous": "Trước đó",
+    "repeat": "Lặp lại",
+    "show_playlist": "Hiện playlist",
+    "shuffle": "Phát ngẫu nhiên",
+    "status": {
+      "loading": "Đang tải...",
+      "paused": "Đã tạm dừng",
+      "playing": "Đang phát...",
+      "starting": "Đang khởi động...",
+      "stopped": "Đã dừng",
+      "stopping": "Đang dừng...",
+      "finished": "Đã hoàn thành",
+      "ready": "Sẵn sàng"
+    },
+    "stop": "Dừng",
+    "volume": "Âm lượng"
+  },
+  "playlist": {
+    "add_track": "Thêm vào playlist",
+    "create": "Tạo playlist",
+    "confirm": {
+      "delete_with_tracks": "Playlist này có bài hát. Xóa playlist và tất cả bài hát?"
+    },
+    "error": {
+      "add_track_failed": "Lỗi thêm bài hát vào playlist",
+      "track_already_exists": "Bài hát đã có trong playlist",
+      "cannot_rename_system": "Không thể đổi tên playlist hệ thống",
+      "create_failed": "Lỗi tạo playlist",
+      "empty_name": "Tên playlist không được để trống",
+      "remove_track_failed": "Lỗi xóa bài hát khỏi playlist",
+      "rename_failed": "Lỗi đổi tên playlist"
+    },
+    "name": "Tên playlist",
+    "rename": "Đổi tên playlist",
+    "select": "Chọn playlist",
+    "status": {
+      "created": "Tạo playlist thành công",
+      "no_custom": "Không có playlist tùy chỉnh",
+      "renamed": "Đổi tên playlist thành công",
+      "track_added": "Đã thêm bài hát vào playlist",
+      "track_removed": "Đã xóa bài hát khỏi playlist"
+    }
+  },
+  "search": {
+    "error": {
+      "empty_keyword": "Vui lòng nhập từ khóa"
+    },
+    "placeholder": "Nhập từ khóa để tìm kiếm...",
+    "results": "Kết quả tìm kiếm",
+    "status": {
+      "no_results": "Không tìm thấy kết quả",
+      "searching": "Đang tìm: {0}"
+    },
+    "type": "Loại tìm kiếm"
+  },
+  "settings": {
+    "audio_quality": "Chất lượng âm thanh",
+    "auto_update": "Tự động cập nhật",
+    "check_update": "Kiểm tra cập nhật",
+    "player_method": "Phương thức phát",
+    "force_pass_connection": "Ép buộc truyền kết nối",
+    "error": {
+      "save_failed": "Lỗi lưu cài đặt"
+    },
+    "language": "Ngôn ngữ",
+    "reorder": {
+      "instructions": "Chọn mục để di chuyển, sau đó chọn vị trí đích",
+      "saved": "Đã lưu thứ tự"
+    },
+    "service": "Dịch vụ",
+    "status": {
+      "saved": "Lưu cài đặt thành công"
+    },
+    "visibility": {
+      "instructions": "Chọn mục để ẩn/hiện. [x] = hiện, [] = ẩn. Nhấn Lưu để hoàn tất.",
+      "saved": "Đã lưu cài đặt hiển thị"
+    }
+  },
+  "status": {
+    "error": "Đã xảy ra lỗi",
+    "loading": "Đang tải...",
+    "load_more": "Tải thêm...",
+    "no_data": "Không có dữ liệu!",
+    "no_updates": "Không có cập nhật. Bạn đang dùng phiên bản mới nhất.",
+    "update_available": "Có phiên bản mới. Cập nhật ngay?"
+  },
+  "symbol": {
+    "arrow": "→ ",
+    "checked": "[x] ",
+    "unchecked": "[  ] "
+  },
+  "time": {
+    "error": {
+      "invalid_duration": "Thời lượng phải từ 1-999 phút",
+      "invalid_format": "Định dạng thời gian không hợp lệ",
+      "invalid_hour": "Giờ phải từ 0-23",
+      "invalid_minute": "Phút phải từ 0-59"
+    },
+    "hours": "Giờ",
+    "input": {
+      "minutes": "Nhập thời lượng (1-999 phút)",
+      "time": "Nhập thời gian (định dạng 24 giờ)"
+    },
+    "minutes": "Phút"
+  },
+  "timer": {
+    "action": "Hành động khi hết giờ",
+    "actions": {
+      "exit_app": "Thoát ứng dụng",
+      "stop_playback": "Dừng phát nhạc"
+    },
+    "cancel": "Hủy hẹn giờ",
+    "confirm": {
+      "exit": "Hẹn giờ sẽ thoát ứng dụng khi hết thời gian. Tiếp tục?"
+    },
+    "mode": {
+      "absolute": "Thời gian tuyệt đối",
+      "countdown": "Chế độ đếm ngược"
+    },
+    "set": "Đặt hẹn giờ",
+    "sleep_timer": "Hẹn giờ tắt",
+    "status": {
+      "cancelled": "Đã hủy hẹn giờ tắt",
+      "expired": "Hẹn giờ tắt đã hết thời gian",
+      "remaining": "Thời gian còn lại: {0}",
+      "set": "Đã kích hoạt hẹn giờ tắt"
+    }
+  },
+  "chat": {
+    "input": "Nhập tin nhắn",
+    "welcome_message": "Xin chào! Tôi có thể giúp gì cho bạn?"
+  },
+  "error": {
+    "connection": "Lỗi kết nối. Vui lòng thử lại."
+  }
 }

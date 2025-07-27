@@ -131,42 +131,42 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
   private void registerMenuActions() {
     menuManager.registerAction(
-        Configuration.Menu.SEARCH,
+        Configuration.MENU_SEARCH,
         new Runnable() {
           public void run() {
             goToSearchScreen();
           }
         });
     menuManager.registerAction(
-        Configuration.Menu.FAVORITES,
+        Configuration.MENU_FAVORITES,
         new Runnable() {
           public void run() {
             goToFavoritesScreen();
           }
         });
     menuManager.registerAction(
-        Configuration.Menu.DISCOVER_PLAYLISTS,
+        Configuration.MENU_DISCOVER_PLAYLISTS,
         new Runnable() {
           public void run() {
             goToDiscoverPlaylistsScreen();
           }
         });
     menuManager.registerAction(
-        Configuration.Menu.CHAT,
+        Configuration.MENU_CHAT,
         new Runnable() {
           public void run() {
             goToChatScreen();
           }
         });
     menuManager.registerAction(
-        Configuration.Menu.SETTINGS,
+        Configuration.MENU_SETTINGS,
         new Runnable() {
           public void run() {
             goToSettingsScreen();
           }
         });
     menuManager.registerAction(
-        Configuration.Menu.ABOUT,
+        Configuration.MENU_ABOUT,
         new Runnable() {
           public void run() {
             goToAboutScreen();
@@ -176,13 +176,13 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
   private void loadMenuIcons() {
     try {
-      Configuration.Images.load();
-      iconMap.put(Configuration.Menu.SEARCH, Configuration.Images.searchIcon);
-      iconMap.put(Configuration.Menu.FAVORITES, Configuration.Images.favoriteIcon);
-      iconMap.put(Configuration.Menu.DISCOVER_PLAYLISTS, Configuration.Images.playlistIcon);
-      iconMap.put(Configuration.Menu.CHAT, Configuration.Images.chatIcon);
-      iconMap.put(Configuration.Menu.SETTINGS, Configuration.Images.settingsIcon);
-      iconMap.put(Configuration.Menu.ABOUT, Configuration.Images.infoIcon);
+      Configuration.loadImages();
+      iconMap.put(Configuration.MENU_SEARCH, Configuration.searchIcon);
+      iconMap.put(Configuration.MENU_FAVORITES, Configuration.favoriteIcon);
+      iconMap.put(Configuration.MENU_DISCOVER_PLAYLISTS, Configuration.playlistIcon);
+      iconMap.put(Configuration.MENU_CHAT, Configuration.chatIcon);
+      iconMap.put(Configuration.MENU_SETTINGS, Configuration.settingsIcon);
+      iconMap.put(Configuration.MENU_ABOUT, Configuration.infoIcon);
     } catch (IOException e) {
       showError(e.toString());
     }
@@ -206,15 +206,15 @@ public class MIDPlay extends MIDlet implements CommandListener {
         handleListSelection();
       } else if (c == Commands.exit()) {
         showExitConfirmation();
-      } else if (c == Commands.Menu.sort()) {
+      } else if (c == Commands.menuSort()) {
         toggleSortMode();
-      } else if (c == Commands.Menu.visibility()) {
+      } else if (c == Commands.menuVisibility()) {
         toggleVisibilityMode();
-      } else if (c == Commands.Form.save()) {
+      } else if (c == Commands.formSave()) {
         handleSave();
-      } else if (c == Commands.Form.cancel()) {
+      } else if (c == Commands.formCancel()) {
         handleCancel();
-      } else if (c == Commands.Player.nowPlaying()) {
+      } else if (c == Commands.playerNowPlaying()) {
         navigator.forward(getPlayerScreen());
       }
     } catch (Exception e) {
@@ -259,9 +259,9 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
   private void addMenuCommands() {
     menu.addCommand(Commands.exit());
-    menu.addCommand(Commands.Menu.sort());
-    menu.addCommand(Commands.Menu.visibility());
-    menu.addCommand(Commands.Player.nowPlaying());
+    menu.addCommand(Commands.menuSort());
+    menu.addCommand(Commands.menuVisibility());
+    menu.addCommand(Commands.playerNowPlaying());
   }
 
   public void refreshMenu() {
@@ -459,20 +459,20 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
   private void switchToEditCommands() {
     menu.removeCommand(Commands.exit());
-    menu.removeCommand(Commands.Menu.sort());
-    menu.removeCommand(Commands.Menu.visibility());
-    menu.removeCommand(Commands.Player.nowPlaying());
-    menu.addCommand(Commands.Form.save());
-    menu.addCommand(Commands.Form.cancel());
+    menu.removeCommand(Commands.menuSort());
+    menu.removeCommand(Commands.menuVisibility());
+    menu.removeCommand(Commands.playerNowPlaying());
+    menu.addCommand(Commands.formSave());
+    menu.addCommand(Commands.formCancel());
   }
 
   private void switchToNormalCommands() {
-    menu.removeCommand(Commands.Form.save());
-    menu.removeCommand(Commands.Form.cancel());
+    menu.removeCommand(Commands.formSave());
+    menu.removeCommand(Commands.formCancel());
     menu.addCommand(Commands.exit());
-    menu.addCommand(Commands.Menu.sort());
-    menu.addCommand(Commands.Menu.visibility());
-    menu.addCommand(Commands.Player.nowPlaying());
+    menu.addCommand(Commands.menuSort());
+    menu.addCommand(Commands.menuVisibility());
+    menu.addCommand(Commands.playerNowPlaying());
   }
 
   private void saveCurrentOrder() {
@@ -511,14 +511,14 @@ public class MIDPlay extends MIDlet implements CommandListener {
   }
 
   private void goToDiscoverPlaylistsScreen() {
-    navigator.showLoadingAlert(Lang.tr("app.loading"));
+    navigator.showLoadingAlert(Lang.tr("status.loading"));
     MIDPlay.startOperation(
         PlaylistsOperation.getHotPlaylists(
             new PlaylistsOperation.PlaylistsListener() {
               public void onDataReceived(Playlists items) {
                 PlaylistListScreen playlistScreen =
                     new PlaylistListScreen(
-                        Lang.tr(Configuration.Menu.DISCOVER_PLAYLISTS), items, navigator);
+                        Lang.tr(Configuration.MENU_DISCOVER_PLAYLISTS), items, navigator);
                 navigator.forward(playlistScreen);
               }
 
@@ -533,7 +533,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
   }
 
   private void goToAboutScreen() {
-    Form f = new Form(Lang.tr(Configuration.Menu.ABOUT));
+    Form f = new Form(Lang.tr(Configuration.MENU_ABOUT));
     f.append("Application: " + getAppProperty("MIDlet-Name") + "\n");
     f.append("Version: " + APP_VERSION + "\n");
     f.append("Developer: " + getAppProperty("MIDlet-Vendor") + "\n");
@@ -593,7 +593,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
   }
 
   private void goToChatScreen() {
-    ChatScreen chatScreen = new ChatScreen(Lang.tr(Configuration.Menu.CHAT), navigator);
+    ChatScreen chatScreen = new ChatScreen(Lang.tr(Configuration.MENU_CHAT), navigator);
     navigator.forward(chatScreen);
   }
 
@@ -616,7 +616,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
   }
 
   private void checkForUpdate() {
-    if (settingsManager.getCurrentAutoUpdate() == Configuration.AutoUpdate.ENABLED) {
+    if (settingsManager.getCurrentAutoUpdate() == Configuration.AUTO_UPDATE_ENABLED) {
       performUpdateCheck(false);
     }
   }
@@ -627,7 +627,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
   private void performUpdateCheck(final boolean isManual) {
     if (isManual) {
-      navigator.showLoadingAlert(Lang.tr("app.loading"));
+      navigator.showLoadingAlert(Lang.tr("status.loading"));
     }
     MIDPlay.startOperation(
         new CheckUpdateOperation(

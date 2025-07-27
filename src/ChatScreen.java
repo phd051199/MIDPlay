@@ -11,6 +11,7 @@ import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.TextBox;
 import javax.microedition.lcdui.TextField;
+import model.Message;
 import model.Tracks;
 
 public class ChatScreen extends Canvas implements CommandListener {
@@ -52,10 +53,6 @@ public class ChatScreen extends Canvas implements CommandListener {
   private int dragStartY = -1;
   private int dragStartScrollOffset = -1;
 
-  private Command backCommand;
-  private Command inputCommand;
-  private Command selectCommand;
-
   private TextBox inputBox;
   private Font font;
   private String sessionId;
@@ -65,26 +62,22 @@ public class ChatScreen extends Canvas implements CommandListener {
   public ChatScreen(String title, Navigator navigator) {
     this.navigator = navigator;
     this.setTitle(title);
-    this.initializeCommands();
+    this.addCommands();
     this.setCommandListener(this);
     this.sessionId = generateRandomId(12);
   }
 
-  private void initializeCommands() {
-    this.inputCommand = new Command(Lang.tr("input.message"), Command.SCREEN, 1);
-    this.selectCommand = new Command(Lang.tr("action.ok"), Command.OK, 2);
-    this.backCommand = new Command(Lang.tr("action.back"), Command.BACK, 3);
-
-    this.addCommand(selectCommand);
-    this.addCommand(backCommand);
-    this.addCommand(inputCommand);
+  private void addCommands() {
+    this.addCommand(Commands.ok());
+    this.addCommand(Commands.back());
+    this.addCommand(Commands.input());
   }
 
   public void showNotify() {
     super.showNotify();
 
     if (this.messages.isEmpty()) {
-      addAIMessage(Lang.tr("welcome_message"));
+      addAIMessage(Lang.tr("chat.welcome_message"));
       startTypingEffect();
     }
   }
@@ -393,7 +386,7 @@ public class ChatScreen extends Canvas implements CommandListener {
     int height = getHeight();
     g.setFont(font);
 
-    g.setColor(getBackgroundColor());
+    g.setColor(0xF0F0F0);
     g.fillRect(0, 0, width, height);
 
     calculateVisibleMessageRange();
@@ -458,14 +451,6 @@ public class ChatScreen extends Canvas implements CommandListener {
     return Math.max(font.getHeight(), textHeight + (BUBBLE_PADDING * 2)) + MESSAGE_SPACING;
   }
 
-  private int getSentBubbleColor() {
-    return 0x410A4A;
-  }
-
-  private int getBackgroundColor() {
-    return 0xF0F0F0;
-  }
-
   private int drawMessageBubble(
       Graphics g,
       String text,
@@ -477,9 +462,9 @@ public class ChatScreen extends Canvas implements CommandListener {
       boolean highlighted) {
     String textToRender = text;
     if (isClickable) {
-      textToRender = replace(textToRender, "[", "");
-      textToRender = replace(textToRender, "].", "");
-      textToRender = replace(textToRender, "]", "");
+      textToRender = MIDPlay.replace(textToRender, "[", "");
+      textToRender = MIDPlay.replace(textToRender, "].", "");
+      textToRender = MIDPlay.replace(textToRender, "]", "");
     }
 
     Vector wrappedLines =
@@ -507,7 +492,7 @@ public class ChatScreen extends Canvas implements CommandListener {
     int bubbleX = isSent ? (screenWidth - bubbleWidth - BUBBLE_MARGIN) : BUBBLE_MARGIN;
 
     if (highlighted) {
-      g.setColor(getSentBubbleColor());
+      g.setColor(0x410A4A);
       g.drawRect(bubbleX - 1, yPos - 1, bubbleWidth + 1, bubbleHeight + 1);
     }
 
@@ -530,7 +515,7 @@ public class ChatScreen extends Canvas implements CommandListener {
   }
 
   private void drawRoundedBubble(Graphics g, int x, int y, int width, int height, boolean isSent) {
-    int bubbleColor = isSent ? getSentBubbleColor() : RECEIVED_BUBBLE_COLOR;
+    int bubbleColor = isSent ? 0x410A4A : RECEIVED_BUBBLE_COLOR;
 
     if (!isSent) {
       g.setColor(BUBBLE_BORDER_COLOR);
@@ -565,20 +550,6 @@ public class ChatScreen extends Canvas implements CommandListener {
     g.fillRect(x + width - 5, y + 2, 2, 2);
     g.fillRect(x + 3, y + height - 4, 2, 2);
     g.fillRect(x + width - 5, y + height - 4, 2, 2);
-  }
-
-  private static String replace(String text, String target, String replacement) {
-    StringBuffer result = new StringBuffer();
-    int start = 0;
-    int index;
-
-    while ((index = text.indexOf(target, start)) != -1) {
-      result.append(text.substring(start, index));
-      result.append(replacement);
-      start = index + target.length();
-    }
-    result.append(text.substring(start));
-    return result.toString();
   }
 
   private Vector wrapText(String text, Font font, int maxWidth) {
@@ -759,7 +730,7 @@ public class ChatScreen extends Canvas implements CommandListener {
   }
 
   private void searchTracks(final String query) {
-    navigator.showLoadingAlert(Lang.tr("app.loading"));
+    navigator.showLoadingAlert(Lang.tr("status.loading"));
     MIDPlay.startOperation(
         TracksOperation.searchTracks(
             query,
@@ -854,30 +825,30 @@ public class ChatScreen extends Canvas implements CommandListener {
   }
 
   public void commandAction(Command c, Displayable d) {
-    if (c == selectCommand) {
-      if (focusedClickableIndex != -1) {
+    if (c == Commands.ok()) {
+      if (d == this && focusedClickableIndex != -1) {
         Message msg = (Message) messages.elementAt(focusedClickableIndex);
         int screenY = (msg.clickableY - scrollOffset) + (msg.clickableHeight / 2);
         handlePointerEvent(getWidth() / 2, screenY);
+      } else if (d == inputBox) {
+        final String text = inputBox.getString().trim();
+        if (text.length() > 0 && !isWaitingForResponse) {
+          addUserMessage(text);
+
+          addAIMessage("...");
+
+          isWaitingForResponse = true;
+          sendChatMessage(text);
+        }
+        navigator.back();
       }
-    } else if (c == backCommand) {
-      cleanupTimerAndOperations();
+    } else if (c == Commands.back()) {
+      if (d == this) {
+        cleanupTimerAndOperations();
+      }
       navigator.back();
-    } else if (c == inputCommand) {
+    } else if (c == Commands.input()) {
       openInputBox();
-    } else if (d == inputBox && c.getCommandType() == Command.OK) {
-      final String text = inputBox.getString().trim();
-      if (text.length() > 0 && !isWaitingForResponse) {
-        addUserMessage(text);
-
-        addAIMessage("...");
-
-        isWaitingForResponse = true;
-        sendChatMessage(text);
-      }
-      navigator.back();
-    } else if (d == inputBox && c.getCommandType() == Command.CANCEL) {
-      navigator.back();
     }
   }
 
@@ -907,9 +878,9 @@ public class ChatScreen extends Canvas implements CommandListener {
   }
 
   private void openInputBox() {
-    inputBox = new TextBox(Lang.tr("input.message"), "", 200, TextField.ANY);
-    inputBox.addCommand(new Command(Lang.tr("action.ok"), Command.OK, 1));
-    inputBox.addCommand(new Command(Lang.tr("action.cancel"), Command.CANCEL, 2));
+    inputBox = new TextBox(Lang.tr("chat.input"), "", 200, TextField.ANY);
+    inputBox.addCommand(Commands.ok());
+    inputBox.addCommand(Commands.back());
     inputBox.setCommandListener(this);
     navigator.forward(inputBox);
   }
@@ -931,22 +902,6 @@ public class ChatScreen extends Canvas implements CommandListener {
     if (timer != null) {
       timer.cancel();
       timer = null;
-    }
-  }
-
-  private class Message {
-    String text;
-    boolean isSent;
-    boolean isClickable;
-    String displayText = "";
-    int height = -1;
-    int clickableY;
-    int clickableHeight;
-
-    Message(String text, boolean isSent) {
-      this.text = text;
-      this.isSent = isSent;
-      this.isClickable = text.startsWith("[") && (text.endsWith("]") || text.endsWith("]."));
     }
   }
 }

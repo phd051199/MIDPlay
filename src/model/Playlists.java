@@ -72,11 +72,7 @@ public class Playlists {
           if (item == null) {
             continue;
           }
-          playlists[i] =
-              new Playlist(
-                  item.getString("ListKey", ""),
-                  item.getString("Name", ""),
-                  item.getString("Image", ""));
+          playlists[i] = new Playlist().fromJSON(item.toString());
         }
       }
     } catch (Exception e) {

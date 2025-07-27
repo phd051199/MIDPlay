@@ -12,6 +12,28 @@ function escapeJava(str) {
   return JSON.stringify(str);
 }
 
+function flattenObject(obj, prefix = "") {
+  const flattened = {};
+
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const newKey = prefix ? `${prefix}.${key}` : key;
+
+      if (
+        typeof obj[key] === "object" &&
+        obj[key] !== null &&
+        !Array.isArray(obj[key])
+      ) {
+        Object.assign(flattened, flattenObject(obj[key], newKey));
+      } else {
+        flattened[newKey] = obj[key];
+      }
+    }
+  }
+
+  return flattened;
+}
+
 async function main() {
   const files = await fs.readdir(LANG_DIR);
   const langs = {};
@@ -21,7 +43,9 @@ async function main() {
     if (!file.endsWith(".json")) continue;
     const code = path.basename(file, ".json");
     const raw = await fs.readFile(path.join(LANG_DIR, file), "utf-8");
-    langs[code] = { lang: code, ...JSON.parse(raw) };
+    const jsonData = JSON.parse(raw);
+    const flattened = flattenObject(jsonData);
+    langs[code] = { lang: code, ...flattened };
     langCodes.push(code);
   }
 

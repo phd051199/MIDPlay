@@ -1,4 +1,3 @@
-import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
@@ -25,7 +24,7 @@ public class SleepTimerForm extends BaseForm {
     super(Lang.tr("timer.sleep_timer"), navigator);
     this.callback = callback;
     String[] timerActions = {
-      Lang.tr("timer.action.stop_playback"), Lang.tr("timer.action.exit_app")
+      Lang.tr("timer.actions.stop_playback"), Lang.tr("timer.actions.exit_app")
     };
     this.timerActionChoice =
         new ChoiceGroup(Lang.tr("timer.action"), ChoiceGroup.EXCLUSIVE, timerActions, null);
@@ -44,12 +43,12 @@ public class SleepTimerForm extends BaseForm {
   }
 
   private void setupCommands() {
-    addCommand(Commands.SleepTimer.setTimer());
+    addCommand(Commands.timerSet());
     updateSwitchModeCommand();
   }
 
   protected void handleCommand(Command c, Displayable d) {
-    if (c == Commands.SleepTimer.setTimer()) {
+    if (c == Commands.timerSet()) {
       handleSetTimer();
     } else if (c == switchModeCommand) {
       handleModeSwitch();
@@ -69,8 +68,8 @@ public class SleepTimerForm extends BaseForm {
     }
     switchModeCommand =
         (currentMode == MODE_COUNTDOWN)
-            ? Commands.SleepTimer.switchToAbsolute()
-            : Commands.SleepTimer.switchToCountdown();
+            ? Commands.timerSwitchToAbsolute()
+            : Commands.timerSwitchToCountdown();
     addCommand(switchModeCommand);
   }
 
@@ -143,22 +142,17 @@ public class SleepTimerForm extends BaseForm {
   }
 
   private void showExitConfirmation(final int action) {
-    Alert confirmAlert = new Alert(null, Lang.tr("timer.confirm.exit"), null, AlertType.INFO);
-    confirmAlert.setTimeout(Alert.FOREVER);
-    Command yesCommand = new Command(Lang.tr("action.yes"), Command.OK, 1);
-    Command noCommand = new Command(Lang.tr("action.no"), Command.CANCEL, 2);
-    confirmAlert.addCommand(yesCommand);
-    confirmAlert.addCommand(noCommand);
-    confirmAlert.setCommandListener(
+    navigator.showConfirmationAlert(
+        Lang.tr("timer.confirm.exit"),
         new CommandListener() {
           public void commandAction(Command c, Displayable d) {
-            navigator.back();
-            if (c.getCommandType() == Command.OK) {
+            if (c == Commands.ok()) {
               proceedWithTimerSet(action);
+            } else if (c == Commands.cancel()) {
+              navigator.dismissAlert();
             }
           }
         });
-    navigator.forward(confirmAlert);
   }
 
   private void proceedWithTimerSet(int action) {

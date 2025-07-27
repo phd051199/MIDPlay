@@ -10,9 +10,9 @@ import model.Tracks;
 public final class SearchScreen extends BaseForm {
   private static final int MAX_INPUT_LENGTH = 150;
   private static final String[] SEARCH_TYPE_LABELS = {
-    Lang.tr(Configuration.SearchType.PLAYLIST),
-    Lang.tr(Configuration.SearchType.ALBUM),
-    Lang.tr(Configuration.SearchType.TRACK)
+    Lang.tr(Configuration.SEARCH_PLAYLIST),
+    Lang.tr(Configuration.SEARCH_ALBUM),
+    Lang.tr(Configuration.SEARCH_TRACK)
   };
   private final TextField searchField =
       new TextField(Lang.tr("search.placeholder"), "", MAX_INPUT_LENGTH, 0);
@@ -22,7 +22,7 @@ public final class SearchScreen extends BaseForm {
   private final SettingsManager settingsManager;
 
   public SearchScreen(Navigator navigator) {
-    super(Lang.tr(Configuration.Menu.SEARCH), navigator);
+    super(Lang.tr(Configuration.MENU_SEARCH), navigator);
     this.settingsManager = SettingsManager.getInstance();
     this.searchType = settingsManager.getCurrentSearchType();
     addComponents();
@@ -40,8 +40,8 @@ public final class SearchScreen extends BaseForm {
   }
 
   private int getSearchTypeIndex(String searchType) {
-    for (int i = 0; i < Configuration.SearchType.ALL.length; i++) {
-      if (Configuration.SearchType.ALL[i].equals(searchType)) {
+    for (int i = 0; i < Configuration.ALL_SEARCH_TYPES.length; i++) {
+      if (Configuration.ALL_SEARCH_TYPES[i].equals(searchType)) {
         return i;
       }
     }
@@ -61,7 +61,7 @@ public final class SearchScreen extends BaseForm {
       return;
     }
     int selectedIndex = this.searchTypeGroup.getSelectedIndex();
-    this.searchType = Configuration.SearchType.ALL[selectedIndex];
+    this.searchType = Configuration.ALL_SEARCH_TYPES[selectedIndex];
     try {
       settingsManager.saveSearchType(this.searchType);
     } catch (RecordStoreException e) {
@@ -69,7 +69,7 @@ public final class SearchScreen extends BaseForm {
     }
     navigator.showLoadingAlert(Lang.tr("search.status.searching", keyword));
     final String title = Lang.tr("search.results") + ": " + keyword;
-    if (searchType.equals(Configuration.SearchType.TRACK)) {
+    if (searchType.equals(Configuration.SEARCH_TRACK)) {
       MIDPlay.startOperation(
           TracksOperation.searchTracks(
               keyword,

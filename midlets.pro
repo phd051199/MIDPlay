@@ -24,4 +24,3 @@
 -dontnote java.io.ByteArrayOutputStream
 
 -dontoptimize
--flattenpackagehierarchy

@@ -1,127 +1,192 @@
 {
-  "action.back": "Back",
-  "action.cancel": "Cancel",
-  "action.exit": "Exit",
-  "action.no": "No",
-  "action.ok": "OK",
-  "action.save": "Save",
-  "action.yes": "Yes",
-  "app.loading": "Loading...",
-  "app.name": "MIDPlay",
-  "confirm.exit": "Are you sure you want to exit?",
-  "favorites.add": "Add to Favorites",
-  "favorites.error.remove_failed": "Failed to remove favorite",
-  "favorites.error.save_failed": "Failed to save favorite",
-  "favorites.remove": "Remove from Favorites",
-  "favorites.status.added": "Added to favorites",
-  "favorites.status.already_exists": "Already in favorites",
-  "favorites.status.removed": "Removed from favorites",
-  "language.en": "English",
-  "language.tr": "Türkçe",
-  "language.vi": "Tiếng Việt",
-  "media.album": "Album",
-  "media.playlist": "Playlist",
-  "media.track": "Track",
-  "media.tracks": "Tracks",
-  "menu.discover_playlists": "Discover Playlists",
-  "menu.favorites": "Favorites",
-  "menu.hot_playlists": "Hot Playlists",
-  "menu.main": "Main Menu",
-  "menu.now_playing": "Now Playing",
-  "menu.reorder": "Reorder Menu",
-  "menu.search": "Search",
-  "menu.chat": "AI Chat",
-  "menu.settings": "Settings",
-  "menu.about": "About",
-  "menu.visibility": "Menu Visibility",
-  "player.next": "Next",
-  "player.play": "Play",
-  "player.previous": "Previous",
-  "player.repeat": "Repeat",
-  "player.show_playlist": "Show Playlist",
-  "player.shuffle": "Shuffle",
-  "player.status.loading": "Loading...",
-  "player.status.paused": "Paused",
-  "player.status.playing": "Playing...",
-  "player.status.starting": "Starting...",
-  "player.status.stopped": "Stopped",
-  "player.status.stopping": "Stopping...",
-  "player.status.finished": "Finished",
-  "player.status.ready": "Ready",
-  "player.stop": "Stop",
-  "player.volume": "Volume",
-  "playlist.add_track": "Add to Playlist",
-  "playlist.create": "Create Playlist",
-  "playlist.error.add_track_failed": "Failed to add track to playlist",
-  "playlist.error.track_already_exists": "Track already exists in playlist",
-  "playlist.error.cannot_rename_system": "Cannot rename system playlists",
-  "playlist.error.create_failed": "Failed to create playlist",
-  "playlist.error.empty_name": "Playlist name cannot be empty",
-  "playlist.error.remove_track_failed": "Failed to remove track from playlist",
-  "playlist.error.rename_failed": "Failed to rename playlist",
-  "playlist.name": "Playlist Name",
-  "playlist.rename": "Rename Playlist",
-  "playlist.select": "Select Playlist",
-  "playlist.status.created": "Playlist created successfully",
-  "playlist.status.no_custom": "No custom playlists available",
-  "playlist.status.renamed": "Playlist renamed successfully",
-  "playlist.status.track_added": "Track added to playlist successfully",
-  "playlist.status.track_removed": "Track removed from playlist successfully",
-  "quality.128kbps": "128kbps",
-  "quality.320kbps": "320kbps",
-  "search.error.empty_keyword": "Please enter a keyword to search",
-  "search.placeholder": "Enter keywords to search...",
-  "search.results": "Search Results",
-  "search.status.no_results": "No results found",
-  "search.status.searching": "Searching for: {0}",
-  "search.type": "Search Type",
-  "service.nct": "NCT",
-  "service.soundcloud": "SoundCloud",
-  "service.spotify": "Spotify",
-  "service.ytmusic": "YTMusic",
-  "settings.audio_quality": "Audio Quality",
-  "settings.auto_update": "Automatic Updates",
-  "settings.check_update": "Check for Updates",
-  "settings.player_method": "Player Method",
-  "settings.force_pass_connection": "Force pass connection",
-  "settings.error.save_failed": "Failed to save settings",
-  "settings.language": "Language",
-  "settings.reorder.instructions": "Select an item to move, then select the destination position",
-  "settings.reorder.saved": "Order saved",
-  "settings.service": "Service",
-  "settings.status.saved": "Settings saved successfully",
-  "settings.visibility.instructions": "Select items to hide/show. [x] = show, [] = hide. Press Save to complete.",
-  "settings.visibility.saved": "Visibility settings saved",
-  "status.error": "An error occurred",
-  "status.load_more": "Load more...",
-  "status.no_data": "No data available!",
-  "status.no_updates": "No updates available. You have the latest version.",
-  "status.update_available": "New version available. Update now?",
-  "symbol.arrow": "→ ",
-  "symbol.checked": "[x] ",
-  "symbol.unchecked": "[  ] ",
-  "time.error.invalid_duration": "Duration must be 1-999 minutes",
-  "time.error.invalid_format": "Invalid time format",
-  "time.error.invalid_hour": "Hour must be 0-23",
-  "time.error.invalid_minute": "Minute must be 0-59",
-  "time.hours": "Hours",
-  "time.input.minutes": "Enter duration (1-999 minutes)",
-  "time.input.time": "Enter time (24-hour format)",
-  "time.minutes": "Minutes",
-  "timer.action": "Timer Action",
-  "timer.action.exit_app": "Exit Application",
-  "timer.action.stop_playback": "Stop Playback",
-  "timer.cancel": "Cancel Timer",
-  "timer.confirm.exit": "Timer will exit the application when expired. Continue?",
-  "timer.mode.absolute": "Absolute Time",
-  "timer.mode.countdown": "Countdown Mode",
-  "timer.set": "Set Timer",
-  "timer.sleep_timer": "Sleep Timer",
-  "timer.status.cancelled": "Sleep timer cancelled",
-  "timer.status.expired": "Sleep timer expired",
-  "timer.status.remaining": "Time Remaining: {0}",
-  "timer.status.set": "Sleep timer activated",
-  "input.message": "Enter message",
-  "welcome_message": "Hello! How can I help you today?",
-  "error.connection": "Connection error. Please try again."
+  "action": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "exit": "Exit",
+    "no": "No",
+    "ok": "OK",
+    "save": "Save",
+    "yes": "Yes"
+  },
+  "app": {
+    "name": "MIDPlay"
+  },
+  "confirm": {
+    "exit": "Are you sure you want to exit?"
+  },
+  "favorites": {
+    "add": "Add to Favorites",
+    "error": {
+      "remove_failed": "Failed to remove favorite",
+      "save_failed": "Failed to save favorite"
+    },
+    "remove": "Remove from Favorites",
+    "status": {
+      "added": "Added to favorites",
+      "already_exists": "Already in favorites",
+      "removed": "Removed from favorites"
+    }
+  },
+  "language": {
+    "en": "English",
+    "tr": "Türkçe",
+    "vi": "Tiếng Việt"
+  },
+  "media": {
+    "album": "Album",
+    "playlist": "Playlist",
+    "track": "Track",
+    "tracks": "Tracks"
+  },
+  "menu": {
+    "discover_playlists": "Discover Playlists",
+    "favorites": "Favorites",
+    "hot_playlists": "Hot Playlists",
+    "main": "Main Menu",
+    "now_playing": "Now Playing",
+    "reorder": "Reorder Menu",
+    "search": "Search",
+    "chat": "AI Chat",
+    "settings": "Settings",
+    "about": "About",
+    "visibility": "Menu Visibility"
+  },
+  "player": {
+    "next": "Next",
+    "play": "Play",
+    "previous": "Previous",
+    "repeat": "Repeat",
+    "show_playlist": "Show Playlist",
+    "shuffle": "Shuffle",
+    "status": {
+      "loading": "Loading...",
+      "paused": "Paused",
+      "playing": "Playing...",
+      "starting": "Starting...",
+      "stopped": "Stopped",
+      "stopping": "Stopping...",
+      "finished": "Finished",
+      "ready": "Ready"
+    },
+    "stop": "Stop",
+    "volume": "Volume"
+  },
+  "playlist": {
+    "add_track": "Add to Playlist",
+    "create": "Create Playlist",
+    "confirm": {
+      "delete_with_tracks": "This playlist contains songs. Delete playlist and all songs?"
+    },
+    "error": {
+      "add_track_failed": "Failed to add track to playlist",
+      "track_already_exists": "Track already exists in playlist",
+      "cannot_rename_system": "Cannot rename system playlists",
+      "create_failed": "Failed to create playlist",
+      "empty_name": "Playlist name cannot be empty",
+      "remove_track_failed": "Failed to remove track from playlist",
+      "rename_failed": "Failed to rename playlist"
+    },
+    "name": "Playlist Name",
+    "rename": "Rename Playlist",
+    "select": "Select Playlist",
+    "status": {
+      "created": "Playlist created successfully",
+      "no_custom": "No custom playlists available",
+      "renamed": "Playlist renamed successfully",
+      "track_added": "Track added to playlist successfully",
+      "track_removed": "Track removed from playlist successfully"
+    }
+  },
+  "search": {
+    "error": {
+      "empty_keyword": "Please enter a keyword to search"
+    },
+    "placeholder": "Enter keywords to search...",
+    "results": "Search Results",
+    "status": {
+      "no_results": "No results found",
+      "searching": "Searching for: {0}"
+    },
+    "type": "Search Type"
+  },
+  "settings": {
+    "audio_quality": "Audio Quality",
+    "auto_update": "Automatic Updates",
+    "check_update": "Check for Updates",
+    "player_method": "Player Method",
+    "force_pass_connection": "Force pass connection",
+    "error": {
+      "save_failed": "Failed to save settings"
+    },
+    "language": "Language",
+    "reorder": {
+      "instructions": "Select an item to move, then select the destination position",
+      "saved": "Order saved"
+    },
+    "service": "Service",
+    "status": {
+      "saved": "Settings saved successfully"
+    },
+    "visibility": {
+      "instructions": "Select items to hide/show. [x] = show, [] = hide. Press Save to complete.",
+      "saved": "Visibility settings saved"
+    }
+  },
+  "status": {
+    "error": "An error occurred",
+    "loading": "Loading...",
+    "load_more": "Load more...",
+    "no_data": "No data available!",
+    "no_updates": "No updates available. You have the latest version.",
+    "update_available": "New version available. Update now?"
+  },
+  "symbol": {
+    "arrow": "→ ",
+    "checked": "[x] ",
+    "unchecked": "[  ] "
+  },
+  "time": {
+    "error": {
+      "invalid_duration": "Duration must be 1-999 minutes",
+      "invalid_format": "Invalid time format",
+      "invalid_hour": "Hour must be 0-23",
+      "invalid_minute": "Minute must be 0-59"
+    },
+    "hours": "Hours",
+    "input": {
+      "minutes": "Enter duration (1-999 minutes)",
+      "time": "Enter time (24-hour format)"
+    },
+    "minutes": "Minutes"
+  },
+  "timer": {
+    "action": "Timer Action",
+    "actions": {
+      "exit_app": "Exit Application",
+      "stop_playback": "Stop Playback"
+    },
+    "cancel": "Cancel Timer",
+    "confirm": {
+      "exit": "Timer will exit the application when expired. Continue?"
+    },
+    "mode": {
+      "absolute": "Absolute Time",
+      "countdown": "Countdown Mode"
+    },
+    "set": "Set Timer",
+    "sleep_timer": "Sleep Timer",
+    "status": {
+      "cancelled": "Sleep timer cancelled",
+      "expired": "Sleep timer expired",
+      "remaining": "Time Remaining: {0}",
+      "set": "Sleep timer activated"
+    }
+  },
+  "chat": {
+    "input": "Enter message",
+    "welcome_message": "Hello! How can I help you today?"
+  },
+  "error": {
+    "connection": "Connection error. Please try again."
+  }
 }

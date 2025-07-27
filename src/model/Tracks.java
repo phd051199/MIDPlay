@@ -48,14 +48,7 @@ public class Tracks {
           if (item == null) {
             continue;
           }
-          tracks[i] =
-              new Track(
-                  item.getString("Key", ""),
-                  item.getString("Name", ""),
-                  item.getString("Url", ""),
-                  item.getInt("Duration", 0),
-                  item.getString("Singer", ""),
-                  item.getString("Image", ""));
+          tracks[i] = new Track().fromJSON(item.toString());
         }
       }
     } catch (Exception e) {

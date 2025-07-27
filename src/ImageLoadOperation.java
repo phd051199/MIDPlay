@@ -17,7 +17,7 @@ public class ImageLoadOperation extends NetworkOperation implements Network.Bina
       return;
     }
     String sizedImageUrl = URLProvider.getSizedImage(this.imageUrl, this.targetSize);
-    this.network = new Network(null);
+    this.network = new Network();
     this.network.startHttpGetBytes(sizedImageUrl, this);
   }
 

@@ -23,9 +23,7 @@ public final class PlayerScreen extends Canvas
   private static final long BUTTON_ACTIVE_DURATION = 1000L;
   private static final int THEME_COLOR = 0x410A4A;
   private static final int BACKGROUND_COLOR = 0xF0F0F0;
-  private final DisplayMetrics displayMetrics = new DisplayMetrics();
-  private final ButtonPositions buttonPositions = new ButtonPositions();
-  private final StatusManager statusManager = new StatusManager();
+
   private String title;
   private PlayerGUI gui;
   private Navigator navigator;
@@ -44,6 +42,21 @@ public final class PlayerScreen extends Canvas
   private int currentVolumeLevel = 0;
   private final SleepTimerManager sleepTimerManager;
 
+  private int displayWidth = -1, displayHeight = -1, textHeight = 10;
+  private int trackInfoLeft = 0, statusBarHeight = 0;
+  private int trackNameTop = 0, singerNameTop = 0;
+  private int timeRateTop = 0, timeWidth = 0, playTop = 0;
+  private int sliderTop = 0, sliderLeft = 0, sliderWidth = 12;
+  private float sliderValue = 0.0F;
+
+  private int playX = 0, playY = 0;
+  private int prevX = 0, prevY = 0;
+  private int nextX = 0, nextY = 0;
+  private int repeatX = 0, repeatY = 0;
+  private int shuffleX = 0, shuffleY = 0;
+  private String statusCurrent = "", statusOriginal = "", realPlayerStatus = "";
+  private boolean timerOverrideActive = false;
+
   public PlayerScreen(String title, Tracks tracks, int index, Navigator navigator) {
     this.navigator = navigator;
     this.sleepTimerManager = new SleepTimerManager();
@@ -56,30 +69,30 @@ public final class PlayerScreen extends Canvas
 
   public void addCommands() {
     this.addCommand(Commands.back());
-    this.addCommand(Commands.Player.play());
-    this.addCommand(Commands.Player.next());
-    this.addCommand(Commands.Player.previous());
-    this.addCommand(Commands.Player.stop());
-    this.addCommand(Commands.Player.volume());
-    this.addCommand(Commands.Player.addToPlaylist());
-    this.addCommand(Commands.Player.showPlaylist());
-    this.addCommand(Commands.Player.repeat());
-    this.addCommand(Commands.Player.shuffle());
+    this.addCommand(Commands.playerPlay());
+    this.addCommand(Commands.playerNext());
+    this.addCommand(Commands.playerPrevious());
+    this.addCommand(Commands.playerStop());
+    this.addCommand(Commands.playerVolume());
+    this.addCommand(Commands.playerAddToPlaylist());
+    this.addCommand(Commands.playerShowPlaylist());
+    this.addCommand(Commands.playerRepeat());
+    this.addCommand(Commands.playerShuffle());
     updateSleepTimerCommands();
   }
 
   public void clearCommands() {
     this.removeCommand(Commands.back());
-    this.removeCommand(Commands.Player.play());
-    this.removeCommand(Commands.Player.next());
-    this.removeCommand(Commands.Player.previous());
-    this.removeCommand(Commands.Player.stop());
-    this.removeCommand(Commands.Player.volume());
-    this.removeCommand(Commands.Player.addToPlaylist());
-    this.removeCommand(Commands.Player.showPlaylist());
-    this.removeCommand(Commands.Player.repeat());
-    this.removeCommand(Commands.Player.shuffle());
-    this.removeCommand(Commands.Player.sleepTimer());
+    this.removeCommand(Commands.playerPlay());
+    this.removeCommand(Commands.playerNext());
+    this.removeCommand(Commands.playerPrevious());
+    this.removeCommand(Commands.playerStop());
+    this.removeCommand(Commands.playerVolume());
+    this.removeCommand(Commands.playerAddToPlaylist());
+    this.removeCommand(Commands.playerShowPlaylist());
+    this.removeCommand(Commands.playerRepeat());
+    this.removeCommand(Commands.playerShuffle());
+    this.removeCommand(Commands.playerSleepTimer());
   }
 
   public void refreshStatus() {
@@ -116,7 +129,7 @@ public final class PlayerScreen extends Canvas
   }
 
   public void setupDisplay() {
-    this.displayMetrics.height = -1;
+    this.displayHeight = -1;
     this.updateDisplay();
   }
 
@@ -125,12 +138,12 @@ public final class PlayerScreen extends Canvas
   }
 
   public void setStatus(String s) {
-    statusManager.updateStatus(s);
+    updateStatus(s);
     this.updateDisplay();
   }
 
   public String getStatus() {
-    return statusManager.current;
+    return statusCurrent;
   }
 
   public void setStatusByKey(String statusKey) {
@@ -243,8 +256,7 @@ public final class PlayerScreen extends Canvas
   }
 
   private boolean isLoading() {
-    return statusManager.current != null
-        && statusManager.current.indexOf(Lang.tr("app.loading")) != -1;
+    return statusCurrent != null && statusCurrent.indexOf(Lang.tr("status.loading")) != -1;
   }
 
   protected void pointerPressed(int x, int y) {
@@ -256,25 +268,15 @@ public final class PlayerScreen extends Canvas
         handleVolumeAlertTouch(x, y);
         return;
       }
-      if (isPointInButton(
-          x,
-          y,
-          buttonPositions.playX,
-          buttonPositions.playY,
-          PLAY_BUTTON_WIDTH,
-          PLAY_BUTTON_HEIGHT)) {
+      if (isPointInButton(x, y, playX, playY, PLAY_BUTTON_WIDTH, PLAY_BUTTON_HEIGHT)) {
         handleAction(Canvas.FIRE);
-      } else if (isPointInButton(
-          x, y, buttonPositions.prevX, buttonPositions.prevY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+      } else if (isPointInButton(x, y, prevX, prevY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
         handleAction(Canvas.LEFT);
-      } else if (isPointInButton(
-          x, y, buttonPositions.nextX, buttonPositions.nextY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+      } else if (isPointInButton(x, y, nextX, nextY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
         handleAction(Canvas.RIGHT);
-      } else if (isPointInButton(
-          x, y, buttonPositions.repeatX, buttonPositions.repeatY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+      } else if (isPointInButton(x, y, repeatX, repeatY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
         toggleRepeat();
-      } else if (isPointInButton(
-          x, y, buttonPositions.shuffleX, buttonPositions.shuffleY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+      } else if (isPointInButton(x, y, shuffleX, shuffleY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
         toggleShuffle();
       }
     } catch (Throwable e) {
@@ -283,10 +285,10 @@ public final class PlayerScreen extends Canvas
   }
 
   private void handleVolumeAlertTouch(int x, int y) {
-    int alertWidth = displayMetrics.width - 40;
+    int alertWidth = displayWidth - 40;
     int alertHeight = 100;
     int alertX = 20;
-    int alertY = (displayMetrics.height - alertHeight) / 2;
+    int alertY = (displayHeight - alertHeight) / 2;
     if (x >= alertX && x <= alertX + alertWidth && y >= alertY && y <= alertY + alertHeight) {
       int barWidth = alertWidth - 40;
       int barX = alertX + 20;
@@ -294,8 +296,8 @@ public final class PlayerScreen extends Canvas
       int barHeight = 20;
       if (x >= barX && x <= barX + barWidth && y >= barY && y <= barY + barHeight) {
         int tapPosition = x - barX;
-        int newVolume = (tapPosition * Configuration.Player.MAX_VOLUME) / barWidth;
-        newVolume = Math.max(0, Math.min(Configuration.Player.MAX_VOLUME, newVolume));
+        int newVolume = (tapPosition * Configuration.PLAYER_MAX_VOLUME) / barWidth;
+        newVolume = Math.max(0, Math.min(Configuration.PLAYER_MAX_VOLUME, newVolume));
         getPlayerGUI().setVolumeLevel(newVolume);
         currentVolumeLevel = newVolume;
         updateDisplay();
@@ -434,7 +436,7 @@ public final class PlayerScreen extends Canvas
 
   public void paint(Graphics g) {
     try {
-      if (displayMetrics.height == -1) {
+      if (displayHeight == -1) {
         initDisplayMetrics(g);
       }
       int clipY = g.getClipY();
@@ -454,41 +456,40 @@ public final class PlayerScreen extends Canvas
   }
 
   private void initDisplayMetrics(Graphics g) {
-    displayMetrics.width = this.getWidth();
-    displayMetrics.height = this.getHeight();
-    displayMetrics.textHeight = g.getFont().getHeight();
-    displayMetrics.statusBarHeight = displayMetrics.textHeight + 5;
-    displayMetrics.trackInfoLeft = ART_LEFT + ART_SIZE + 15;
-    int currentTop = PLAYER_STATUS_TOP + displayMetrics.statusBarHeight + 15;
-    displayMetrics.trackNameTop = currentTop;
-    currentTop += SONG_TITLE_GAP + displayMetrics.textHeight;
-    displayMetrics.singerNameTop = currentTop;
-    currentTop += TIME_GAP + displayMetrics.textHeight + 24;
-    displayMetrics.timeRateTop = currentTop;
-    displayMetrics.timeWidth = g.getFont().stringWidth("0:00:0  ");
-    displayMetrics.sliderWidth = displayMetrics.width - (displayMetrics.timeWidth * 2) - 8;
-    displayMetrics.sliderTop =
-        displayMetrics.timeRateTop + (displayMetrics.textHeight - SLIDER_HEIGHT) / 2;
-    displayMetrics.sliderLeft = displayMetrics.timeWidth + 4;
-    displayMetrics.playTop = displayMetrics.timeRateTop + displayMetrics.textHeight + 24;
+    displayWidth = this.getWidth();
+    displayHeight = this.getHeight();
+    textHeight = g.getFont().getHeight();
+    statusBarHeight = textHeight + 5;
+    trackInfoLeft = ART_LEFT + ART_SIZE + 15;
+    int currentTop = PLAYER_STATUS_TOP + statusBarHeight + 15;
+    trackNameTop = currentTop;
+    currentTop += SONG_TITLE_GAP + textHeight;
+    singerNameTop = currentTop;
+    currentTop += TIME_GAP + textHeight + 24;
+    timeRateTop = currentTop;
+    timeWidth = g.getFont().stringWidth("0:00:0  ");
+    sliderWidth = displayWidth - (timeWidth * 2) - 8;
+    sliderTop = timeRateTop + (textHeight - SLIDER_HEIGHT) / 2;
+    sliderLeft = timeWidth + 4;
+    playTop = timeRateTop + textHeight + 24;
   }
 
   private void paintBackground(Graphics g) {
     g.setColor(BACKGROUND_COLOR);
-    g.fillRect(0, 0, displayMetrics.width, displayMetrics.height);
+    g.fillRect(0, 0, displayWidth, displayHeight);
   }
 
   private void paintStatusBar(Graphics g, int clipY, int clipHeight) {
     g.setColor(THEME_COLOR);
-    g.fillRect(0, 0, displayMetrics.width, displayMetrics.statusBarHeight);
-    if (intersects(clipY, clipHeight, PLAYER_STATUS_TOP, displayMetrics.textHeight)) {
+    g.fillRect(0, 0, displayWidth, statusBarHeight);
+    if (intersects(clipY, clipHeight, PLAYER_STATUS_TOP, textHeight)) {
       g.setColor(255, 255, 255);
-      g.drawString(statusManager.current, displayMetrics.width >> 1, PLAYER_STATUS_TOP, 17);
+      g.drawString(statusCurrent, displayWidth >> 1, PLAYER_STATUS_TOP, 17);
     }
   }
 
   private void paintAlbumArt(Graphics g) {
-    int artTop = PLAYER_STATUS_TOP + displayMetrics.statusBarHeight + 8;
+    int artTop = PLAYER_STATUS_TOP + statusBarHeight + 8;
     if (this.albumArt != null) {
       g.drawImage(
           this.albumArt,
@@ -512,20 +513,19 @@ public final class PlayerScreen extends Canvas
     if (currentTrack == null) {
       return;
     }
-    if (intersects(clipY, clipHeight, displayMetrics.trackNameTop, displayMetrics.textHeight)) {
+    if (intersects(clipY, clipHeight, trackNameTop, textHeight)) {
       g.setColor(THEME_COLOR);
-      int maxTrackNameWidth = displayMetrics.width - displayMetrics.trackInfoLeft - 10;
+      int maxTrackNameWidth = displayWidth - trackInfoLeft - 10;
       String trackName = currentTrack.getName();
       String truncatedTrackName = truncateText(trackName, g, maxTrackNameWidth);
-      g.drawString(
-          truncatedTrackName, displayMetrics.trackInfoLeft, displayMetrics.trackNameTop, 20);
+      g.drawString(truncatedTrackName, trackInfoLeft, trackNameTop, 20);
     }
-    if (intersects(clipY, clipHeight, displayMetrics.singerNameTop, displayMetrics.textHeight)) {
+    if (intersects(clipY, clipHeight, singerNameTop, textHeight)) {
       g.setColor(140, 140, 140);
-      int maxSingerWidth = displayMetrics.width - displayMetrics.trackInfoLeft - 10;
+      int maxSingerWidth = displayWidth - trackInfoLeft - 10;
       String artistName = currentTrack.getArtist();
       String truncatedSinger = truncateText(artistName, g, maxSingerWidth);
-      g.drawString(truncatedSinger, displayMetrics.trackInfoLeft, displayMetrics.singerNameTop, 20);
+      g.drawString(truncatedSinger, trackInfoLeft, singerNameTop, 20);
     }
   }
 
@@ -535,30 +535,21 @@ public final class PlayerScreen extends Canvas
     String strDuration = timeDisplay(duration);
     String strCurrent = timeDisplay(current);
     if (duration > 0) {
-      displayMetrics.sliderValue =
-          (float) displayMetrics.sliderWidth * ((float) current / (float) duration);
+      sliderValue = (float) sliderWidth * ((float) current / (float) duration);
     } else {
-      displayMetrics.sliderValue = 0;
+      sliderValue = 0;
     }
-    if (intersects(clipY, clipHeight, displayMetrics.timeRateTop, displayMetrics.textHeight)) {
+    if (intersects(clipY, clipHeight, timeRateTop, textHeight)) {
       g.setColor(140, 140, 140);
-      g.drawString(strCurrent, 5, displayMetrics.timeRateTop, 20);
+      g.drawString(strCurrent, 5, timeRateTop, 20);
     }
     g.setColor(220, 220, 220);
-    g.fillRect(
-        displayMetrics.sliderLeft,
-        displayMetrics.sliderTop,
-        displayMetrics.sliderWidth,
-        SLIDER_HEIGHT);
+    g.fillRect(sliderLeft, sliderTop, sliderWidth, SLIDER_HEIGHT);
     g.setColor(THEME_COLOR);
-    g.fillRect(
-        displayMetrics.sliderLeft,
-        displayMetrics.sliderTop,
-        (int) displayMetrics.sliderValue,
-        SLIDER_HEIGHT);
-    if (intersects(clipY, clipHeight, displayMetrics.timeRateTop, displayMetrics.textHeight)) {
+    g.fillRect(sliderLeft, sliderTop, (int) sliderValue, SLIDER_HEIGHT);
+    if (intersects(clipY, clipHeight, timeRateTop, textHeight)) {
       g.setColor(140, 140, 140);
-      g.drawString(strDuration, displayMetrics.width - 5, displayMetrics.timeRateTop, 24);
+      g.drawString(strDuration, displayWidth - 5, timeRateTop, 24);
     }
   }
 
@@ -566,54 +557,54 @@ public final class PlayerScreen extends Canvas
     initButtonPositions();
     updateButtonStates();
     boolean isPlaying = this.getPlayerGUI().isPlaying();
-    Image playPauseImg = isPlaying ? Configuration.Images.pauseIcon : Configuration.Images.playIcon;
+    Image playPauseImg = isPlaying ? Configuration.pauseIcon : Configuration.playIcon;
     if (playPauseImg != null) {
-      g.drawImage(playPauseImg, buttonPositions.playX, buttonPositions.playY, 3);
+      g.drawImage(playPauseImg, playX, playY, 3);
     }
-    Image prevImg = Configuration.Images.previousIcon;
+    Image prevImg = Configuration.previousIcon;
     if (prevImg != null) {
-      g.drawImage(prevImg, buttonPositions.prevX, buttonPositions.prevY, 3);
+      g.drawImage(prevImg, prevX, prevY, 3);
     }
-    Image nextImg = Configuration.Images.nextIcon;
+    Image nextImg = Configuration.nextIcon;
     if (nextImg != null) {
-      g.drawImage(nextImg, buttonPositions.nextX, buttonPositions.nextY, 3);
+      g.drawImage(nextImg, nextX, nextY, 3);
     }
     int repeatMode = this.getPlayerGUI().getRepeatMode();
     Image repeatImg;
-    if (Configuration.Player.RepeatMode.ONE == repeatMode) {
-      repeatImg = Configuration.Images.repeatOneIcon;
-    } else if (Configuration.Player.RepeatMode.ALL == repeatMode) {
-      repeatImg = Configuration.Images.repeatIcon;
+    if (Configuration.PLAYER_REPEAT_ONE == repeatMode) {
+      repeatImg = Configuration.repeatOneIcon;
+    } else if (Configuration.PLAYER_REPEAT_ALL == repeatMode) {
+      repeatImg = Configuration.repeatIcon;
     } else {
-      repeatImg = Configuration.Images.repeatOffIcon;
+      repeatImg = Configuration.repeatOffIcon;
     }
     if (repeatImg != null) {
-      g.drawImage(repeatImg, buttonPositions.repeatX, buttonPositions.repeatY, 3);
+      g.drawImage(repeatImg, repeatX, repeatY, 3);
     }
     Image shuffleImg =
         this.getPlayerGUI().isShuffleEnabled()
-            ? Configuration.Images.shuffleIcon
-            : Configuration.Images.shuffleOffIcon;
+            ? Configuration.shuffleIcon
+            : Configuration.shuffleOffIcon;
     if (shuffleImg != null) {
-      g.drawImage(shuffleImg, buttonPositions.shuffleX, buttonPositions.shuffleY, 3);
+      g.drawImage(shuffleImg, shuffleX, shuffleY, 3);
     }
   }
 
   private void initButtonPositions() {
-    if (buttonPositions.playX == 0) {
-      int screenCenter = displayMetrics.width >> 1;
-      int buttonGap = displayMetrics.width / 5;
+    if (playX == 0) {
+      int screenCenter = displayWidth >> 1;
+      int buttonGap = displayWidth / 5;
       int margin = 8;
-      buttonPositions.playX = screenCenter;
-      buttonPositions.playY = displayMetrics.playTop;
-      buttonPositions.prevX = screenCenter - buttonGap;
-      buttonPositions.prevY = displayMetrics.playTop;
-      buttonPositions.nextX = screenCenter + buttonGap;
-      buttonPositions.nextY = displayMetrics.playTop;
-      buttonPositions.repeatX = margin + (BUTTON_WIDTH / 2);
-      buttonPositions.repeatY = displayMetrics.playTop;
-      buttonPositions.shuffleX = displayMetrics.width - margin - (BUTTON_WIDTH / 2);
-      buttonPositions.shuffleY = displayMetrics.playTop;
+      playX = screenCenter;
+      playY = playTop;
+      prevX = screenCenter - buttonGap;
+      prevY = playTop;
+      nextX = screenCenter + buttonGap;
+      nextY = playTop;
+      repeatX = margin + (BUTTON_WIDTH / 2);
+      repeatY = playTop;
+      shuffleX = displayWidth - margin - (BUTTON_WIDTH / 2);
+      shuffleY = playTop;
     }
   }
 
@@ -630,10 +621,10 @@ public final class PlayerScreen extends Canvas
   }
 
   private void paintVolumeAlert(Graphics g) {
-    int alertWidth = displayMetrics.width - 40;
+    int alertWidth = displayWidth - 40;
     int alertHeight = 100;
     int alertX = 20;
-    int alertY = (displayMetrics.height - alertHeight) / 2;
+    int alertY = (displayHeight - alertHeight) / 2;
     g.setColor(BACKGROUND_COLOR);
     g.fillRect(alertX, alertY, alertWidth, alertHeight);
     g.setColor(0x000000);
@@ -648,7 +639,7 @@ public final class PlayerScreen extends Canvas
     g.setColor(220, 220, 220);
     g.fillRect(barX, barY, barWidth, barHeight);
     g.setColor(THEME_COLOR);
-    int progressWidth = (barWidth * currentVolumeLevel) / Configuration.Player.MAX_VOLUME;
+    int progressWidth = (barWidth * currentVolumeLevel) / Configuration.PLAYER_MAX_VOLUME;
     g.fillRect(barX, barY, progressWidth, barHeight);
     g.setColor(0x000000);
     g.drawRect(barX, barY, barWidth, barHeight);
@@ -661,27 +652,27 @@ public final class PlayerScreen extends Canvas
       } else {
         this.navigator.back();
       }
-    } else if (c == Commands.Player.next()) {
+    } else if (c == Commands.playerNext()) {
       next();
-    } else if (c == Commands.Player.previous()) {
+    } else if (c == Commands.playerPrevious()) {
       previous();
-    } else if (c == Commands.Player.play()) {
+    } else if (c == Commands.playerPlay()) {
       togglePlayPause();
-    } else if (c == Commands.Player.stop()) {
+    } else if (c == Commands.playerStop()) {
       stop();
-    } else if (c == Commands.Player.repeat()) {
+    } else if (c == Commands.playerRepeat()) {
       toggleRepeat();
-    } else if (c == Commands.Player.shuffle()) {
+    } else if (c == Commands.playerShuffle()) {
       toggleShuffle();
-    } else if (c == Commands.Player.volume()) {
+    } else if (c == Commands.playerVolume()) {
       showVolumeAlert(getPlayerGUI().getVolumeLevel());
-    } else if (c == Commands.Player.addToPlaylist()) {
+    } else if (c == Commands.playerAddToPlaylist()) {
       addCurrentTrackToPlaylist();
-    } else if (c == Commands.Player.showPlaylist()) {
+    } else if (c == Commands.playerShowPlaylist()) {
       showCurrentPlaylist();
-    } else if (c == Commands.Player.sleepTimer()) {
+    } else if (c == Commands.playerSleepTimer()) {
       showSleepTimerDialog();
-    } else if (c == Commands.Player.cancelTimer()) {
+    } else if (c == Commands.playerCancelTimer()) {
       sleepTimerManager.cancelTimer();
       updateSleepTimerCommands();
     }
@@ -784,11 +775,11 @@ public final class PlayerScreen extends Canvas
 
   private void updateSleepTimerCommands() {
     if (sleepTimerManager.isActive()) {
-      removeCommand(Commands.Player.sleepTimer());
-      addCommand(Commands.Player.cancelTimer());
+      removeCommand(Commands.playerSleepTimer());
+      addCommand(Commands.playerCancelTimer());
     } else {
-      removeCommand(Commands.Player.cancelTimer());
-      addCommand(Commands.Player.sleepTimer());
+      removeCommand(Commands.playerCancelTimer());
+      addCommand(Commands.playerSleepTimer());
     }
   }
 
@@ -804,74 +795,56 @@ public final class PlayerScreen extends Canvas
 
   public void onTimerUpdate(String remainingTime) {
     if (sleepTimerManager.isActive()) {
-      statusManager.setTimerOverride(Lang.tr("timer.sleep_timer") + ": " + remainingTime);
+      setTimerOverride(Lang.tr("timer.sleep_timer") + ": " + remainingTime);
       updateDisplay();
     }
   }
 
   public void onTimerCancelled() {
-    statusManager.clearTimerOverride();
-    navigator.showAlert(Lang.tr("timer.status.cancelled"), AlertType.INFO);
+    clearTimerOverride();
+    navigator.showAlert(Lang.tr("timer.status.cancelled"), AlertType.CONFIRMATION);
     updateSleepTimerCommands();
     updateDisplay();
   }
 
-  private static class DisplayMetrics {
-    int width = -1, height = -1, textHeight = 10;
-    int trackInfoLeft = 0, statusBarHeight = 0;
-    int trackNameTop = 0, singerNameTop = 0;
-    int timeRateTop = 0, timeWidth = 0, playTop = 0;
-    int sliderTop = 0, sliderLeft = 0, sliderWidth = 12;
-    float sliderValue = 0.0F;
+  public void showError(String message) {
+    navigator.showAlert(message, AlertType.ERROR);
   }
 
-  private static class ButtonPositions {
-    int playX = 0, playY = 0;
-    int prevX = 0, prevY = 0;
-    int nextX = 0, nextY = 0;
-    int repeatX = 0, repeatY = 0;
-    int shuffleX = 0, shuffleY = 0;
-  }
-
-  private static class StatusManager {
-    String current = "", original = "", realPlayerStatus = "";
-    boolean timerOverrideActive = false;
-
-    void updateStatus(String s) {
-      if (s != null
-          && s.indexOf(Lang.tr("timer.status.remaining").substring(0, 3)) == -1
-          && s.indexOf(Lang.tr("player.volume")) == -1) {
-        this.realPlayerStatus = s;
-      }
-      if (!timerOverrideActive) {
-        this.current = s;
-        this.original = s;
-      } else if (isCriticalStatus(s)) {
-        this.current = s;
-        this.original = s;
-        this.timerOverrideActive = false;
-      }
+  private void updateStatus(String s) {
+    if (s != null
+        && s.indexOf(Lang.tr("timer.status.remaining").substring(0, 3)) == -1
+        && s.indexOf(Lang.tr("player.volume")) == -1) {
+      this.realPlayerStatus = s;
     }
-
-    private boolean isCriticalStatus(String status) {
-      return status != null
-          && (status.indexOf(Lang.tr("app.loading")) != -1
-              || status.toLowerCase().indexOf("error") != -1
-              || status.indexOf(Lang.tr("player.volume")) != -1);
-    }
-
-    void setTimerOverride(String timerStatus) {
-      this.timerOverrideActive = true;
-      this.current = timerStatus;
-    }
-
-    void clearTimerOverride() {
+    if (!timerOverrideActive) {
+      this.statusCurrent = s;
+      this.statusOriginal = s;
+    } else if (isCriticalStatus(s)) {
+      this.statusCurrent = s;
+      this.statusOriginal = s;
       this.timerOverrideActive = false;
-      this.current = this.realPlayerStatus;
     }
+  }
 
-    boolean isTimerOverrideActive() {
-      return timerOverrideActive;
-    }
+  private boolean isCriticalStatus(String status) {
+    return status != null
+        && (status.indexOf(Lang.tr("status.loading")) != -1
+            || status.toLowerCase().indexOf("error") != -1
+            || status.indexOf(Lang.tr("player.volume")) != -1);
+  }
+
+  private void setTimerOverride(String timerStatus) {
+    this.timerOverrideActive = true;
+    this.statusCurrent = timerStatus;
+  }
+
+  private void clearTimerOverride() {
+    this.timerOverrideActive = false;
+    this.statusCurrent = this.realPlayerStatus;
+  }
+
+  private boolean isTimerOverrideActive() {
+    return timerOverrideActive;
   }
 }

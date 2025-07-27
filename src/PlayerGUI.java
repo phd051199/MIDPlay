@@ -17,14 +17,77 @@ import model.Tracks;
 public class PlayerGUI implements PlayerListener {
   private static final int TIMER_INTERVAL = 1000;
   private static final int VOLUME_STEP = 10;
+  private static int playerHttpMethod;
+
+  private static boolean checkClass(String s) {
+    try {
+      Class.forName(s);
+      return true;
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }
+
+  public static void setPlayerHttpMethod() {
+    int m = Configuration.HTTP_PASS_URL;
+    boolean symbianJrt = false;
+    boolean symbian = false;
+    String p, v;
+    if ((p = System.getProperty("microedition.platform")) != null) {
+      if ((symbianJrt = p.indexOf("platform=S60") != -1)) {
+        int i;
+        v = p.substring(i = p.indexOf("platform_version=") + 17, i = p.indexOf(';', i));
+      }
+      try {
+        Class.forName("emulator.custom.CustomMethod");
+        p = "KEmulator";
+        if ((v = System.getProperty("kemulator.mod.version")) != null) {
+          p = p.concat(" ".concat(v));
+        }
+      } catch (Exception e) {
+        int i;
+        if ((i = p.indexOf('/')) != -1 || (i = p.indexOf(' ')) != -1) {
+          p = p.substring(0, i);
+        }
+      }
+    }
+    symbian =
+        symbianJrt
+            || System.getProperty("com.symbian.midp.serversocket.support") != null
+            || System.getProperty("com.symbian.default.to.suite.icon") != null
+            || checkClass("com.symbian.midp.io.protocol.http.Protocol")
+            || checkClass("com.symbian.lcdjava.io.File");
+    try {
+      Class.forName("com.nokia.mid.impl.isa.jam.Jam");
+      try {
+        Class.forName("com.sun.mmedia.protocol.CommonDS");
+        m = Configuration.HTTP_PASS_URL;
+      } catch (Exception e) {
+        m = Configuration.HTTP_PASS_CONNECTION_STREAM;
+      }
+    } catch (Exception e) {
+      m = Configuration.HTTP_PASS_URL;
+      if (symbian) {
+        if (symbianJrt
+            && (p.indexOf("java_build_version=2.") != -1
+                || p.indexOf("java_build_version=1.4") != -1)) {
+        } else if (checkClass("com.symbian.mmapi.PlayerImpl")) {
+          m = Configuration.HTTP_PASS_CONNECTION_STREAM;
+        } else {
+          m = Configuration.HTTP_PASS_CONNECTION_STREAM;
+        }
+      }
+    }
+    playerHttpMethod = m;
+  }
+
   private final PlayerScreen parent;
   private final SettingsManager settingsManager;
-  private static int playerHttpMethod;
   private Player player;
   private Tracks trackList;
   private int currentTrackIndex;
-  private int volumeLevel = Configuration.Player.MAX_VOLUME;
-  private int repeatMode = Configuration.Player.RepeatMode.ALL;
+  private int volumeLevel = Configuration.PLAYER_MAX_VOLUME;
+  private int repeatMode = Configuration.PLAYER_REPEAT_ALL;
   private boolean isShuffleEnabled = false;
   private int[] shuffleOrder;
   private int shufflePosition;
@@ -48,7 +111,7 @@ public class PlayerGUI implements PlayerListener {
       this.volumeLevel = settingsManager.getCurrentVolumeLevel();
       this.repeatMode = settingsManager.getCurrentRepeatMode();
       this.isShuffleEnabled =
-          Configuration.Player.ShuffleMode.ON == settingsManager.getCurrentShuffleMode();
+          Configuration.PLAYER_SHUFFLE_ON == settingsManager.getCurrentShuffleMode();
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -113,7 +176,7 @@ public class PlayerGUI implements PlayerListener {
       return;
     }
     if (increase) {
-      volumeLevel = Math.min(Configuration.Player.MAX_VOLUME, volumeLevel + VOLUME_STEP);
+      volumeLevel = Math.min(Configuration.PLAYER_MAX_VOLUME, volumeLevel + VOLUME_STEP);
     } else {
       volumeLevel = Math.max(0, volumeLevel - VOLUME_STEP);
     }
@@ -126,7 +189,7 @@ public class PlayerGUI implements PlayerListener {
     if (vc == null) {
       return;
     }
-    volumeLevel = Math.max(0, Math.min(Configuration.Player.MAX_VOLUME, level));
+    volumeLevel = Math.max(0, Math.min(Configuration.PLAYER_MAX_VOLUME, level));
     vc.setLevel(volumeLevel);
   }
 
@@ -135,12 +198,12 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void toggleRepeat() {
-    if (Configuration.Player.RepeatMode.OFF == repeatMode) {
-      repeatMode = Configuration.Player.RepeatMode.ONE;
-    } else if (Configuration.Player.RepeatMode.ONE == repeatMode) {
-      repeatMode = Configuration.Player.RepeatMode.ALL;
+    if (Configuration.PLAYER_REPEAT_OFF == repeatMode) {
+      repeatMode = Configuration.PLAYER_REPEAT_ONE;
+    } else if (Configuration.PLAYER_REPEAT_ONE == repeatMode) {
+      repeatMode = Configuration.PLAYER_REPEAT_ALL;
     } else {
-      repeatMode = Configuration.Player.RepeatMode.OFF;
+      repeatMode = Configuration.PLAYER_REPEAT_OFF;
     }
     saveRepeatMode();
   }
@@ -302,7 +365,7 @@ public class PlayerGUI implements PlayerListener {
     closePlayer();
     closeResources();
     parent.setAlbumArtUrl(track.getImageUrl());
-    if (getPlayerHttpMethod() == Configuration.HttpMethod.PASS_CONNECTION_STREAM) {
+    if (getPlayerHttpMethod() == Configuration.HTTP_PASS_CONNECTION_STREAM) {
       createStreamPlayer(track);
     } else {
       createUrlPlayer(track);
@@ -373,7 +436,7 @@ public class PlayerGUI implements PlayerListener {
     if (forward) {
       currentTrackIndex++;
       if (currentTrackIndex >= tracks.length) {
-        if (Configuration.Player.RepeatMode.OFF == repeatMode) {
+        if (Configuration.PLAYER_REPEAT_OFF == repeatMode) {
           currentTrackIndex = tracks.length - 1;
           return false;
         }
@@ -382,7 +445,7 @@ public class PlayerGUI implements PlayerListener {
     } else {
       currentTrackIndex--;
       if (currentTrackIndex < 0) {
-        if (Configuration.Player.RepeatMode.OFF == repeatMode) {
+        if (Configuration.PLAYER_REPEAT_OFF == repeatMode) {
           currentTrackIndex = 0;
           return false;
         }
@@ -405,7 +468,7 @@ public class PlayerGUI implements PlayerListener {
     if (forward) {
       shufflePosition++;
       if (shufflePosition >= shuffleOrder.length) {
-        if (Configuration.Player.RepeatMode.OFF == repeatMode) {
+        if (Configuration.PLAYER_REPEAT_OFF == repeatMode) {
           shufflePosition = shuffleOrder.length - 1;
           return false;
         }
@@ -415,7 +478,7 @@ public class PlayerGUI implements PlayerListener {
     } else {
       shufflePosition--;
       if (shufflePosition < 0) {
-        if (Configuration.Player.RepeatMode.OFF == repeatMode) {
+        if (Configuration.PLAYER_REPEAT_OFF == repeatMode) {
           shufflePosition = 0;
           return false;
         }
@@ -459,11 +522,11 @@ public class PlayerGUI implements PlayerListener {
               public void run() {
                 try {
                   Track[] tracks = trackList != null ? trackList.getTracks() : null;
-                  if (repeatMode == Configuration.Player.RepeatMode.ONE
-                      || (repeatMode == Configuration.Player.RepeatMode.ALL
+                  if (repeatMode == Configuration.PLAYER_REPEAT_ONE
+                      || (repeatMode == Configuration.PLAYER_REPEAT_ALL
                           && tracks != null
                           && tracks.length == 1)) {
-                    if (getPlayerHttpMethod() == Configuration.HttpMethod.PASS_URL) {
+                    if (getPlayerHttpMethod() == Configuration.HTTP_PASS_URL) {
                       closePlayer();
                     }
                     play();
@@ -486,7 +549,7 @@ public class PlayerGUI implements PlayerListener {
       return false;
     }
 
-    if (Configuration.Player.RepeatMode.ALL == repeatMode) {
+    if (Configuration.PLAYER_REPEAT_ALL == repeatMode) {
       return true;
     }
     if (isShuffleEnabled) {
@@ -584,8 +647,9 @@ public class PlayerGUI implements PlayerListener {
 
   private void handleError(Exception e) {
     player = null;
-    setStatus(e.toString());
+    setStatus(Lang.tr("status.error"));
     closeResources();
+    parent.showError(e.toString());
   }
 
   private void setStatus(String status) {
@@ -615,80 +679,16 @@ public class PlayerGUI implements PlayerListener {
   private void saveShuffleMode() {
     try {
       int mode =
-          isShuffleEnabled
-              ? Configuration.Player.ShuffleMode.ON
-              : Configuration.Player.ShuffleMode.OFF;
+          isShuffleEnabled ? Configuration.PLAYER_SHUFFLE_ON : Configuration.PLAYER_SHUFFLE_OFF;
       settingsManager.saveShuffleMode(mode);
     } catch (RecordStoreException e) {
       e.printStackTrace();
     }
   }
 
-  private static boolean checkClass(String s) {
-    try {
-      Class.forName(s);
-      return true;
-    } catch (ClassNotFoundException e) {
-      return false;
-    }
-  }
-
-  public static void setPlayerHttpMethod() {
-    int m = Configuration.HttpMethod.PASS_URL;
-    boolean symbianJrt = false;
-    boolean symbian = false;
-    String p, v;
-    if ((p = System.getProperty("microedition.platform")) != null) {
-      if ((symbianJrt = p.indexOf("platform=S60") != -1)) {
-        int i;
-        v = p.substring(i = p.indexOf("platform_version=") + 17, i = p.indexOf(';', i));
-      }
-      try {
-        Class.forName("emulator.custom.CustomMethod");
-        p = "KEmulator";
-        if ((v = System.getProperty("kemulator.mod.version")) != null) {
-          p = p.concat(" ".concat(v));
-        }
-      } catch (Exception e) {
-        int i;
-        if ((i = p.indexOf('/')) != -1 || (i = p.indexOf(' ')) != -1) {
-          p = p.substring(0, i);
-        }
-      }
-    }
-    symbian =
-        symbianJrt
-            || System.getProperty("com.symbian.midp.serversocket.support") != null
-            || System.getProperty("com.symbian.default.to.suite.icon") != null
-            || checkClass("com.symbian.midp.io.protocol.http.Protocol")
-            || checkClass("com.symbian.lcdjava.io.File");
-    try {
-      Class.forName("com.nokia.mid.impl.isa.jam.Jam");
-      try {
-        Class.forName("com.sun.mmedia.protocol.CommonDS");
-        m = Configuration.HttpMethod.PASS_URL;
-      } catch (Exception e) {
-        m = Configuration.HttpMethod.PASS_CONNECTION_STREAM;
-      }
-    } catch (Exception e) {
-      m = Configuration.HttpMethod.PASS_URL;
-      if (symbian) {
-        if (symbianJrt
-            && (p.indexOf("java_build_version=2.") != -1
-                || p.indexOf("java_build_version=1.4") != -1)) {
-        } else if (checkClass("com.symbian.mmapi.PlayerImpl")) {
-          m = Configuration.HttpMethod.PASS_CONNECTION_STREAM;
-        } else {
-          m = Configuration.HttpMethod.PASS_CONNECTION_STREAM;
-        }
-      }
-    }
-    playerHttpMethod = m;
-  }
-
   private int getPlayerHttpMethod() {
-    if (settingsManager.getCurrentPlayerMethod() == Configuration.PlayerMethodInputStream.ENABLED) {
-      return Configuration.HttpMethod.PASS_CONNECTION_STREAM;
+    if (settingsManager.getCurrentPlayerMethod() == Configuration.PLAYER_INPUTSTREAM_ENABLED) {
+      return Configuration.HTTP_PASS_CONNECTION_STREAM;
     } else {
       return playerHttpMethod;
     }

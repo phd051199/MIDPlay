@@ -89,10 +89,14 @@ public class Navigator {
   }
 
   public void showConfirmationAlert(String message, CommandListener listener) {
+    showConfirmationAlert(message, listener, AlertType.INFO);
+  }
+
+  public void showConfirmationAlert(String message, CommandListener listener, AlertType type) {
     if (message == null || listener == null) {
       return;
     }
-    Alert a = new Alert(null, message, null, AlertType.INFO);
+    Alert a = new Alert(null, message, null, type);
     a.addCommand(Commands.ok());
     a.addCommand(Commands.cancel());
     a.setTimeout(Alert.FOREVER);
@@ -101,7 +105,7 @@ public class Navigator {
   }
 
   public void showLoadingAlert(String s) {
-    Alert a = new Alert(null, s == null ? Lang.tr("app.loading") : s, null, null);
+    Alert a = new Alert(null, s == null ? Lang.tr("status.loading") : s, null, null);
     a.addCommand(Commands.cancel());
     a.setIndicator(new Gauge(null, false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING));
     a.setTimeout(Alert.FOREVER);

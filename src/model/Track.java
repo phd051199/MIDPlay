@@ -21,6 +21,13 @@ public class Track extends Base {
     this.imageUrl = imageUrl;
   }
 
+  public boolean isSame(Track track) {
+    return track != null
+        && this.getName().equals(track.getName())
+        && this.getArtist().equals(track.getArtist())
+        && this.getDuration() == track.getDuration();
+  }
+
   public Track fromJSON(String jsonString) {
     if (jsonString == null || jsonString.trim().length() == 0) {
       return null;

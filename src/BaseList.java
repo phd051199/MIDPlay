@@ -16,7 +16,7 @@ public abstract class BaseList extends List implements CommandListener {
 
   private void setupCommands() {
     addCommand(Commands.back());
-    addCommand(Commands.Player.nowPlaying());
+    addCommand(Commands.playerNowPlaying());
   }
 
   public void commandAction(Command c, Displayable d) {
@@ -25,7 +25,7 @@ public abstract class BaseList extends List implements CommandListener {
         handleSelection();
       } else if (c == Commands.back()) {
         navigator.back();
-      } else if (c == Commands.Player.nowPlaying()) {
+      } else if (c == Commands.playerNowPlaying()) {
         Displayable previous = navigator.getPrevious();
         if (previous instanceof PlayerScreen) {
           navigator.back();

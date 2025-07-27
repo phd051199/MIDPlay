@@ -27,20 +27,20 @@ public final class FavoritesScreen extends BaseList {
     this.previousScreen = previousScreen;
     this.isSelectionMode = (trackToAdd != null);
     if (!isSelectionMode) {
-      addCommand(Commands.Favorites.create());
-      addCommand(Commands.Favorites.remove());
-      addCommand(Commands.Favorites.rename());
+      addCommand(Commands.playlistCreate());
+      addCommand(Commands.playlistRemove());
+      addCommand(Commands.playlistRename());
     }
     populateItems();
   }
 
   protected void populateItems() {
-    favorites = favoritesManager.getFavorites();
+    favorites = favoritesManager.getPlaylists();
     Playlist[] playlists = favorites.getPlaylists();
     if (playlists != null && playlists.length > 0) {
       for (int i = 0; i < playlists.length; i++) {
         if (!isSelectionMode || playlists[i].isCustom()) {
-          this.append(playlists[i].getName(), Configuration.Images.folderIcon);
+          this.append(playlists[i].getName(), Configuration.folderIcon);
         }
       }
     }
@@ -67,11 +67,11 @@ public final class FavoritesScreen extends BaseList {
       return;
     }
     int result = favoritesManager.addTrackToCustomPlaylist(selectedPlaylist, trackToAdd);
-    if (result == FavoritesManager.ADD_TRACK_SUCCESS) {
+    if (result == FavoritesManager.SUCCESS) {
       navigator.back();
       navigator.showAlert(
           Lang.tr("playlist.status.track_added"), AlertType.CONFIRMATION, previousScreen);
-    } else if (result == FavoritesManager.ADD_TRACK_ALREADY_EXISTS) {
+    } else if (result == FavoritesManager.ALREADY_EXISTS) {
       navigator.showAlert(Lang.tr("playlist.error.track_already_exists"), AlertType.INFO);
     } else {
       navigator.showAlert(Lang.tr("playlist.error.add_track_failed"), AlertType.ERROR);
@@ -83,7 +83,7 @@ public final class FavoritesScreen extends BaseList {
     if (selected == null) {
       return;
     }
-    navigator.showLoadingAlert(Lang.tr("app.loading"));
+    navigator.showLoadingAlert(Lang.tr("status.loading"));
     if (selected.isCustom()) {
       loadCustomPlaylistTracks(selected);
     } else {
@@ -125,11 +125,11 @@ public final class FavoritesScreen extends BaseList {
 
   protected void handleCommand(Command c, Displayable d) {
     if (!isSelectionMode) {
-      if (c == Commands.Favorites.remove()) {
+      if (c == Commands.playlistRemove()) {
         removeFromFavorites();
-      } else if (c == Commands.Favorites.create()) {
+      } else if (c == Commands.playlistCreate()) {
         showCreatePlaylistForm();
-      } else if (c == Commands.Favorites.rename()) {
+      } else if (c == Commands.playlistRename()) {
         showRenamePlaylistForm();
       }
     }
@@ -182,11 +182,31 @@ public final class FavoritesScreen extends BaseList {
   }
 
   private void removeFromFavorites() {
-    Playlist selected = getSelectedPlaylist();
+    final Playlist selected = getSelectedPlaylist();
     if (selected == null) {
       return;
     }
-    if (favoritesManager.removeFavorite(selected)) {
+
+    if (selected.isCustom() && favoritesManager.getCustomPlaylistTracksCount(selected) > 0) {
+      navigator.showConfirmationAlert(
+          Lang.tr("playlist.confirm.delete_with_tracks"),
+          new CommandListener() {
+            public void commandAction(Command c, Displayable d) {
+              if (c == Commands.ok()) {
+                performRemovePlaylist(selected);
+              } else if (c == Commands.cancel()) {
+                navigator.dismissAlert();
+              }
+            }
+          },
+          AlertType.WARNING);
+    } else {
+      performRemovePlaylist(selected);
+    }
+  }
+
+  private void performRemovePlaylist(Playlist playlist) {
+    if (favoritesManager.removePlaylistWithTracks(playlist)) {
       navigator.showAlert(Lang.tr("favorites.status.removed"), AlertType.CONFIRMATION);
       refresh();
     } else {
@@ -246,7 +266,8 @@ public final class FavoritesScreen extends BaseList {
   private void createNewPlaylist(String name) {
     String key = "custom_" + System.currentTimeMillis();
     Playlist customPlaylist = new Playlist(key, name, "");
-    if (favoritesManager.addFavorite(customPlaylist)) {
+    int result = favoritesManager.addPlaylist(customPlaylist);
+    if (result == FavoritesManager.SUCCESS) {
       navigator.back();
       refresh();
       navigator.showAlert(Lang.tr("playlist.status.created"), AlertType.CONFIRMATION, this);
@@ -259,8 +280,8 @@ public final class FavoritesScreen extends BaseList {
     Playlist renamedPlaylist =
         new Playlist(oldPlaylist.getKey(), newName, oldPlaylist.getImageUrl());
     renamedPlaylist.setId(oldPlaylist.getId());
-    if (favoritesManager.removeFavorite(oldPlaylist)
-        && favoritesManager.addFavorite(renamedPlaylist)) {
+    if (favoritesManager.removePlaylist(oldPlaylist)
+        && favoritesManager.addPlaylist(renamedPlaylist) == FavoritesManager.SUCCESS) {
       navigator.back();
       refresh();
       navigator.showAlert(Lang.tr("playlist.status.renamed"), AlertType.CONFIRMATION, this);

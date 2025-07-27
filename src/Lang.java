@@ -18,7 +18,6 @@ public class Lang {
     langEn.put("action.ok", "OK");
     langEn.put("action.save", "Save");
     langEn.put("action.yes", "Yes");
-    langEn.put("app.loading", "Loading...");
     langEn.put("app.name", "MIDPlay");
     langEn.put("confirm.exit", "Are you sure you want to exit?");
     langEn.put("favorites.add", "Add to Favorites");
@@ -64,6 +63,9 @@ public class Lang {
     langEn.put("player.volume", "Volume");
     langEn.put("playlist.add_track", "Add to Playlist");
     langEn.put("playlist.create", "Create Playlist");
+    langEn.put(
+        "playlist.confirm.delete_with_tracks",
+        "This playlist contains songs. Delete playlist and all songs?");
     langEn.put("playlist.error.add_track_failed", "Failed to add track to playlist");
     langEn.put("playlist.error.track_already_exists", "Track already exists in playlist");
     langEn.put("playlist.error.cannot_rename_system", "Cannot rename system playlists");
@@ -79,18 +81,12 @@ public class Lang {
     langEn.put("playlist.status.renamed", "Playlist renamed successfully");
     langEn.put("playlist.status.track_added", "Track added to playlist successfully");
     langEn.put("playlist.status.track_removed", "Track removed from playlist successfully");
-    langEn.put("quality.128kbps", "128kbps");
-    langEn.put("quality.320kbps", "320kbps");
     langEn.put("search.error.empty_keyword", "Please enter a keyword to search");
     langEn.put("search.placeholder", "Enter keywords to search...");
     langEn.put("search.results", "Search Results");
     langEn.put("search.status.no_results", "No results found");
     langEn.put("search.status.searching", "Searching for: {0}");
     langEn.put("search.type", "Search Type");
-    langEn.put("service.nct", "NCT");
-    langEn.put("service.soundcloud", "SoundCloud");
-    langEn.put("service.spotify", "Spotify");
-    langEn.put("service.ytmusic", "YTMusic");
     langEn.put("settings.audio_quality", "Audio Quality");
     langEn.put("settings.auto_update", "Automatic Updates");
     langEn.put("settings.check_update", "Check for Updates");
@@ -109,6 +105,7 @@ public class Lang {
         "Select items to hide/show. [x] = show, [] = hide. Press Save to complete.");
     langEn.put("settings.visibility.saved", "Visibility settings saved");
     langEn.put("status.error", "An error occurred");
+    langEn.put("status.loading", "Loading...");
     langEn.put("status.load_more", "Load more...");
     langEn.put("status.no_data", "No data available!");
     langEn.put("status.no_updates", "No updates available. You have the latest version.");
@@ -125,8 +122,8 @@ public class Lang {
     langEn.put("time.input.time", "Enter time (24-hour format)");
     langEn.put("time.minutes", "Minutes");
     langEn.put("timer.action", "Timer Action");
-    langEn.put("timer.action.exit_app", "Exit Application");
-    langEn.put("timer.action.stop_playback", "Stop Playback");
+    langEn.put("timer.actions.exit_app", "Exit Application");
+    langEn.put("timer.actions.stop_playback", "Stop Playback");
     langEn.put("timer.cancel", "Cancel Timer");
     langEn.put("timer.confirm.exit", "Timer will exit the application when expired. Continue?");
     langEn.put("timer.mode.absolute", "Absolute Time");
@@ -137,8 +134,8 @@ public class Lang {
     langEn.put("timer.status.expired", "Sleep timer expired");
     langEn.put("timer.status.remaining", "Time Remaining: {0}");
     langEn.put("timer.status.set", "Sleep timer activated");
-    langEn.put("input.message", "Enter message");
-    langEn.put("welcome_message", "Hello! How can I help you today?");
+    langEn.put("chat.input", "Enter message");
+    langEn.put("chat.welcome_message", "Hello! How can I help you today?");
     langEn.put("error.connection", "Connection error. Please try again.");
 
     // Language: tr
@@ -150,7 +147,6 @@ public class Lang {
     langTr.put("action.ok", "Tamam");
     langTr.put("action.save", "Kaydet");
     langTr.put("action.yes", "Evet");
-    langTr.put("app.loading", "Yükleniyor...");
     langTr.put("app.name", "MIDPlay");
     langTr.put("confirm.exit", "Çıkmak istediğinizden emin misiniz?");
     langTr.put("favorites.add", "Favorilere Ekle");
@@ -196,6 +192,9 @@ public class Lang {
     langTr.put("player.volume", "Ses");
     langTr.put("playlist.add_track", "Çalma Listesine Ekle");
     langTr.put("playlist.create", "Çalma Listesi Oluştur");
+    langTr.put(
+        "playlist.confirm.delete_with_tracks",
+        "Bu çalma listesinde şarkılar var. Çalma listesini ve tüm şarkıları sil?");
     langTr.put("playlist.error.add_track_failed", "Şarkı çalma listesine eklenemedi");
     langTr.put("playlist.error.track_already_exists", "Şarkı zaten çalma listesinde mevcut");
     langTr.put(
@@ -212,18 +211,12 @@ public class Lang {
     langTr.put("playlist.status.renamed", "Çalma listesi başarıyla yeniden adlandırıldı");
     langTr.put("playlist.status.track_added", "Şarkı çalma listesine eklendi");
     langTr.put("playlist.status.track_removed", "Şarkı çalma listesinden çıkarıldı");
-    langTr.put("quality.128kbps", "128kbps");
-    langTr.put("quality.320kbps", "320kbps");
     langTr.put("search.error.empty_keyword", "Lütfen arama için bir anahtar kelime girin");
     langTr.put("search.placeholder", "Arama için anahtar kelime girin...");
     langTr.put("search.results", "Arama Sonuçları");
     langTr.put("search.status.no_results", "Sonuç bulunamadı");
     langTr.put("search.status.searching", "Aranan: {0}");
     langTr.put("search.type", "Arama Türü");
-    langTr.put("service.nct", "NCT");
-    langTr.put("service.soundcloud", "SoundCloud");
-    langTr.put("service.spotify", "Spotify");
-    langTr.put("service.ytmusic", "YTMusic");
     langTr.put("settings.audio_quality", "Ses Kalitesi");
     langTr.put("settings.auto_update", "Otomatik Güncellemeler");
     langTr.put("settings.check_update", "Güncellemeleri Kontrol Et");
@@ -240,6 +233,7 @@ public class Lang {
         "Gizle/göster öğeleri seçin. [x] = göster, [] = gizle. Tamamlamak için Kaydet'e basın.");
     langTr.put("settings.visibility.saved", "Görünürlük ayarları kaydedildi");
     langTr.put("status.error", "Bir hata oluştu");
+    langTr.put("status.loading", "Yükleniyor...");
     langTr.put("status.load_more", "Daha fazla yükle...");
     langTr.put("status.no_data", "Veri yok!");
     langTr.put("status.no_updates", "Güncelleme yok. En son sürümü kullanıyorsunuz.");
@@ -256,8 +250,8 @@ public class Lang {
     langTr.put("time.input.time", "Zaman girin (24 saat formatı)");
     langTr.put("time.minutes", "Dakika");
     langTr.put("timer.action", "Zamanlayıcı Eylemi");
-    langTr.put("timer.action.exit_app", "Uygulamadan Çık");
-    langTr.put("timer.action.stop_playback", "Çalmayı Durdur");
+    langTr.put("timer.actions.exit_app", "Uygulamadan Çık");
+    langTr.put("timer.actions.stop_playback", "Çalmayı Durdur");
     langTr.put("timer.cancel", "Zamanlayıcıyı İptal Et");
     langTr.put(
         "timer.confirm.exit", "Zamanlayıcı süresi dolduğunda uygulamadan çıkacak. Devam et?");
@@ -269,8 +263,8 @@ public class Lang {
     langTr.put("timer.status.expired", "Uyku zamanlayıcısı süresi doldu");
     langTr.put("timer.status.remaining", "Kalan Süre: {0}");
     langTr.put("timer.status.set", "Uyku zamanlayıcısı etkinleştirildi");
-    langTr.put("input.message", "Mesaj girin");
-    langTr.put("welcome_message", "Merhaba! Size nasıl yardımcı olabilirim?");
+    langTr.put("chat.input", "Mesaj girin");
+    langTr.put("chat.welcome_message", "Merhaba! Size nasıl yardımcı olabilirim?");
     langTr.put("error.connection", "Bağlantı hatası. Lütfen tekrar deneyin.");
 
     // Language: vi
@@ -282,7 +276,6 @@ public class Lang {
     langVi.put("action.ok", "OK");
     langVi.put("action.save", "Lưu");
     langVi.put("action.yes", "Có");
-    langVi.put("app.loading", "Đang tải...");
     langVi.put("app.name", "MIDPlay");
     langVi.put("confirm.exit", "Bạn có chắc muốn thoát?");
     langVi.put("favorites.add", "Thêm vào yêu thích");
@@ -328,6 +321,9 @@ public class Lang {
     langVi.put("player.volume", "Âm lượng");
     langVi.put("playlist.add_track", "Thêm vào playlist");
     langVi.put("playlist.create", "Tạo playlist");
+    langVi.put(
+        "playlist.confirm.delete_with_tracks",
+        "Playlist này có bài hát. Xóa playlist và tất cả bài hát?");
     langVi.put("playlist.error.add_track_failed", "Lỗi thêm bài hát vào playlist");
     langVi.put("playlist.error.track_already_exists", "Bài hát đã có trong playlist");
     langVi.put("playlist.error.cannot_rename_system", "Không thể đổi tên playlist hệ thống");
@@ -343,18 +339,12 @@ public class Lang {
     langVi.put("playlist.status.renamed", "Đổi tên playlist thành công");
     langVi.put("playlist.status.track_added", "Đã thêm bài hát vào playlist");
     langVi.put("playlist.status.track_removed", "Đã xóa bài hát khỏi playlist");
-    langVi.put("quality.128kbps", "128kbps");
-    langVi.put("quality.320kbps", "320kbps");
     langVi.put("search.error.empty_keyword", "Vui lòng nhập từ khóa");
     langVi.put("search.placeholder", "Nhập từ khóa để tìm kiếm...");
     langVi.put("search.results", "Kết quả tìm kiếm");
     langVi.put("search.status.no_results", "Không tìm thấy kết quả");
     langVi.put("search.status.searching", "Đang tìm: {0}");
     langVi.put("search.type", "Loại tìm kiếm");
-    langVi.put("service.nct", "NCT");
-    langVi.put("service.soundcloud", "SoundCloud");
-    langVi.put("service.spotify", "Spotify");
-    langVi.put("service.ytmusic", "YTMusic");
     langVi.put("settings.audio_quality", "Chất lượng âm thanh");
     langVi.put("settings.auto_update", "Tự động cập nhật");
     langVi.put("settings.check_update", "Kiểm tra cập nhật");
@@ -371,6 +361,7 @@ public class Lang {
         "Chọn mục để ẩn/hiện. [x] = hiện, [] = ẩn. Nhấn Lưu để hoàn tất.");
     langVi.put("settings.visibility.saved", "Đã lưu cài đặt hiển thị");
     langVi.put("status.error", "Đã xảy ra lỗi");
+    langVi.put("status.loading", "Đang tải...");
     langVi.put("status.load_more", "Tải thêm...");
     langVi.put("status.no_data", "Không có dữ liệu!");
     langVi.put("status.no_updates", "Không có cập nhật. Bạn đang dùng phiên bản mới nhất.");
@@ -387,8 +378,8 @@ public class Lang {
     langVi.put("time.input.time", "Nhập thời gian (định dạng 24 giờ)");
     langVi.put("time.minutes", "Phút");
     langVi.put("timer.action", "Hành động khi hết giờ");
-    langVi.put("timer.action.exit_app", "Thoát ứng dụng");
-    langVi.put("timer.action.stop_playback", "Dừng phát nhạc");
+    langVi.put("timer.actions.exit_app", "Thoát ứng dụng");
+    langVi.put("timer.actions.stop_playback", "Dừng phát nhạc");
     langVi.put("timer.cancel", "Hủy hẹn giờ");
     langVi.put("timer.confirm.exit", "Hẹn giờ sẽ thoát ứng dụng khi hết thời gian. Tiếp tục?");
     langVi.put("timer.mode.absolute", "Thời gian tuyệt đối");
@@ -399,8 +390,8 @@ public class Lang {
     langVi.put("timer.status.expired", "Hẹn giờ tắt đã hết thời gian");
     langVi.put("timer.status.remaining", "Thời gian còn lại: {0}");
     langVi.put("timer.status.set", "Đã kích hoạt hẹn giờ tắt");
-    langVi.put("input.message", "Nhập tin nhắn");
-    langVi.put("welcome_message", "Xin chào! Tôi có thể giúp gì cho bạn?");
+    langVi.put("chat.input", "Nhập tin nhắn");
+    langVi.put("chat.welcome_message", "Xin chào! Tôi có thể giúp gì cho bạn?");
     langVi.put("error.connection", "Lỗi kết nối. Vui lòng thử lại.");
 
     langs = new Hashtable[] {langEn, langTr, langVi};

@@ -23,7 +23,7 @@ public class MenuManager {
   private final Vector menuItems;
 
   private MenuManager() {
-    storage = new RecordStoreManager(Configuration.StorageKeys.MENU);
+    storage = new RecordStoreManager(Configuration.STORAGE_MENU);
     actions = new Hashtable();
     menuItems = new Vector();
     loadMenuConfig();
@@ -56,37 +56,37 @@ public class MenuManager {
   private JSONArray createDefaultMenuJSON() {
     JSONArray defaultConfig = new JSONArray();
     JSONObject searchItem = new JSONObject();
-    searchItem.put("key", Configuration.Menu.SEARCH);
+    searchItem.put("key", Configuration.MENU_SEARCH);
     searchItem.put("order", 1);
     searchItem.put("enabled", true);
     defaultConfig.add(searchItem);
 
     JSONObject favoritesItem = new JSONObject();
-    favoritesItem.put("key", Configuration.Menu.FAVORITES);
+    favoritesItem.put("key", Configuration.MENU_FAVORITES);
     favoritesItem.put("order", 2);
     favoritesItem.put("enabled", true);
     defaultConfig.add(favoritesItem);
 
     JSONObject playlistsItem = new JSONObject();
-    playlistsItem.put("key", Configuration.Menu.DISCOVER_PLAYLISTS);
+    playlistsItem.put("key", Configuration.MENU_DISCOVER_PLAYLISTS);
     playlistsItem.put("order", 3);
     playlistsItem.put("enabled", true);
     defaultConfig.add(playlistsItem);
 
     JSONObject chatItem = new JSONObject();
-    chatItem.put("key", Configuration.Menu.CHAT);
+    chatItem.put("key", Configuration.MENU_CHAT);
     chatItem.put("order", 4);
     chatItem.put("enabled", true);
     defaultConfig.add(chatItem);
 
     JSONObject settingsItem = new JSONObject();
-    settingsItem.put("key", Configuration.Menu.SETTINGS);
+    settingsItem.put("key", Configuration.MENU_SETTINGS);
     settingsItem.put("order", 5);
     settingsItem.put("enabled", true);
     defaultConfig.add(settingsItem);
 
     JSONObject aboutItem = new JSONObject();
-    aboutItem.put("key", Configuration.Menu.ABOUT);
+    aboutItem.put("key", Configuration.MENU_ABOUT);
     aboutItem.put("order", 6);
     aboutItem.put("enabled", true);
     defaultConfig.add(aboutItem);

@@ -27,6 +27,10 @@ public class Playlist extends Base {
     return this.getKey().startsWith("custom_");
   }
 
+  public boolean isSame(Playlist playlist) {
+    return playlist != null && this.getKey().equals(playlist.getKey());
+  }
+
   public Playlist fromJSON(String jsonString) {
     if (jsonString == null || jsonString.trim().length() == 0) {
       return null;

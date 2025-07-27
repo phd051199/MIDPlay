@@ -19,16 +19,16 @@ public final class TrackListScreen extends BaseList {
     this.items = items;
     this.title = title;
     this.playlist = playlist;
-    addCommand(Commands.Player.addToPlaylist());
+    addCommand(Commands.playerAddToPlaylist());
     if (playlist != null && playlist.isCustom()) {
-      addCommand(Commands.Favorites.remove());
+      addCommand(Commands.playlistRemove());
     }
     populateItems();
   }
 
   protected void populateItems() {
     for (int i = 0; i < items.getTracks().length; i++) {
-      this.append(items.getTracks()[i].getName(), Configuration.Images.musicIcon);
+      this.append(items.getTracks()[i].getName(), Configuration.musicIcon);
     }
   }
 
@@ -76,9 +76,9 @@ public final class TrackListScreen extends BaseList {
   }
 
   protected void handleCommand(Command c, Displayable d) {
-    if (c == Commands.Player.addToPlaylist()) {
+    if (c == Commands.playerAddToPlaylist()) {
       addToPlaylist();
-    } else if (c == Commands.Favorites.remove()) {
+    } else if (c == Commands.playlistRemove()) {
       removeFromPlaylist();
     }
   }
