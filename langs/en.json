@@ -114,7 +114,10 @@
     "auto_update": "Automatic Updates",
     "check_update": "Check for Updates",
     "player_method": "Player Method",
-    "force_pass_connection": "Force pass connection",
+    "player_method_options": {
+      "pass_inputstream": "Pass Input Stream",
+      "pass_url": "Pass URL"
+    },
     "error": {
       "save_failed": "Failed to save settings"
     },

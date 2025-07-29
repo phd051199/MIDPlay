@@ -114,7 +114,10 @@
     "auto_update": "Otomatik Güncellemeler",
     "check_update": "Güncellemeleri Kontrol Et",
     "player_method": "Oynatıcı Yöntemi",
-    "force_pass_connection": "Bağlantıyı zorla geçir",
+    "player_method_options": {
+      "pass_inputstream": "Input Stream Geçir",
+      "pass_url": "URL Geçir"
+    },
     "error": {
       "save_failed": "Ayarlar kaydedilemedi"
     },

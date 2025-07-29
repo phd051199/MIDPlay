@@ -17,7 +17,7 @@ import model.Tracks;
 public class PlayerGUI implements PlayerListener {
   private static final int TIMER_INTERVAL = 1000;
   private static final int VOLUME_STEP = 10;
-  private static int playerHttpMethod;
+  private static String playerHttpMethod;
 
   private static boolean checkClass(String s) {
     try {
@@ -28,8 +28,13 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
+  public static String getDefaultPlayerHttpMethod() {
+    setPlayerHttpMethod();
+    return playerHttpMethod;
+  }
+
   public static void setPlayerHttpMethod() {
-    int m = Configuration.HTTP_PASS_URL;
+    String m = Configuration.PLAYER_METHOD_PASS_URL;
     boolean symbianJrt = false;
     boolean symbian = false;
     String p, v;
@@ -61,20 +66,20 @@ public class PlayerGUI implements PlayerListener {
       Class.forName("com.nokia.mid.impl.isa.jam.Jam");
       try {
         Class.forName("com.sun.mmedia.protocol.CommonDS");
-        m = Configuration.HTTP_PASS_URL;
+        m = Configuration.PLAYER_METHOD_PASS_URL;
       } catch (Exception e) {
-        m = Configuration.HTTP_PASS_CONNECTION_STREAM;
+        m = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
       }
     } catch (Exception e) {
-      m = Configuration.HTTP_PASS_URL;
+      m = Configuration.PLAYER_METHOD_PASS_URL;
       if (symbian) {
         if (symbianJrt
             && (p.indexOf("java_build_version=2.") != -1
                 || p.indexOf("java_build_version=1.4") != -1)) {
         } else if (checkClass("com.symbian.mmapi.PlayerImpl")) {
-          m = Configuration.HTTP_PASS_CONNECTION_STREAM;
+          m = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
         } else {
-          m = Configuration.HTTP_PASS_CONNECTION_STREAM;
+          m = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
         }
       }
     }
@@ -132,8 +137,13 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void play() {
-    if (isLoading || getCurrentTrack() == null) {
+    if (getCurrentTrack() == null) {
       return;
+    }
+    if (isLoading) {
+      isLoading = false;
+      closePlayer();
+      closeResources();
     }
     if (player != null && player.getState() >= Player.PREFETCHED) {
       startPlayback();
@@ -331,8 +341,7 @@ public class PlayerGUI implements PlayerListener {
     }
     isLoading = true;
     setStatusByKey("player.status.loading");
-    Thread loadThread;
-    loadThread =
+    Thread loadThread =
         new Thread(
             new Runnable() {
               public void run() {
@@ -342,13 +351,17 @@ public class PlayerGUI implements PlayerListener {
                   }
                   setupPlayer();
                   if (!isLoading) {
+                    closePlayer();
+                    closeResources();
                     return;
                   }
                   startPlayback();
                 } catch (IOException e) {
-                  handleError(e);
-                } catch (MediaException e) {
-                  handleError(e);
+                  e.printStackTrace();
+                } catch (MediaException me) {
+                  if (isLoading) {
+                    handleError(me);
+                  }
                 } finally {
                   isLoading = false;
                 }
@@ -362,16 +375,34 @@ public class PlayerGUI implements PlayerListener {
     if (track == null) {
       throw new IOException("No track selected");
     }
+    if (!isLoading) {
+      return;
+    }
     closePlayer();
     closeResources();
     parent.setAlbumArtUrl(track.getImageUrl());
-    if (getPlayerHttpMethod() == Configuration.HTTP_PASS_CONNECTION_STREAM) {
+
+    if (Configuration.PLAYER_METHOD_PASS_INPUTSTREAM.equals(getPlayerHttpMethod())) {
       createStreamPlayer(track);
     } else {
       createUrlPlayer(track);
     }
+
+    if (!isLoading || player == null) {
+      closePlayer();
+      closeResources();
+      return;
+    }
+
     player.addPlayerListener(this);
     player.realize();
+
+    if (!isLoading) {
+      closePlayer();
+      closeResources();
+      return;
+    }
+
     player.prefetch();
     VolumeControl vc = getVolumeControl();
     if (vc != null) {
@@ -381,13 +412,61 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void createStreamPlayer(Track track) throws IOException, MediaException {
-    httpConnection = (HttpConnection) Connector.open(track.getUrl());
+    if (!isLoading) {
+      return;
+    }
+    String finalUrl = resolveRedirect(track.getUrl());
+    if (!isLoading) {
+      return;
+    }
+    httpConnection = (HttpConnection) Connector.open(finalUrl);
+    if (!isLoading) {
+      closeResources();
+      return;
+    }
     inputStream = httpConnection.openInputStream();
+    if (!isLoading) {
+      closeResources();
+      return;
+    }
     player = Manager.createPlayer(inputStream, "audio/mpeg");
   }
 
   private void createUrlPlayer(Track track) throws IOException, MediaException {
-    player = Manager.createPlayer(track.getUrl());
+    if (!isLoading) {
+      return;
+    }
+    String finalUrl = resolveRedirect(track.getUrl());
+    if (!isLoading) {
+      return;
+    }
+    player = Manager.createPlayer(finalUrl);
+  }
+
+  private String resolveRedirect(String url) throws IOException {
+    if (url.indexOf(".mp3") != -1) {
+      return url;
+    }
+    HttpConnection connection = null;
+    try {
+      connection = (HttpConnection) Connector.open(url);
+      int responseCode = connection.getResponseCode();
+      if (responseCode == HttpConnection.HTTP_MOVED_PERM
+          || responseCode == HttpConnection.HTTP_MOVED_TEMP) {
+        String redirectUrl = connection.getHeaderField("Location");
+        if (redirectUrl != null) {
+          return redirectUrl;
+        }
+      }
+      return url;
+    } finally {
+      if (connection != null) {
+        try {
+          connection.close();
+        } catch (IOException e) {
+        }
+      }
+    }
   }
 
   private void startPlayback() {
@@ -402,8 +481,8 @@ public class PlayerGUI implements PlayerListener {
       if (player.getState() < Player.STARTED) {
         player.start();
       }
-    } catch (MediaException e) {
-      handleError(e);
+    } catch (MediaException me) {
+      handleError(me);
     }
   }
 
@@ -416,6 +495,8 @@ public class PlayerGUI implements PlayerListener {
       return;
     }
     isLoading = false;
+    closePlayer();
+    closeResources();
     boolean trackChanged;
     if (isShuffleEnabled) {
       trackChanged = changeTrackShuffle(forward);
@@ -423,7 +504,6 @@ public class PlayerGUI implements PlayerListener {
       trackChanged = changeTrackNormal(forward);
     }
     if (trackChanged) {
-      closePlayer();
       play();
     }
   }
@@ -520,23 +600,19 @@ public class PlayerGUI implements PlayerListener {
         new Thread(
             new Runnable() {
               public void run() {
-                try {
-                  Track[] tracks = trackList != null ? trackList.getTracks() : null;
-                  if (repeatMode == Configuration.PLAYER_REPEAT_ONE
-                      || (repeatMode == Configuration.PLAYER_REPEAT_ALL
-                          && tracks != null
-                          && tracks.length == 1)) {
-                    if (getPlayerHttpMethod() == Configuration.HTTP_PASS_URL) {
-                      closePlayer();
-                    }
-                    play();
-                  } else if (hasNextTrack()) {
-                    next();
-                  } else {
-                    setStatusByKey("player.status.finished");
+                Track[] tracks = trackList != null ? trackList.getTracks() : null;
+                if (repeatMode == Configuration.PLAYER_REPEAT_ONE
+                    || (repeatMode == Configuration.PLAYER_REPEAT_ALL
+                        && tracks != null
+                        && tracks.length == 1)) {
+                  if (Configuration.PLAYER_METHOD_PASS_URL.equals(getPlayerHttpMethod())) {
+                    closePlayer();
                   }
-                } catch (Exception e) {
-                  handleError(e);
+                  play();
+                } else if (hasNextTrack()) {
+                  next();
+                } else {
+                  setStatusByKey("player.status.finished");
                 }
               }
             });
@@ -645,11 +721,11 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
-  private void handleError(Exception e) {
-    player = null;
-    setStatus(Lang.tr("status.error"));
+  private void handleError(MediaException me) {
+    closePlayer();
     closeResources();
-    parent.showError(e.toString());
+    setStatus(Lang.tr("status.error"));
+    parent.showError(me.toString());
   }
 
   private void setStatus(String status) {
@@ -686,9 +762,10 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
-  private int getPlayerHttpMethod() {
-    if (settingsManager.getCurrentPlayerMethod() == Configuration.PLAYER_INPUTSTREAM_ENABLED) {
-      return Configuration.HTTP_PASS_CONNECTION_STREAM;
+  private String getPlayerHttpMethod() {
+    if (Configuration.PLAYER_METHOD_PASS_INPUTSTREAM.equals(
+        settingsManager.getCurrentPlayerMethod())) {
+      return Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
     } else {
       return playerHttpMethod;
     }

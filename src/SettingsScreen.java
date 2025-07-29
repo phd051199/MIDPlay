@@ -12,12 +12,12 @@ public final class SettingsScreen extends BaseForm {
   private ChoiceGroup serviceGroup;
   private ChoiceGroup qualityGroup;
   private ChoiceGroup autoUpdateGroup;
-  private ChoiceGroup playerMethodChoice;
+  private ChoiceGroup playerMethodGroup;
   private String currentLanguage;
   private String currentService;
   private String currentQuality;
   private int currentAutoUpdate;
-  private int currentPlayerMethod;
+  private String currentPlayerMethod;
 
   public SettingsScreen(Navigator navigator, Listener listener) {
     super(Lang.tr(Configuration.MENU_SETTINGS), navigator);
@@ -35,24 +35,29 @@ public final class SettingsScreen extends BaseForm {
   }
 
   private void addComponents() {
-    languageGroup = createChoiceGroup("settings.language", availableLanguages, true);
-    serviceGroup = createChoiceGroup("settings.service", Configuration.ALL_SERVICES, false);
-    qualityGroup = createChoiceGroup("settings.audio_quality", Configuration.ALL_QUALITIES, false);
+    languageGroup = createChoiceGroup("settings.language", availableLanguages, "language.");
+    serviceGroup = createChoiceGroup("settings.service", Configuration.ALL_SERVICES, null);
+    qualityGroup = createChoiceGroup("settings.audio_quality", Configuration.ALL_QUALITIES, null);
+    playerMethodGroup =
+        createChoiceGroup(
+            "settings.player_method",
+            Configuration.ALL_PLAYER_METHODS,
+            "settings.player_method_options.");
     autoUpdateGroup = new ChoiceGroup(Lang.tr("settings.auto_update"), ChoiceGroup.MULTIPLE);
     autoUpdateGroup.append(Lang.tr("settings.check_update"), null);
-    playerMethodChoice = new ChoiceGroup(Lang.tr("settings.player_method"), ChoiceGroup.MULTIPLE);
-    playerMethodChoice.append(Lang.tr("settings.force_pass_connection"), null);
     this.append(languageGroup);
     this.append(serviceGroup);
     this.append(qualityGroup);
+    this.append(playerMethodGroup);
     this.append(autoUpdateGroup);
-    this.append(playerMethodChoice);
   }
 
-  private ChoiceGroup createChoiceGroup(String titleKey, String[] values, boolean isLanguage) {
+  private ChoiceGroup createChoiceGroup(
+      String titleKey, String[] values, String translationPrefix) {
     ChoiceGroup group = new ChoiceGroup(Lang.tr(titleKey), ChoiceGroup.POPUP);
     for (int i = 0; i < values.length; i++) {
-      String displayName = isLanguage ? Lang.tr("language." + values[i]) : values[i];
+      String displayName =
+          translationPrefix != null ? Lang.tr(translationPrefix + values[i]) : values[i];
       group.append(displayName, null);
     }
     return group;
@@ -67,9 +72,8 @@ public final class SettingsScreen extends BaseForm {
     selectChoice(languageGroup, availableLanguages, currentLanguage);
     selectChoice(serviceGroup, Configuration.ALL_SERVICES, currentService);
     selectChoice(qualityGroup, Configuration.ALL_QUALITIES, currentQuality);
+    selectChoice(playerMethodGroup, Configuration.ALL_PLAYER_METHODS, currentPlayerMethod);
     autoUpdateGroup.setSelectedIndex(0, currentAutoUpdate == Configuration.AUTO_UPDATE_ENABLED);
-    playerMethodChoice.setSelectedIndex(
-        0, currentPlayerMethod == Configuration.PLAYER_INPUTSTREAM_ENABLED);
   }
 
   private void selectChoice(ChoiceGroup group, String[] values, String target) {
@@ -88,14 +92,15 @@ public final class SettingsScreen extends BaseForm {
           getSelected(serviceGroup, Configuration.ALL_SERVICES, Configuration.SERVICE_NCT);
       String selectedQuality =
           getSelected(qualityGroup, Configuration.ALL_QUALITIES, Configuration.QUALITY_128);
+      String selectedPlayerMethod =
+          getSelected(
+              playerMethodGroup,
+              Configuration.ALL_PLAYER_METHODS,
+              settingsManager.getDefaultPlayerMethod());
       int selectedAutoUpdate =
           autoUpdateGroup.isSelected(0)
               ? Configuration.AUTO_UPDATE_ENABLED
               : Configuration.AUTO_UPDATE_DISABLED;
-      int selectedPlayerMethod =
-          playerMethodChoice.isSelected(0)
-              ? Configuration.PLAYER_INPUTSTREAM_ENABLED
-              : Configuration.PLAYER_INPUTSTREAM_DISABLED;
       boolean hasChanges = false;
       if (!currentLanguage.equals(selectedLang)) {
         hasChanges = true;
@@ -114,7 +119,7 @@ public final class SettingsScreen extends BaseForm {
         hasChanges = true;
         settingsManager.saveAutoUpdate(selectedAutoUpdate);
       }
-      if (currentPlayerMethod != selectedPlayerMethod) {
+      if (!currentPlayerMethod.equals(selectedPlayerMethod)) {
         hasChanges = true;
         settingsManager.savePlayerMethod(selectedPlayerMethod);
       }

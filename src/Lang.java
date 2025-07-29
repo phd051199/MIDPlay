@@ -91,7 +91,8 @@ public class Lang {
     langEn.put("settings.auto_update", "Automatic Updates");
     langEn.put("settings.check_update", "Check for Updates");
     langEn.put("settings.player_method", "Player Method");
-    langEn.put("settings.force_pass_connection", "Force pass connection");
+    langEn.put("settings.player_method_options.pass_inputstream", "Pass Input Stream");
+    langEn.put("settings.player_method_options.pass_url", "Pass URL");
     langEn.put("settings.error.save_failed", "Failed to save settings");
     langEn.put("settings.language", "Language");
     langEn.put(
@@ -221,7 +222,8 @@ public class Lang {
     langTr.put("settings.auto_update", "Otomatik Güncellemeler");
     langTr.put("settings.check_update", "Güncellemeleri Kontrol Et");
     langTr.put("settings.player_method", "Oynatıcı Yöntemi");
-    langTr.put("settings.force_pass_connection", "Bağlantıyı zorla geçir");
+    langTr.put("settings.player_method_options.pass_inputstream", "Input Stream Geçir");
+    langTr.put("settings.player_method_options.pass_url", "URL Geçir");
     langTr.put("settings.error.save_failed", "Ayarlar kaydedilemedi");
     langTr.put("settings.language", "Dil");
     langTr.put("settings.reorder.instructions", "Taşınacak öğeyi seçin, sonra hedef konumu seçin");
@@ -349,7 +351,8 @@ public class Lang {
     langVi.put("settings.auto_update", "Tự động cập nhật");
     langVi.put("settings.check_update", "Kiểm tra cập nhật");
     langVi.put("settings.player_method", "Phương thức phát");
-    langVi.put("settings.force_pass_connection", "Ép buộc truyền kết nối");
+    langVi.put("settings.player_method_options.pass_inputstream", "Truyền Input Stream");
+    langVi.put("settings.player_method_options.pass_url", "Truyền URL");
     langVi.put("settings.error.save_failed", "Lỗi lưu cài đặt");
     langVi.put("settings.language", "Ngôn ngữ");
     langVi.put("settings.reorder.instructions", "Chọn mục để di chuyển, sau đó chọn vị trí đích");

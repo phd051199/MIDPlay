@@ -114,7 +114,10 @@
     "auto_update": "Tự động cập nhật",
     "check_update": "Kiểm tra cập nhật",
     "player_method": "Phương thức phát",
-    "force_pass_connection": "Ép buộc truyền kết nối",
+    "player_method_options": {
+      "pass_inputstream": "Truyền Input Stream",
+      "pass_url": "Truyền URL"
+    },
     "error": {
       "save_failed": "Lỗi lưu cài đặt"
     },

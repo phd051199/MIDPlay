@@ -21,7 +21,6 @@ public class MIDPlay extends MIDlet implements CommandListener {
   private static final Hashtable iconMap = new Hashtable();
   public static String APP_VERSION = "1.0";
   private static PlayerScreen playerScreen;
-  private static int playerHttpMethod;
   private static MIDPlay instance;
 
   public static void startOperation(NetworkOperation op) {

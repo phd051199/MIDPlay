@@ -11,7 +11,7 @@ public class SettingsManager {
   private static String currentQuality;
   private static String currentSearchType;
   private static int currentAutoUpdate;
-  private static int currentPlayerMethod;
+  private static String currentPlayerMethod;
   private static int currentRepeatMode;
   private static int currentShuffleMode;
   private static int currentVolumeLevel;
@@ -29,6 +29,10 @@ public class SettingsManager {
     storage = new RecordStoreManager(Configuration.STORAGE_SETTINGS);
   }
 
+  public String getDefaultPlayerMethod() {
+    return PlayerGUI.getDefaultPlayerHttpMethod();
+  }
+
   public void loadSettings() {
     JSONObject settings = getSettingsJSON();
     currentLanguage = settings.getString("language", "en");
@@ -36,8 +40,7 @@ public class SettingsManager {
     currentQuality = settings.getString("quality", Configuration.QUALITY_128);
     currentSearchType = settings.getString("searchType", Configuration.SEARCH_PLAYLIST);
     currentAutoUpdate = settings.getInt("autoUpdate", Configuration.AUTO_UPDATE_ENABLED);
-    currentPlayerMethod =
-        settings.getInt("playerMethod", Configuration.PLAYER_INPUTSTREAM_DISABLED);
+    currentPlayerMethod = settings.getString("playerMethod", getDefaultPlayerMethod());
     currentRepeatMode = settings.getInt("repeatMode", Configuration.PLAYER_REPEAT_ALL);
     currentShuffleMode = settings.getInt("shuffleMode", Configuration.PLAYER_SHUFFLE_OFF);
     currentVolumeLevel = settings.getInt("volumeLevel", Configuration.PLAYER_MAX_VOLUME);
@@ -66,7 +69,7 @@ public class SettingsManager {
     settings.put("volumeLevel", Configuration.PLAYER_MAX_VOLUME);
     settings.put("searchType", Configuration.SEARCH_PLAYLIST);
     settings.put("autoUpdate", Configuration.AUTO_UPDATE_ENABLED);
-    settings.put("playerMethod", Configuration.PLAYER_INPUTSTREAM_DISABLED);
+    settings.put("playerMethod", getDefaultPlayerMethod());
     return settings;
   }
 
@@ -123,7 +126,7 @@ public class SettingsManager {
     currentAutoUpdate = autoUpdate;
   }
 
-  public void savePlayerMethod(int playerMethod) throws RecordStoreException {
+  public void savePlayerMethod(String playerMethod) throws RecordStoreException {
     saveSetting("playerMethod", playerMethod);
     currentPlayerMethod = playerMethod;
   }
@@ -167,7 +170,7 @@ public class SettingsManager {
     return currentAutoUpdate;
   }
 
-  public int getCurrentPlayerMethod() {
+  public String getCurrentPlayerMethod() {
     return currentPlayerMethod;
   }
 

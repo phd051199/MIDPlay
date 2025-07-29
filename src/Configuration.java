@@ -7,9 +7,6 @@ public class Configuration {
   public static final String VISIBILITY_ICON = "[x] ";
   public static final String HIDDEN_ICON = "[  ] ";
 
-  public static final int HTTP_PASS_URL = 0;
-  public static final int HTTP_PASS_CONNECTION_STREAM = 1;
-
   public static final String STORAGE_MENU = "storage.menu";
   public static final String STORAGE_SETTINGS = "storage.settings";
   public static final String STORAGE_FAVORITES = "storage.favorites";
@@ -42,8 +39,11 @@ public class Configuration {
   public static final int AUTO_UPDATE_DISABLED = 0;
   public static final int AUTO_UPDATE_ENABLED = 1;
 
-  public static final int PLAYER_INPUTSTREAM_DISABLED = 0;
-  public static final int PLAYER_INPUTSTREAM_ENABLED = 1;
+  public static final String PLAYER_METHOD_PASS_INPUTSTREAM = "pass_inputstream";
+  public static final String PLAYER_METHOD_PASS_URL = "pass_url";
+  public static final String[] ALL_PLAYER_METHODS = {
+    PLAYER_METHOD_PASS_INPUTSTREAM, PLAYER_METHOD_PASS_URL
+  };
 
   public static final int PLAYER_MAX_VOLUME = 100;
   public static final int PLAYER_REPEAT_OFF = 0;
