@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -47,32 +48,39 @@ public class MIDPlay extends MIDlet implements CommandListener {
     return sb.toString();
   }
 
-  public static String urlEncode(String input) {
-    StringBuffer encoded = new StringBuffer();
-    for (int i = 0; i < input.length(); ++i) {
-      char ch = input.charAt(i);
-      if ((ch >= 'A' && ch <= 'Z')
-          || (ch >= 'a' && ch <= 'z')
-          || (ch >= '0' && ch <= '9')
-          || ch == '-'
-          || ch == '_'
-          || ch == '.'
-          || ch == '~') {
-        encoded.append(ch);
-      } else {
-        encoded.append('%');
-        encoded.append(toHexChar((ch >> 4) & 0xF));
-        encoded.append(toHexChar(ch & 0xF));
-      }
+  public static String urlEncode(String text) {
+    if (text == null) {
+      return "";
     }
-    return encoded.toString();
-  }
+    try {
+      byte[] rs = text.getBytes("UTF-8");
+      final String HEX_DIGITS = "0123456789ABCDEF";
+      StringBuffer result = new StringBuffer(rs.length + (rs.length >> 1));
 
-  private static char toHexChar(int digit) {
-    if (digit < 10) {
-      return (char) ('0' + digit);
-    } else {
-      return (char) ('A' + digit - 10);
+      for (int i = 0; i < rs.length; ++i) {
+        int b = rs[i] & 0xFF;
+        char c = (char) b;
+
+        if (c == ' ') {
+          result.append('+');
+        } else if ((c >= 'A' && c <= 'Z')
+            || (c >= 'a' && c <= 'z')
+            || (c >= '0' && c <= '9')
+            || c == '-'
+            || c == '_'
+            || c == '.'
+            || c == '~') {
+          result.append(c);
+        } else {
+          result.append('%');
+          result.append(HEX_DIGITS.charAt((b >> 4) & 0xF));
+          result.append(HEX_DIGITS.charAt(b & 0xF));
+        }
+      }
+
+      return result.toString();
+    } catch (UnsupportedEncodingException e) {
+      return "";
     }
   }
 
