@@ -665,10 +665,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
           public void commandAction(Command c, Displayable d) {
             if (c == Commands.ok()) {
               try {
-                boolean success = platformRequest(updateUrl);
-                if (!success) {
-                  navigator.showAlert(Lang.tr("status.error"), AlertType.ERROR);
-                }
+                platformRequest(updateUrl);
               } catch (ConnectionNotFoundException e) {
                 navigator.showAlert(Lang.tr("status.error"), AlertType.ERROR);
               }
