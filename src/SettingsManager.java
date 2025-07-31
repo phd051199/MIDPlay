@@ -151,6 +151,7 @@ public class SettingsManager {
   }
 
   public void setCurrentLanguage(String langCode) {
+    currentLanguage = langCode;
     Lang.setLang(langCode);
   }
 

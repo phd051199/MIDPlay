@@ -50,7 +50,7 @@ public class PlayerGUI implements PlayerListener {
         if ((v = System.getProperty("kemulator.mod.version")) != null) {
           p = p.concat(" ".concat(v));
         }
-      } catch (Exception e) {
+      } catch (ClassNotFoundException e) {
         int i;
         if ((i = p.indexOf('/')) != -1 || (i = p.indexOf(' ')) != -1) {
           p = p.substring(0, i);
@@ -68,10 +68,10 @@ public class PlayerGUI implements PlayerListener {
       try {
         Class.forName("com.sun.mmedia.protocol.CommonDS");
         m = Configuration.PLAYER_METHOD_PASS_URL;
-      } catch (Exception e) {
+      } catch (ClassNotFoundException e) {
         m = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
       }
-    } catch (Exception e) {
+    } catch (ClassNotFoundException e0) {
       m = Configuration.PLAYER_METHOD_PASS_URL;
       if (symbian) {
         if (symbianJrt
@@ -81,6 +81,12 @@ public class PlayerGUI implements PlayerListener {
           m = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
         } else {
           m = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
+        }
+      } else {
+        try {
+          Class.forName("javax.microedition.shell.MicroActivity");
+          m = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
+        } catch (ClassNotFoundException e1) {
         }
       }
     }
