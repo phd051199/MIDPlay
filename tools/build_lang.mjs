@@ -3,7 +3,6 @@ import path from "path";
 
 const LANG_DIR = "./langs";
 const OUTPUT = "./src/Lang.java";
-const CLASS_NAME = "Lang";
 
 function escapeJava(str) {
   return JSON.stringify(str);
@@ -11,11 +10,9 @@ function escapeJava(str) {
 
 function flattenObject(obj, prefix = "") {
   const flattened = {};
-
   for (const key in obj) {
     if (obj.hasOwnProperty(key)) {
       const newKey = prefix ? `${prefix}.${key}` : key;
-
       if (
         typeof obj[key] === "object" &&
         obj[key] !== null &&
@@ -27,8 +24,304 @@ function flattenObject(obj, prefix = "") {
       }
     }
   }
-
   return flattened;
+}
+
+// Google Java Format compliant generator
+function generateGoogleFormatJava(langs, langCodes, allKeys) {
+  const lines = [];
+
+  // Header with proper spacing
+  lines.push("import java.util.Hashtable;");
+  lines.push("");
+  lines.push("public class Lang {");
+
+  // Fields with proper spacing and naming
+  lines.push('  private static String currentLang = "en";');
+  lines.push("  private static Hashtable langData = new Hashtable();");
+  lines.push("  private static boolean initialized = false;");
+  lines.push("");
+
+  // Load method with proper formatting
+  lines.push("  private static void loadLanguage(String code) {");
+  lines.push("    langData.clear();");
+
+  // Generate if-else chain with proper indentation
+  let isFirst = true;
+  for (const code of langCodes) {
+    const condition = isFirst ? "if" : "} else if";
+    lines.push(`    ${condition} ("${code}".equals(code)) {`);
+    isFirst = false;
+
+    // Add translations with proper spacing
+    const map = langs[code];
+    for (const key of allKeys) {
+      const value = (map[key] ?? "").trim();
+      const fallback = langs.en[key] ?? key;
+      const finalVal = value.length > 0 ? value : fallback;
+      lines.push(`      langData.put("${key}", ${escapeJava(finalVal)});`);
+    }
+  }
+
+  // Default case
+  lines.push("    } else {");
+  for (const key of allKeys) {
+    const fallback = langs.en[key] ?? key;
+    lines.push(`      langData.put("${key}", ${escapeJava(fallback)});`);
+  }
+  lines.push("    }");
+  lines.push("  }");
+  lines.push("");
+
+  // Public methods with proper formatting
+  lines.push("  public static void setLang(String code) {");
+  lines.push("    if (!code.equals(currentLang)) {");
+  lines.push("      currentLang = code;");
+  lines.push("      loadLanguage(code);");
+  lines.push("      initialized = true;");
+  lines.push("    }");
+  lines.push("  }");
+  lines.push("");
+
+  lines.push("  public static String getCurrentLang() {");
+  lines.push("    return currentLang;");
+  lines.push("  }");
+  lines.push("");
+
+  lines.push("  public static String[] getAvailableLanguages() {");
+  const langArray = langCodes.map((code) => `"${code}"`).join(", ");
+  lines.push(`    return new String[] {${langArray}};`);
+  lines.push("  }");
+  lines.push("");
+
+  lines.push("  public static String tr(String key) {");
+  lines.push("    if (!initialized) {");
+  lines.push("      loadLanguage(currentLang);");
+  lines.push("      initialized = true;");
+  lines.push("    }");
+  lines.push("    String value = (String) langData.get(key);");
+  lines.push("    return value != null ? value : key;");
+  lines.push("  }");
+  lines.push("");
+
+  lines.push("  public static String tr(String key, String arg) {");
+  lines.push('    return MIDPlay.replace(tr(key), "{0}", arg);');
+  lines.push("  }");
+  lines.push("");
+
+  lines.push(
+    "  public static String tr(String key, String arg0, String arg1) {"
+  );
+  lines.push("    String template = tr(key);");
+  lines.push('    template = MIDPlay.replace(template, "{0}", arg0);');
+  lines.push('    return MIDPlay.replace(template, "{1}", arg1);');
+  lines.push("  }");
+  lines.push("");
+
+  lines.push("  private Lang() {}");
+  lines.push("}");
+
+  return lines.join("\n");
+}
+
+// Compact version for J2ME (keeping original optimized version)
+function generateCompactJava(langs, langCodes, allKeys) {
+  const b = []; // buffer
+
+  // Class header - compact
+  b.push("import java.util.Hashtable;");
+  b.push("");
+  b.push("public class Lang {");
+  b.push('  private static String c = "en";'); // current lang
+  b.push("  private static Hashtable d = new Hashtable();"); // data
+  b.push("  private static boolean i = false;"); // initialized
+
+  // Optimized load method - single method with array lookup
+  b.push("");
+  b.push("  private static void l(String code) {"); // load
+  b.push("    d.clear();");
+
+  // Create switch-like structure but more compact
+  let first = true;
+  for (const code of langCodes) {
+    const prefix = first ? "if" : "} else if";
+    b.push(`    ${prefix} ("${code}".equals(code)) {`);
+    first = false;
+
+    // Inline key-value pairs for better performance
+    const map = langs[code];
+    for (const key of allKeys) {
+      const value = (map[key] ?? "").trim();
+      const fallback = langs.en[key] ?? key;
+      const finalVal = value.length > 0 ? value : fallback;
+      b.push(`      d.put("${key}", ${escapeJava(finalVal)});`);
+    }
+  }
+
+  b.push("    } else {");
+  // Default fallback to English inline
+  for (const key of allKeys) {
+    const fallback = langs.en[key] ?? key;
+    b.push(`      d.put("${key}", ${escapeJava(fallback)});`);
+  }
+  b.push("    }");
+  b.push("  }");
+
+  // Compact public methods
+  b.push("");
+  b.push("  public static void setLang(String code) {");
+  b.push("    if (!code.equals(c)) {");
+  b.push("      c = code;");
+  b.push("      l(code);");
+  b.push("      i = true;");
+  b.push("    }");
+  b.push("  }");
+
+  b.push("");
+  b.push("  public static String getCurrentLang() { return c; }");
+
+  b.push("");
+  b.push("  public static String[] getAvailableLanguages() {");
+  const langArray = langCodes.map((code) => `"${code}"`).join(", ");
+  b.push(`    return new String[] {${langArray}};`);
+  b.push("  }");
+
+  // Most used method - highly optimized
+  b.push("");
+  b.push("  public static String tr(String k) {");
+  b.push("    if (!i) { l(c); i = true; }");
+  b.push("    String v = (String) d.get(k);");
+  b.push("    return v != null ? v : k;");
+  b.push("  }");
+
+  // Template methods - optimized
+  b.push("");
+  b.push("  public static String tr(String k, String a) {");
+  b.push('    return MIDPlay.replace(tr(k), "{0}", a);');
+  b.push("  }");
+
+  b.push("");
+  b.push("  public static String tr(String k, String a, String b) {");
+  b.push("    String t = tr(k);");
+  b.push('    t = MIDPlay.replace(t, "{0}", a);');
+  b.push('    return MIDPlay.replace(t, "{1}", b);');
+  b.push("  }");
+
+  b.push("");
+  b.push("  private Lang() {}");
+  b.push("}");
+
+  return b.join("\n");
+}
+
+// Alternative: Even more optimized version with static arrays
+function generateHyperOptimized(langs, langCodes, allKeys) {
+  const b = [];
+
+  b.push("import java.util.Hashtable;");
+  b.push("");
+  b.push("public class Lang {");
+  b.push('  private static String c = "en";');
+  b.push("  private static Hashtable d;");
+  b.push("  private static boolean i = false;");
+
+  // Pre-calculate all translations as static arrays
+  b.push("");
+  b.push("  private static final String[] KEYS = {");
+  const keyChunks = [];
+  for (let i = 0; i < allKeys.length; i += 10) {
+    const chunk = allKeys
+      .slice(i, i + 10)
+      .map((k) => `"${k}"`)
+      .join(", ");
+    keyChunks.push("    " + chunk + (i + 10 < allKeys.length ? "," : ""));
+  }
+  b.push(keyChunks.join("\n"));
+  b.push("  };");
+
+  // Generate compact translation arrays for each language
+  for (const code of langCodes) {
+    const map = langs[code];
+    const varName = code.toUpperCase() + "_VALS";
+
+    b.push("");
+    b.push(`  private static final String[] ${varName} = {`);
+
+    const valueChunks = [];
+    for (let i = 0; i < allKeys.length; i += 5) {
+      const chunk = allKeys
+        .slice(i, i + 5)
+        .map((key) => {
+          const value = (map[key] ?? "").trim();
+          const fallback = langs.en[key] ?? key;
+          const finalVal = value.length > 0 ? value : fallback;
+          return escapeJava(finalVal);
+        })
+        .join(", ");
+      valueChunks.push("    " + chunk + (i + 5 < allKeys.length ? "," : ""));
+    }
+    b.push(valueChunks.join("\n"));
+    b.push("  };");
+  }
+
+  // Ultra-compact load method
+  b.push("");
+  b.push("  private static void l(String code) {");
+  b.push("    if (d == null) d = new Hashtable();");
+  b.push("    else d.clear();");
+  b.push("    String[] vals = EN_VALS;"); // default
+
+  for (const code of langCodes) {
+    if (code !== "en") {
+      b.push(
+        `    if ("${code}".equals(code)) vals = ${code.toUpperCase()}_VALS;`
+      );
+    }
+  }
+
+  b.push("    for (int j = 0; j < KEYS.length; j++) {");
+  b.push("      d.put(KEYS[j], vals[j]);");
+  b.push("    }");
+  b.push("  }");
+
+  // Same public interface
+  b.push("");
+  b.push("  public static void setLang(String code) {");
+  b.push("    if (!code.equals(c)) { c = code; l(code); i = true; }");
+  b.push("  }");
+
+  b.push("");
+  b.push("  public static String getCurrentLang() { return c; }");
+
+  b.push("");
+  b.push("  public static String[] getAvailableLanguages() {");
+  const langArray = langCodes.map((code) => `"${code}"`).join(", ");
+  b.push(`    return new String[] {${langArray}};`);
+  b.push("  }");
+
+  b.push("");
+  b.push("  public static String tr(String k) {");
+  b.push("    if (!i) { l(c); i = true; }");
+  b.push("    String v = (String) d.get(k);");
+  b.push("    return v != null ? v : k;");
+  b.push("  }");
+
+  b.push("");
+  b.push("  public static String tr(String k, String a) {");
+  b.push('    return MIDPlay.replace(tr(k), "{0}", a);');
+  b.push("  }");
+
+  b.push("");
+  b.push("  public static String tr(String k, String a, String b) {");
+  b.push("    String t = tr(k);");
+  b.push('    return MIDPlay.replace(MIDPlay.replace(t, "{0}", a), "{1}", b);');
+  b.push("  }");
+
+  b.push("");
+  b.push("  private Lang() {}");
+  b.push("}");
+
+  return b.join("\n");
 }
 
 async function main() {
@@ -53,125 +346,32 @@ async function main() {
 
   const allKeys = Object.keys(langs.en);
 
-  const buffers = [];
-  buffers.push(`import java.util.Hashtable;`);
-  buffers.push(`\n`);
-  buffers.push(`public class ${CLASS_NAME} {`);
-  buffers.push(`  private static String currentLang = "en";`);
-  buffers.push(`  private static Hashtable currentLangData = new Hashtable();`);
-  buffers.push(`  private static boolean initialized = false;`);
-  buffers.push(
-    `\n  private static synchronized void loadLanguage(String langCode) {`
-  );
-  buffers.push(`    currentLangData.clear();`);
-  buffers.push(`\n    if ("en".equals(langCode)) {`);
-  buffers.push(`      loadEnglish();`);
+  // Choose format style
+  const useGoogleFormat = process.argv.includes("--google");
+  const useHyperOptimized = process.argv.includes("--hyper");
 
-  // Add conditions for other languages
-  for (let i = 1; i < langCodes.length; i++) {
-    const code = langCodes[i];
-    let methodName;
-    if (code === "he") {
-      methodName = "loadHebrew";
-    } else if (code === "tr") {
-      methodName = "loadTurkish";
-    } else if (code === "vi") {
-      methodName = "loadVietnamese";
-    } else {
-      methodName = `load${code.charAt(0).toUpperCase() + code.slice(1)}`;
-    }
-    buffers.push(`    } else if ("${code}".equals(langCode)) {`);
-    buffers.push(`      ${methodName}();`);
+  let javaCode;
+  if (useHyperOptimized) {
+    javaCode = generateHyperOptimized(langs, langCodes, allKeys);
+  } else if (useGoogleFormat) {
+    javaCode = generateGoogleFormatJava(langs, langCodes, allKeys);
+  } else {
+    javaCode = generateCompactJava(langs, langCodes, allKeys);
   }
 
-  buffers.push(`    } else {`);
-  buffers.push(`      loadEnglish();`);
-  buffers.push(`    }`);
-  buffers.push(`  }`);
+  await fs.writeFile(OUTPUT, javaCode, "utf-8");
 
-  // Generate individual load methods for each language
-  for (const code of langCodes) {
-    const map = langs[code];
-    let methodName;
-    if (code === "en") {
-      methodName = "loadEnglish";
-    } else if (code === "he") {
-      methodName = "loadHebrew";
-    } else if (code === "tr") {
-      methodName = "loadTurkish";
-    } else if (code === "vi") {
-      methodName = "loadVietnamese";
-    } else {
-      methodName = `load${code.charAt(0).toUpperCase() + code.slice(1)}`;
-    }
-
-    buffers.push(`\n  private static void ${methodName}() {`);
-    for (const key of allKeys) {
-      const value = (map[key] ?? "").trim();
-      const fallback = langs.en[key] ?? key;
-      const finalVal = value.length > 0 ? value : fallback;
-      buffers.push(
-        `    currentLangData.put(${JSON.stringify(key)}, ${escapeJava(
-          finalVal
-        )});`
-      );
-    }
-    buffers.push(`  }`);
-  }
-
-  // setLang
-  buffers.push(`\n  public static synchronized void setLang(String code) {`);
-  buffers.push(`    if (!code.equals(currentLang)) {`);
-  buffers.push(`      currentLang = code;`);
-  buffers.push(`      loadLanguage(code);`);
-  buffers.push(`      initialized = true;`);
-  buffers.push(`    }`);
-  buffers.push(`  }`);
-
-  // getCurrentLang
-  buffers.push(`\n  public static String getCurrentLang() {`);
-  buffers.push(`    return currentLang;`);
-  buffers.push(`  }`);
-
-  // getAvailableLanguages
-  buffers.push(`\n  public static String[] getAvailableLanguages() {`);
-  const langCodesArray = langCodes.map((code) => `"${code}"`).join(", ");
-  buffers.push(`    return new String[] {${langCodesArray}};`);
-  buffers.push(`  }`);
-
-  // tr()
-  buffers.push(`\n  public static String tr(String key) {`);
-  buffers.push(`    if (!initialized) {`);
-  buffers.push(`      loadLanguage(currentLang);`);
-  buffers.push(`      initialized = true;`);
-  buffers.push(`    }`);
-  buffers.push(`    String value = (String) currentLangData.get(key);`);
-  buffers.push(`    return value == null ? key : value;`);
-  buffers.push(`  }`);
-
-  // tr() with one parameter
-  buffers.push(`\n  public static String tr(String key, String arg0) {`);
-  buffers.push(`    String template = tr(key);`);
-  buffers.push(`    template = MIDPlay.replace(template, "{0}", arg0);`);
-  buffers.push(`    return template;`);
-  buffers.push(`  }`);
-
-  // tr() with two parameters
-  buffers.push(
-    `\n  public static String tr(String key, String arg0, String arg1) {`
-  );
-  buffers.push(`    String template = tr(key);`);
-  buffers.push(`    template = MIDPlay.replace(template, "{0}", arg0);`);
-  buffers.push(`    template = MIDPlay.replace(template, "{1}", arg1);`);
-  buffers.push(`    return template;`);
-  buffers.push(`  }`);
-
-  // Private constructor
-  buffers.push(`\n  private Lang() {}`);
-  buffers.push(`}`);
-
-  await fs.writeFile(OUTPUT, buffers.join("\n"), "utf-8");
-  console.log(`✅ Built ${OUTPUT}`);
+  const stats = await fs.stat(OUTPUT);
+  console.log(`✅ Generated ${OUTPUT}`);
+  console.log(`📦 Size: ${(stats.size / 1024).toFixed(1)}KB`);
+  console.log(`🌍 Languages: ${langCodes.join(", ")}`);
+  console.log(`🔑 Keys: ${allKeys.length}`);
+  const mode = useHyperOptimized
+    ? "Hyper-optimized"
+    : useGoogleFormat
+    ? "Google Java Format"
+    : "Compact J2ME";
+  console.log(`⚡ Mode: ${mode}`);
 }
 
 main().catch((err) => {
