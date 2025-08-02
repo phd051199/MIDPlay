@@ -1,8 +1,6 @@
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.Hashtable;
-import java.util.Vector;
 import javax.microedition.io.ConnectionNotFoundException;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
@@ -14,7 +12,6 @@ import javax.microedition.lcdui.List;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
 import model.MenuItem;
-import model.Playlist;
 import model.Playlists;
 
 public class MIDPlay extends MIDlet implements CommandListener {
@@ -35,55 +32,6 @@ public class MIDPlay extends MIDlet implements CommandListener {
     }
   }
 
-  public static String replace(String text, String searchString, String replacement) {
-    StringBuffer sb = new StringBuffer();
-    int pos = 0;
-    int found;
-    int searchLength = searchString.length();
-    while ((found = text.indexOf(searchString, pos)) != -1) {
-      sb.append(text.substring(pos, found)).append(replacement);
-      pos = found + searchLength;
-    }
-    sb.append(text.substring(pos));
-    return sb.toString();
-  }
-
-  public static String urlEncode(String text) {
-    if (text == null) {
-      return "";
-    }
-    try {
-      byte[] rs = text.getBytes("UTF-8");
-      final String HEX_DIGITS = "0123456789ABCDEF";
-      StringBuffer result = new StringBuffer(rs.length + (rs.length >> 1));
-
-      for (int i = 0; i < rs.length; ++i) {
-        int b = rs[i] & 0xFF;
-        char c = (char) b;
-
-        if (c == ' ') {
-          result.append('+');
-        } else if ((c >= 'A' && c <= 'Z')
-            || (c >= 'a' && c <= 'z')
-            || (c >= '0' && c <= '9')
-            || c == '-'
-            || c == '_'
-            || c == '.'
-            || c == '~') {
-          result.append(c);
-        } else {
-          result.append('%');
-          result.append(HEX_DIGITS.charAt((b >> 4) & 0xF));
-          result.append(HEX_DIGITS.charAt(b & 0xF));
-        }
-      }
-
-      return result.toString();
-    } catch (UnsupportedEncodingException e) {
-      return "";
-    }
-  }
-
   public static PlayerScreen getPlayerScreen() {
     return playerScreen;
   }
@@ -94,29 +42,6 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
   public static MIDPlay getInstance() {
     return instance;
-  }
-
-  public static void bubbleSort(Vector vector, int sortType) {
-    for (int i = 0; i < vector.size() - 1; i++) {
-      for (int j = 0; j < vector.size() - 1 - i; j++) {
-        Object obj1 = vector.elementAt(j);
-        Object obj2 = vector.elementAt(j + 1);
-        boolean shouldSwap = false;
-        if (sortType == 1) {
-          Playlist p1 = (Playlist) obj1;
-          Playlist p2 = (Playlist) obj2;
-          shouldSwap = p1.getId() < p2.getId();
-        } else if (sortType == 2) {
-          MenuItem m1 = (MenuItem) obj1;
-          MenuItem m2 = (MenuItem) obj2;
-          shouldSwap = m1.order > m2.order;
-        }
-        if (shouldSwap) {
-          vector.setElementAt(obj2, j);
-          vector.setElementAt(obj1, j + 1);
-        }
-      }
-    }
   }
 
   private final SettingsManager settingsManager;
@@ -271,7 +196,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
     menu.addCommand(Commands.playerNowPlaying());
   }
 
-  public void refreshMenu() {
+  private void refreshMenu() {
     if (navigator == null || menu == null) {
       return;
     }
@@ -565,7 +490,6 @@ public class MIDPlay extends MIDlet implements CommandListener {
             navigator,
             new SettingsScreen.Listener() {
               public void onLanguageChanged(String selectedLang) {
-                int index = menu.getSelectedIndex();
                 if (playerScreen != null) {
                   playerScreen.clearCommands();
                   Commands.refresh();
@@ -574,6 +498,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
                   Commands.refresh();
                 }
                 navigator.clear();
+                int index = menu.getSelectedIndex();
                 createMenu();
                 int newSize = menu.size();
                 if (newSize > 0) {

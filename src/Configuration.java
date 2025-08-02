@@ -52,6 +52,15 @@ public class Configuration {
   public static final int PLAYER_SHUFFLE_OFF = 0;
   public static final int PLAYER_SHUFFLE_ON = 1;
 
+  public static final String PLAYER_STATUS_STOPPED = "player.status.stopped";
+  public static final String PLAYER_STATUS_PLAYING = "player.status.playing";
+  public static final String PLAYER_STATUS_PAUSED = "player.status.paused";
+  public static final String PLAYER_STATUS_LOADING = "player.status.loading";
+  public static final String PLAYER_STATUS_STARTING = "player.status.starting";
+  public static final String PLAYER_STATUS_STOPPING = "player.status.stopping";
+  public static final String PLAYER_STATUS_FINISHED = "player.status.finished";
+  public static final String PLAYER_STATUS_READY = "player.status.ready";
+
   public static Image folderIcon;
   public static Image musicIcon;
   public static Image searchIcon;

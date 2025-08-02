@@ -96,7 +96,7 @@ public class FavoritesManager {
     } catch (RecordStoreException e) {
       return new Playlists();
     }
-    MIDPlay.bubbleSort(playlistVector, 1);
+    Utils.sort(playlistVector, 1);
     return vectorToPlaylists(playlistVector);
   }
 

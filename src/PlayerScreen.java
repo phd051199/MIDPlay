@@ -21,15 +21,14 @@ public final class PlayerScreen extends Canvas
   private static final int PLAY_BUTTON_WIDTH = 50;
   private static final int PLAY_BUTTON_HEIGHT = 50;
   private static final long BUTTON_ACTIVE_DURATION = 1000L;
-  private static final int THEME_COLOR = 0x410A4A;
+  private static final int THEME_COLOR = 0x181818;
   private static final int BACKGROUND_COLOR = 0xF0F0F0;
 
   private String title;
   private PlayerGUI gui;
   private Navigator navigator;
   private boolean touchSupported = false;
-  private String currentStatusKey = "player.status.stopped";
-  private final SettingsManager settingsManager = SettingsManager.getInstance();
+  private String currentStatusKey = Configuration.PLAYER_STATUS_STOPPED;
   private Image albumArt = null;
   private String albumArtUrl = null;
   private boolean loadingAlbumArt = false;
@@ -54,7 +53,7 @@ public final class PlayerScreen extends Canvas
   private int nextX = 0, nextY = 0;
   private int repeatX = 0, repeatY = 0;
   private int shuffleX = 0, shuffleY = 0;
-  private String statusCurrent = "", statusOriginal = "", realPlayerStatus = "";
+  private String statusCurrent = "", realPlayerStatus = "";
   private boolean timerOverrideActive = false;
 
   public PlayerScreen(String title, Tracks tracks, int index, Navigator navigator) {
@@ -92,7 +91,7 @@ public final class PlayerScreen extends Canvas
     this.removeCommand(Commands.playerShowPlaylist());
     this.removeCommand(Commands.playerRepeat());
     this.removeCommand(Commands.playerShuffle());
-    this.removeCommand(Commands.playerSleepTimer());
+    removeSleepTimerCommand();
   }
 
   public void refreshStatus() {
@@ -102,20 +101,20 @@ public final class PlayerScreen extends Canvas
   }
 
   public void showNotify() {
-    if ("player.status.playing".equals(this.currentStatusKey)
-        || "player.status.paused".equals(this.currentStatusKey)
-        || "player.status.stopped".equals(this.currentStatusKey)) {
+    if (Configuration.PLAYER_STATUS_PLAYING.equals(this.currentStatusKey)
+        || Configuration.PLAYER_STATUS_PAUSED.equals(this.currentStatusKey)
+        || Configuration.PLAYER_STATUS_STOPPED.equals(this.currentStatusKey)) {
       determinePlayerStatus();
     }
   }
 
   private void determinePlayerStatus() {
     if (this.getPlayerGUI().isPlaying()) {
-      this.setStatusByKey("player.status.playing");
-    } else if ("player.status.stopped".equals(this.currentStatusKey)) {
-      this.setStatusByKey("player.status.stopped");
+      this.setStatusByKey(Configuration.PLAYER_STATUS_PLAYING);
+    } else if (Configuration.PLAYER_STATUS_STOPPED.equals(this.currentStatusKey)) {
+      this.setStatusByKey(Configuration.PLAYER_STATUS_STOPPED);
     } else {
-      this.setStatusByKey("player.status.paused");
+      this.setStatusByKey(Configuration.PLAYER_STATUS_PAUSED);
     }
   }
 
@@ -133,26 +132,14 @@ public final class PlayerScreen extends Canvas
     this.updateDisplay();
   }
 
-  public String getTitle() {
-    return this.title;
-  }
-
   public void setStatus(String s) {
     updateStatus(s);
     this.updateDisplay();
   }
 
-  public String getStatus() {
-    return statusCurrent;
-  }
-
   public void setStatusByKey(String statusKey) {
     this.currentStatusKey = statusKey;
     this.setStatus(Lang.tr(statusKey));
-  }
-
-  public String getCurrentStatusKey() {
-    return this.currentStatusKey;
   }
 
   private void resetAlbumArt() {
@@ -414,26 +401,6 @@ public final class PlayerScreen extends Canvas
     return timeBuffer.toString();
   }
 
-  private String formatNumber(long num, int len, boolean leadingZeros) {
-    String numStr = String.valueOf(num);
-    if (numStr.length() >= len) {
-      return numStr;
-    }
-    StringBuffer ret = new StringBuffer(len);
-    if (leadingZeros) {
-      for (int i = numStr.length(); i < len; i++) {
-        ret.append('0');
-      }
-      ret.append(numStr);
-    } else {
-      ret.append(numStr);
-      for (int i = numStr.length(); i < len; i++) {
-        ret.append('0');
-      }
-    }
-    return ret.toString();
-  }
-
   public void paint(Graphics g) {
     try {
       if (displayHeight == -1) {
@@ -625,22 +592,29 @@ public final class PlayerScreen extends Canvas
     int alertHeight = 100;
     int alertX = 20;
     int alertY = (displayHeight - alertHeight) / 2;
+
     g.setColor(BACKGROUND_COLOR);
     g.fillRect(alertX, alertY, alertWidth, alertHeight);
     g.setColor(0x000000);
     g.drawRect(alertX, alertY, alertWidth, alertHeight);
-    g.setColor(0x000000);
-    String title = Lang.tr("player.volume");
-    g.drawString(title, alertX + alertWidth / 2, alertY + 15, Graphics.HCENTER | Graphics.TOP);
-    int barWidth = alertWidth - 40;
-    int barHeight = 20;
+
+    g.drawString(
+        Lang.tr("player.volume"),
+        alertX + alertWidth / 2,
+        alertY + 15,
+        Graphics.HCENTER | Graphics.TOP);
+
     int barX = alertX + 20;
     int barY = alertY + 40;
+    int barWidth = alertWidth - 40;
+    int barHeight = 20;
     g.setColor(220, 220, 220);
     g.fillRect(barX, barY, barWidth, barHeight);
-    g.setColor(THEME_COLOR);
+
     int progressWidth = (barWidth * currentVolumeLevel) / Configuration.PLAYER_MAX_VOLUME;
+    g.setColor(THEME_COLOR);
     g.fillRect(barX, barY, progressWidth, barHeight);
+
     g.setColor(0x000000);
     g.drawRect(barX, barY, barWidth, barHeight);
   }
@@ -697,7 +671,7 @@ public final class PlayerScreen extends Canvas
   private void stop() {
     this.getPlayerGUI().pause();
     this.getPlayerGUI().seek(0L);
-    this.setStatusByKey("player.status.stopped");
+    this.setStatusByKey(Configuration.PLAYER_STATUS_STOPPED);
   }
 
   private void next() {
@@ -783,6 +757,14 @@ public final class PlayerScreen extends Canvas
     }
   }
 
+  private void removeSleepTimerCommand() {
+    if (sleepTimerManager.isActive()) {
+      removeCommand(Commands.playerCancelTimer());
+    } else {
+      removeCommand(Commands.playerSleepTimer());
+    }
+  }
+
   public void onTimerExpired(int action) {
     if (action == SleepTimerForm.ACTION_STOP_PLAYBACK) {
       stop();
@@ -819,10 +801,8 @@ public final class PlayerScreen extends Canvas
     }
     if (!timerOverrideActive) {
       this.statusCurrent = s;
-      this.statusOriginal = s;
     } else if (isCriticalStatus(s)) {
       this.statusCurrent = s;
-      this.statusOriginal = s;
       this.timerOverrideActive = false;
     }
   }
@@ -842,9 +822,5 @@ public final class PlayerScreen extends Canvas
   private void clearTimerOverride() {
     this.timerOverrideActive = false;
     this.statusCurrent = this.realPlayerStatus;
-  }
-
-  private boolean isTimerOverrideActive() {
-    return timerOverrideActive;
   }
 }
