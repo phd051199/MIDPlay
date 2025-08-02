@@ -85,10 +85,7 @@ public final class PlaylistListScreen extends BaseList {
             new PlaylistsOperation.PlaylistsListener() {
               public void onDataReceived(Playlists newItems) {
                 onLoadMoreSuccess(newItems);
-                try {
-                  Class.forName("javax.microedition.shell.MicroActivity");
-                  return;
-                } catch (ClassNotFoundException e) {
+                if (!Utils.isJ2MELoader()) {
                   navigator.dismissAlert();
                 }
               }

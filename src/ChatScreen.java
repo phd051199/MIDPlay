@@ -33,8 +33,6 @@ public class ChatScreen extends Canvas implements CommandListener {
   private static final int CHAR_PER_LOOP = 4;
   private static final int MESSAGE_DELAY = 50;
 
-  private final SettingsManager settingsManager = SettingsManager.getInstance();
-
   private Vector messages = new Vector();
   private int currentMessageIndex = 0;
   private int currentCharIndex = 0;
@@ -322,11 +320,6 @@ public class ChatScreen extends Canvas implements CommandListener {
     }
   }
 
-  private boolean isScrolledToBottom() {
-    int maxScroll = Math.max(0, totalContentHeight - getHeight());
-    return scrollOffset >= maxScroll - 50;
-  }
-
   private void startTypingEffect() {
     if (timer != null) {
       timer.cancel();
@@ -462,9 +455,9 @@ public class ChatScreen extends Canvas implements CommandListener {
       boolean highlighted) {
     String textToRender = text;
     if (isClickable) {
-      textToRender = MIDPlay.replace(textToRender, "[", "");
-      textToRender = MIDPlay.replace(textToRender, "].", "");
-      textToRender = MIDPlay.replace(textToRender, "]", "");
+      textToRender = Utils.replace(textToRender, "[", "");
+      textToRender = Utils.replace(textToRender, "].", "");
+      textToRender = Utils.replace(textToRender, "]", "");
     }
 
     Vector wrappedLines =

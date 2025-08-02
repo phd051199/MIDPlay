@@ -55,43 +55,21 @@ public class MenuManager {
 
   private JSONArray createDefaultMenuJSON() {
     JSONArray defaultConfig = new JSONArray();
-    JSONObject searchItem = new JSONObject();
-    searchItem.put("key", Configuration.MENU_SEARCH);
-    searchItem.put("order", 1);
-    searchItem.put("enabled", true);
-    defaultConfig.add(searchItem);
-
-    JSONObject favoritesItem = new JSONObject();
-    favoritesItem.put("key", Configuration.MENU_FAVORITES);
-    favoritesItem.put("order", 2);
-    favoritesItem.put("enabled", true);
-    defaultConfig.add(favoritesItem);
-
-    JSONObject playlistsItem = new JSONObject();
-    playlistsItem.put("key", Configuration.MENU_DISCOVER_PLAYLISTS);
-    playlistsItem.put("order", 3);
-    playlistsItem.put("enabled", true);
-    defaultConfig.add(playlistsItem);
-
-    JSONObject chatItem = new JSONObject();
-    chatItem.put("key", Configuration.MENU_CHAT);
-    chatItem.put("order", 4);
-    chatItem.put("enabled", true);
-    defaultConfig.add(chatItem);
-
-    JSONObject settingsItem = new JSONObject();
-    settingsItem.put("key", Configuration.MENU_SETTINGS);
-    settingsItem.put("order", 5);
-    settingsItem.put("enabled", true);
-    defaultConfig.add(settingsItem);
-
-    JSONObject aboutItem = new JSONObject();
-    aboutItem.put("key", Configuration.MENU_ABOUT);
-    aboutItem.put("order", 6);
-    aboutItem.put("enabled", true);
-    defaultConfig.add(aboutItem);
-
+    defaultConfig.add(createMenuItem(Configuration.MENU_SEARCH, 1, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_FAVORITES, 2, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_DISCOVER_PLAYLISTS, 3, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_CHAT, 4, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_SETTINGS, 5, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_ABOUT, 6, true));
     return defaultConfig;
+  }
+
+  private JSONObject createMenuItem(String key, int order, boolean enabled) {
+    JSONObject item = new JSONObject();
+    item.put("key", key);
+    item.put("order", order);
+    item.put("enabled", enabled);
+    return item;
   }
 
   private void ensureMenuRecordExists() throws RecordStoreException {
@@ -117,11 +95,7 @@ public class MenuManager {
       JSONArray config = new JSONArray();
       for (int i = 0; i < menuItems.size(); i++) {
         MenuItem item = (MenuItem) menuItems.elementAt(i);
-        JSONObject obj = new JSONObject();
-        obj.put("key", item.key);
-        obj.put("order", item.order);
-        obj.put("enabled", item.enabled);
-        config.add(obj);
+        config.add(createMenuItem(item.key, item.order, item.enabled));
       }
       saveSetting(config.toString());
     } catch (RecordStoreException e) {
@@ -157,7 +131,7 @@ public class MenuManager {
         enabledItems.addElement(item);
       }
     }
-    MIDPlay.bubbleSort(enabledItems, 2);
+    Utils.sort(enabledItems, 2);
     MenuItem[] result = new MenuItem[enabledItems.size()];
     for (int i = 0; i < enabledItems.size(); i++) {
       result[i] = (MenuItem) enabledItems.elementAt(i);
@@ -199,7 +173,7 @@ public class MenuManager {
       MenuItem item = (MenuItem) menuItems.elementAt(i);
       allItems.addElement(item);
     }
-    MIDPlay.bubbleSort(allItems, 2);
+    Utils.sort(allItems, 2);
     MenuItem[] result = new MenuItem[allItems.size()];
     for (int i = 0; i < allItems.size(); i++) {
       result[i] = (MenuItem) allItems.elementAt(i);

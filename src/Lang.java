@@ -224,12 +224,21 @@ public class Lang {
   };
 
   private static void l(String code) {
-    if (d == null) d = new Hashtable();
-    else d.clear();
+    if (d == null) {
+      d = new Hashtable();
+    } else {
+      d.clear();
+    }
     String[] vals = EN_VALS;
-    if ("he".equals(code)) vals = HE_VALS;
-    if ("tr".equals(code)) vals = TR_VALS;
-    if ("vi".equals(code)) vals = VI_VALS;
+    if ("he".equals(code)) {
+      vals = HE_VALS;
+    }
+    if ("tr".equals(code)) {
+      vals = TR_VALS;
+    }
+    if ("vi".equals(code)) {
+      vals = VI_VALS;
+    }
     for (int j = 0; j < KEYS.length; j++) {
       d.put(KEYS[j], vals[j]);
     }
@@ -261,12 +270,12 @@ public class Lang {
   }
 
   public static String tr(String k, String a) {
-    return MIDPlay.replace(tr(k), "{0}", a);
+    return Utils.replace(tr(k), "{0}", a);
   }
 
   public static String tr(String k, String a, String b) {
     String t = tr(k);
-    return MIDPlay.replace(MIDPlay.replace(t, "{0}", a), "{1}", b);
+    return Utils.replace(Utils.replace(t, "{0}", a), "{1}", b);
   }
 
   private Lang() {}

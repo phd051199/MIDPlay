@@ -12,7 +12,7 @@
 -allowaccessmodification
 -printmapping out.map
 
--keep public class MIDPlay extends javax.microedition.midlet.MIDlet {
+-keep public class * extends javax.microedition.midlet.MIDlet {
     public void startApp();
     public void pauseApp();
     public void destroyApp(boolean);
