@@ -8,6 +8,8 @@ public class Utils {
 
   private static String playerHttpMethod;
 
+  private static final String HEX_DIGITS = "0123456789ABCDEF";
+
   // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
   public static void setPlayerHttpMethod() {
     String platform = System.getProperty("microedition.platform");
@@ -103,8 +105,6 @@ public class Utils {
     sb.append(text.substring(pos));
     return sb.toString();
   }
-
-  private static final String HEX_DIGITS = "0123456789ABCDEF";
 
   public static String urlEncode(String text) {
     if (text == null) {
