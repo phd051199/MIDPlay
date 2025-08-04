@@ -480,7 +480,8 @@ public class MIDPlay extends MIDlet implements CommandListener {
     Form f = new Form(Lang.tr(Configuration.MENU_ABOUT));
     f.append("Application: " + getAppProperty("MIDlet-Name") + "\n");
     f.append("Version: " + APP_VERSION + "\n");
-    f.append("Developer: " + getAppProperty("MIDlet-Vendor") + "\n");
+    f.append("Author: " + getAppProperty("MIDlet-Vendor") + "\n");
+    f.append("Developers: " + getAppProperty("MIDlet-Vendor") + ", GoldenDragon"+"\n");
     f.addCommand(Commands.back());
     f.addCommand(Commands.checkUpdate());
     f.setCommandListener(
