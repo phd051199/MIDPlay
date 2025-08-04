@@ -21,10 +21,6 @@ public final class PlayerScreen extends Canvas
   private static final int PLAY_BUTTON_WIDTH = 50;
   private static final int PLAY_BUTTON_HEIGHT = 50;
   private static final long BUTTON_ACTIVE_DURATION = 1000L;
-  private static final int THEME_COLOR = 0x181818;
-  private static final int BACKGROUND_COLOR = 0xF0F0F0;
-  private static final int BORDER_COLOR = 0x000000;
-  private static final int VOLUME_BAR_EMPTY_COLOR = 0xDCDCDC;
 
   private String title;
   private PlayerGUI gui;
@@ -444,15 +440,15 @@ public final class PlayerScreen extends Canvas
   }
 
   private void paintBackground(Graphics g) {
-    g.setColor(Theme.getColor("background"));
+    g.setColor(Theme.getBackgroundColor());
     g.fillRect(0, 0, displayWidth, displayHeight);
   }
 
   private void paintStatusBar(Graphics g, int clipY, int clipHeight) {
-    g.setColor(Theme.getColor("primary"));
+    g.setColor(Theme.getPrimaryColor());
     g.fillRect(0, 0, displayWidth, statusBarHeight);
     if (intersects(clipY, clipHeight, PLAYER_STATUS_TOP, textHeight)) {
-      g.setColor(Theme.getColor("player.statusBarText"));
+      g.setColor(Theme.getOnPrimaryColor());
       g.drawString(statusCurrent, displayWidth >> 1, PLAYER_STATUS_TOP, 17);
     }
   }
@@ -465,16 +461,14 @@ public final class PlayerScreen extends Canvas
           ART_LEFT + ART_SIZE / 2,
           artTop + ART_SIZE / 2,
           Graphics.HCENTER | Graphics.VCENTER);
-      
-      // Not sure if the theme should handle those colors
-      g.setColor(150, 150, 150);
+      g.setColor(Theme.getOutlineColor());
       g.drawRect(ART_LEFT, artTop, ART_SIZE, ART_SIZE);
     } else {
-      g.setColor(200, 200, 200);
+      g.setColor(Theme.getSurfaceVariantColor());
       g.fillRect(ART_LEFT, artTop, ART_SIZE, ART_SIZE);
-      g.setColor(150, 150, 150);
+      g.setColor(Theme.getOutlineColor());
       g.drawRect(ART_LEFT, artTop, ART_SIZE, ART_SIZE);
-      g.setColor(100, 100, 100);
+      g.setColor(Theme.getOnSurfaceVariantColor());
       g.drawString("♪", ART_LEFT + ART_SIZE / 2, artTop + ART_SIZE / 2, 17);
     }
   }
@@ -485,14 +479,14 @@ public final class PlayerScreen extends Canvas
       return;
     }
     if (intersects(clipY, clipHeight, trackNameTop, textHeight)) {
-      g.setColor(Theme.getColor("primary"));
+      g.setColor(Theme.getOnBackgroundColor());
       int maxTrackNameWidth = displayWidth - trackInfoLeft - 10;
       String trackName = currentTrack.getName();
       String truncatedTrackName = truncateText(trackName, g, maxTrackNameWidth);
       g.drawString(truncatedTrackName, trackInfoLeft, trackNameTop, 20);
     }
     if (intersects(clipY, clipHeight, singerNameTop, textHeight)) {
-      g.setColor(Theme.getColor("player.singerNameText"));
+      g.setColor(Theme.getOnSurfaceVariantColor());
       int maxSingerWidth = displayWidth - trackInfoLeft - 10;
       String artistName = currentTrack.getArtist();
       String truncatedSinger = truncateText(artistName, g, maxSingerWidth);
@@ -511,15 +505,15 @@ public final class PlayerScreen extends Canvas
       sliderValue = 0;
     }
     if (intersects(clipY, clipHeight, timeRateTop, textHeight)) {
-      g.setColor(Theme.getColor("player.timeSliderText"));
+      g.setColor(Theme.getOnSurfaceVariantColor());
       g.drawString(strCurrent, 5, timeRateTop, 20);
     }
-    g.setColor(Theme.getColor("player.timeSliderEmpty"));
+    g.setColor(Theme.getOutlineVariantColor());
     g.fillRect(sliderLeft, sliderTop, sliderWidth, SLIDER_HEIGHT);
-    g.setColor(Theme.getColor("primary"));
+    g.setColor(Theme.getPrimaryColor());
     g.fillRect(sliderLeft, sliderTop, (int) sliderValue, SLIDER_HEIGHT);
     if (intersects(clipY, clipHeight, timeRateTop, textHeight)) {
-      g.setColor(Theme.getColor("player.timeSliderText"));
+      g.setColor(Theme.getOnSurfaceVariantColor());
       g.drawString(strDuration, displayWidth - 5, timeRateTop, 24);
     }
   }
@@ -596,36 +590,31 @@ public final class PlayerScreen extends Canvas
     int alertHeight = 100;
     int alertX = 20;
     int alertY = (displayHeight - alertHeight) / 2;
-    g.setColor(Theme.getColor("background"));
 
-
+    g.setColor(Theme.getSurfaceColor());
     g.fillRect(alertX, alertY, alertWidth, alertHeight);
-    g.setColor(Theme.getColor("border"));
+    g.setColor(Theme.getOutlineColor());
     g.drawRect(alertX, alertY, alertWidth, alertHeight);
-    g.setColor(Theme.getColor("border"));
-    String title = Lang.tr("player.volume");
-    g.drawString(title, alertX + alertWidth / 2, alertY + 15, Graphics.HCENTER | Graphics.TOP);
-    int barWidth = alertWidth - 40;
-    int barHeight = 20;
-    int barX = alertX + 20;
-    int barY = alertY + 40;
-    g.setColor(Theme.getColor("player.volumeBarEmpty"));
-    g.fillRect(barX, barY, barWidth, barHeight);
-    g.setColor(Theme.getColor("primary"));
 
-
+    g.setColor(Theme.getOnSurfaceColor());
     g.drawString(
         Lang.tr("player.volume"),
         alertX + alertWidth / 2,
         alertY + 15,
         Graphics.HCENTER | Graphics.TOP);
 
-    int progressWidth = (barWidth * currentVolumeLevel) / Configuration.PLAYER_MAX_VOLUME;
-    g.setColor(Theme.getColor("primary"));
-    g.fillRect(barX, barY, progressWidth, barHeight);
-    
-    g.setColor(Theme.getColor("border"));
+    int barX = alertX + 20;
+    int barY = alertY + 40;
+    int barWidth = alertWidth - 40;
+    int barHeight = 20;
+    g.setColor(Theme.getOutlineVariantColor());
+    g.fillRect(barX, barY, barWidth, barHeight);
 
+    int progressWidth = (barWidth * currentVolumeLevel) / Configuration.PLAYER_MAX_VOLUME;
+    g.setColor(Theme.getPrimaryColor());
+    g.fillRect(barX, barY, progressWidth, barHeight);
+
+    g.setColor(Theme.getOutlineColor());
     g.drawRect(barX, barY, barWidth, barHeight);
   }
 

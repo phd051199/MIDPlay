@@ -75,7 +75,7 @@ public class URLProvider {
   public static String getSizedImage(String imageUrl, int size) {
     StringBuffer wsrvBuffer =
         new StringBuffer("https://wsrv.nl/?url=")
-            .append(imageUrl)
+            .append(Utils.urlEncode(imageUrl))
             .append("&output=jpg")
             .append("&w=")
             .append(size)

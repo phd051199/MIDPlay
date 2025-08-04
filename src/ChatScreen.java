@@ -21,24 +21,12 @@ public class ChatScreen extends Canvas implements CommandListener {
   private static final int CLEANUP_THRESHOLD = 80;
   private static final int MESSAGE_BUFFER = 3;
 
-  private static final int RECEIVED_BUBBLE_COLOR = 0xFFFFFF;
-  private static final int SENT_BUBBLE_COLOR = 0x410A4A;
-  private static final int BUBBLE_BORDER_COLOR = 0xE0E0E0;
-  private static final int RECEIVED_TEXT_COLOR = 0x000000;
-  private static final int SENT_TEXT_COLOR = 0xFFFFFF;
-  private static final int CLICKABLE_TEXT_COLOR = 0x0000FF;
-
-  
-  private static final float BORDER_HIGHLIGHT_FACTOR = 0.5f;
-
   private static final int BUBBLE_PADDING = 8;
   private static final int BUBBLE_MARGIN = 6;
   private static final int MESSAGE_SPACING = 5;
 
   private static final int CHAR_PER_LOOP = 4;
   private static final int MESSAGE_DELAY = 50;
-
-  private final SettingsManager settingsManager = SettingsManager.getInstance();
 
   private Vector messages = new Vector();
   private int currentMessageIndex = 0;
@@ -386,7 +374,7 @@ public class ChatScreen extends Canvas implements CommandListener {
     int height = getHeight();
     g.setFont(font);
 
-    g.setColor(Theme.getColor("background"));
+    g.setColor(Theme.getBackgroundColor());
     g.fillRect(0, 0, width, height);
 
     calculateVisibleMessageRange();
@@ -492,16 +480,16 @@ public class ChatScreen extends Canvas implements CommandListener {
     int bubbleX = isSent ? (screenWidth - bubbleWidth - BUBBLE_MARGIN) : BUBBLE_MARGIN;
 
     if (highlighted) {
-      g.setColor(ColorUtils.adjust(BUBBLE_BORDER_COLOR, BORDER_HIGHLIGHT_FACTOR));
+      g.setColor(Theme.getPrimaryColor());
       g.drawRect(bubbleX - 1, yPos - 1, bubbleWidth + 1, bubbleHeight + 1);
     }
 
     drawRoundedBubble(g, bubbleX, yPos, bubbleWidth, bubbleHeight, isSent);
 
     if (isClickable) {
-      g.setColor(Theme.getColor("chat.clickableText"));
+      g.setColor(Theme.getPrimaryColor());
     } else {
-      g.setColor(isSent ? Theme.getColor("chat.sentText") : Theme.getColor("chat.receivedText"));
+      g.setColor(isSent ? Theme.getOnPrimaryColor() : Theme.getOnSecondaryContainerColor());
     }
 
     int textY = yPos + BUBBLE_PADDING;
@@ -515,41 +503,17 @@ public class ChatScreen extends Canvas implements CommandListener {
   }
 
   private void drawRoundedBubble(Graphics g, int x, int y, int width, int height, boolean isSent) {
-    int bubbleColor = isSent ? Theme.getColor("primary") : Theme.getColor("chat.receivedBubble");
-
-    if (!isSent) {
-      g.setColor(BUBBLE_BORDER_COLOR);
-      g.fillRect(x, y + 4, width, height - 8);
-      g.fillRect(x + 4, y, width - 8, height);
-      g.fillRect(x + 2, y + 2, 4, 4);
-      g.fillRect(x + width - 6, y + 2, 4, 4);
-      g.fillRect(x + 2, y + height - 6, 4, 4);
-      g.fillRect(x + width - 6, y + height - 6, 4, 4);
-      g.fillRect(x + 1, y + 3, 2, 2);
-      g.fillRect(x + width - 3, y + 3, 2, 2);
-      g.fillRect(x + 1, y + height - 5, 2, 2);
-      g.fillRect(x + width - 3, y + height - 5, 2, 2);
-      g.fillRect(x + 3, y + 1, 2, 2);
-      g.fillRect(x + width - 5, y + 1, 2, 2);
-      g.fillRect(x + 3, y + height - 3, 2, 2);
-      g.fillRect(x + width - 5, y + height - 3, 2, 2);
-    }
+    int bubbleColor = isSent ? Theme.getPrimaryColor() : Theme.getSecondaryContainerColor();
 
     g.setColor(bubbleColor);
-    g.fillRect(x + 1, y + 4, width - 2, height - 8);
-    g.fillRect(x + 4, y + 1, width - 8, height - 2);
-    g.fillRect(x + 2, y + 2, 4, 4);
-    g.fillRect(x + width - 6, y + 2, 4, 4);
-    g.fillRect(x + 2, y + height - 6, 4, 4);
-    g.fillRect(x + width - 6, y + height - 6, 4, 4);
-    g.fillRect(x + 2, y + 3, 2, 2);
-    g.fillRect(x + width - 4, y + 3, 2, 2);
-    g.fillRect(x + 2, y + height - 5, 2, 2);
-    g.fillRect(x + width - 4, y + height - 5, 2, 2);
-    g.fillRect(x + 3, y + 2, 2, 2);
-    g.fillRect(x + width - 5, y + 2, 2, 2);
-    g.fillRect(x + 3, y + height - 4, 2, 2);
-    g.fillRect(x + width - 5, y + height - 4, 2, 2);
+
+    g.fillRect(x + 3, y, width - 6, height);
+    g.fillRect(x, y + 3, width, height - 6);
+
+    g.fillRect(x + 1, y + 1, 3, 3);
+    g.fillRect(x + width - 4, y + 1, 3, 3);
+    g.fillRect(x + 1, y + height - 4, 3, 3);
+    g.fillRect(x + width - 4, y + height - 4, 3, 3);
   }
 
   private Vector wrapText(String text, Font font, int maxWidth) {

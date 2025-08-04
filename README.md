@@ -49,7 +49,6 @@ ant build
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -65,22 +64,18 @@ Contributions are welcome! Please feel free to submit a Pull Request.
    `git push origin feature/amazing-feature`
 5. Open a Pull Request.
 
-### Theme and Language Contributions
+### Language Contributions
 
-If you want to add a new language or theme, you can do so by following these steps:
+If you want to add a new language, you can do so by following these steps:
 
-- Duplicate one of the existing files:  
-  - For themes, **`light.json`** is recommended.  
-  - For languages, use **`en.json`** as a base.
-- Edit the file as needed.
+- Duplicate the existing **`en.json`** file as a base
+- Edit the file as needed for your language
 - Submit it either:
-  - As an issue with the `[Enhancement]` tag and a detailed description, or  
-  - As a Pull Request (as described in the previous section).
+  - As an issue with the `[Enhancement]` tag and a detailed description, or
+  - As a Pull Request (as described in the previous section)
 
->**Note:** Support for user-defined themes (outside the built-in options) is planned for a future release, allowing users to apply their own themes directly without submitting them to the project.
+## Author and Contributors
 
+**Author:** Duy Pham
 
-
-## Author and Contrubiters
-*Author:* Duy Pham
-*Contributors:* GoldenDragon, symbuzz
+**Contributors:** symbuzzer, GoldenDragon

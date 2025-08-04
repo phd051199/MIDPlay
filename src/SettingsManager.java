@@ -15,7 +15,7 @@ public class SettingsManager {
   private static int currentRepeatMode;
   private static int currentShuffleMode;
   private static int currentVolumeLevel;
-  private static String currentTheme;
+  private static String currentThemeMode;
 
   public static SettingsManager getInstance() {
     if (instance == null) {
@@ -36,7 +36,8 @@ public class SettingsManager {
 
   public void loadSettings() {
     JSONObject settings = getSettingsJSON();
-    currentLanguage = settings.getString("language", "en");
+    setCurrentLanguage(settings.getString("language", "en"));
+    setCurrentThemeMode(settings.getString("themeMode", Configuration.THEME_LIGHT));
     currentService = settings.getString("service", Configuration.SERVICE_NCT);
     currentQuality = settings.getString("quality", Configuration.QUALITY_128);
     currentSearchType = settings.getString("searchType", Configuration.SEARCH_PLAYLIST);
@@ -45,9 +46,6 @@ public class SettingsManager {
     currentRepeatMode = settings.getInt("repeatMode", Configuration.PLAYER_REPEAT_ALL);
     currentShuffleMode = settings.getInt("shuffleMode", Configuration.PLAYER_SHUFFLE_OFF);
     currentVolumeLevel = settings.getInt("volumeLevel", Configuration.PLAYER_MAX_VOLUME);
-    currentTheme = settings.getString("theme",((Theme)Theme.themes.elementAt(0)).getName());
-    Lang.setLang(currentLanguage);
-    Theme.setCurrentTheme(currentTheme);
   }
 
   private JSONObject getSettingsJSON() {
@@ -73,7 +71,7 @@ public class SettingsManager {
     settings.put("searchType", Configuration.SEARCH_PLAYLIST);
     settings.put("autoUpdate", Configuration.AUTO_UPDATE_ENABLED);
     settings.put("playerMethod", getDefaultPlayerMethod());
-    settings.put("theme", Configuration.THEME_DARK);
+    settings.put("themeMode", Configuration.THEME_LIGHT);
     return settings;
   }
 
@@ -109,11 +107,11 @@ public class SettingsManager {
     currentLanguage = langCode;
     setCurrentLanguage(langCode);
   }
-  
-  public void saveTheme(String themeName) throws RecordStoreException {
-    saveSetting("theme", themeName);
-    currentTheme = themeName;
-    setCurrentTheme(themeName);
+
+  public void saveTheme(String mode) throws RecordStoreException {
+    saveSetting("themeMode", mode);
+    currentThemeMode = mode;
+    setCurrentThemeMode(mode);
   }
 
   public void saveService(String serviceCode) throws RecordStoreException {
@@ -164,10 +162,14 @@ public class SettingsManager {
     currentLanguage = langCode;
     Lang.setLang(langCode);
   }
-  
-  public void setCurrentTheme(String themeName) {
-    currentTheme = themeName;
-    Theme.setCurrentTheme(themeName);
+
+  public String getCurrentThemeMode() {
+    return currentThemeMode;
+  }
+
+  public void setCurrentThemeMode(String mode) {
+    currentThemeMode = mode;
+    Theme.setDark(Configuration.THEME_DARK.equals(mode));
   }
 
   public String getCurrentService() {

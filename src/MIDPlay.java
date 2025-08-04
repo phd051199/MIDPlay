@@ -1,5 +1,4 @@
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import javax.microedition.io.ConnectionNotFoundException;
@@ -107,15 +106,18 @@ public class MIDPlay extends MIDlet implements CommandListener {
         });
   }
 
-  private void loadMenuIcons() {
+  private void setMenuIcons() {
+    iconMap.put(Configuration.MENU_SEARCH, Configuration.searchIcon);
+    iconMap.put(Configuration.MENU_FAVORITES, Configuration.favoriteIcon);
+    iconMap.put(Configuration.MENU_DISCOVER_PLAYLISTS, Configuration.playlistIcon);
+    iconMap.put(Configuration.MENU_CHAT, Configuration.chatIcon);
+    iconMap.put(Configuration.MENU_SETTINGS, Configuration.settingsIcon);
+    iconMap.put(Configuration.MENU_ABOUT, Configuration.infoIcon);
+  }
+
+  private void loadIcons() {
     try {
-      Configuration.loadImages();
-      iconMap.put(Configuration.MENU_SEARCH, Configuration.searchIcon);
-      iconMap.put(Configuration.MENU_FAVORITES, Configuration.favoriteIcon);
-      iconMap.put(Configuration.MENU_DISCOVER_PLAYLISTS, Configuration.playlistIcon);
-      iconMap.put(Configuration.MENU_CHAT, Configuration.chatIcon);
-      iconMap.put(Configuration.MENU_SETTINGS, Configuration.settingsIcon);
-      iconMap.put(Configuration.MENU_ABOUT, Configuration.infoIcon);
+      Configuration.loadIcons();
     } catch (IOException e) {
       showError(e.toString());
     }
@@ -123,18 +125,9 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
   protected void startApp() throws MIDletStateChangeException {
     APP_VERSION = getAppProperty("MIDlet-Version");
-    
-    Theme.addThemeResource("light");
-    Theme.addThemeResource("dark");
-    Theme.addThemeResource("spotify");
-    Theme.addThemeResource("ytmusic");
-
-    Theme.loadAllThemes();
-    
     settingsManager.loadSettings();
-    
-    
-    loadMenuIcons();
+    loadIcons();
+    setMenuIcons();
     createMenu();
     checkForUpdate();
   }
@@ -158,7 +151,6 @@ public class MIDPlay extends MIDlet implements CommandListener {
       } else if (c == Commands.formCancel()) {
         handleCancel();
       } else if (c == Commands.playerNowPlaying()) {
-          setPlayerScreen(new PlayerScreen("FOOD", null, 0, navigator)); // DEBUG FOR THEME EDITING
         navigator.forward(getPlayerScreen());
       }
     } catch (Exception e) {
@@ -480,8 +472,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
     Form f = new Form(Lang.tr(Configuration.MENU_ABOUT));
     f.append("Application: " + getAppProperty("MIDlet-Name") + "\n");
     f.append("Version: " + APP_VERSION + "\n");
-    f.append("Author: " + getAppProperty("MIDlet-Vendor") + "\n");
-    f.append("Developers: " + getAppProperty("MIDlet-Vendor") + ", GoldenDragon"+"\n");
+    f.append("Developer: " + getAppProperty("MIDlet-Vendor") + "\n");
     f.addCommand(Commands.back());
     f.addCommand(Commands.checkUpdate());
     f.setCommandListener(
@@ -524,15 +515,13 @@ public class MIDPlay extends MIDlet implements CommandListener {
                   menu.setSelectedIndex(index, true);
                 }
               }
-              
-              public void onThemeChanged(String themeName){
-                  if(Theme.getCurrentTheme() != null){
-                      try {
-                          Configuration.loadThemeImages(Theme.getCurrentTheme().getUseLightImages());
-                      } catch (IOException ex) {
-                          ex.printStackTrace();
-                      }
-                  }
+
+              public void onThemeChanged(String mode) {
+                try {
+                  Configuration.loadPlayerIcons();
+                } catch (Exception e) {
+                  showError(e.toString());
+                }
               }
 
               public void onSettingsSaved() {
@@ -567,7 +556,6 @@ public class MIDPlay extends MIDlet implements CommandListener {
   }
 
   private void showError(String message) {
-    System.out.println("Error: " + message);
     navigator.showAlert(message, AlertType.ERROR);
   }
 
@@ -624,25 +612,4 @@ public class MIDPlay extends MIDlet implements CommandListener {
           }
         });
   }
-  
-  
-  	public static String readResourceFile(String resourcePath) {
-		InputStream is = instance.getClass().getResourceAsStream(resourcePath);
-
-		if (is == null) {
-			System.out.println("Resource not found: " + resourcePath);
-			return null;
-		}
-
-		try {
-			int available = is.available();
-			byte[] data = new byte[available];
-			is.read(data);
-			is.close();
-			return new String(data);
-		} catch (Exception e) {
-			System.out.println("Error reading file: " + e.getMessage());
-			return null;
-		}
-	}
 }

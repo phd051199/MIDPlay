@@ -27,12 +27,6 @@
       "removed": "נמחק מהמועדפים"
     }
   },
-  "language": {
-    "en": "English",
-    "tr": "Türkçe",
-    "vi": "Tiếng Việt",
-    "he": "עברית"
-  },
   "media": {
     "album": "אלבום",
     "playlist": "רשימת השמעה",
@@ -114,6 +108,11 @@
     "audio_quality": "איכות שמע",
     "auto_update": "עדכון אוטומטי",
     "check_update": "בדוק עדכונים זמינים",
+    "theme_mode": "ערכת נושא",
+    "theme_mode_options": {
+      "light": "בהיר",
+      "dark": "כהלום"
+    },
     "player_method": "שיטת נגינה",
     "player_method_options": {
       "pass_inputstream": "העבר Input Stream",
@@ -123,7 +122,6 @@
       "save_failed": "שמירת ההגדרות נכשלה"
     },
     "language": "Language/שפה",
-    "theme": "ערכת נושא",
     "reorder": {
       "instructions": "בחר פריט להעביר, ואז בחר במיקום היעד",
       "saved": "הסידור נשמר"
@@ -142,13 +140,8 @@
     "loading": "טוען...",
     "load_more": "טען עוד...",
     "no_data": "אין מידע זמין!",
-    "no_updates": "אין עדכונים זמינים. ברשותך הגרסה העדכנית.",
+    "no_updates": "אין עדכונים זמינים. ברשותך הגרסה העדכנית",
     "update_available": "גרסה חדשה זמינה. לעדכן עכשיו?"
-  },
-  "symbol": {
-    "arrow": "→ ",
-    "checked": "[x] ",
-    "unchecked": "[  ] "
   },
   "time": {
     "error": {
@@ -192,6 +185,6 @@
     "welcome_message": "שלום! איך אני יכול לעזור היום?"
   },
   "error": {
-    "connection": "בעיה בחיבור. אנא נסה שוב."
+    "connection": "בעיה בחיבור. אנא נסה שוב"
   }
 }
