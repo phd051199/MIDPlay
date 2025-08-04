@@ -49,16 +49,38 @@ ant build
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Features and Code Contributions
 
-## Author
+1. Fork the repository.
+2. Create a feature branch:  
+   `git checkout -b feature/amazing-feature`
+3. Commit your changes:  
+   `git commit -m "Add some amazing feature"`
+4. Push to the branch:  
+   `git push origin feature/amazing-feature`
+5. Open a Pull Request.
 
-Duy Pham
+### Theme and Language Contributions
+
+If you want to add a new language or theme, you can do so by following these steps:
+
+- Duplicate one of the existing files:  
+  - For themes, **`light.json`** is recommended.  
+  - For languages, use **`en.json`** as a base.
+- Edit the file as needed.
+- Submit it either:
+  - As an issue with the `[Enhancement]` tag and a detailed description, or  
+  - As a Pull Request (as described in the previous section).
+
+>**Note:** Support for user-defined themes (outside the built-in options) is planned for a future release, allowing users to apply their own themes directly without submitting them to the project.
+
+
+
+## Author and Contrubiters
+*Author:* Duy Pham
+*Contributors:* GoldenDragon, symbuzz
