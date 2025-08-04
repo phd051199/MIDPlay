@@ -15,6 +15,7 @@
 			"chat.receivedBubble": "0x2A2A2A",
 			"chat.receivedText": "0xFFFFFF",
 			"chat.sentText": "0xFFFFFF",
+                  "chat.clickableText": "0x0092CC",
 			"chat.bubbleBorder": "0x3A3A3A"
 		}
 	}

@@ -105,13 +105,9 @@ public class Navigator {
   }
 
   public void showLoadingAlert(String s) {
-    // Ignore loading alert on J2ME Loader
-    try {
-      Class.forName("javax.microedition.shell.MicroActivity");
+    if (Utils.isJ2MELoader()) {
       return;
-    } catch (Exception e) {
     }
-
     Alert a = new Alert(null, s == null ? Lang.tr("status.loading") : s, null, null);
     a.addCommand(Commands.cancel());
     a.setIndicator(new Gauge(null, false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING));

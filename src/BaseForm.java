@@ -11,7 +11,7 @@ public abstract class BaseForm extends Form implements CommandListener {
     super(title);
     this.navigator = navigator;
     setupCommands();
-    this.setCommandListener(this);
+    setCommandListener(this);
   }
 
   private void setupCommands() {

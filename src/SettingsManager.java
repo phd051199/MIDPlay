@@ -31,7 +31,7 @@ public class SettingsManager {
   }
 
   public String getDefaultPlayerMethod() {
-    return PlayerGUI.getDefaultPlayerHttpMethod();
+    return Utils.getDefaultPlayerHttpMethod();
   }
 
   public void loadSettings() {

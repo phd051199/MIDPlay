@@ -17,81 +17,6 @@ import model.Tracks;
 public class PlayerGUI implements PlayerListener {
   private static final int TIMER_INTERVAL = 1000;
   private static final int VOLUME_STEP = 10;
-  private static String playerHttpMethod;
-
-  private static boolean checkClass(String s) {
-    try {
-      Class.forName(s);
-      return true;
-    } catch (ClassNotFoundException e) {
-      return false;
-    }
-  }
-
-  public static String getDefaultPlayerHttpMethod() {
-    setPlayerHttpMethod();
-    return playerHttpMethod;
-  }
-
-  // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
-  public static void setPlayerHttpMethod() {
-    String m = Configuration.PLAYER_METHOD_PASS_URL;
-    boolean symbianJrt = false;
-    boolean symbian = false;
-    String p, v;
-    if ((p = System.getProperty("microedition.platform")) != null) {
-      if ((symbianJrt = p.indexOf("platform=S60") != -1)) {
-        int i;
-        v = p.substring(i = p.indexOf("platform_version=") + 17, i = p.indexOf(';', i));
-      }
-      try {
-        Class.forName("emulator.custom.CustomMethod");
-        p = "KEmulator";
-        if ((v = System.getProperty("kemulator.mod.version")) != null) {
-          p = p.concat(" ".concat(v));
-        }
-      } catch (ClassNotFoundException e) {
-        int i;
-        if ((i = p.indexOf('/')) != -1 || (i = p.indexOf(' ')) != -1) {
-          p = p.substring(0, i);
-        }
-      }
-    }
-    symbian =
-        symbianJrt
-            || System.getProperty("com.symbian.midp.serversocket.support") != null
-            || System.getProperty("com.symbian.default.to.suite.icon") != null
-            || checkClass("com.symbian.midp.io.protocol.http.Protocol")
-            || checkClass("com.symbian.lcdjava.io.File");
-    try {
-      Class.forName("com.nokia.mid.impl.isa.jam.Jam");
-      try {
-        Class.forName("com.sun.mmedia.protocol.CommonDS");
-        m = Configuration.PLAYER_METHOD_PASS_URL;
-      } catch (ClassNotFoundException e) {
-        m = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
-      }
-    } catch (ClassNotFoundException e0) {
-      m = Configuration.PLAYER_METHOD_PASS_URL;
-      if (symbian) {
-        if (symbianJrt
-            && (p.indexOf("java_build_version=2.") != -1
-                || p.indexOf("java_build_version=1.4") != -1)) {
-        } else if (checkClass("com.symbian.mmapi.PlayerImpl")) {
-          m = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
-        } else {
-          m = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
-        }
-      } else {
-        try {
-          Class.forName("javax.microedition.shell.MicroActivity");
-          m = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
-        } catch (ClassNotFoundException e1) {
-        }
-      }
-    }
-    playerHttpMethod = m;
-  }
 
   private final PlayerScreen parent;
   private final SettingsManager settingsManager;
@@ -108,12 +33,11 @@ public class PlayerGUI implements PlayerListener {
   private InputStream inputStream;
   private Timer mainTimer;
   private TimerTask displayTask;
-  private volatile boolean isLoading = false;
+  private volatile boolean stopped = false;
 
   public PlayerGUI(PlayerScreen parent) {
     this.parent = parent;
     this.settingsManager = SettingsManager.getInstance();
-    setPlayerHttpMethod();
     loadSettings();
     setStatus("");
   }
@@ -139,7 +63,7 @@ public class PlayerGUI implements PlayerListener {
     if (isShuffleEnabled) {
       createShuffle();
     }
-    setStatusByKey("player.status.ready");
+    setStatusByKey(Configuration.PLAYER_STATUS_READY);
     parent.updateDisplay();
   }
 
@@ -147,10 +71,8 @@ public class PlayerGUI implements PlayerListener {
     if (getCurrentTrack() == null) {
       return;
     }
-    if (isLoading) {
-      isLoading = false;
-      closePlayer();
-      closeResources();
+    if (stopped) {
+      stopped = false;
     }
     if (player != null && player.getState() >= Player.PREFETCHED) {
       startPlayback();
@@ -163,7 +85,7 @@ public class PlayerGUI implements PlayerListener {
     if (player != null) {
       try {
         player.stop();
-        setStatusByKey("player.status.paused");
+        setStatusByKey(Configuration.PLAYER_STATUS_PAUSED);
         stopTimer();
       } catch (MediaException e) {
         e.printStackTrace();
@@ -245,7 +167,7 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public synchronized void cleanup() {
-    isLoading = false;
+    stopped = true;
     closePlayer();
     closeResources();
     cleanupTimers();
@@ -320,13 +242,13 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void playerUpdate(Player p, String event, Object eventData) {
-    if (player != p) {
+    if (player != p || stopped) {
       return;
     }
     try {
       if (PlayerListener.STARTED.equals(event)) {
         startTimer();
-        setStatusByKey("player.status.playing");
+        setStatusByKey(Configuration.PLAYER_STATUS_PLAYING);
       } else if (PlayerListener.END_OF_MEDIA.equals(event)) {
         handleTrackEnd();
       } else if (PlayerListener.STOPPED.equals(event)
@@ -343,34 +265,29 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void loadAndPlay() {
-    if (isLoading) {
+    if (stopped) {
       return;
     }
-    isLoading = true;
-    setStatusByKey("player.status.loading");
+    setStatusByKey(Configuration.PLAYER_STATUS_LOADING);
     Thread loadThread =
         new Thread(
             new Runnable() {
               public void run() {
                 try {
-                  if (!isLoading) {
+                  if (stopped) {
                     return;
                   }
                   setupPlayer();
-                  if (!isLoading) {
-                    closePlayer();
-                    closeResources();
+                  if (stopped) {
                     return;
                   }
                   startPlayback();
                 } catch (IOException e) {
                   e.printStackTrace();
                 } catch (MediaException me) {
-                  if (isLoading) {
+                  if (!stopped) {
                     handleError(me);
                   }
-                } finally {
-                  isLoading = false;
                 }
               }
             });
@@ -382,11 +299,9 @@ public class PlayerGUI implements PlayerListener {
     if (track == null) {
       throw new IOException("No track selected");
     }
-    if (!isLoading) {
+    if (stopped) {
       return;
     }
-    closePlayer();
-    closeResources();
     parent.setAlbumArtUrl(track.getImageUrl());
 
     if (Configuration.PLAYER_METHOD_PASS_INPUTSTREAM.equals(getPlayerHttpMethod())) {
@@ -395,18 +310,14 @@ public class PlayerGUI implements PlayerListener {
       createUrlPlayer(track);
     }
 
-    if (!isLoading || player == null) {
-      closePlayer();
-      closeResources();
+    if (stopped) {
       return;
     }
 
     player.addPlayerListener(this);
     player.realize();
 
-    if (!isLoading) {
-      closePlayer();
-      closeResources();
+    if (stopped) {
       return;
     }
 
@@ -419,32 +330,30 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void createStreamPlayer(Track track) throws IOException, MediaException {
-    if (!isLoading) {
+    if (stopped) {
       return;
     }
     String finalUrl = resolveRedirect(track.getUrl());
-    if (!isLoading) {
+    if (stopped) {
       return;
     }
     httpConnection = (HttpConnection) Connector.open(finalUrl);
-    if (!isLoading) {
-      closeResources();
+    if (stopped) {
       return;
     }
     inputStream = httpConnection.openInputStream();
-    if (!isLoading) {
-      closeResources();
+    if (stopped) {
       return;
     }
     player = Manager.createPlayer(inputStream, "audio/mpeg");
   }
 
   private void createUrlPlayer(Track track) throws IOException, MediaException {
-    if (!isLoading) {
+    if (stopped) {
       return;
     }
     String finalUrl = resolveRedirect(track.getUrl());
-    if (!isLoading) {
+    if (stopped) {
       return;
     }
     player = Manager.createPlayer(finalUrl);
@@ -477,7 +386,7 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void startPlayback() {
-    if (player == null) {
+    if (player == null || stopped) {
       return;
     }
     try {
@@ -501,9 +410,7 @@ public class PlayerGUI implements PlayerListener {
     if (tracks.length == 0) {
       return;
     }
-    isLoading = false;
-    closePlayer();
-    closeResources();
+    cleanup();
     boolean trackChanged;
     if (isShuffleEnabled) {
       trackChanged = changeTrackShuffle(forward);
@@ -601,6 +508,9 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void handleTrackEnd() {
+    if (stopped) {
+      return;
+    }
     stopTimer();
     parent.updateDisplay();
     Thread endThread =
@@ -620,7 +530,7 @@ public class PlayerGUI implements PlayerListener {
                   } else if (hasNextTrack()) {
                     next();
                   } else {
-                    setStatusByKey("player.status.finished");
+                    setStatusByKey(Configuration.PLAYER_STATUS_FINISHED);
                   }
                 } catch (Exception e) {
                   e.printStackTrace();
@@ -733,8 +643,6 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void handleError(MediaException me) {
-    closePlayer();
-    closeResources();
     setStatus(Lang.tr("status.error"));
     parent.showError(me.toString());
   }
@@ -778,7 +686,7 @@ public class PlayerGUI implements PlayerListener {
         settingsManager.getCurrentPlayerMethod())) {
       return Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
     } else {
-      return playerHttpMethod;
+      return Utils.getPlayerHttpMethod();
     }
   }
 

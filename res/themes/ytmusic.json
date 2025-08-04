@@ -1,11 +1,11 @@
 {
 	"theme": {
-		"themeName": "YTMUisc",
+		"themeName": "YTMusic",
             "useLightImages": true,
 
 		"colors": {
-			"background": "0xFF0000",
-			"primary": "0x410A4A",
+			"background": "0x1A1A1A",
+			"primary": "0xFF0000",
 			"border": "0x333333",
 			"player.volumeBarEmpty": "0x444444",
 			"player.statusBarText": "0xFFFFFF",
@@ -15,6 +15,7 @@
 			"chat.receivedBubble": "0x2A2A2A",
 			"chat.receivedText": "0xFFFFFF",
 			"chat.sentText": "0xFFFFFF",
+         	"chat.clickableText": "0x0092CC",
 			"chat.bubbleBorder": "0x3A3A3A"
 		}
 	}

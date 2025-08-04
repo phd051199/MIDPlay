@@ -327,11 +327,6 @@ public class ChatScreen extends Canvas implements CommandListener {
     }
   }
 
-  private boolean isScrolledToBottom() {
-    int maxScroll = Math.max(0, totalContentHeight - getHeight());
-    return scrollOffset >= maxScroll - 50;
-  }
-
   private void startTypingEffect() {
     if (timer != null) {
       timer.cancel();
@@ -391,8 +386,7 @@ public class ChatScreen extends Canvas implements CommandListener {
     int height = getHeight();
     g.setFont(font);
 
-    g.setColor(220,220,220);
-   // g.setColor(0xF0F0F0);
+    g.setColor(Theme.getColor("background"));
     g.fillRect(0, 0, width, height);
 
     calculateVisibleMessageRange();
@@ -468,9 +462,9 @@ public class ChatScreen extends Canvas implements CommandListener {
       boolean highlighted) {
     String textToRender = text;
     if (isClickable) {
-      textToRender = MIDPlay.replace(textToRender, "[", "");
-      textToRender = MIDPlay.replace(textToRender, "].", "");
-      textToRender = MIDPlay.replace(textToRender, "]", "");
+      textToRender = Utils.replace(textToRender, "[", "");
+      textToRender = Utils.replace(textToRender, "].", "");
+      textToRender = Utils.replace(textToRender, "]", "");
     }
 
     Vector wrappedLines =
@@ -505,9 +499,9 @@ public class ChatScreen extends Canvas implements CommandListener {
     drawRoundedBubble(g, bubbleX, yPos, bubbleWidth, bubbleHeight, isSent);
 
     if (isClickable) {
-      g.setColor(CLICKABLE_TEXT_COLOR);
+      g.setColor(Theme.getColor("chat.clickableText"));
     } else {
-      g.setColor(isSent ? SENT_TEXT_COLOR : RECEIVED_TEXT_COLOR);
+      g.setColor(isSent ? Theme.getColor("chat.sentText") : Theme.getColor("chat.receivedText"));
     }
 
     int textY = yPos + BUBBLE_PADDING;
@@ -521,7 +515,7 @@ public class ChatScreen extends Canvas implements CommandListener {
   }
 
   private void drawRoundedBubble(Graphics g, int x, int y, int width, int height, boolean isSent) {
-    int bubbleColor = isSent ? SENT_BUBBLE_COLOR : RECEIVED_BUBBLE_COLOR;
+    int bubbleColor = isSent ? Theme.getColor("primary") : Theme.getColor("chat.receivedBubble");
 
     if (!isSent) {
       g.setColor(BUBBLE_BORDER_COLOR);

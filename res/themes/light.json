@@ -15,12 +15,8 @@
             "chat.receivedBubble":"0xFFFFFF",
             "chat.receivedText":"0x000000",
             "chat.sentText":"0xFFFFFF",
+            "chat.clickableText": "0x0092CC",
             "chat.bubbleBorder":"0xE0E0E0"
-        
-		},
-
-        "images":{
-
-        }
+		}
 	}
 }

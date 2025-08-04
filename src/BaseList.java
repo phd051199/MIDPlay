@@ -11,7 +11,7 @@ public abstract class BaseList extends List implements CommandListener {
     super(title, List.IMPLICIT);
     this.navigator = navigator;
     setupCommands();
-    this.setCommandListener(this);
+    setCommandListener(this);
   }
 
   private void setupCommands() {

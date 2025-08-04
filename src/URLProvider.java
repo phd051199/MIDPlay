@@ -30,7 +30,7 @@ public class URLProvider {
         new StringBuffer(SERVICE_URL)
             .append("/search")
             .append("?q=")
-            .append(MIDPlay.urlEncode(keyword))
+            .append(Utils.urlEncode(keyword))
             .append("&page=")
             .append(pageIndex)
             .append("&type=")
@@ -47,7 +47,7 @@ public class URLProvider {
         new StringBuffer(SERVICE_URL)
             .append("/tracks/search")
             .append("?q=")
-            .append(MIDPlay.urlEncode(keyword))
+            .append(Utils.urlEncode(keyword))
             .append("&page=")
             .append(pageIndex)
             .append("&lang=")
@@ -76,17 +76,16 @@ public class URLProvider {
     StringBuffer wsrvBuffer =
         new StringBuffer("https://wsrv.nl/?url=")
             .append(imageUrl)
-            .append("&output=png")
+            .append("&output=jpg")
             .append("&w=")
             .append(size)
             .append("&h=")
             .append(size)
-            .append("&fit=cover")
-            .append("&q=75");
+            .append("&fit=cover");
     StringBuffer urlBuffer =
         new StringBuffer(SERVICE_URL)
             .append("/proxy?url=")
-            .append(MIDPlay.urlEncode(wsrvBuffer.toString()));
+            .append(Utils.urlEncode(wsrvBuffer.toString()));
     return urlBuffer.toString();
   }
 
@@ -97,7 +96,7 @@ public class URLProvider {
             .append("lang=")
             .append(Lang.getCurrentLang())
             .append("&m=")
-            .append(MIDPlay.urlEncode(message))
+            .append(Utils.urlEncode(message))
             .append("&sessionId=")
             .append(sessionId);
     return urlBuffer.toString();
