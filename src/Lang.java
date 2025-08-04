@@ -44,7 +44,7 @@ public class Lang {
     "timer.cancel", "timer.confirm.exit", "timer.mode.absolute", "timer.mode.countdown",
         "timer.set", "timer.sleep_timer", "timer.status.cancelled", "timer.status.expired",
         "timer.status.remaining", "timer.status.set",
-    "chat.input", "chat.welcome_message", "error.connection"
+    "chat.input", "chat.welcome_message", "error.connection",  "settings.theme"
   };
 
   private static final String[] EN_VALS = {
@@ -87,7 +87,7 @@ public class Lang {
         "Countdown Mode", "Set Timer",
     "Sleep Timer", "Sleep timer cancelled", "Sleep timer expired", "Time Remaining: {0}",
         "Sleep timer activated",
-    "Enter message", "Hello! How can I help you today?", "Connection error. Please try again."
+    "Enter message", "Hello! How can I help you today?", "Connection error. Please try again.", "Theme"
   };
 
   private static final String[] HE_VALS = {
@@ -129,7 +129,7 @@ public class Lang {
         "קבע קוצב זמן",
     "קוצב זמן לשינה", "קוצב זמן לשינה בוטל", "קוצב זמן לשינה סיים", "הזמן שנותר: {0}",
         "קוצב זמן לשינה הופעל",
-    "שלח הודעה", "שלום! איך אני יכול לעזור היום?", "בעיה בחיבור. אנא נסה שוב."
+    "שלח הודעה", "שלום! איך אני יכול לעזור היום?", "בעיה בחיבור. אנא נסה שוב.", "ערכת נושא"
   };
 
   private static final String[] TR_VALS = {

@@ -22,9 +22,14 @@ public class ChatScreen extends Canvas implements CommandListener {
   private static final int MESSAGE_BUFFER = 3;
 
   private static final int RECEIVED_BUBBLE_COLOR = 0xFFFFFF;
-  private static final int SENT_TEXT_COLOR = 0xFFFFFF;
-  private static final int RECEIVED_TEXT_COLOR = 0x000000;
+  private static final int SENT_BUBBLE_COLOR = 0x410A4A;
   private static final int BUBBLE_BORDER_COLOR = 0xE0E0E0;
+  private static final int RECEIVED_TEXT_COLOR = 0x000000;
+  private static final int SENT_TEXT_COLOR = 0xFFFFFF;
+  private static final int CLICKABLE_TEXT_COLOR = 0x0000FF;
+
+  
+  private static final float BORDER_HIGHLIGHT_FACTOR = 0.5f;
 
   private static final int BUBBLE_PADDING = 8;
   private static final int BUBBLE_MARGIN = 6;
@@ -386,7 +391,8 @@ public class ChatScreen extends Canvas implements CommandListener {
     int height = getHeight();
     g.setFont(font);
 
-    g.setColor(0xF0F0F0);
+    g.setColor(220,220,220);
+   // g.setColor(0xF0F0F0);
     g.fillRect(0, 0, width, height);
 
     calculateVisibleMessageRange();
@@ -492,14 +498,14 @@ public class ChatScreen extends Canvas implements CommandListener {
     int bubbleX = isSent ? (screenWidth - bubbleWidth - BUBBLE_MARGIN) : BUBBLE_MARGIN;
 
     if (highlighted) {
-      g.setColor(0x410A4A);
+      g.setColor(ColorUtils.adjust(BUBBLE_BORDER_COLOR, BORDER_HIGHLIGHT_FACTOR));
       g.drawRect(bubbleX - 1, yPos - 1, bubbleWidth + 1, bubbleHeight + 1);
     }
 
     drawRoundedBubble(g, bubbleX, yPos, bubbleWidth, bubbleHeight, isSent);
 
     if (isClickable) {
-      g.setColor(0x0000FF);
+      g.setColor(CLICKABLE_TEXT_COLOR);
     } else {
       g.setColor(isSent ? SENT_TEXT_COLOR : RECEIVED_TEXT_COLOR);
     }
@@ -515,7 +521,7 @@ public class ChatScreen extends Canvas implements CommandListener {
   }
 
   private void drawRoundedBubble(Graphics g, int x, int y, int width, int height, boolean isSent) {
-    int bubbleColor = isSent ? 0x410A4A : RECEIVED_BUBBLE_COLOR;
+    int bubbleColor = isSent ? SENT_BUBBLE_COLOR : RECEIVED_BUBBLE_COLOR;
 
     if (!isSent) {
       g.setColor(BUBBLE_BORDER_COLOR);

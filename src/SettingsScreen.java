@@ -8,12 +8,15 @@ public final class SettingsScreen extends BaseForm {
   private final SettingsManager settingsManager;
   private final Listener listener;
   private final String[] availableLanguages = Lang.getAvailableLanguages();
+  //private final Theme[] availableThemes = // STOP HERE
   private ChoiceGroup languageGroup;
+  private ChoiceGroup themeGroup;
   private ChoiceGroup serviceGroup;
   private ChoiceGroup qualityGroup;
   private ChoiceGroup autoUpdateGroup;
   private ChoiceGroup playerMethodGroup;
   private String currentLanguage;
+  private String currentTheme;
   private String currentService;
   private String currentQuality;
   private int currentAutoUpdate;
@@ -36,6 +39,7 @@ public final class SettingsScreen extends BaseForm {
 
   private void addComponents() {
     languageGroup = createChoiceGroup("settings.language", availableLanguages, "language.");
+    themeGroup = createChoiceGroup("settings.theme", Theme.getAllThemeNames(), null);
     serviceGroup = createChoiceGroup("settings.service", Configuration.ALL_SERVICES, null);
     qualityGroup = createChoiceGroup("settings.audio_quality", Configuration.ALL_QUALITIES, null);
     playerMethodGroup =
@@ -46,6 +50,7 @@ public final class SettingsScreen extends BaseForm {
     autoUpdateGroup = new ChoiceGroup(Lang.tr("settings.auto_update"), ChoiceGroup.MULTIPLE);
     autoUpdateGroup.append(Lang.tr("settings.check_update"), null);
     this.append(languageGroup);
+    this.append(themeGroup);
     this.append(serviceGroup);
     this.append(qualityGroup);
     this.append(playerMethodGroup);
@@ -65,11 +70,13 @@ public final class SettingsScreen extends BaseForm {
 
   private void loadSettings() {
     currentLanguage = settingsManager.getCurrentLanguage();
+    currentTheme = Theme.getCurrentTheme().getName();
     currentService = settingsManager.getCurrentService();
     currentQuality = settingsManager.getCurrentQuality();
     currentAutoUpdate = settingsManager.getCurrentAutoUpdate();
     currentPlayerMethod = settingsManager.getCurrentPlayerMethod();
     selectChoice(languageGroup, availableLanguages, currentLanguage);
+    selectChoice(themeGroup, Theme.getAllThemeNames(), currentTheme);
     selectChoice(serviceGroup, Configuration.ALL_SERVICES, currentService);
     selectChoice(qualityGroup, Configuration.ALL_QUALITIES, currentQuality);
     selectChoice(playerMethodGroup, Configuration.ALL_PLAYER_METHODS, currentPlayerMethod);
@@ -88,6 +95,7 @@ public final class SettingsScreen extends BaseForm {
   private void saveSettings() {
     try {
       String selectedLang = getSelected(languageGroup, availableLanguages, "en");
+      String selectedTheme = getSelected(themeGroup, Theme.getAllThemeNames(), Configuration.THEME_LIGHT);
       String selectedService =
           getSelected(serviceGroup, Configuration.ALL_SERVICES, Configuration.SERVICE_NCT);
       String selectedQuality =
@@ -106,6 +114,11 @@ public final class SettingsScreen extends BaseForm {
         hasChanges = true;
         settingsManager.saveLanguage(selectedLang);
         this.listener.onLanguageChanged(selectedLang);
+      }
+      if (!currentTheme.equals(selectedTheme)) {
+        hasChanges = true;
+        settingsManager.saveTheme(selectedTheme);
+        this.listener.onThemeChanged(selectedTheme);
       }
       if (!currentService.equals(selectedService)) {
         hasChanges = true;
@@ -141,6 +154,8 @@ public final class SettingsScreen extends BaseForm {
   public interface Listener {
     void onLanguageChanged(String selectedLang);
 
+    void onThemeChanged(String selectedTheme);
+    
     void onSettingsSaved();
   }
 }

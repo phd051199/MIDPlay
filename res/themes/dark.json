@@ -1,0 +1,21 @@
+{
+	"theme": {
+		"themeName": "Dark",
+            "useLightImages": true,
+
+		"colors": {
+			"background": "0x1A1A1A",
+			"primary": "0x410A4A",
+			"border": "0x333333",
+			"player.volumeBarEmpty": "0x444444",
+			"player.statusBarText": "0xFFFFFF",
+			"player.singerNameText": "B3B3B3",
+			"player.timeSliderText": "B3B3B3",
+			"player.timeSliderEmpty": "0x444444",
+			"chat.receivedBubble": "0x2A2A2A",
+			"chat.receivedText": "0xFFFFFF",
+			"chat.sentText": "0xFFFFFF",
+			"chat.bubbleBorder": "0x3A3A3A"
+		}
+	}
+}

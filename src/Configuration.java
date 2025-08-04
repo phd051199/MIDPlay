@@ -51,6 +51,11 @@ public class Configuration {
   public static final int PLAYER_REPEAT_ALL = 2;
   public static final int PLAYER_SHUFFLE_OFF = 0;
   public static final int PLAYER_SHUFFLE_ON = 1;
+  
+  public static final String THEME_DARK = "dark";
+  public static final String THEME_LIGHT = "light";
+  
+  public static final String IMAGES_BASE_PATH = "/imgs";
 
   public static Image folderIcon;
   public static Image musicIcon;
@@ -69,25 +74,45 @@ public class Configuration {
   public static Image repeatOneIcon;
   public static Image shuffleIcon;
   public static Image shuffleOffIcon;
+  private static boolean isLightImgs = true;
 
   public static void loadImages() throws IOException {
-    folderIcon = Image.createImage("/FolderSound.png");
-    musicIcon = Image.createImage("/MusicDoubleNote.png");
-    searchIcon = Image.createImage("/Magnifier.png");
-    favoriteIcon = Image.createImage("/Heart.png");
-    playlistIcon = Image.createImage("/Album.png");
-    chatIcon = Image.createImage("/MessagingChat.png");
-    settingsIcon = Image.createImage("/Setting.png");
-    infoIcon = Image.createImage("/Information.png");
-    nextIcon = Image.createImage("/Next.png");
-    pauseIcon = Image.createImage("/Pause.png");
-    playIcon = Image.createImage("/Play.png");
-    previousIcon = Image.createImage("/Previous.png");
-    repeatIcon = Image.createImage("/Repeat.png");
-    repeatOffIcon = Image.createImage("/RepeatOff.png");
-    repeatOneIcon = Image.createImage("/RepeatOne.png");
-    shuffleIcon = Image.createImage("/Shuffle.png");
-    shuffleOffIcon = Image.createImage("/ShuffleOff.png");
+    folderIcon = Image.createImage(IMAGES_BASE_PATH+"/FolderSound.png");
+    musicIcon = Image.createImage(IMAGES_BASE_PATH+"/MusicDoubleNote.png");
+    searchIcon = Image.createImage(IMAGES_BASE_PATH+"/Magnifier.png");
+    favoriteIcon = Image.createImage(IMAGES_BASE_PATH+"/Heart.png");
+    playlistIcon = Image.createImage(IMAGES_BASE_PATH+"/Album.png");
+    chatIcon = Image.createImage(IMAGES_BASE_PATH+"/MessagingChat.png");
+    settingsIcon = Image.createImage(IMAGES_BASE_PATH+"/Setting.png");
+    infoIcon = Image.createImage(IMAGES_BASE_PATH+"/Information.png");
+    
+    boolean lightImgs = true;
+    if(Theme.getCurrentTheme() != null){
+        lightImgs = Theme.getCurrentTheme().getUseLightImages();
+    }
+    
+    
+    loadThemeImages(lightImgs);
+  }
+  
+  public static void loadThemeImages(boolean light) throws IOException{
+    isLightImgs = light;
+    String themeImagesBasePath = IMAGES_BASE_PATH;  
+    if(light){
+        themeImagesBasePath += "/light";
+    } else{
+        themeImagesBasePath += "/dark";
+    }
+      
+    nextIcon = Image.createImage(themeImagesBasePath+"/Next.png");
+    pauseIcon = Image.createImage(themeImagesBasePath+"/Pause.png");
+    playIcon = Image.createImage(themeImagesBasePath+"/Play.png");
+    previousIcon = Image.createImage(themeImagesBasePath+"/Previous.png");
+    repeatIcon = Image.createImage(themeImagesBasePath+"/Repeat.png");
+    repeatOffIcon = Image.createImage(themeImagesBasePath+"/RepeatOff.png");
+    repeatOneIcon = Image.createImage(themeImagesBasePath+"/RepeatOne.png");
+    shuffleIcon = Image.createImage(themeImagesBasePath+"/Shuffle.png");
+    shuffleOffIcon = Image.createImage(themeImagesBasePath+"/ShuffleOff.png");
   }
 
   private Configuration() {}

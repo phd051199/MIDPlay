@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -197,7 +198,14 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
   protected void startApp() throws MIDletStateChangeException {
     APP_VERSION = getAppProperty("MIDlet-Version");
+    
+    Theme.addThemeResource("light");
+     Theme.addThemeResource("dark");
+    Theme.loadAllThemes();
+    
     settingsManager.loadSettings();
+    
+    
     loadMenuIcons();
     createMenu();
     checkForUpdate();
@@ -222,6 +230,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
       } else if (c == Commands.formCancel()) {
         handleCancel();
       } else if (c == Commands.playerNowPlaying()) {
+          setPlayerScreen(new PlayerScreen("FOOD", null, 0, navigator)); // DEBUG FOR THEME EDITING
         navigator.forward(getPlayerScreen());
       }
     } catch (Exception e) {
@@ -586,6 +595,16 @@ public class MIDPlay extends MIDlet implements CommandListener {
                   menu.setSelectedIndex(index, true);
                 }
               }
+              
+              public void onThemeChanged(String themeName){
+                  if(Theme.getCurrentTheme() != null){
+                      try {
+                          Configuration.loadThemeImages(Theme.getCurrentTheme().getUseLightImages());
+                      } catch (IOException ex) {
+                          ex.printStackTrace();
+                      }
+                  }
+              }
 
               public void onSettingsSaved() {
                 navigator.showAlert(Lang.tr("settings.status.saved"), AlertType.CONFIRMATION, menu);
@@ -619,6 +638,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
   }
 
   private void showError(String message) {
+    System.out.println("Error: " + message);
     navigator.showAlert(message, AlertType.ERROR);
   }
 
@@ -675,4 +695,25 @@ public class MIDPlay extends MIDlet implements CommandListener {
           }
         });
   }
+  
+  
+  	public static String readResourceFile(String resourcePath) {
+		InputStream is = instance.getClass().getResourceAsStream(resourcePath);
+
+		if (is == null) {
+			System.out.println("Resource not found: " + resourcePath);
+			return null;
+		}
+
+		try {
+			int available = is.available();
+			byte[] data = new byte[available];
+			is.read(data);
+			is.close();
+			return new String(data);
+		} catch (Exception e) {
+			System.out.println("Error reading file: " + e.getMessage());
+			return null;
+		}
+	}
 }
