@@ -53,12 +53,29 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Features and Code Contributions
 
-## Author
+1. Fork the repository.
+2. Create a feature branch:  
+   `git checkout -b feature/amazing-feature`
+3. Commit your changes:  
+   `git commit -m "Add some amazing feature"`
+4. Push to the branch:  
+   `git push origin feature/amazing-feature`
+5. Open a Pull Request.
 
-Duy Pham
+### Language Contributions
+
+If you want to add a new language, you can do so by following these steps:
+
+- Duplicate the existing **`en.json`** file as a base
+- Edit the file as needed for your language
+- Submit it either:
+  - As an issue with the `[Enhancement]` tag and a detailed description, or
+  - As a Pull Request (as described in the previous section)
+
+## Author and Contributors
+
+**Author:** Duy Pham
+
+**Contributors:** symbuzzer, GoldenDragon

@@ -106,15 +106,18 @@ public class MIDPlay extends MIDlet implements CommandListener {
         });
   }
 
-  private void loadMenuIcons() {
+  private void setMenuIcons() {
+    iconMap.put(Configuration.MENU_SEARCH, Configuration.searchIcon);
+    iconMap.put(Configuration.MENU_FAVORITES, Configuration.favoriteIcon);
+    iconMap.put(Configuration.MENU_DISCOVER_PLAYLISTS, Configuration.playlistIcon);
+    iconMap.put(Configuration.MENU_CHAT, Configuration.chatIcon);
+    iconMap.put(Configuration.MENU_SETTINGS, Configuration.settingsIcon);
+    iconMap.put(Configuration.MENU_ABOUT, Configuration.infoIcon);
+  }
+
+  private void loadIcons() {
     try {
-      Configuration.loadImages();
-      iconMap.put(Configuration.MENU_SEARCH, Configuration.searchIcon);
-      iconMap.put(Configuration.MENU_FAVORITES, Configuration.favoriteIcon);
-      iconMap.put(Configuration.MENU_DISCOVER_PLAYLISTS, Configuration.playlistIcon);
-      iconMap.put(Configuration.MENU_CHAT, Configuration.chatIcon);
-      iconMap.put(Configuration.MENU_SETTINGS, Configuration.settingsIcon);
-      iconMap.put(Configuration.MENU_ABOUT, Configuration.infoIcon);
+      Configuration.loadIcons();
     } catch (IOException e) {
       showError(e.toString());
     }
@@ -123,7 +126,8 @@ public class MIDPlay extends MIDlet implements CommandListener {
   protected void startApp() throws MIDletStateChangeException {
     APP_VERSION = getAppProperty("MIDlet-Version");
     settingsManager.loadSettings();
-    loadMenuIcons();
+    loadIcons();
+    setMenuIcons();
     createMenu();
     checkForUpdate();
   }
@@ -509,6 +513,14 @@ public class MIDPlay extends MIDlet implements CommandListener {
                     index = newSize - 1;
                   }
                   menu.setSelectedIndex(index, true);
+                }
+              }
+
+              public void onThemeChanged(String mode) {
+                try {
+                  Configuration.loadPlayerIcons();
+                } catch (Exception e) {
+                  showError(e.toString());
                 }
               }
 

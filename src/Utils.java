@@ -165,7 +165,7 @@ public class Utils {
     }
   }
 
-  public static Image invertImageColors(Image img) {
+  public static Image applyColor(Image img, int targetColor) {
     int width = img.getWidth();
     int height = img.getHeight();
     int[] rgbData = new int[width * height];
@@ -174,14 +174,14 @@ public class Utils {
 
     for (int i = 0; i < rgbData.length; i++) {
       int pixel = rgbData[i];
-      rgbData[i] = invertColor(pixel);
+      int alpha = pixel & 0xFF000000;
+
+      if (alpha != 0) {
+        rgbData[i] = alpha | (targetColor & 0x00FFFFFF);
+      }
     }
 
     return Image.createRGBImage(rgbData, width, height, true);
-  }
-
-  public static int invertColor(int color) {
-    return (color & 0xFF000000) | (0x00FFFFFF ^ (color & 0x00FFFFFF));
   }
 
   private Utils() {}

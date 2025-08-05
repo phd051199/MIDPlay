@@ -15,6 +15,7 @@ public class SettingsManager {
   private static int currentRepeatMode;
   private static int currentShuffleMode;
   private static int currentVolumeLevel;
+  private static String currentThemeMode;
 
   public static SettingsManager getInstance() {
     if (instance == null) {
@@ -35,7 +36,8 @@ public class SettingsManager {
 
   public void loadSettings() {
     JSONObject settings = getSettingsJSON();
-    currentLanguage = settings.getString("language", "en");
+    setCurrentLanguage(settings.getString("language", "en"));
+    setCurrentThemeMode(settings.getString("themeMode", Configuration.THEME_LIGHT));
     currentService = settings.getString("service", Configuration.SERVICE_NCT);
     currentQuality = settings.getString("quality", Configuration.QUALITY_128);
     currentSearchType = settings.getString("searchType", Configuration.SEARCH_PLAYLIST);
@@ -44,7 +46,6 @@ public class SettingsManager {
     currentRepeatMode = settings.getInt("repeatMode", Configuration.PLAYER_REPEAT_ALL);
     currentShuffleMode = settings.getInt("shuffleMode", Configuration.PLAYER_SHUFFLE_OFF);
     currentVolumeLevel = settings.getInt("volumeLevel", Configuration.PLAYER_MAX_VOLUME);
-    Lang.setLang(currentLanguage);
   }
 
   private JSONObject getSettingsJSON() {
@@ -70,6 +71,7 @@ public class SettingsManager {
     settings.put("searchType", Configuration.SEARCH_PLAYLIST);
     settings.put("autoUpdate", Configuration.AUTO_UPDATE_ENABLED);
     settings.put("playerMethod", getDefaultPlayerMethod());
+    settings.put("themeMode", Configuration.THEME_LIGHT);
     return settings;
   }
 
@@ -104,6 +106,12 @@ public class SettingsManager {
     saveSetting("language", langCode);
     currentLanguage = langCode;
     setCurrentLanguage(langCode);
+  }
+
+  public void saveTheme(String mode) throws RecordStoreException {
+    saveSetting("themeMode", mode);
+    currentThemeMode = mode;
+    setCurrentThemeMode(mode);
   }
 
   public void saveService(String serviceCode) throws RecordStoreException {
@@ -153,6 +161,15 @@ public class SettingsManager {
   public void setCurrentLanguage(String langCode) {
     currentLanguage = langCode;
     Lang.setLang(langCode);
+  }
+
+  public String getCurrentThemeMode() {
+    return currentThemeMode;
+  }
+
+  public void setCurrentThemeMode(String mode) {
+    currentThemeMode = mode;
+    Theme.setDark(Configuration.THEME_DARK.equals(mode));
   }
 
   public String getCurrentService() {

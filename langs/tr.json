@@ -27,12 +27,6 @@
       "removed": "Favorilerden çıkarıldı"
     }
   },
-  "language": {
-    "en": "English",
-    "tr": "Türkçe",
-    "vi": "Tiếng Việt",
-    "he": "עברית"
-  },
   "media": {
     "album": "Albüm",
     "playlist": "Çalma Listesi",
@@ -114,6 +108,11 @@
     "audio_quality": "Ses Kalitesi",
     "auto_update": "Otomatik Güncellemeler",
     "check_update": "Güncellemeleri Kontrol Et",
+    "theme_mode": "Tema Modu",
+    "theme_mode_options": {
+      "light": "Açık",
+      "dark": "Koyu"
+    },
     "player_method": "Oynatıcı Yöntemi",
     "player_method_options": {
       "pass_inputstream": "Input Stream Geçir",
@@ -132,7 +131,7 @@
       "saved": "Ayarlar başarıyla kaydedildi"
     },
     "visibility": {
-      "instructions": "Gizle/göster öğeleri seçin. [x] = göster, [] = gizle. Tamamlamak için Kaydet'e basın.",
+      "instructions": "Gizle/göster öğeleri seçin. [x] = göster, [] = gizle",
       "saved": "Görünürlük ayarları kaydedildi"
     }
   },
@@ -141,13 +140,8 @@
     "loading": "Yükleniyor...",
     "load_more": "Daha fazla yükle...",
     "no_data": "Veri yok!",
-    "no_updates": "Güncelleme yok. En son sürümü kullanıyorsunuz.",
+    "no_updates": "Güncelleme yok. En son sürümü kullanıyorsunuz",
     "update_available": "Yeni sürüm mevcut. Şimdi güncellensin mi?"
-  },
-  "symbol": {
-    "arrow": "→ ",
-    "checked": "[x] ",
-    "unchecked": "[  ] "
   },
   "time": {
     "error": {
@@ -191,6 +185,6 @@
     "welcome_message": "Merhaba! Size nasıl yardımcı olabilirim?"
   },
   "error": {
-    "connection": "Bağlantı hatası. Lütfen tekrar deneyin."
+    "connection": "Bağlantı hatası. Lütfen tekrar deneyin"
   }
 }

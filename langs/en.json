@@ -76,7 +76,7 @@
     "add_track": "Add to Playlist",
     "create": "Create Playlist",
     "confirm": {
-      "delete_with_tracks": "This playlist contains songs. Delete playlist and all songs?"
+      "delete_with_tracks": "This playlist is not empty. Delete all?"
     },
     "error": {
       "add_track_failed": "Failed to add track to playlist",
@@ -114,6 +114,11 @@
     "audio_quality": "Audio Quality",
     "auto_update": "Automatic Updates",
     "check_update": "Check for Updates",
+    "theme_mode": "Appearance",
+    "theme_mode_options": {
+      "dark": "Dark",
+      "light": "Light"
+    },
     "player_method": "Player Method",
     "player_method_options": {
       "pass_inputstream": "Pass Input Stream",
@@ -132,7 +137,7 @@
       "saved": "Settings saved successfully"
     },
     "visibility": {
-      "instructions": "Select items to hide/show. [x] = show, [] = hide. Press Save to complete.",
+      "instructions": "Select items to hide/show. [x] = show, [] = hide",
       "saved": "Visibility settings saved"
     }
   },
@@ -141,13 +146,8 @@
     "loading": "Loading...",
     "load_more": "Load more...",
     "no_data": "No data available!",
-    "no_updates": "No updates available. You have the latest version.",
+    "no_updates": "No updates available. You have the latest version",
     "update_available": "New version available. Update now?"
-  },
-  "symbol": {
-    "arrow": "→ ",
-    "checked": "[x] ",
-    "unchecked": "[  ] "
   },
   "time": {
     "error": {
@@ -191,6 +191,6 @@
     "welcome_message": "Hello! How can I help you today?"
   },
   "error": {
-    "connection": "Connection error. Please try again."
+    "connection": "Connection error. Please try again"
   }
 }
