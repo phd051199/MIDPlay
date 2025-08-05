@@ -109,6 +109,7 @@
     "auto_update": "Tự động cập nhật",
     "check_update": "Kiểm tra cập nhật",
     "theme_mode": "Giao diện",
+    "theme_color": "Màu chủ đề",
     "theme_mode_options": {
       "light": "Sáng",
       "dark": "Tối"

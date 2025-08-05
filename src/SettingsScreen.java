@@ -1,3 +1,4 @@
+import cc.nnproject.json.JSONObject;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
@@ -8,18 +9,22 @@ public final class SettingsScreen extends BaseForm {
   private final SettingsManager settingsManager;
   private final Listener listener;
   private final String[] availableLanguages = Lang.getAvailableLanguages();
+
   private ChoiceGroup languageGroup;
   private ChoiceGroup themeModeGroup;
+  private ChoiceGroup themeColorGroup;
   private ChoiceGroup serviceGroup;
   private ChoiceGroup qualityGroup;
   private ChoiceGroup autoUpdateGroup;
   private ChoiceGroup playerMethodGroup;
+
   private String currentLanguage;
   private String currentThemeMode;
   private String currentService;
   private String currentQuality;
   private int currentAutoUpdate;
   private String currentPlayerMethod;
+  private int currentColorIndex;
 
   public SettingsScreen(Navigator navigator, Listener listener) {
     super(Lang.tr(Configuration.MENU_SETTINGS), navigator);
@@ -48,14 +53,24 @@ public final class SettingsScreen extends BaseForm {
             "settings.player_method",
             Configuration.ALL_PLAYER_METHODS,
             "settings.player_method_options.");
+
     autoUpdateGroup = new ChoiceGroup(Lang.tr("settings.auto_update"), ChoiceGroup.MULTIPLE);
     autoUpdateGroup.append(Lang.tr("settings.check_update"), null);
-    this.append(languageGroup);
-    this.append(themeModeGroup);
-    this.append(serviceGroup);
-    this.append(qualityGroup);
-    this.append(playerMethodGroup);
-    this.append(autoUpdateGroup);
+
+    themeColorGroup = new ChoiceGroup(Lang.tr("settings.theme_color"), ChoiceGroup.POPUP);
+    for (int i = 0; i < Configuration.THEME_COLOR_NAMES.length; i++) {
+      themeColorGroup.append(
+          Configuration.THEME_COLOR_NAMES[i],
+          Utils.createImageFromHex(Configuration.THEME_COLORS[i], 12, 12));
+    }
+
+    append(languageGroup);
+    append(themeModeGroup);
+    append(themeColorGroup);
+    append(serviceGroup);
+    append(qualityGroup);
+    append(playerMethodGroup);
+    append(autoUpdateGroup);
   }
 
   private ChoiceGroup createChoiceGroup(
@@ -76,8 +91,13 @@ public final class SettingsScreen extends BaseForm {
     currentQuality = settingsManager.getCurrentQuality();
     currentAutoUpdate = settingsManager.getCurrentAutoUpdate();
     currentPlayerMethod = settingsManager.getCurrentPlayerMethod();
+    currentColorIndex = settingsManager.getSavedColorIndex();
     selectChoice(languageGroup, availableLanguages, currentLanguage);
     selectChoice(themeModeGroup, Configuration.ALL_THEME_MODES, currentThemeMode);
+    selectChoice(
+        themeColorGroup,
+        Configuration.THEME_COLOR_NAMES,
+        Configuration.THEME_COLOR_NAMES[currentColorIndex]);
     selectChoice(serviceGroup, Configuration.ALL_SERVICES, currentService);
     selectChoice(qualityGroup, Configuration.ALL_QUALITIES, currentQuality);
     selectChoice(playerMethodGroup, Configuration.ALL_PLAYER_METHODS, currentPlayerMethod);
@@ -96,7 +116,7 @@ public final class SettingsScreen extends BaseForm {
   private void saveSettings() {
     try {
       String selectedLang = getSelected(languageGroup, availableLanguages, "en");
-      String selectedTheme =
+      String selectedThemeMode =
           getSelected(themeModeGroup, Configuration.ALL_THEME_MODES, Configuration.THEME_LIGHT);
       String selectedService =
           getSelected(serviceGroup, Configuration.ALL_SERVICES, Configuration.SERVICE_NCT);
@@ -111,16 +131,20 @@ public final class SettingsScreen extends BaseForm {
           autoUpdateGroup.isSelected(0)
               ? Configuration.AUTO_UPDATE_ENABLED
               : Configuration.AUTO_UPDATE_DISABLED;
+      int selectedThemeColor = themeColorGroup.getSelectedIndex();
       boolean hasChanges = false;
       if (!currentLanguage.equals(selectedLang)) {
         hasChanges = true;
         settingsManager.saveLanguage(selectedLang);
-        this.listener.onLanguageChanged(selectedLang);
+        listener.onLanguageChanged(selectedLang);
       }
-      if (!currentThemeMode.equals(selectedTheme)) {
+      boolean hasColorChange = currentColorIndex != selectedThemeColor;
+      boolean hasModeChange = !currentThemeMode.equals(selectedThemeMode);
+
+      if (hasColorChange || hasModeChange) {
         hasChanges = true;
-        settingsManager.saveTheme(selectedTheme);
-        this.listener.onThemeChanged(selectedTheme);
+        handleThemeChanges(selectedThemeMode, selectedThemeColor, hasColorChange, hasModeChange);
+        return;
       }
       if (!currentService.equals(selectedService)) {
         hasChanges = true;
@@ -139,7 +163,7 @@ public final class SettingsScreen extends BaseForm {
         settingsManager.savePlayerMethod(selectedPlayerMethod);
       }
       if (hasChanges) {
-        this.listener.onSettingsSaved();
+        listener.onSettingsSaved();
       } else {
         navigator.back();
       }
@@ -153,10 +177,61 @@ public final class SettingsScreen extends BaseForm {
     return selectedIndex >= 0 ? values[selectedIndex] : defaultValue;
   }
 
+  private void handleThemeChanges(
+      String newThemeMode, int newColorIndex, boolean hasColorChange, boolean hasModeChange) {
+    if (hasColorChange) {
+      loadThemeColors(newColorIndex, newThemeMode, hasModeChange);
+    } else if (hasModeChange) {
+      saveThemeMode(newThemeMode);
+    }
+  }
+
+  private void saveThemeMode(String newThemeMode) {
+    try {
+      settingsManager.saveTheme(newThemeMode);
+      listener.onThemeChanged();
+      listener.onSettingsSaved();
+    } catch (RecordStoreException e) {
+      navigator.showAlert("Error saving theme: " + e.toString(), AlertType.ERROR);
+    }
+  }
+
+  private void loadThemeColors(
+      final int selected, final String newThemeMode, final boolean hasModeChange) {
+    if (selected < 0 || selected >= Configuration.THEME_COLORS.length) {
+      if (hasModeChange) saveThemeMode(newThemeMode);
+      return;
+    }
+
+    String colorHex = Integer.toHexString(Configuration.THEME_COLORS[selected]);
+    MIDPlay.startOperation(
+        new ThemeColorOperation(
+            colorHex,
+            new ThemeColorOperation.ThemeColorListener() {
+              public void onThemeColorsReceived(JSONObject lightColors, JSONObject darkColors) {
+                try {
+                  settingsManager.saveThemeColors(lightColors, darkColors, selected);
+                  if (hasModeChange) settingsManager.saveTheme(newThemeMode);
+                  settingsManager.loadAndApplyThemeColors();
+                  listener.onThemeChanged();
+                  listener.onSettingsSaved();
+                } catch (Exception e) {
+                  navigator.showAlert("Error saving theme: " + e.toString(), AlertType.WARNING);
+                }
+              }
+
+              public void onError(Exception e) {
+                navigator.showAlert("Error loading theme: " + e.toString(), AlertType.ERROR);
+                if (hasModeChange) saveThemeMode(newThemeMode);
+                else listener.onSettingsSaved();
+              }
+            }));
+  }
+
   public interface Listener {
     void onLanguageChanged(String selectedLang);
 
-    void onThemeChanged(String mode);
+    void onThemeChanged();
 
     void onSettingsSaved();
   }
