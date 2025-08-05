@@ -39,13 +39,11 @@ public class Lang {
     "settings.status.saved", "settings.visibility.instructions", "settings.visibility.saved",
         "status.error", "status.loading", "status.load_more", "status.no_data", "status.no_updates",
         "status.update_available", "time.error.invalid_duration",
-    "time.error.invalid_format", "time.error.invalid_hour", "time.error.invalid_minute",
-        "time.hours", "time.input.minutes", "time.input.time", "time.minutes", "timer.action",
-        "timer.actions.exit_app", "timer.actions.stop_playback",
-    "timer.cancel", "timer.confirm.exit", "timer.mode.absolute", "timer.mode.countdown",
-        "timer.set", "timer.sleep_timer", "timer.status.cancelled", "timer.status.expired",
-        "timer.status.remaining", "timer.status.set",
-    "chat.input", "chat.welcome_message", "error.connection"
+    "time.error.invalid_format", "time.minutes", "timer.action", "timer.actions.exit_app",
+        "timer.actions.stop_playback", "timer.cancel", "timer.confirm.exit", "timer.set",
+        "timer.sleep_timer", "timer.status.cancelled",
+    "timer.status.expired", "timer.status.remaining", "timer.status.set", "chat.input",
+        "chat.welcome_message", "error.connection"
   };
 
   private static final String[] EN_VALS = {
@@ -80,14 +78,12 @@ public class Lang {
         "Visibility settings saved", "An error occurred", "Loading...",
     "Load more...", "No data available!", "No updates available. You have the latest version",
         "New version available. Update now?", "Duration must be 1-999 minutes",
-    "Invalid time format", "Hour must be 0-23", "Minute must be 0-59", "Hours",
-        "Enter duration (1-999 minutes)",
-    "Enter time (24-hour format)", "Minutes", "Timer Action", "Exit Application", "Stop Playback",
-    "Cancel Timer", "Timer will exit the application when expired. Continue?", "Absolute Time",
-        "Countdown Mode", "Set Timer",
-    "Sleep Timer", "Sleep timer cancelled", "Sleep timer expired", "Time Remaining: {0}",
-        "Sleep timer activated",
-    "Enter message", "Hello! How can I help you today?", "Connection error. Please try again"
+    "Invalid time format", "Minutes", "Timer Action", "Exit Application", "Stop Playback",
+    "Cancel Timer", "Timer will exit the application when expired. Continue?", "Set Timer",
+        "Sleep Timer", "Sleep timer cancelled",
+    "Sleep timer expired", "Time Remaining: {0}", "Sleep timer activated", "Enter message",
+        "Hello! How can I help you today?",
+    "Connection error. Please try again"
   };
 
   private static final String[] HE_VALS = {
@@ -121,14 +117,12 @@ public class Lang {
         "הגדרות הנראות נשמרו", "התרחשה שגיאה", "טוען...",
     "טען עוד...", "אין מידע זמין!", "אין עדכונים זמינים. ברשותך הגרסה העדכנית",
         "גרסה חדשה זמינה. לעדכן עכשיו?", "משך זמן חייב להיות בין 1 ל- 999",
-    "פורמט זמן שגוי", "השעה חייבת להיות בין 0 ל- 23", "הדקות חייבות להיות בין 0 ל-59", "שעות",
-        "הכנס אורך (בין דקה ל- 999)",
-    "הכנס זמן (פורמט 24 שעות)", "דקות", "פעולת קוצב זמן", "סגור אפליקציה", "עצור השמעה",
-    "בטל קוצב זמן", "האפליקציה תסגר כאשר קוצב הזמן ייגמר. להמשיך?", "זמן מוחלט", "מצב ספירה לאחור",
-        "קבע קוצב זמן",
-    "קוצב זמן לשינה", "קוצב זמן לשינה בוטל", "קוצב זמן לשינה סיים", "הזמן שנותר: {0}",
-        "קוצב זמן לשינה הופעל",
-    "שלח הודעה", "שלום! איך אני יכול לעזור היום?", "בעיה בחיבור. אנא נסה שוב"
+    "פורמט זמן שגוי", "דקות", "פעולת קוצב זמן", "סגור אפליקציה", "עצור השמעה",
+    "בטל קוצב זמן", "האפליקציה תסגר כאשר קוצב הזמן ייגמר. להמשיך?", "קבע קוצב זמן",
+        "קוצב זמן לשינה", "קוצב זמן לשינה בוטל",
+    "קוצב זמן לשינה סיים", "הזמן שנותר: {0}", "קוצב זמן לשינה הופעל", "שלח הודעה",
+        "שלום! איך אני יכול לעזור היום?",
+    "בעיה בחיבור. אנא נסה שוב"
   };
 
   private static final String[] TR_VALS = {
@@ -164,16 +158,12 @@ public class Lang {
         "Görünürlük ayarları kaydedildi", "Bir hata oluştu", "Yükleniyor...",
     "Daha fazla yükle...", "Veri yok!", "Güncelleme yok. En son sürümü kullanıyorsunuz",
         "Yeni sürüm mevcut. Şimdi güncellensin mi?", "Süre 1-999 dakika arasında olmalı",
-    "Geçersiz zaman formatı", "Saat 0-23 arasında olmalı", "Dakika 0-59 arasında olmalı", "Saat",
-        "Süre girin (1-999 dakika)",
-    "Zaman girin (24 saat formatı)", "Dakika", "Zamanlayıcı Eylemi", "Uygulamadan Çık",
-        "Çalmayı Durdur",
+    "Geçersiz zaman formatı", "Dakika", "Zamanlayıcı Eylemi", "Uygulamadan Çık", "Çalmayı Durdur",
     "Zamanlayıcıyı İptal Et", "Zamanlayıcı süresi dolduğunda uygulamadan çıkacak. Devam et?",
-        "Mutlak Zaman", "Geri Sayım Modu", "Zamanlayıcı Ayarla",
-    "Uyku Zamanlayıcısı", "Uyku zamanlayıcısı iptal edildi", "Uyku zamanlayıcısı süresi doldu",
-        "Kalan Süre: {0}", "Uyku zamanlayıcısı etkinleştirildi",
-    "Mesaj girin", "Merhaba! Size nasıl yardımcı olabilirim?",
-        "Bağlantı hatası. Lütfen tekrar deneyin"
+        "Zamanlayıcı Ayarla", "Uyku Zamanlayıcısı", "Uyku zamanlayıcısı iptal edildi",
+    "Uyku zamanlayıcısı süresi doldu", "Kalan Süre: {0}", "Uyku zamanlayıcısı etkinleştirildi",
+        "Mesaj girin", "Merhaba! Size nasıl yardımcı olabilirim?",
+    "Bağlantı hatası. Lütfen tekrar deneyin"
   };
 
   private static final String[] VI_VALS = {
@@ -207,15 +197,13 @@ public class Lang {
         "Đã xảy ra lỗi", "Đang tải...",
     "Tải thêm...", "Không có dữ liệu!", "Không có cập nhật. Bạn đang dùng phiên bản mới nhất",
         "Có phiên bản mới. Cập nhật ngay?", "Thời lượng phải từ 1-999 phút",
-    "Định dạng thời gian không hợp lệ", "Giờ phải từ 0-23", "Phút phải từ 0-59", "Giờ",
-        "Nhập thời lượng (1-999 phút)",
-    "Nhập thời gian (định dạng 24 giờ)", "Phút", "Hành động khi hết giờ", "Thoát ứng dụng",
+    "Định dạng thời gian không hợp lệ", "Phút", "Hành động khi hết giờ", "Thoát ứng dụng",
         "Dừng phát nhạc",
-    "Hủy hẹn giờ", "Hẹn giờ sẽ thoát ứng dụng khi hết thời gian. Tiếp tục?", "Thời gian cụ thể",
-        "Chế độ đếm ngược", "Đặt hẹn giờ",
-    "Hẹn giờ tắt", "Đã hủy hẹn giờ tắt", "Hẹn giờ tắt đã hết thời gian", "Thời gian còn lại: {0}",
-        "Đã kích hoạt hẹn giờ tắt",
-    "Nhập tin nhắn", "Xin chào! Tôi có thể giúp gì cho bạn?", "Lỗi kết nối. Vui lòng thử lại"
+    "Hủy hẹn giờ", "Hẹn giờ sẽ thoát ứng dụng khi hết thời gian. Tiếp tục?", "Đặt hẹn giờ",
+        "Hẹn giờ tắt", "Đã hủy hẹn giờ tắt",
+    "Hẹn giờ tắt đã hết thời gian", "Thời gian còn lại: {0}", "Đã kích hoạt hẹn giờ tắt",
+        "Nhập tin nhắn", "Xin chào! Tôi có thể giúp gì cho bạn?",
+    "Lỗi kết nối. Vui lòng thử lại"
   };
 
   private static void l(String code) {

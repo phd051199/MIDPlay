@@ -152,14 +152,7 @@
   "time": {
     "error": {
       "invalid_duration": "Duration must be 1-999 minutes",
-      "invalid_format": "Invalid time format",
-      "invalid_hour": "Hour must be 0-23",
-      "invalid_minute": "Minute must be 0-59"
-    },
-    "hours": "Hours",
-    "input": {
-      "minutes": "Enter duration (1-999 minutes)",
-      "time": "Enter time (24-hour format)"
+      "invalid_format": "Invalid time format"
     },
     "minutes": "Minutes"
   },
@@ -172,10 +165,6 @@
     "cancel": "Cancel Timer",
     "confirm": {
       "exit": "Timer will exit the application when expired. Continue?"
-    },
-    "mode": {
-      "absolute": "Absolute Time",
-      "countdown": "Countdown Mode"
     },
     "set": "Set Timer",
     "sleep_timer": "Sleep Timer",
