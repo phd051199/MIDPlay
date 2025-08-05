@@ -37,11 +37,11 @@ public class Commands {
   }
 
   public static Command input() {
-    return get("chat.input", Command.SCREEN, 1);
+    return get("chat.input", Command.SCREEN, 0);
   }
 
   public static Command checkUpdate() {
-    return get("settings.check_update", Command.SCREEN, 2);
+    return get("settings.check_update", Command.SCREEN, 3);
   }
 
   public static Command playlistAdd() {

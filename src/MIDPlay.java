@@ -6,9 +6,12 @@ import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.ImageItem;
 import javax.microedition.lcdui.List;
+import javax.microedition.lcdui.StringItem;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
 import model.MenuItem;
@@ -142,6 +145,8 @@ public class MIDPlay extends MIDlet implements CommandListener {
         handleListSelection();
       } else if (c == Commands.exit()) {
         showExitConfirmation();
+      } else if (c == Commands.checkUpdate()) {
+        manualCheckForUpdate();
       } else if (c == Commands.menuSort()) {
         toggleSortMode();
       } else if (c == Commands.menuVisibility()) {
@@ -195,6 +200,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
   private void addMenuCommands() {
     menu.addCommand(Commands.exit());
+    menu.addCommand(Commands.checkUpdate());
     menu.addCommand(Commands.menuSort());
     menu.addCommand(Commands.menuVisibility());
     menu.addCommand(Commands.playerNowPlaying());
@@ -395,6 +401,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
   private void switchToEditCommands() {
     menu.removeCommand(Commands.exit());
+    menu.removeCommand(Commands.checkUpdate());
     menu.removeCommand(Commands.menuSort());
     menu.removeCommand(Commands.menuVisibility());
     menu.removeCommand(Commands.playerNowPlaying());
@@ -405,10 +412,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
   private void switchToNormalCommands() {
     menu.removeCommand(Commands.formSave());
     menu.removeCommand(Commands.formCancel());
-    menu.addCommand(Commands.exit());
-    menu.addCommand(Commands.menuSort());
-    menu.addCommand(Commands.menuVisibility());
-    menu.addCommand(Commands.playerNowPlaying());
+    addMenuCommands();
   }
 
   private void saveCurrentOrder() {
@@ -470,18 +474,38 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
   private void goToAboutScreen() {
     Form f = new Form(Lang.tr(Configuration.MENU_ABOUT));
-    f.append("Application: " + getAppProperty("MIDlet-Name") + "\n");
-    f.append("Version: " + APP_VERSION + "\n");
-    f.append("Developer: " + getAppProperty("MIDlet-Vendor") + "\n");
+
+    try {
+      Image appIcon = Image.createImage("/Icon.png");
+      ImageItem iconItem = new ImageItem(null, appIcon, ImageItem.LAYOUT_CENTER, null);
+      f.append(iconItem);
+      f.append("\n");
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    StringItem appNameItem = new StringItem(null, getAppProperty("MIDlet-Name") + "\n");
+    appNameItem.setFont(Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_MEDIUM));
+    f.append(appNameItem);
+    f.append("Version " + APP_VERSION + "\n");
+    f.append("Platform: " + "Java ME (MIDP 2.0)\n");
+    StringItem authorTitle = new StringItem(null, "Author\n");
+    authorTitle.setFont(Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_MEDIUM));
+    f.append(authorTitle);
+    f.append(getAppProperty("MIDlet-Vendor") + "\n");
+    StringItem contributorsTitle = new StringItem(null, "Contributors\n");
+    contributorsTitle.setFont(
+        Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_MEDIUM));
+    f.append(contributorsTitle);
+    f.append("+ " + "symbuzzer\n");
+    f.append("+ " + "GoldenDragon\n");
+
     f.addCommand(Commands.back());
-    f.addCommand(Commands.checkUpdate());
     f.setCommandListener(
         new CommandListener() {
           public void commandAction(Command c, Displayable d) {
             if (c == Commands.back()) {
               navigator.back();
-            } else if (c == Commands.checkUpdate()) {
-              manualCheckForUpdate();
             }
           }
         });
