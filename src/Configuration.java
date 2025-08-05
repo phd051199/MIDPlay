@@ -31,6 +31,17 @@ public class Configuration {
   public static final String THEME_DARK = "dark";
   public static final String[] ALL_THEME_MODES = {THEME_LIGHT, THEME_DARK};
 
+  public static final String[] THEME_COLOR_NAMES = {
+    "Purple", "Blue", "Green", "Red", "Orange", "Pink", "Teal", "Indigo",
+    "Cyan", "Amber", "Brown", "Grey", "Lime", "Deep Purple", "Light Blue", "Yellow"
+  };
+  public static final int[] THEME_COLORS = {
+    0x65558F, 0x1976D2, 0x388E3C, 0xD32F2F,
+    0xF57C00, 0xC2185B, 0x00796B, 0x303F9F,
+    0x00BCD4, 0xFFC107, 0x795548, 0x607D8B,
+    0x8BC34A, 0x512DA8, 0x03A9F4, 0xFFEB3B
+  };
+
   public static final String QUALITY_128 = "128kbps";
   public static final String QUALITY_320 = "320kbps";
   public static final String[] ALL_QUALITIES = {QUALITY_128, QUALITY_320};

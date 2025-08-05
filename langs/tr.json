@@ -109,6 +109,7 @@
     "auto_update": "Otomatik Güncellemeler",
     "check_update": "Güncellemeleri Kontrol Et",
     "theme_mode": "Tema Modu",
+    "theme_color": "Tema Rengi",
     "theme_mode_options": {
       "light": "Açık",
       "dark": "Koyu"

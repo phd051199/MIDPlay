@@ -1,5 +1,6 @@
 import java.io.UnsupportedEncodingException;
 import java.util.Vector;
+import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 import model.MenuItem;
 import model.Playlist;
@@ -182,6 +183,16 @@ public class Utils {
     }
 
     return Image.createRGBImage(rgbData, width, height, true);
+  }
+
+  public static Image createImageFromHex(int hex, int width, int height) {
+    Image image = Image.createImage(width, height);
+    Graphics g = image.getGraphics();
+
+    g.setColor(hex);
+    g.fillRect(0, 0, width, height);
+
+    return image;
   }
 
   private Utils() {}

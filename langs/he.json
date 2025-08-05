@@ -109,6 +109,7 @@
     "auto_update": "עדכון אוטומטי",
     "check_update": "בדוק עדכונים זמינים",
     "theme_mode": "ערכת נושא",
+    "theme_color": "צבע ערכת הנושא",
     "theme_mode_options": {
       "light": "בהיר",
       "dark": "כהלום"

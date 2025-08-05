@@ -89,6 +89,12 @@ public class URLProvider {
     return urlBuffer.toString();
   }
 
+  public static String getThemeColor(String hex) {
+    StringBuffer urlBuffer =
+        new StringBuffer(SERVICE_URL).append("/theme?color=").append(Utils.urlEncode(hex));
+    return urlBuffer.toString();
+  }
+
   public static String getChatEndpoint(String message, String sessionId) {
     StringBuffer urlBuffer =
         new StringBuffer(SERVICE_URL)

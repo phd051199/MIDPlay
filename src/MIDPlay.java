@@ -527,7 +527,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
                 }
               }
 
-              public void onThemeChanged(String mode) {
+              public void onThemeChanged() {
                 try {
                   Configuration.loadPlayerIcons();
                 } catch (Exception e) {

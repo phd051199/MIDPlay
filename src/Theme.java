@@ -1,11 +1,12 @@
+import cc.nnproject.json.JSONObject;
+
 public class Theme {
   private static boolean isDark = false;
+
   private static int primaryColor = 0x65558F;
   private static int onPrimaryColor = 0xFFFFFF;
-
   private static int backgroundColor = 0xFDF7FF;
   private static int onBackgroundColor = 0x1D1B20;
-
   private static int surfaceColor = 0xFDF7FF;
   private static int onSurfaceColor = 0x1D1B20;
   private static int surfaceVariantColor = 0xE7E0EB;
@@ -21,6 +22,10 @@ public class Theme {
 
   public static void setDark(boolean isDark) {
     Theme.isDark = isDark;
+    applyDefaults(isDark);
+  }
+
+  public static void applyDefaults(boolean isDark) {
     if (isDark) {
       setPrimaryColor(0xCFBDFE);
       setOnPrimaryColor(0x36275D);
@@ -48,107 +53,120 @@ public class Theme {
       setSecondaryContainerColor(0xE8DEF8);
       setOnSecondaryContainerColor(0x4A4458);
     }
-
-    try {
-      Configuration.loadPlayerIcons();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
   }
 
-  public static int getOnPrimaryColor() {
-    return onPrimaryColor;
-  }
+  public static void applyColors(JSONObject colors) {
+    if (colors == null) return;
 
-  public static void setOnPrimaryColor(int onPrimaryColor) {
-    Theme.onPrimaryColor = onPrimaryColor;
-  }
-
-  public static int getOnBackgroundColor() {
-    return onBackgroundColor;
-  }
-
-  public static void setOnBackgroundColor(int onBackgroundColor) {
-    Theme.onBackgroundColor = onBackgroundColor;
-  }
-
-  public static int getBackgroundColor() {
-    return backgroundColor;
-  }
-
-  public static void setBackgroundColor(int backgroundColor) {
-    Theme.backgroundColor = backgroundColor;
+    setPrimaryColor(colors.getInt("primary", primaryColor));
+    setOnPrimaryColor(colors.getInt("onPrimary", onPrimaryColor));
+    setBackgroundColor(colors.getInt("background", backgroundColor));
+    setOnBackgroundColor(colors.getInt("onBackground", onBackgroundColor));
+    setSurfaceColor(colors.getInt("surface", surfaceColor));
+    setOnSurfaceColor(colors.getInt("onSurface", onSurfaceColor));
+    setSurfaceVariantColor(colors.getInt("surfaceVariant", surfaceVariantColor));
+    setOnSurfaceVariantColor(colors.getInt("onSurfaceVariant", onSurfaceVariantColor));
+    setOutlineColor(colors.getInt("outline", outlineColor));
+    setOutlineVariantColor(colors.getInt("outlineVariant", outlineVariantColor));
+    setSecondaryContainerColor(colors.getInt("secondaryContainer", secondaryContainerColor));
+    setOnSecondaryContainerColor(colors.getInt("onSecondaryContainer", onSecondaryContainerColor));
   }
 
   public static int getPrimaryColor() {
     return primaryColor;
   }
 
-  public static void setPrimaryColor(int primaryColor) {
-    Theme.primaryColor = primaryColor;
+  public static int getOnPrimaryColor() {
+    return onPrimaryColor;
+  }
+
+  public static int getBackgroundColor() {
+    return backgroundColor;
+  }
+
+  public static int getOnBackgroundColor() {
+    return onBackgroundColor;
   }
 
   public static int getSurfaceColor() {
     return surfaceColor;
   }
 
-  public static void setSurfaceColor(int surfaceColor) {
-    Theme.surfaceColor = surfaceColor;
-  }
-
   public static int getOnSurfaceColor() {
     return onSurfaceColor;
-  }
-
-  public static void setOnSurfaceColor(int onSurfaceColor) {
-    Theme.onSurfaceColor = onSurfaceColor;
   }
 
   public static int getSurfaceVariantColor() {
     return surfaceVariantColor;
   }
 
-  public static void setSurfaceVariantColor(int surfaceVariantColor) {
-    Theme.surfaceVariantColor = surfaceVariantColor;
-  }
-
   public static int getOnSurfaceVariantColor() {
     return onSurfaceVariantColor;
-  }
-
-  public static void setOnSurfaceVariantColor(int onSurfaceVariantColor) {
-    Theme.onSurfaceVariantColor = onSurfaceVariantColor;
   }
 
   public static int getOutlineColor() {
     return outlineColor;
   }
 
-  public static void setOutlineColor(int outlineColor) {
-    Theme.outlineColor = outlineColor;
-  }
-
   public static int getOutlineVariantColor() {
     return outlineVariantColor;
-  }
-
-  public static void setOutlineVariantColor(int outlineVariantColor) {
-    Theme.outlineVariantColor = outlineVariantColor;
   }
 
   public static int getSecondaryContainerColor() {
     return secondaryContainerColor;
   }
 
-  public static void setSecondaryContainerColor(int secondaryContainerColor) {
-    Theme.secondaryContainerColor = secondaryContainerColor;
-  }
-
   public static int getOnSecondaryContainerColor() {
     return onSecondaryContainerColor;
   }
 
-  public static void setOnSecondaryContainerColor(int onSecondaryContainerColor) {
-    Theme.onSecondaryContainerColor = onSecondaryContainerColor;
+  public static void setPrimaryColor(int color) {
+    primaryColor = color;
   }
+
+  public static void setOnPrimaryColor(int color) {
+    onPrimaryColor = color;
+  }
+
+  public static void setBackgroundColor(int color) {
+    backgroundColor = color;
+  }
+
+  public static void setOnBackgroundColor(int color) {
+    onBackgroundColor = color;
+  }
+
+  public static void setSurfaceColor(int color) {
+    surfaceColor = color;
+  }
+
+  public static void setOnSurfaceColor(int color) {
+    onSurfaceColor = color;
+  }
+
+  public static void setSurfaceVariantColor(int color) {
+    surfaceVariantColor = color;
+  }
+
+  public static void setOnSurfaceVariantColor(int color) {
+    onSurfaceVariantColor = color;
+  }
+
+  public static void setOutlineColor(int color) {
+    outlineColor = color;
+  }
+
+  public static void setOutlineVariantColor(int color) {
+    outlineVariantColor = color;
+  }
+
+  public static void setSecondaryContainerColor(int color) {
+    secondaryContainerColor = color;
+  }
+
+  public static void setOnSecondaryContainerColor(int color) {
+    onSecondaryContainerColor = color;
+  }
+
+  private Theme() {}
 }

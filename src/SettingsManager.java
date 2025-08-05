@@ -38,6 +38,7 @@ public class SettingsManager {
     JSONObject settings = getSettingsJSON();
     setCurrentLanguage(settings.getString("language", "en"));
     setCurrentThemeMode(settings.getString("themeMode", Configuration.THEME_LIGHT));
+    loadAndApplyThemeColors();
     currentService = settings.getString("service", Configuration.SERVICE_NCT);
     currentQuality = settings.getString("quality", Configuration.QUALITY_128);
     currentSearchType = settings.getString("searchType", Configuration.SEARCH_PLAYLIST);
@@ -102,6 +103,13 @@ public class SettingsManager {
     storage.setRecord(SETTINGS_ID, settings.toString());
   }
 
+  private void saveSetting(String key, JSONObject value) throws RecordStoreException {
+    ensureSettingsRecordExists();
+    JSONObject settings = getSettingsJSON();
+    settings.put(key, value);
+    storage.setRecord(SETTINGS_ID, settings.toString());
+  }
+
   public void saveLanguage(String langCode) throws RecordStoreException {
     saveSetting("language", langCode);
     currentLanguage = langCode;
@@ -154,6 +162,44 @@ public class SettingsManager {
     currentVolumeLevel = volumeLevel;
   }
 
+  public void saveThemeColors(JSONObject lightColors, JSONObject darkColors, int selected)
+      throws RecordStoreException {
+    JSONObject themeData = new JSONObject();
+    themeData.put("light", lightColors);
+    themeData.put("dark", darkColors);
+    themeData.put("selected", selected);
+    saveSetting("themeColors", themeData);
+  }
+
+  public void loadAndApplyThemeColors() {
+    try {
+      JSONObject settings = getSettingsJSON();
+      if (settings.has("themeColors")) {
+        JSONObject themeData = settings.getObject("themeColors");
+        String colorType = Theme.isDark() ? "dark" : "light";
+        if (themeData.has(colorType)) {
+          JSONObject colors = themeData.getObject(colorType);
+          Theme.applyColors(colors);
+          return;
+        }
+      }
+    } catch (Exception e) {
+    }
+    Theme.applyDefaults(Theme.isDark());
+  }
+
+  public int getSavedColorIndex() {
+    try {
+      JSONObject settings = getSettingsJSON();
+      if (settings.has("themeColors")) {
+        JSONObject themeData = settings.getObject("themeColors");
+        return themeData.getInt("selected", 0);
+      }
+    } catch (Exception e) {
+    }
+    return 0;
+  }
+
   public String getCurrentLanguage() {
     return currentLanguage;
   }
@@ -170,6 +216,7 @@ public class SettingsManager {
   public void setCurrentThemeMode(String mode) {
     currentThemeMode = mode;
     Theme.setDark(Configuration.THEME_DARK.equals(mode));
+    loadAndApplyThemeColors();
   }
 
   public String getCurrentService() {

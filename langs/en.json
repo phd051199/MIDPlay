@@ -115,6 +115,7 @@
     "auto_update": "Automatic Updates",
     "check_update": "Check for Updates",
     "theme_mode": "Appearance",
+    "theme_color": "Theme Color",
     "theme_mode_options": {
       "dark": "Dark",
       "light": "Light"
