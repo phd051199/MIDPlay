@@ -1,7 +1,0 @@
-MIDlet-Vendor: MIDlet Suite Vendor
-MIDlet-Version: 1.0.0
-MicroEdition-Configuration: CLDC-1.1
-MIDlet-Name: MIDPlay MIDlet Suite
-MIDlet-1: MIDlet-1,/Icon.png,MIDPlay
-MicroEdition-Profile: MIDP-2.1
-MIDlet-Jar-URL: MIDPlay.jar
