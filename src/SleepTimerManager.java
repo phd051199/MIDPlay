@@ -57,23 +57,6 @@ public class SleepTimerManager {
     startTimer();
   }
 
-  public void startAbsoluteTimer(int targetHour, int targetMinute, int action) {
-    cancelTimer();
-    long currentTime = System.currentTimeMillis();
-    long currentDay = currentTime / (24 * 60 * 60 * 1000L);
-    long targetTime =
-        currentDay * (24 * 60 * 60 * 1000L)
-            + targetHour * 60 * 60 * 1000L
-            + targetMinute * 60 * 1000L;
-    if (targetTime <= currentTime) {
-      targetTime += 24 * 60 * 60 * 1000L;
-    }
-    targetTimeMillis = targetTime;
-    timerAction = action;
-    timerDescription = formatTime(targetHour) + ":" + formatTime(targetMinute);
-    startTimer();
-  }
-
   private void startTimer() {
     isActive = true;
     sleepTimer = new Timer();

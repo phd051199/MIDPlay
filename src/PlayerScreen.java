@@ -729,14 +729,9 @@ public final class PlayerScreen extends Canvas
         new SleepTimerForm(
             navigator,
             new SleepTimerForm.SleepTimerCallback() {
-              public void onTimerSet(
-                  int mode, int durationMinutes, int targetHour, int targetMinute, int action) {
+              public void onTimerSet(int durationMinutes, int action) {
                 sleepTimerManager.setCallback(PlayerScreen.this);
-                if (mode == SleepTimerForm.MODE_COUNTDOWN) {
-                  sleepTimerManager.startCountdownTimer(durationMinutes, action);
-                } else {
-                  sleepTimerManager.startAbsoluteTimer(targetHour, targetMinute, action);
-                }
+                sleepTimerManager.startCountdownTimer(durationMinutes, action);
                 navigator.back();
                 navigator.showAlert(
                     Lang.tr("timer.status.set"), AlertType.CONFIRMATION, PlayerScreen.this);

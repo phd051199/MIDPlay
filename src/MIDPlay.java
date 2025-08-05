@@ -6,12 +6,10 @@ import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.ImageItem;
 import javax.microedition.lcdui.List;
-import javax.microedition.lcdui.StringItem;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
 import model.MenuItem;
@@ -477,28 +475,17 @@ public class MIDPlay extends MIDlet implements CommandListener {
 
     try {
       Image appIcon = Image.createImage("/Icon.png");
-      ImageItem iconItem = new ImageItem(null, appIcon, ImageItem.LAYOUT_CENTER, null);
+      ImageItem iconItem = new ImageItem(null, appIcon, ImageItem.LAYOUT_LEFT, null);
       f.append(iconItem);
       f.append("\n");
     } catch (Exception e) {
       e.printStackTrace();
     }
-
-    StringItem appNameItem = new StringItem(null, getAppProperty("MIDlet-Name") + "\n");
-    appNameItem.setFont(Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_MEDIUM));
-    f.append(appNameItem);
+    f.append(getAppProperty("MIDlet-Name") + "\n");
     f.append("Version " + APP_VERSION + "\n");
     f.append("Platform: " + "Java ME (MIDP 2.0)\n");
-    StringItem authorTitle = new StringItem(null, "Author\n");
-    authorTitle.setFont(Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_MEDIUM));
-    f.append(authorTitle);
-    f.append(getAppProperty("MIDlet-Vendor") + "\n");
-    StringItem contributorsTitle = new StringItem(null, "Contributors\n");
-    contributorsTitle.setFont(
-        Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_MEDIUM));
-    f.append(contributorsTitle);
-    f.append("+ " + "symbuzzer\n");
-    f.append("+ " + "GoldenDragon\n");
+    f.append("Author: " + getAppProperty("MIDlet-Vendor") + "\n");
+    f.append("Contributors: " + "symbuzzer, GoldenDragon\n");
 
     f.addCommand(Commands.back());
     f.setCommandListener(

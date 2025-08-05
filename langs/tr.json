@@ -146,14 +146,7 @@
   "time": {
     "error": {
       "invalid_duration": "Süre 1-999 dakika arasında olmalı",
-      "invalid_format": "Geçersiz zaman formatı",
-      "invalid_hour": "Saat 0-23 arasında olmalı",
-      "invalid_minute": "Dakika 0-59 arasında olmalı"
-    },
-    "hours": "Saat",
-    "input": {
-      "minutes": "Süre girin (1-999 dakika)",
-      "time": "Zaman girin (24 saat formatı)"
+      "invalid_format": "Geçersiz zaman formatı"
     },
     "minutes": "Dakika"
   },
@@ -166,10 +159,6 @@
     "cancel": "Zamanlayıcıyı İptal Et",
     "confirm": {
       "exit": "Zamanlayıcı süresi dolduğunda uygulamadan çıkacak. Devam et?"
-    },
-    "mode": {
-      "absolute": "Mutlak Zaman",
-      "countdown": "Geri Sayım Modu"
     },
     "set": "Zamanlayıcı Ayarla",
     "sleep_timer": "Uyku Zamanlayıcısı",

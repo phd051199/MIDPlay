@@ -146,14 +146,7 @@
   "time": {
     "error": {
       "invalid_duration": "Thời lượng phải từ 1-999 phút",
-      "invalid_format": "Định dạng thời gian không hợp lệ",
-      "invalid_hour": "Giờ phải từ 0-23",
-      "invalid_minute": "Phút phải từ 0-59"
-    },
-    "hours": "Giờ",
-    "input": {
-      "minutes": "Nhập thời lượng (1-999 phút)",
-      "time": "Nhập thời gian (định dạng 24 giờ)"
+      "invalid_format": "Định dạng thời gian không hợp lệ"
     },
     "minutes": "Phút"
   },
@@ -166,10 +159,6 @@
     "cancel": "Hủy hẹn giờ",
     "confirm": {
       "exit": "Hẹn giờ sẽ thoát ứng dụng khi hết thời gian. Tiếp tục?"
-    },
-    "mode": {
-      "absolute": "Thời gian cụ thể",
-      "countdown": "Chế độ đếm ngược"
     },
     "set": "Đặt hẹn giờ",
     "sleep_timer": "Hẹn giờ tắt",

@@ -72,14 +72,6 @@ public class Commands {
     return get("timer.set", Command.SCREEN, 1);
   }
 
-  public static Command timerSwitchToCountdown() {
-    return get("timer.mode.countdown", Command.SCREEN, 2);
-  }
-
-  public static Command timerSwitchToAbsolute() {
-    return get("timer.mode.absolute", Command.SCREEN, 2);
-  }
-
   public static Command playerPlay() {
     return get("player.play", Command.OK, 1);
   }
