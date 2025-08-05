@@ -232,34 +232,33 @@ public final class PlayerScreen extends Canvas
                 });
         this.currentImageLoadOperation.start();
     }
-    protected void keyReleased(int keycode) {
-                    navigator.showAlert(keycode + " KEYCODE REALESED", AlertType.INFO);
-    }
 
     protected void keyPressed(int keycode) {
         try {
             int action = this.getGameAction(keycode);
             handleAction(action);
-            // Bluetooth control:
-            switch (keycode) {
-                case -20: // Play/Resume
-                    this.getPlayerGUI().toggle();
-                    break;
-                case -21: // Previous Song
-                    this.getPlayerGUI().previous();
-                    break;
-                case -22: // Next Song
-                    this.getPlayerGUI().next();
-                    break;
 
+            // Bluetooth control
+            if (action == 0) {
+                switch (keycode) {
+                    case -20: // Play/Resume
+                        this.getPlayerGUI().toggle();
+                        break;
+                    case -21: // Previous Song
+                        this.getPlayerGUI().previous();
+                        break;
+                    case -22: // Next Song
+                        this.getPlayerGUI().next();
+                        break;
+
+                }
             }
-            
-            navigator.showAlert(keycode + " KEYCODE PRESSED", AlertType.INFO);
+
         } catch (Throwable e) {
             e.printStackTrace();
         }
     }
-    
+
     private boolean isLoading() {
         return statusCurrent != null && statusCurrent.indexOf(Lang.tr("status.loading")) != -1;
     }
