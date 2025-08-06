@@ -56,7 +56,9 @@ public class Theme {
   }
 
   public static void applyColors(JSONObject colors) {
-    if (colors == null) return;
+    if (colors == null) {
+      return;
+    }
 
     setPrimaryColor(colors.getInt("primary", primaryColor));
     setOnPrimaryColor(colors.getInt("onPrimary", onPrimaryColor));

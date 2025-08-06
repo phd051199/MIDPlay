@@ -199,7 +199,9 @@ public final class SettingsScreen extends BaseForm {
   private void loadThemeColors(
       final int selected, final String newThemeMode, final boolean hasModeChange) {
     if (selected < 0 || selected >= Configuration.THEME_COLORS.length) {
-      if (hasModeChange) saveThemeMode(newThemeMode);
+      if (hasModeChange) {
+        saveThemeMode(newThemeMode);
+      }
       return;
     }
 
@@ -211,7 +213,9 @@ public final class SettingsScreen extends BaseForm {
               public void onThemeColorsReceived(JSONObject lightColors, JSONObject darkColors) {
                 try {
                   settingsManager.saveThemeColors(lightColors, darkColors, selected);
-                  if (hasModeChange) settingsManager.saveTheme(newThemeMode);
+                  if (hasModeChange) {
+                    settingsManager.saveTheme(newThemeMode);
+                  }
                   settingsManager.loadAndApplyThemeColors();
                   listener.onThemeChanged();
                   listener.onSettingsSaved();
@@ -222,8 +226,11 @@ public final class SettingsScreen extends BaseForm {
 
               public void onError(Exception e) {
                 navigator.showAlert("Error loading theme: " + e.toString(), AlertType.ERROR);
-                if (hasModeChange) saveThemeMode(newThemeMode);
-                else listener.onSettingsSaved();
+                if (hasModeChange) {
+                  saveThemeMode(newThemeMode);
+                } else {
+                  listener.onSettingsSaved();
+                }
               }
             }));
   }

@@ -154,11 +154,15 @@ public class MIDPlay extends MIDlet implements CommandListener {
       } else if (c == Commands.formCancel()) {
         handleCancel();
       } else if (c == Commands.playerNowPlaying()) {
-        navigator.forward(getPlayerScreen());
+        goToPlayerScreen();
       }
     } catch (Exception e) {
       showError(e.toString());
     }
+  }
+
+  private void goToPlayerScreen() {
+    navigator.forward(getPlayerScreen());
   }
 
   private void handleSave() {

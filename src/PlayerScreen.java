@@ -3,6 +3,7 @@ import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 import model.Track;
@@ -10,340 +11,22 @@ import model.Tracks;
 
 public final class PlayerScreen extends Canvas
     implements CommandListener, SleepTimerManager.SleepTimerCallback {
-  private static final int PLAYER_STATUS_TOP = 2;
-  private static final int SONG_TITLE_GAP = 5;
-  private static final int TIME_GAP = 10;
-  private static final int ART_SIZE = 72;
-  private static final int ART_LEFT = 8;
-  private static final int SLIDER_HEIGHT = 6;
-  private static final int BUTTON_WIDTH = 40;
-  private static final int BUTTON_HEIGHT = 40;
-  private static final int PLAY_BUTTON_WIDTH = 50;
-  private static final int PLAY_BUTTON_HEIGHT = 50;
-  private static final long BUTTON_ACTIVE_DURATION = 1000L;
 
-  private String title;
-  private PlayerGUI gui;
-  private Navigator navigator;
-  private boolean touchSupported = false;
-  private String currentStatusKey = Configuration.PLAYER_STATUS_STOPPED;
-  private Image albumArt = null;
-  private String albumArtUrl = null;
-  private boolean loadingAlbumArt = false;
-  private ImageLoadOperation currentImageLoadOperation = null;
-  private long previousButtonPressTime = 0L;
-  private long nextButtonPressTime = 0L;
-  private boolean showingPreviousActive = false;
-  private boolean showingNextActive = false;
-  private boolean volumeAlertShowing = false;
-  private int currentVolumeLevel = 0;
-  private final SleepTimerManager sleepTimerManager;
-
-  private int displayWidth = -1, displayHeight = -1, textHeight = 10;
-  private int trackInfoLeft = 0, statusBarHeight = 0;
-  private int trackNameTop = 0, singerNameTop = 0;
-  private int timeRateTop = 0, timeWidth = 0, playTop = 0;
-  private int sliderTop = 0, sliderLeft = 0, sliderWidth = 12;
-  private float sliderValue = 0.0F;
-
-  private int playX = 0, playY = 0;
-  private int prevX = 0, prevY = 0;
-  private int nextX = 0, nextY = 0;
-  private int repeatX = 0, repeatY = 0;
-  private int shuffleX = 0, shuffleY = 0;
-  private String statusCurrent = "", realPlayerStatus = "";
-  private boolean timerOverrideActive = false;
-
-  public PlayerScreen(String title, Tracks tracks, int index, Navigator navigator) {
-    this.navigator = navigator;
-    this.sleepTimerManager = new SleepTimerManager();
-    this.setTitle(title);
-    this.addCommands();
-    this.setCommandListener(this);
-    this.touchSupported = this.hasPointerEvents();
-    this.change(title, tracks, index, navigator);
+  // UI Utility methods
+  private static void drawCenteredText(Graphics g, String text, int x, int y) {
+    g.drawString(text, x, y, Graphics.HCENTER | Graphics.TOP);
   }
 
-  public void addCommands() {
-    this.addCommand(Commands.back());
-    this.addCommand(Commands.playerPlay());
-    this.addCommand(Commands.playerNext());
-    this.addCommand(Commands.playerPrevious());
-    this.addCommand(Commands.playerStop());
-    this.addCommand(Commands.playerVolume());
-    this.addCommand(Commands.playerAddToPlaylist());
-    this.addCommand(Commands.playerShowPlaylist());
-    this.addCommand(Commands.playerRepeat());
-    this.addCommand(Commands.playerShuffle());
-    updateSleepTimerCommands();
+  private static void drawLeftAlignedText(Graphics g, String text, int x, int y) {
+    g.drawString(text, x, y, Graphics.LEFT | Graphics.TOP);
   }
 
-  public void clearCommands() {
-    this.removeCommand(Commands.back());
-    this.removeCommand(Commands.playerPlay());
-    this.removeCommand(Commands.playerNext());
-    this.removeCommand(Commands.playerPrevious());
-    this.removeCommand(Commands.playerStop());
-    this.removeCommand(Commands.playerVolume());
-    this.removeCommand(Commands.playerAddToPlaylist());
-    this.removeCommand(Commands.playerShowPlaylist());
-    this.removeCommand(Commands.playerRepeat());
-    this.removeCommand(Commands.playerShuffle());
-    removeSleepTimerCommand();
+  private static boolean isPointInBounds(
+      int x, int y, int boundsX, int boundsY, int width, int height) {
+    return x >= boundsX && x <= boundsX + width && y >= boundsY && y <= boundsY + height;
   }
 
-  public void refreshStatus() {
-    if (this.currentStatusKey != null) {
-      this.setStatus(Lang.tr(this.currentStatusKey));
-    }
-  }
-
-  public void showNotify() {
-    if (Configuration.PLAYER_STATUS_PLAYING.equals(this.currentStatusKey)
-        || Configuration.PLAYER_STATUS_PAUSED.equals(this.currentStatusKey)
-        || Configuration.PLAYER_STATUS_STOPPED.equals(this.currentStatusKey)) {
-      determinePlayerStatus();
-    }
-  }
-
-  private void determinePlayerStatus() {
-    if (this.getPlayerGUI().isPlaying()) {
-      this.setStatusByKey(Configuration.PLAYER_STATUS_PLAYING);
-    } else if (Configuration.PLAYER_STATUS_STOPPED.equals(this.currentStatusKey)) {
-      this.setStatusByKey(Configuration.PLAYER_STATUS_STOPPED);
-    } else {
-      this.setStatusByKey(Configuration.PLAYER_STATUS_PAUSED);
-    }
-  }
-
-  public void change(String title, Tracks tracks, int index, Navigator navigator) {
-    this.title = title;
-    this.setTitle(title);
-    this.navigator = navigator;
-    this.resetAlbumArt();
-    this.getPlayerGUI().setPlaylist(tracks, index);
-    this.getPlayerGUI().play();
-  }
-
-  public void setupDisplay() {
-    this.displayHeight = -1;
-    this.updateDisplay();
-  }
-
-  public void setStatus(String s) {
-    updateStatus(s);
-    this.updateDisplay();
-  }
-
-  public void setStatusByKey(String statusKey) {
-    this.currentStatusKey = statusKey;
-    this.setStatus(Lang.tr(statusKey));
-  }
-
-  private void resetAlbumArt() {
-    if (this.currentImageLoadOperation != null) {
-      this.currentImageLoadOperation.stop();
-      this.currentImageLoadOperation = null;
-    }
-    this.albumArt = null;
-    this.albumArtUrl = null;
-    this.loadingAlbumArt = false;
-  }
-
-  public void showVolumeAlert(int volumeLevel) {
-    currentVolumeLevel = volumeLevel;
-    if (!volumeAlertShowing) {
-      volumeAlertShowing = true;
-    }
-    this.updateDisplay();
-  }
-
-  public void hideVolumeAlert() {
-    if (volumeAlertShowing) {
-      volumeAlertShowing = false;
-      this.getPlayerGUI().saveVolumeLevel();
-      this.updateDisplay();
-    }
-  }
-
-  public void updateDisplay() {
-    this.repaint();
-    this.serviceRepaints();
-  }
-
-  public void close() {
-    if (this.currentImageLoadOperation != null) {
-      this.currentImageLoadOperation.stop();
-      this.currentImageLoadOperation = null;
-    }
-    sleepTimerManager.setCallback(null);
-  }
-
-  public synchronized PlayerGUI getPlayerGUI() {
-    if (this.gui == null) {
-      this.gui = new PlayerGUI(this);
-    }
-    return this.gui;
-  }
-
-  public void setAlbumArtUrl(String url) {
-    if (url != null && !url.equals(this.albumArtUrl)) {
-      if (this.currentImageLoadOperation != null) {
-        this.currentImageLoadOperation.stop();
-        this.currentImageLoadOperation = null;
-      }
-      this.albumArtUrl = url;
-      this.albumArt = null;
-      this.loadingAlbumArt = false;
-      loadAlbumArt();
-    }
-  }
-
-  private void loadAlbumArt() {
-    if (this.albumArtUrl == null || this.loadingAlbumArt) {
-      return;
-    }
-    if (this.currentImageLoadOperation != null) {
-      this.currentImageLoadOperation.stop();
-    }
-    this.loadingAlbumArt = true;
-    final String imageUrl = this.albumArtUrl;
-    this.currentImageLoadOperation =
-        new ImageLoadOperation(
-            imageUrl,
-            ART_SIZE,
-            new ImageLoadOperation.Listener() {
-              public void onImageLoaded(Image image) {
-                albumArt = image;
-                if (albumArt != null) {
-                  updateDisplay();
-                }
-                loadingAlbumArt = false;
-                currentImageLoadOperation = null;
-              }
-
-              public void onImageLoadError(Exception e) {
-                albumArt = null;
-                loadingAlbumArt = false;
-                currentImageLoadOperation = null;
-              }
-            });
-    this.currentImageLoadOperation.start();
-  }
-
-  protected void keyPressed(int keycode) {
-    try {
-      int action = this.getGameAction(keycode);
-      handleAction(action);
-    } catch (Throwable e) {
-      e.printStackTrace();
-    }
-  }
-
-  private boolean isLoading() {
-    return statusCurrent != null && statusCurrent.indexOf(Lang.tr("status.loading")) != -1;
-  }
-
-  protected void pointerPressed(int x, int y) {
-    if (!this.touchSupported || this.isLoading()) {
-      return;
-    }
-    try {
-      if (volumeAlertShowing) {
-        handleVolumeAlertTouch(x, y);
-        return;
-      }
-      if (isPointInButton(x, y, playX, playY, PLAY_BUTTON_WIDTH, PLAY_BUTTON_HEIGHT)) {
-        handleAction(Canvas.FIRE);
-      } else if (isPointInButton(x, y, prevX, prevY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-        handleAction(Canvas.LEFT);
-      } else if (isPointInButton(x, y, nextX, nextY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-        handleAction(Canvas.RIGHT);
-      } else if (isPointInButton(x, y, repeatX, repeatY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-        toggleRepeat();
-      } else if (isPointInButton(x, y, shuffleX, shuffleY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-        toggleShuffle();
-      }
-    } catch (Throwable e) {
-      e.printStackTrace();
-    }
-  }
-
-  private void handleVolumeAlertTouch(int x, int y) {
-    int alertWidth = displayWidth - 40;
-    int alertHeight = 100;
-    int alertX = 20;
-    int alertY = (displayHeight - alertHeight) / 2;
-    if (x >= alertX && x <= alertX + alertWidth && y >= alertY && y <= alertY + alertHeight) {
-      int barWidth = alertWidth - 40;
-      int barX = alertX + 20;
-      int barY = alertY + 40;
-      int barHeight = 20;
-      if (x >= barX && x <= barX + barWidth && y >= barY && y <= barY + barHeight) {
-        int tapPosition = x - barX;
-        int newVolume = (tapPosition * Configuration.PLAYER_MAX_VOLUME) / barWidth;
-        newVolume = Math.max(0, Math.min(Configuration.PLAYER_MAX_VOLUME, newVolume));
-        getPlayerGUI().setVolumeLevel(newVolume);
-        currentVolumeLevel = newVolume;
-        updateDisplay();
-      }
-    } else {
-      hideVolumeAlert();
-    }
-  }
-
-  private void handleAction(int action) {
-    if (this.isLoading()) {
-      return;
-    }
-    try {
-      if (volumeAlertShowing) {
-        switch (action) {
-          case Canvas.UP:
-          case Canvas.RIGHT:
-            this.getPlayerGUI().adjustVolume(true);
-            break;
-          case Canvas.DOWN:
-          case Canvas.LEFT:
-            this.getPlayerGUI().adjustVolume(false);
-            break;
-          case Canvas.FIRE:
-            this.hideVolumeAlert();
-            break;
-          default:
-            break;
-        }
-        return;
-      }
-      switch (action) {
-        case Canvas.FIRE:
-          this.getPlayerGUI().toggle();
-          break;
-        case Canvas.RIGHT:
-          this.showingNextActive = true;
-          this.nextButtonPressTime = System.currentTimeMillis();
-          this.getPlayerGUI().next();
-          break;
-        case Canvas.LEFT:
-          this.showingPreviousActive = true;
-          this.previousButtonPressTime = System.currentTimeMillis();
-          this.getPlayerGUI().previous();
-          break;
-        case Canvas.UP:
-          this.getPlayerGUI().adjustVolume(true);
-          break;
-        case Canvas.DOWN:
-          this.getPlayerGUI().adjustVolume(false);
-          break;
-        default:
-          break;
-      }
-    } catch (Throwable e) {
-      e.printStackTrace();
-    }
-  }
-
-  private boolean isPointInButton(
+  private static boolean isPointInButton(
       int x, int y, int buttonX, int buttonY, int buttonW, int buttonH) {
     return x >= buttonX - buttonW / 2
         && x <= buttonX + buttonW / 2
@@ -351,52 +34,273 @@ public final class PlayerScreen extends Canvas
         && y <= buttonY + buttonH / 2;
   }
 
-  private boolean intersects(int clipY, int clipHeight, int y, int h) {
+  private static boolean intersects(int clipY, int clipHeight, int y, int h) {
     return clipY <= y + h && clipY + clipHeight >= y;
   }
 
-  private String truncateText(String text, Graphics g, int maxWidth) {
-    if (text == null) {
-      return "";
+  // Layout helper methods
+  private static boolean isLargeScreen(int width, int height) {
+    if (width <= 0 || height <= 0) {
+      return false;
     }
-    int textWidth = g.getFont().stringWidth(text);
-    if (textWidth <= maxWidth) {
-      return text;
-    }
-    String ellipsis = "...";
-    int ellipsisWidth = g.getFont().stringWidth(ellipsis);
-    int availableWidth = maxWidth - ellipsisWidth;
-    if (availableWidth <= 0) {
-      return ellipsis;
-    }
-    int len = text.length();
-    while (len > 0) {
-      String truncated = text.substring(0, len);
-      if (g.getFont().stringWidth(truncated) <= availableWidth) {
-        StringBuffer result = new StringBuffer(truncated);
-        result.append(ellipsis);
-        return result.toString();
-      }
-      len--;
-    }
-    return ellipsis;
+    float ratio = (float) Math.max(width, height) / Math.min(width, height);
+    return ratio >= 1.5F;
   }
 
-  private String timeDisplay(long us) {
-    long ts = us / 100000L;
-    long minutes = ts / 600L;
-    long seconds = ts % 600L / 10L;
-    StringBuffer timeBuffer = new StringBuffer(8);
-    if (minutes < 10) {
-      timeBuffer.append('0');
+  private static boolean isLandscape(int width, int height) {
+    return width > height;
+  }
+
+  private static int clamp(int value, int min, int max) {
+    return value < min ? min : (value > max ? max : value);
+  }
+
+  private static void calculateResponsiveSizes(int screenWidth, int screenHeight, int[] sizes) {
+    int minDimension = Math.min(screenWidth, screenHeight);
+
+    int buttonSize = minDimension / 10;
+    int playButtonSize = (buttonSize * 5) / 4;
+    int sliderHeight = Math.max(4, minDimension / 80);
+
+    buttonSize = clamp(buttonSize, 30, 60);
+    playButtonSize = clamp(playButtonSize, 38, 75);
+
+    sizes[0] = buttonSize; // buttonWidth
+    sizes[1] = buttonSize; // buttonHeight
+    sizes[2] = playButtonSize; // playButtonWidth
+    sizes[3] = playButtonSize; // playButtonHeight
+    sizes[4] = sliderHeight; // sliderHeight
+  }
+
+  private static int calculateAlbumArtSize(
+      int screenWidth, int screenHeight, boolean isLandscape, boolean isLargeScreen) {
+    if (!isLargeScreen) {
+      return 72;
     }
-    timeBuffer.append(minutes);
-    timeBuffer.append(':');
-    if (seconds < 10) {
-      timeBuffer.append('0');
+
+    if (isLandscape) {
+      int statusBarHeight = screenHeight / 100;
+      int availableHeight = screenHeight - statusBarHeight;
+      return Math.min(availableHeight - (screenHeight / 15), screenWidth / 2 - (screenWidth / 30));
+    } else {
+      return Math.min(screenWidth - (screenWidth / 15), (screenHeight * 40) / 100);
     }
-    timeBuffer.append(seconds);
-    return timeBuffer.toString();
+  }
+
+  private static void calculateButtonPositions(
+      int screenWidth,
+      int screenHeight,
+      boolean isLandscape,
+      boolean isLargeScreen,
+      int[] positions) {
+    int centerX = screenWidth / 2;
+    int buttonGap = screenWidth / 5;
+    int margin = isLargeScreen ? (screenWidth / 40) : 8;
+    int buttonWidth = positions[4]; // Get buttonWidth from passed array
+
+    if (isLargeScreen && isLandscape) {
+      int leftPanelWidth = screenWidth * 45 / 100;
+      int rightPanelLeft = leftPanelWidth + (screenWidth / 40);
+      int rightPanelWidth = screenWidth - rightPanelLeft - (screenWidth / 30);
+      int rightPanelCenter = rightPanelLeft + (rightPanelWidth >> 1);
+      buttonGap = rightPanelWidth / 5;
+
+      positions[0] = rightPanelCenter; // play
+      positions[1] = rightPanelCenter - buttonGap; // prev
+      positions[2] = rightPanelCenter + buttonGap; // next
+      positions[3] = rightPanelLeft + margin + (buttonWidth / 2); // repeat
+      positions[4] = rightPanelLeft + rightPanelWidth - margin - (buttonWidth / 2); // shuffle
+    } else {
+      positions[0] = centerX; // play
+      positions[1] = centerX - buttonGap; // prev
+      positions[2] = centerX + buttonGap; // next
+      positions[3] = margin + (buttonWidth / 2); // repeat
+      positions[4] = screenWidth - margin - (buttonWidth / 2); // shuffle
+    }
+  }
+
+  private final SleepTimerManager sleepTimerManager = new SleepTimerManager();
+
+  private int displayWidth = -1, displayHeight = -1;
+  private int textHeight = 10;
+  private boolean isLandscape, isLargeScreen, touchSupported;
+  private boolean volumeAlertShowing, timerOverrideActive;
+  private int currentVolumeLevel;
+  private String currentStatusKey = Configuration.PLAYER_STATUS_STOPPED;
+  private String statusCurrent = "", realPlayerStatus = "";
+  private Font titleFont, artistFont, defaultFont;
+  private int statusBarHeight, albumSize = 72, albumX = 8, albumY;
+  private int textX, titleY, artistY, timeY, timeWidth;
+  private int buttonWidth = 40, buttonHeight = 40, playButtonWidth = 50, playButtonHeight = 50;
+  private int playTop,
+      playX,
+      playY,
+      prevX,
+      prevY,
+      nextX,
+      nextY,
+      repeatX,
+      repeatY,
+      shuffleX,
+      shuffleY;
+  private int sliderTop, sliderLeft, sliderWidth = 12, sliderHeight = 6;
+
+  private Image albumArt;
+  private String albumArtUrl;
+  private boolean loadingAlbumArt, albumArtLoaded;
+  private ImageLoadOperation currentImageLoadOperation;
+
+  private float sliderValue;
+
+  private String title;
+  private PlayerGUI gui;
+  private Navigator navigator;
+
+  public PlayerScreen(String title, Tracks tracks, int index, Navigator navigator) {
+    this.title = title;
+    this.navigator = navigator;
+
+    setTitle(title);
+    addCommands();
+    setCommandListener(this);
+    touchSupported = hasPointerEvents();
+    change(title, tracks, index, navigator);
+    initializeFonts();
+  }
+
+  public void addCommands() {
+    addCommand(Commands.back());
+    addCommand(Commands.playerPlay());
+    addCommand(Commands.playerNext());
+    addCommand(Commands.playerPrevious());
+    addCommand(Commands.playerStop());
+    addCommand(Commands.playerVolume());
+    addCommand(Commands.playerAddToPlaylist());
+    addCommand(Commands.playerShowPlaylist());
+    addCommand(Commands.playerRepeat());
+    addCommand(Commands.playerShuffle());
+    updateSleepTimerCommands();
+  }
+
+  public void clearCommands() {
+    removeCommand(Commands.back());
+    removeCommand(Commands.playerPlay());
+    removeCommand(Commands.playerNext());
+    removeCommand(Commands.playerPrevious());
+    removeCommand(Commands.playerStop());
+    removeCommand(Commands.playerVolume());
+    removeCommand(Commands.playerAddToPlaylist());
+    removeCommand(Commands.playerShowPlaylist());
+    removeCommand(Commands.playerRepeat());
+    removeCommand(Commands.playerShuffle());
+    removeSleepTimerCommand();
+  }
+
+  public void refreshStatus() {
+    if (currentStatusKey != null) {
+      setStatus(Lang.tr(currentStatusKey));
+    }
+  }
+
+  public void showNotify() {
+    if (isPlayingState() || isPausedState() || isStoppedState()) {
+      determinePlayerStatus();
+    }
+  }
+
+  public void change(String title, Tracks tracks, int index, Navigator navigator) {
+    this.title = title;
+    setTitle(title);
+    this.navigator = navigator;
+    resetImage();
+    getPlayerGUI().setPlaylist(tracks, index);
+    getPlayerGUI().play();
+  }
+
+  public void setupDisplay() {
+    displayHeight = -1;
+    updateDisplay();
+  }
+
+  public void setStatus(String s) {
+    updateStatus(s);
+    updateDisplay();
+  }
+
+  public void setStatusByKey(String statusKey) {
+    currentStatusKey = statusKey;
+    setStatus(Lang.tr(statusKey));
+  }
+
+  public void showVolumeAlert(int volumeLevel) {
+    currentVolumeLevel = volumeLevel;
+    volumeAlertShowing = true;
+    updateDisplay();
+  }
+
+  public void hideVolumeAlert() {
+    if (volumeAlertShowing) {
+      volumeAlertShowing = false;
+      getPlayerGUI().saveVolumeLevel();
+      updateDisplay();
+    }
+  }
+
+  public void updateDisplay() {
+    repaint();
+    serviceRepaints();
+  }
+
+  protected void sizeChanged(int w, int h) {
+    detectOrientationChange(w, h);
+    displayWidth = displayHeight = -1;
+    resetButtonPositions();
+  }
+
+  public void close() {
+    resetImage();
+    sleepTimerManager.setCallback(null);
+  }
+
+  public synchronized PlayerGUI getPlayerGUI() {
+    if (gui == null) {
+      gui = new PlayerGUI(this);
+    }
+    return gui;
+  }
+
+  public void setAlbumArtUrl(String url) {
+    if (url != null && !url.equals(albumArtUrl)) {
+      stopCurrentImageLoad();
+      resetImageState(url);
+      if (displayWidth > 0 && !isLargeScreen) {
+        loadAlbumArt();
+      }
+    }
+  }
+
+  protected void keyPressed(int keycode) {
+    try {
+      handleAction(getGameAction(keycode));
+    } catch (Throwable e) {
+      e.printStackTrace();
+    }
+  }
+
+  protected void pointerPressed(int x, int y) {
+    if (!touchSupported || isLoading()) {
+      return;
+    }
+
+    try {
+      if (volumeAlertShowing) {
+        handleVolumeAlertTouch(x, y);
+      } else {
+        handleButtonTouch(x, y);
+      }
+    } catch (Throwable e) {
+      e.printStackTrace();
+    }
   }
 
   public void paint(Graphics g) {
@@ -404,14 +308,17 @@ public final class PlayerScreen extends Canvas
       if (displayHeight == -1) {
         initDisplayMetrics(g);
       }
+
       int clipY = g.getClipY();
       int clipHeight = g.getClipHeight();
+
       paintBackground(g);
       paintStatusBar(g, clipY, clipHeight);
       paintAlbumArt(g);
       paintTrackInfo(g, clipY, clipHeight);
       paintTimeSlider(g, clipY, clipHeight);
       paintControlButtons(g);
+
       if (volumeAlertShowing) {
         paintVolumeAlert(g);
       }
@@ -420,211 +327,9 @@ public final class PlayerScreen extends Canvas
     }
   }
 
-  private void initDisplayMetrics(Graphics g) {
-    displayWidth = this.getWidth();
-    displayHeight = this.getHeight();
-    textHeight = g.getFont().getHeight();
-    statusBarHeight = textHeight + 5;
-    trackInfoLeft = ART_LEFT + ART_SIZE + 15;
-    int currentTop = PLAYER_STATUS_TOP + statusBarHeight + 15;
-    trackNameTop = currentTop;
-    currentTop += SONG_TITLE_GAP + textHeight;
-    singerNameTop = currentTop;
-    currentTop += TIME_GAP + textHeight + 24;
-    timeRateTop = currentTop;
-    timeWidth = g.getFont().stringWidth("0:00:0  ");
-    sliderWidth = displayWidth - (timeWidth * 2) - 8;
-    sliderTop = timeRateTop + (textHeight - SLIDER_HEIGHT) / 2;
-    sliderLeft = timeWidth + 4;
-    playTop = timeRateTop + textHeight + 24;
-  }
-
-  private void paintBackground(Graphics g) {
-    g.setColor(Theme.getBackgroundColor());
-    g.fillRect(0, 0, displayWidth, displayHeight);
-  }
-
-  private void paintStatusBar(Graphics g, int clipY, int clipHeight) {
-    g.setColor(Theme.getPrimaryColor());
-    g.fillRect(0, 0, displayWidth, statusBarHeight);
-    if (intersects(clipY, clipHeight, PLAYER_STATUS_TOP, textHeight)) {
-      g.setColor(Theme.getOnPrimaryColor());
-      g.drawString(statusCurrent, displayWidth >> 1, PLAYER_STATUS_TOP, 17);
-    }
-  }
-
-  private void paintAlbumArt(Graphics g) {
-    int artTop = PLAYER_STATUS_TOP + statusBarHeight + 8;
-    if (this.albumArt != null) {
-      g.drawImage(
-          this.albumArt,
-          ART_LEFT + ART_SIZE / 2,
-          artTop + ART_SIZE / 2,
-          Graphics.HCENTER | Graphics.VCENTER);
-      g.setColor(Theme.getOutlineColor());
-      g.drawRect(ART_LEFT, artTop, ART_SIZE, ART_SIZE);
-    } else {
-      g.setColor(Theme.getSurfaceVariantColor());
-      g.fillRect(ART_LEFT, artTop, ART_SIZE, ART_SIZE);
-      g.setColor(Theme.getOutlineColor());
-      g.drawRect(ART_LEFT, artTop, ART_SIZE, ART_SIZE);
-      g.setColor(Theme.getOnSurfaceVariantColor());
-      g.drawString("♪", ART_LEFT + ART_SIZE / 2, artTop + ART_SIZE / 2, 17);
-    }
-  }
-
-  private void paintTrackInfo(Graphics g, int clipY, int clipHeight) {
-    model.Track currentTrack = this.getPlayerGUI().getCurrentTrack();
-    if (currentTrack == null) {
-      return;
-    }
-    if (intersects(clipY, clipHeight, trackNameTop, textHeight)) {
-      g.setColor(Theme.getOnBackgroundColor());
-      int maxTrackNameWidth = displayWidth - trackInfoLeft - 10;
-      String trackName = currentTrack.getName();
-      String truncatedTrackName = truncateText(trackName, g, maxTrackNameWidth);
-      g.drawString(truncatedTrackName, trackInfoLeft, trackNameTop, 20);
-    }
-    if (intersects(clipY, clipHeight, singerNameTop, textHeight)) {
-      g.setColor(Theme.getOnSurfaceVariantColor());
-      int maxSingerWidth = displayWidth - trackInfoLeft - 10;
-      String artistName = currentTrack.getArtist();
-      String truncatedSinger = truncateText(artistName, g, maxSingerWidth);
-      g.drawString(truncatedSinger, trackInfoLeft, singerNameTop, 20);
-    }
-  }
-
-  private void paintTimeSlider(Graphics g, int clipY, int clipHeight) {
-    long duration = this.getPlayerGUI().getDuration();
-    long current = this.getPlayerGUI().getCurrentTime();
-    String strDuration = timeDisplay(duration);
-    String strCurrent = timeDisplay(current);
-    if (duration > 0) {
-      sliderValue = (float) sliderWidth * ((float) current / (float) duration);
-    } else {
-      sliderValue = 0;
-    }
-    if (intersects(clipY, clipHeight, timeRateTop, textHeight)) {
-      g.setColor(Theme.getOnSurfaceVariantColor());
-      g.drawString(strCurrent, 5, timeRateTop, 20);
-    }
-    g.setColor(Theme.getOutlineVariantColor());
-    g.fillRect(sliderLeft, sliderTop, sliderWidth, SLIDER_HEIGHT);
-    g.setColor(Theme.getPrimaryColor());
-    g.fillRect(sliderLeft, sliderTop, (int) sliderValue, SLIDER_HEIGHT);
-    if (intersects(clipY, clipHeight, timeRateTop, textHeight)) {
-      g.setColor(Theme.getOnSurfaceVariantColor());
-      g.drawString(strDuration, displayWidth - 5, timeRateTop, 24);
-    }
-  }
-
-  private void paintControlButtons(Graphics g) {
-    initButtonPositions();
-    updateButtonStates();
-    boolean isPlaying = this.getPlayerGUI().isPlaying();
-    Image playPauseImg = isPlaying ? Configuration.pauseIcon : Configuration.playIcon;
-    if (playPauseImg != null) {
-      g.drawImage(playPauseImg, playX, playY, 3);
-    }
-    Image prevImg = Configuration.previousIcon;
-    if (prevImg != null) {
-      g.drawImage(prevImg, prevX, prevY, 3);
-    }
-    Image nextImg = Configuration.nextIcon;
-    if (nextImg != null) {
-      g.drawImage(nextImg, nextX, nextY, 3);
-    }
-    int repeatMode = this.getPlayerGUI().getRepeatMode();
-    Image repeatImg;
-    if (Configuration.PLAYER_REPEAT_ONE == repeatMode) {
-      repeatImg = Configuration.repeatOneIcon;
-    } else if (Configuration.PLAYER_REPEAT_ALL == repeatMode) {
-      repeatImg = Configuration.repeatIcon;
-    } else {
-      repeatImg = Configuration.repeatOffIcon;
-    }
-    if (repeatImg != null) {
-      g.drawImage(repeatImg, repeatX, repeatY, 3);
-    }
-    Image shuffleImg =
-        this.getPlayerGUI().isShuffleEnabled()
-            ? Configuration.shuffleIcon
-            : Configuration.shuffleOffIcon;
-    if (shuffleImg != null) {
-      g.drawImage(shuffleImg, shuffleX, shuffleY, 3);
-    }
-  }
-
-  private void initButtonPositions() {
-    if (playX == 0) {
-      int screenCenter = displayWidth >> 1;
-      int buttonGap = displayWidth / 5;
-      int margin = 8;
-      playX = screenCenter;
-      playY = playTop;
-      prevX = screenCenter - buttonGap;
-      prevY = playTop;
-      nextX = screenCenter + buttonGap;
-      nextY = playTop;
-      repeatX = margin + (BUTTON_WIDTH / 2);
-      repeatY = playTop;
-      shuffleX = displayWidth - margin - (BUTTON_WIDTH / 2);
-      shuffleY = playTop;
-    }
-  }
-
-  private void updateButtonStates() {
-    if (showingPreviousActive || showingNextActive) {
-      long time = System.currentTimeMillis();
-      if (time - previousButtonPressTime >= BUTTON_ACTIVE_DURATION) {
-        showingPreviousActive = false;
-      }
-      if (time - nextButtonPressTime >= BUTTON_ACTIVE_DURATION) {
-        showingNextActive = false;
-      }
-    }
-  }
-
-  private void paintVolumeAlert(Graphics g) {
-    int alertWidth = displayWidth - 40;
-    int alertHeight = 100;
-    int alertX = 20;
-    int alertY = (displayHeight - alertHeight) / 2;
-
-    g.setColor(Theme.getSurfaceColor());
-    g.fillRect(alertX, alertY, alertWidth, alertHeight);
-    g.setColor(Theme.getOutlineColor());
-    g.drawRect(alertX, alertY, alertWidth, alertHeight);
-
-    g.setColor(Theme.getOnSurfaceColor());
-    g.drawString(
-        Lang.tr("player.volume"),
-        alertX + alertWidth / 2,
-        alertY + 15,
-        Graphics.HCENTER | Graphics.TOP);
-
-    int barX = alertX + 20;
-    int barY = alertY + 40;
-    int barWidth = alertWidth - 40;
-    int barHeight = 20;
-    g.setColor(Theme.getOutlineVariantColor());
-    g.fillRect(barX, barY, barWidth, barHeight);
-
-    int progressWidth = (barWidth * currentVolumeLevel) / Configuration.PLAYER_MAX_VOLUME;
-    g.setColor(Theme.getPrimaryColor());
-    g.fillRect(barX, barY, progressWidth, barHeight);
-
-    g.setColor(Theme.getOutlineColor());
-    g.drawRect(barX, barY, barWidth, barHeight);
-  }
-
   public void commandAction(Command c, Displayable d) {
     if (c == Commands.back()) {
-      if (volumeAlertShowing) {
-        hideVolumeAlert();
-      } else {
-        this.navigator.back();
-      }
+      handleBackCommand();
     } else if (c == Commands.playerNext()) {
       next();
     } else if (c == Commands.playerPrevious()) {
@@ -646,126 +351,12 @@ public final class PlayerScreen extends Canvas
     } else if (c == Commands.playerSleepTimer()) {
       showSleepTimerDialog();
     } else if (c == Commands.playerCancelTimer()) {
-      sleepTimerManager.cancelTimer();
-      updateSleepTimerCommands();
-    }
-  }
-
-  private void togglePlayPause() {
-    if (!this.isLoading()) {
-      this.getPlayerGUI().toggle();
-    }
-  }
-
-  private void toggleRepeat() {
-    this.getPlayerGUI().toggleRepeat();
-    this.updateDisplay();
-  }
-
-  private void toggleShuffle() {
-    this.getPlayerGUI().toggleShuffle();
-    this.updateDisplay();
-  }
-
-  private void stop() {
-    this.getPlayerGUI().pause();
-    this.getPlayerGUI().seek(0L);
-    this.setStatusByKey(Configuration.PLAYER_STATUS_STOPPED);
-  }
-
-  private void next() {
-    navigate(true);
-  }
-
-  private void previous() {
-    navigate(false);
-  }
-
-  private void navigate(boolean isNext) {
-    if (!this.isLoading()) {
-      try {
-        if (isNext) {
-          this.showingNextActive = true;
-          this.nextButtonPressTime = System.currentTimeMillis();
-          this.getPlayerGUI().next();
-        } else {
-          this.showingPreviousActive = true;
-          this.previousButtonPressTime = System.currentTimeMillis();
-          this.getPlayerGUI().previous();
-        }
-      } catch (Throwable e) {
-        e.printStackTrace();
-      }
-    }
-  }
-
-  private void addCurrentTrackToPlaylist() {
-    Track currentTrack = getPlayerGUI().getCurrentTrack();
-    if (currentTrack == null) {
-      return;
-    }
-    FavoritesScreen selectionScreen = new FavoritesScreen(navigator, currentTrack, this);
-    navigator.forward(selectionScreen);
-  }
-
-  private void showCurrentPlaylist() {
-    Tracks currentTracks = this.getPlayerGUI().getCurrentTracks();
-    if (currentTracks == null
-        || currentTracks.getTracks() == null
-        || currentTracks.getTracks().length == 0) {
-      return;
-    }
-    String playlistTitle = this.title != null ? this.title : Lang.tr("player.show_playlist");
-    TrackListScreen trackListScreen =
-        new TrackListScreen(playlistTitle, currentTracks, this.navigator);
-    trackListScreen.setSelectedIndex(this.getPlayerGUI().getCurrentIndex(), true);
-    this.navigator.forward(trackListScreen);
-  }
-
-  public void cancel() {}
-
-  private void showSleepTimerDialog() {
-    SleepTimerForm form =
-        new SleepTimerForm(
-            navigator,
-            new SleepTimerForm.SleepTimerCallback() {
-              public void onTimerSet(int durationMinutes, int action) {
-                sleepTimerManager.setCallback(PlayerScreen.this);
-                sleepTimerManager.startCountdownTimer(durationMinutes, action);
-                navigator.back();
-                navigator.showAlert(
-                    Lang.tr("timer.status.set"), AlertType.CONFIRMATION, PlayerScreen.this);
-                updateSleepTimerCommands();
-              }
-            });
-    navigator.forward(form);
-  }
-
-  private void updateSleepTimerCommands() {
-    if (sleepTimerManager.isActive()) {
-      removeCommand(Commands.playerSleepTimer());
-      addCommand(Commands.playerCancelTimer());
-    } else {
-      removeCommand(Commands.playerCancelTimer());
-      addCommand(Commands.playerSleepTimer());
-    }
-  }
-
-  private void removeSleepTimerCommand() {
-    if (sleepTimerManager.isActive()) {
-      removeCommand(Commands.playerCancelTimer());
-    } else {
-      removeCommand(Commands.playerSleepTimer());
+      handleCancelTimerCommand();
     }
   }
 
   public void onTimerExpired(int action) {
-    if (action == SleepTimerForm.ACTION_STOP_PLAYBACK) {
-      stop();
-      navigator.showAlert(Lang.tr("timer.status.expired"), AlertType.INFO);
-    } else if (action == SleepTimerForm.ACTION_EXIT_APP) {
-      navigator.showAlert(Lang.tr("timer.status.expired"), AlertType.INFO);
-    }
+    handleTimerAction(action);
     updateSleepTimerCommands();
   }
 
@@ -787,18 +378,807 @@ public final class PlayerScreen extends Canvas
     navigator.showAlert(message, AlertType.ERROR);
   }
 
+  public void cancel() {}
+
+  private boolean isPlayingState() {
+    return Configuration.PLAYER_STATUS_PLAYING.equals(currentStatusKey);
+  }
+
+  private boolean isPausedState() {
+    return Configuration.PLAYER_STATUS_PAUSED.equals(currentStatusKey);
+  }
+
+  private boolean isStoppedState() {
+    return Configuration.PLAYER_STATUS_STOPPED.equals(currentStatusKey);
+  }
+
+  private void determinePlayerStatus() {
+    if (getPlayerGUI().isPlaying()) {
+      setStatusByKey(Configuration.PLAYER_STATUS_PLAYING);
+    } else if (isStoppedState()) {
+      setStatusByKey(Configuration.PLAYER_STATUS_STOPPED);
+    } else {
+      setStatusByKey(Configuration.PLAYER_STATUS_PAUSED);
+    }
+  }
+
+  private void resetImage() {
+    if (currentImageLoadOperation != null) {
+      currentImageLoadOperation.stop();
+      currentImageLoadOperation = null;
+    }
+    albumArt = null;
+    albumArtUrl = null;
+    loadingAlbumArt = albumArtLoaded = false;
+  }
+
+  private void stopCurrentImageLoad() {
+    if (currentImageLoadOperation != null) {
+      currentImageLoadOperation.stop();
+      currentImageLoadOperation = null;
+    }
+  }
+
+  private void resetImageState(String url) {
+    albumArtUrl = url;
+    albumArt = null;
+    loadingAlbumArt = albumArtLoaded = false;
+  }
+
+  private void loadAlbumArtAfterLayout() {
+    if (canLoadAlbumArt()) {
+      loadAlbumArt();
+    }
+  }
+
+  private void loadAlbumArt() {
+    if (!canLoadAlbumArt()) {
+      return;
+    }
+
+    stopCurrentImageLoad();
+    loadingAlbumArt = true;
+    final String imageUrl = albumArtUrl;
+    int targetSize = calculateAlbumArtSize();
+
+    currentImageLoadOperation =
+        new ImageLoadOperation(imageUrl, targetSize, new ImageLoadCallback());
+    currentImageLoadOperation.start();
+  }
+
+  private int calculateAlbumArtSize() {
+    return calculateAlbumArtSize(displayWidth, displayHeight, isLandscape, isLargeScreen);
+  }
+
+  private boolean isLoading() {
+    return statusCurrent != null && statusCurrent.indexOf(Lang.tr("status.loading")) != -1;
+  }
+
+  private void handleButtonTouch(int x, int y) {
+    if (isPointInButton(x, y, playX, playY, playButtonWidth, playButtonHeight)) {
+      handleAction(Canvas.FIRE);
+    } else if (isPointInButton(x, y, prevX, prevY, buttonWidth, buttonHeight)) {
+      handleAction(Canvas.LEFT);
+    } else if (isPointInButton(x, y, nextX, nextY, buttonWidth, buttonHeight)) {
+      handleAction(Canvas.RIGHT);
+    } else if (isPointInButton(x, y, repeatX, repeatY, buttonWidth, buttonHeight)) {
+      toggleRepeat();
+    } else if (isPointInButton(x, y, shuffleX, shuffleY, buttonWidth, buttonHeight)) {
+      toggleShuffle();
+    }
+  }
+
+  private void handleVolumeAlertTouch(int x, int y) {
+    int alertWidth = displayWidth - 40;
+    int alertHeight = 100;
+    int alertX = 20;
+    int alertY = (displayHeight - alertHeight) / 2;
+    int barWidth = alertWidth - 40;
+    int barX = alertX + 20;
+    int barY = alertY + 40;
+    int barHeight = 20;
+
+    if (isPointInBounds(x, y, alertX, alertY, alertWidth, alertHeight)) {
+      if (isPointInBounds(x, y, barX, barY, barWidth, barHeight)) {
+        int tapPosition = x - barX;
+        int newVolume = (tapPosition * Configuration.PLAYER_MAX_VOLUME) / barWidth;
+        newVolume = Math.max(0, Math.min(Configuration.PLAYER_MAX_VOLUME, newVolume));
+        getPlayerGUI().setVolumeLevel(newVolume);
+        currentVolumeLevel = newVolume;
+        updateDisplay();
+      }
+    } else {
+      hideVolumeAlert();
+    }
+  }
+
+  private void handleAction(int action) {
+    if (isLoading()) {
+      return;
+    }
+
+    try {
+      if (volumeAlertShowing) {
+        handleVolumeAction(action);
+      } else {
+        handlePlayerAction(action);
+      }
+    } catch (Throwable e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void handleVolumeAction(int action) {
+    switch (action) {
+      case Canvas.UP:
+      case Canvas.RIGHT:
+        getPlayerGUI().adjustVolume(true);
+        break;
+      case Canvas.DOWN:
+      case Canvas.LEFT:
+        getPlayerGUI().adjustVolume(false);
+        break;
+      case Canvas.FIRE:
+        hideVolumeAlert();
+        break;
+    }
+  }
+
+  private void handlePlayerAction(int action) {
+    switch (action) {
+      case Canvas.FIRE:
+        getPlayerGUI().toggle();
+        break;
+      case Canvas.RIGHT:
+        getPlayerGUI().next();
+        break;
+      case Canvas.LEFT:
+        getPlayerGUI().previous();
+        break;
+      case Canvas.UP:
+        getPlayerGUI().adjustVolume(true);
+        break;
+      case Canvas.DOWN:
+        getPlayerGUI().adjustVolume(false);
+        break;
+    }
+  }
+
+  private void drawTrackText(Graphics g, String text, int x, int y) {
+    if (isLargeScreen) {
+      drawCenteredText(g, text, x, y);
+    } else {
+      drawLeftAlignedText(g, text, x, y);
+    }
+  }
+
+  private void initDisplayMetrics(Graphics g) {
+    displayWidth = getWidth();
+    displayHeight = getHeight();
+    detectOrientationChange(displayWidth, displayHeight);
+
+    if (isLargeScreen) {
+      initLargeScreenLayout(g);
+    } else {
+      initSmallScreenLayout(g);
+    }
+  }
+
+  private void initLargeScreenLayout(Graphics g) {
+    calculateResponsiveSizes();
+    updateFontsForLargeScreen();
+    statusBarHeight = textHeight + (displayHeight / 100);
+
+    if (isLandscape) {
+      initLargeLandscapeLayout(g);
+    } else {
+      initLargePortraitLayout(g);
+    }
+    loadAlbumArtAfterLayout();
+  }
+
+  private void initSmallScreenLayout(Graphics g) {
+    textHeight = defaultFont.getHeight();
+    statusBarHeight = textHeight + 5;
+    textX = 95;
+
+    calculateSmallScreenPositions();
+    calculateSmallScreenSlider(g);
+    calculateSmallScreenArt();
+    loadAlbumArtAfterLayout();
+  }
+
+  private void calculateSmallScreenPositions() {
+    int currentTop = 2 + statusBarHeight + 15;
+    titleY = currentTop;
+    currentTop += 5 + textHeight;
+    artistY = currentTop;
+    currentTop += 10 + textHeight + 24;
+    timeY = currentTop;
+    playTop = timeY + textHeight + 24;
+  }
+
+  private void calculateSmallScreenSlider(Graphics g) {
+    timeWidth = g.getFont().stringWidth("0:00:0  ");
+    sliderWidth = displayWidth - (timeWidth * 2) - 8;
+    sliderTop = timeY + (textHeight - sliderHeight) / 2;
+    sliderLeft = timeWidth + 4;
+  }
+
+  private void calculateSmallScreenArt() {
+    albumSize = 72;
+    albumX = 8;
+    albumY = 2 + statusBarHeight + 8;
+  }
+
+  private void initLargeLandscapeLayout(Graphics g) {
+    int margin = displayWidth / 30;
+    int availableHeight = displayHeight - statusBarHeight - margin * 2;
+    int leftPanelWidth = displayWidth * 45 / 100;
+
+    calculateLandscapeArtDimensions(margin, availableHeight, leftPanelWidth);
+    calculateLandscapeTrackInfo(leftPanelWidth, availableHeight);
+    calculateLandscapeSlider(leftPanelWidth, margin, availableHeight);
+    calculateLandscapeControls(availableHeight);
+  }
+
+  private void calculateLandscapeArtDimensions(
+      int margin, int availableHeight, int leftPanelWidth) {
+    albumSize = Math.min(availableHeight * 85 / 100, leftPanelWidth - margin * 2);
+    albumX = (leftPanelWidth - albumSize) / 2;
+    albumY = statusBarHeight + (availableHeight - albumSize) / 2;
+  }
+
+  private void calculateLandscapeTrackInfo(int leftPanelWidth, int availableHeight) {
+    int rightPanelLeft = leftPanelWidth + (displayWidth / 40);
+    int rightPanelWidth = displayWidth - rightPanelLeft - (displayWidth / 30);
+    int rightPanelCenter = rightPanelLeft + (rightPanelWidth >> 1);
+
+    textX = rightPanelCenter;
+    int trackInfoSection = availableHeight / 4;
+    titleY = statusBarHeight + trackInfoSection - titleFont.getHeight();
+    artistY = titleY + (displayHeight / 80) + titleFont.getHeight();
+  }
+
+  private void calculateLandscapeSlider(int leftPanelWidth, int margin, int availableHeight) {
+    int rightPanelLeft = leftPanelWidth + (displayWidth / 40);
+    int rightPanelWidth = displayWidth - rightPanelLeft - margin;
+
+    int timeSliderSection = availableHeight / 2;
+    sliderTop = statusBarHeight + timeSliderSection - sliderHeight / 2;
+    timeWidth = defaultFont.stringWidth("0:00:0  ");
+    sliderLeft = rightPanelLeft + (displayWidth / 80);
+    sliderWidth = rightPanelWidth - (displayWidth / 40);
+
+    timeY = sliderTop + sliderHeight + (displayHeight / 60);
+  }
+
+  private void calculateLandscapeControls(int availableHeight) {
+    int controlSection = availableHeight * 3 / 4;
+    playTop = statusBarHeight + controlSection + (displayHeight / 80);
+  }
+
+  private void initLargePortraitLayout(Graphics g) {
+    int margin = displayWidth / 20;
+    albumSize = Math.min(displayWidth - margin * 2, (displayHeight * 40) / 100);
+    albumX = (displayWidth - albumSize) / 2;
+
+    int availableHeight = displayHeight - statusBarHeight;
+    int contentHeight = calculateContentHeight();
+
+    int startY = statusBarHeight + (availableHeight - contentHeight) / 2;
+    if (startY < statusBarHeight + (displayHeight / 30)) {
+      startY = statusBarHeight + (displayHeight / 30);
+    }
+
+    calculatePortraitPositions(startY, margin);
+  }
+
+  private void calculatePortraitPositions(int startY, int margin) {
+    albumY = startY;
+    int currentTop = startY + albumSize + (displayHeight / 18);
+
+    textX = displayWidth / 2;
+    titleY = currentTop;
+    currentTop += (displayHeight / 80) + titleFont.getHeight();
+    artistY = currentTop;
+    currentTop += (displayHeight / 50) + artistFont.getHeight() + (displayHeight / 25);
+
+    sliderLeft = margin;
+    sliderWidth = displayWidth - margin * 2;
+    sliderTop = currentTop + (textHeight - sliderHeight) / 2;
+
+    timeY = sliderTop + sliderHeight + (displayHeight / 60);
+    timeWidth = defaultFont.stringWidth("0:00:0  ");
+    playTop = timeY + textHeight + (displayHeight / 20);
+  }
+
+  private int calculateContentHeight() {
+    return albumSize
+        + (displayHeight / 18)
+        + (displayHeight / 80)
+        + titleFont.getHeight()
+        + (displayHeight / 50)
+        + artistFont.getHeight()
+        + (displayHeight / 25)
+        + sliderHeight
+        + (displayHeight / 60)
+        + textHeight
+        + (displayHeight / 20)
+        + playButtonHeight;
+  }
+
+  private void paintBackground(Graphics g) {
+    g.setColor(Theme.getBackgroundColor());
+    g.fillRect(0, 0, displayWidth, displayHeight);
+  }
+
+  private void paintStatusBar(Graphics g, int clipY, int clipHeight) {
+    g.setColor(Theme.getSecondaryContainerColor());
+    g.fillRect(0, 0, displayWidth, statusBarHeight);
+
+    if (intersects(clipY, clipHeight, 2, textHeight)) {
+      g.setColor(Theme.getOnSecondaryContainerColor());
+      g.drawString(statusCurrent, displayWidth >> 1, 2, 17);
+    }
+  }
+
+  private void paintAlbumArt(Graphics g) {
+    if (isLargeScreen) {
+      paintLargeScreenAlbumArt(g);
+    } else {
+      paintSmallScreenAlbumArt(g);
+    }
+  }
+
+  private void paintLargeScreenAlbumArt(Graphics g) {
+    drawAlbumArtBackground(g);
+
+    if (albumArt != null) {
+      int innerSize = albumSize - 1;
+      int innerX = albumX + 1;
+      int innerY = albumY + 1;
+      Utils.drawScaledImage(g, albumArt, innerX, innerY, innerSize, innerSize);
+    } else {
+      drawAlbumArtPlaceholder(g, albumX + albumSize / 2, albumY + albumSize / 2);
+    }
+  }
+
+  private void paintSmallScreenAlbumArt(Graphics g) {
+    if (albumArt != null) {
+      g.drawImage(albumArt, 8 + 36, albumY + 36, Graphics.HCENTER | Graphics.VCENTER);
+      g.setColor(Theme.getOutlineColor());
+      g.drawRect(8, albumY, 72, 72);
+    } else {
+      g.setColor(Theme.getSurfaceVariantColor());
+      g.fillRect(8, albumY, 72, 72);
+      g.setColor(Theme.getOutlineColor());
+      g.drawRect(8, albumY, 72, 72);
+      drawAlbumArtPlaceholder(g, 44, albumY + 36);
+    }
+  }
+
+  private void drawAlbumArtBackground(Graphics g) {
+    g.setColor(Theme.getSurfaceVariantColor());
+    g.fillRect(albumX, albumY, albumSize, albumSize);
+    g.setColor(Theme.getOutlineColor());
+    g.drawRect(albumX, albumY, albumSize, albumSize);
+  }
+
+  private void drawAlbumArtPlaceholder(Graphics g, int centerX, int centerY) {
+    g.setColor(Theme.getOnSurfaceVariantColor());
+    g.drawString("♪", centerX, centerY, 17);
+  }
+
+  private void paintTrackInfo(Graphics g, int clipY, int clipHeight) {
+    Track currentTrack = getPlayerGUI().getCurrentTrack();
+    if (currentTrack == null) {
+      return;
+    }
+
+    if (isLargeScreen) {
+      paintLargeScreenTrackInfo(g, clipY, clipHeight, currentTrack);
+    } else {
+      paintSmallScreenTrackInfo(g, clipY, clipHeight, currentTrack);
+    }
+  }
+
+  private void paintLargeScreenTrackInfo(
+      Graphics g, int clipY, int clipHeight, Track currentTrack) {
+    paintTrackName(g, clipY, clipHeight, currentTrack, true);
+    paintArtistName(g, clipY, clipHeight, currentTrack, true);
+    g.setFont(defaultFont);
+  }
+
+  private void paintSmallScreenTrackInfo(
+      Graphics g, int clipY, int clipHeight, Track currentTrack) {
+    paintTrackName(g, clipY, clipHeight, currentTrack, false);
+    paintArtistName(g, clipY, clipHeight, currentTrack, false);
+  }
+
+  private void paintTrackName(
+      Graphics g, int clipY, int clipHeight, Track currentTrack, boolean isLargeScreen) {
+    Font font = isLargeScreen ? titleFont : defaultFont;
+    int fontHeight = isLargeScreen ? titleFont.getHeight() : textHeight;
+
+    g.setFont(font);
+    if (intersects(clipY, clipHeight, titleY, fontHeight)) {
+      g.setColor(Theme.getOnBackgroundColor());
+      int maxWidth = calculateMaxTrackNameWidth();
+      String trackName = currentTrack.getName();
+      String truncatedTrackName = Utils.truncateText(trackName, g, maxWidth);
+
+      if (isLargeScreen) {
+        drawTrackText(g, truncatedTrackName, textX, titleY);
+      } else {
+        g.drawString(truncatedTrackName, textX, titleY, 20);
+      }
+    }
+  }
+
+  private void paintArtistName(
+      Graphics g, int clipY, int clipHeight, Track currentTrack, boolean isLargeScreen) {
+    Font font = isLargeScreen ? artistFont : defaultFont;
+    int fontHeight = isLargeScreen ? artistFont.getHeight() : textHeight;
+
+    g.setFont(font);
+    if (intersects(clipY, clipHeight, artistY, fontHeight)) {
+      g.setColor(Theme.getOnSurfaceVariantColor());
+      int maxWidth = calculateMaxSingerWidth();
+      String artistName = currentTrack.getArtist();
+      String truncatedSinger = Utils.truncateText(artistName, g, maxWidth);
+
+      if (isLargeScreen) {
+        drawTrackText(g, truncatedSinger, textX, artistY);
+      } else {
+        g.drawString(truncatedSinger, textX, artistY, 20);
+      }
+    }
+  }
+
+  private int calculateMaxTrackNameWidth() {
+    int maxWidth = displayWidth - 20;
+    if (isLandscape) {
+      maxWidth = calculateLandscapeTextWidth();
+    }
+    return maxWidth;
+  }
+
+  private int calculateMaxSingerWidth() {
+    int maxWidth = displayWidth - 20;
+    if (isLandscape) {
+      maxWidth = calculateLandscapeTextWidth();
+    }
+    return maxWidth;
+  }
+
+  private int calculateLandscapeTextWidth() {
+    int leftPanelWidth = displayWidth * 45 / 100;
+    int rightPanelLeft = leftPanelWidth + (displayWidth / 40);
+    int rightPanelWidth = displayWidth - rightPanelLeft - (displayWidth / 30);
+    return rightPanelWidth - 20;
+  }
+
+  private void paintTimeSlider(Graphics g, int clipY, int clipHeight) {
+    long duration = getPlayerGUI().getDuration();
+    long current = getPlayerGUI().getCurrentTime();
+    String strDuration = Utils.formatTime(duration);
+    String strCurrent = Utils.formatTime(current);
+
+    calculateSliderValue(duration, current, sliderWidth);
+
+    if (isLargeScreen) {
+      paintLargeScreenTimeSlider(g, clipY, clipHeight, strCurrent, strDuration);
+    } else {
+      paintSmallScreenTimeSlider(g, clipY, clipHeight, strCurrent, strDuration);
+    }
+  }
+
+  private void paintLargeScreenTimeSlider(
+      Graphics g, int clipY, int clipHeight, String strCurrent, String strDuration) {
+    int currentTimeX, durationTimeX;
+
+    if (isLandscape) {
+      int leftPanelWidth = displayWidth * 45 / 100;
+      int rightPanelLeft = leftPanelWidth + 15;
+      int rightPanelWidth = displayWidth - rightPanelLeft - 20;
+      sliderLeft = rightPanelLeft + 8;
+      sliderWidth = rightPanelWidth - 16;
+      currentTimeX = sliderLeft;
+      durationTimeX = sliderLeft + sliderWidth;
+    } else {
+      currentTimeX = sliderLeft;
+      durationTimeX = sliderLeft + sliderWidth;
+    }
+
+    paintSliderBar(g);
+    paintTimeLabels(g, clipY, clipHeight, strCurrent, strDuration, currentTimeX, durationTimeX);
+  }
+
+  private void paintTimeLabels(
+      Graphics g,
+      int clipY,
+      int clipHeight,
+      String strCurrent,
+      String strDuration,
+      int currentTimeX,
+      int durationTimeX) {
+    if (intersects(clipY, clipHeight, timeY, textHeight)) {
+      g.setColor(Theme.getOnSurfaceVariantColor());
+      g.drawString(strCurrent, currentTimeX, timeY, 20);
+      g.drawString(strDuration, durationTimeX, timeY, 24);
+    }
+  }
+
+  private void paintSmallScreenTimeSlider(
+      Graphics g, int clipY, int clipHeight, String strCurrent, String strDuration) {
+    paintCurrentTime(g, clipY, clipHeight, strCurrent);
+    paintSliderBar(g);
+    paintDurationTime(g, clipY, clipHeight, strDuration);
+  }
+
+  private void paintCurrentTime(Graphics g, int clipY, int clipHeight, String strCurrent) {
+    if (intersects(clipY, clipHeight, timeY, textHeight)) {
+      g.setColor(Theme.getOnSurfaceVariantColor());
+      g.drawString(strCurrent, 5, timeY, 20);
+    }
+  }
+
+  private void paintDurationTime(Graphics g, int clipY, int clipHeight, String strDuration) {
+    if (intersects(clipY, clipHeight, timeY, textHeight)) {
+      g.setColor(Theme.getOnSurfaceVariantColor());
+      g.drawString(strDuration, displayWidth - 5, timeY, 24);
+    }
+  }
+
+  private void paintSliderBar(Graphics g) {
+    g.setColor(Theme.getOutlineVariantColor());
+    g.fillRect(sliderLeft, sliderTop, sliderWidth, sliderHeight);
+    g.setColor(Theme.getPrimaryColor());
+    g.fillRect(sliderLeft, sliderTop, (int) sliderValue, sliderHeight);
+  }
+
+  private void paintControlButtons(Graphics g) {
+    initButtonPositions();
+
+    paintPlayPauseButton(g);
+    paintNavigationButtons(g);
+    paintModeButtons(g);
+  }
+
+  private void paintPlayPauseButton(Graphics g) {
+    boolean isPlaying = getPlayerGUI().isPlaying();
+    Image playPauseImg = isPlaying ? Configuration.pauseIcon : Configuration.playIcon;
+    if (playPauseImg != null) {
+      g.drawImage(playPauseImg, playX, playY, 3);
+    }
+  }
+
+  private void paintNavigationButtons(Graphics g) {
+    Image prevImg = isLoading() ? Configuration.prevDimIcon : Configuration.prevIcon;
+    if (prevImg != null) {
+      g.drawImage(prevImg, prevX, prevY, 3);
+    }
+
+    Image nextImg = isLoading() ? Configuration.nextDimIcon : Configuration.nextIcon;
+    if (nextImg != null) {
+      g.drawImage(nextImg, nextX, nextY, 3);
+    }
+  }
+
+  private void paintModeButtons(Graphics g) {
+    int repeatMode = getPlayerGUI().getRepeatMode();
+    Image repeatImg = getRepeatIcon(repeatMode);
+    if (repeatImg != null) {
+      g.drawImage(repeatImg, repeatX, repeatY, 3);
+    }
+
+    Image shuffleImg =
+        getPlayerGUI().isShuffleEnabled()
+            ? Configuration.shuffleIcon
+            : Configuration.shuffleOffIcon;
+    if (shuffleImg != null) {
+      g.drawImage(shuffleImg, shuffleX, shuffleY, 3);
+    }
+  }
+
+  private Image getRepeatIcon(int repeatMode) {
+    if (Configuration.PLAYER_REPEAT_ONE == repeatMode) {
+      return Configuration.repeatOneIcon;
+    } else if (Configuration.PLAYER_REPEAT_ALL == repeatMode) {
+      return Configuration.repeatIcon;
+    } else {
+      return Configuration.repeatOffIcon;
+    }
+  }
+
+  private void initButtonPositions() {
+    if (playX != 0) {
+      return;
+    }
+
+    int[] positions = new int[5];
+    positions[4] = buttonWidth; // Pass buttonWidth for calculations
+    calculateButtonPositions(displayWidth, displayHeight, isLandscape, isLargeScreen, positions);
+
+    playX = positions[0];
+    playY = playTop;
+    prevX = positions[1];
+    prevY = playTop;
+    nextX = positions[2];
+    nextY = playTop;
+    repeatX = positions[3];
+    repeatY = playTop;
+    shuffleX = positions[4];
+    shuffleY = playTop;
+  }
+
+  private void paintVolumeAlert(Graphics g) {
+    int alertWidth = displayWidth - 40;
+    int alertHeight = 100;
+    int alertX = 20;
+    int alertY = (displayHeight - alertHeight) / 2;
+    int barWidth = alertWidth - 40;
+    int barX = alertX + 20;
+    int barY = alertY + 40;
+    int barHeight = 20;
+
+    paintVolumeAlertBackground(g, alertX, alertY, alertWidth, alertHeight);
+    paintVolumeAlertTitle(g, alertX, alertY, alertWidth);
+    paintVolumeBar(g, barX, barY, barWidth, barHeight);
+  }
+
+  private void paintVolumeAlertBackground(
+      Graphics g, int alertX, int alertY, int alertWidth, int alertHeight) {
+    g.setColor(Theme.getSurfaceColor());
+    g.fillRect(alertX, alertY, alertWidth, alertHeight);
+    g.setColor(Theme.getOutlineColor());
+    g.drawRect(alertX, alertY, alertWidth, alertHeight);
+  }
+
+  private void paintVolumeAlertTitle(Graphics g, int alertX, int alertY, int alertWidth) {
+    g.setColor(Theme.getOnSurfaceColor());
+    g.drawString(
+        Lang.tr("player.volume"),
+        alertX + alertWidth / 2,
+        alertY + 15,
+        Graphics.HCENTER | Graphics.TOP);
+  }
+
+  private void paintVolumeBar(Graphics g, int barX, int barY, int barWidth, int barHeight) {
+    g.setColor(Theme.getOutlineVariantColor());
+    g.fillRect(barX, barY, barWidth, barHeight);
+
+    int progressWidth = (barWidth * currentVolumeLevel) / Configuration.PLAYER_MAX_VOLUME;
+    g.setColor(Theme.getPrimaryColor());
+    g.fillRect(barX, barY, progressWidth, barHeight);
+
+    g.setColor(Theme.getOutlineColor());
+    g.drawRect(barX, barY, barWidth, barHeight);
+  }
+
+  private void handleBackCommand() {
+    if (volumeAlertShowing) {
+      hideVolumeAlert();
+    } else {
+      navigator.back();
+    }
+  }
+
+  private void handleCancelTimerCommand() {
+    sleepTimerManager.cancelTimer();
+    updateSleepTimerCommands();
+  }
+
+  private void togglePlayPause() {
+    if (!isLoading()) {
+      getPlayerGUI().toggle();
+    }
+  }
+
+  private void toggleRepeat() {
+    getPlayerGUI().toggleRepeat();
+    updateDisplay();
+  }
+
+  private void toggleShuffle() {
+    getPlayerGUI().toggleShuffle();
+    updateDisplay();
+  }
+
+  private void stop() {
+    getPlayerGUI().pause();
+    getPlayerGUI().seek(0L);
+    setStatusByKey(Configuration.PLAYER_STATUS_STOPPED);
+  }
+
+  private void next() {
+    if (!isLoading()) {
+      getPlayerGUI().next();
+    }
+  }
+
+  private void previous() {
+    if (!isLoading()) {
+      getPlayerGUI().previous();
+    }
+  }
+
+  private void addCurrentTrackToPlaylist() {
+    Track currentTrack = getPlayerGUI().getCurrentTrack();
+    if (currentTrack == null) {
+      return;
+    }
+
+    FavoritesScreen selectionScreen = new FavoritesScreen(navigator, currentTrack, this);
+    navigator.forward(selectionScreen);
+  }
+
+  private void showCurrentPlaylist() {
+    Tracks currentTracks = getPlayerGUI().getCurrentTracks();
+    if (isPlaylistEmpty(currentTracks)) {
+      return;
+    }
+
+    String playlistTitle = title != null ? title : Lang.tr("player.show_playlist");
+    TrackListScreen trackListScreen = new TrackListScreen(playlistTitle, currentTracks, navigator);
+    trackListScreen.setSelectedIndex(getPlayerGUI().getCurrentIndex(), true);
+    navigator.forward(trackListScreen);
+  }
+
+  private boolean isPlaylistEmpty(Tracks tracks) {
+    return tracks == null || tracks.getTracks() == null || tracks.getTracks().length == 0;
+  }
+
+  private void showSleepTimerDialog() {
+    SleepTimerForm form = new SleepTimerForm(navigator, new SleepTimerCallback());
+    navigator.forward(form);
+  }
+
+  private void updateSleepTimerCommands() {
+    if (sleepTimerManager.isActive()) {
+      removeCommand(Commands.playerSleepTimer());
+      addCommand(Commands.playerCancelTimer());
+    } else {
+      removeCommand(Commands.playerCancelTimer());
+      addCommand(Commands.playerSleepTimer());
+    }
+  }
+
+  private void removeSleepTimerCommand() {
+    if (sleepTimerManager.isActive()) {
+      removeCommand(Commands.playerCancelTimer());
+    } else {
+      removeCommand(Commands.playerSleepTimer());
+    }
+  }
+
+  private void handleTimerAction(int action) {
+    if (action == SleepTimerForm.ACTION_STOP_PLAYBACK) {
+      stop();
+      navigator.showAlert(Lang.tr("timer.status.expired"), AlertType.INFO);
+    } else if (action == SleepTimerForm.ACTION_EXIT_APP) {
+      navigator.showAlert(Lang.tr("timer.status.expired"), AlertType.INFO);
+    }
+  }
+
   private void updateStatus(String s) {
-    if (s != null
-        && s.indexOf(Lang.tr("timer.status.remaining").substring(0, 3)) == -1
-        && s.indexOf(Lang.tr("player.volume")) == -1) {
-      this.realPlayerStatus = s;
+    if (isValidPlayerStatus(s)) {
+      realPlayerStatus = s;
     }
+
     if (!timerOverrideActive) {
-      this.statusCurrent = s;
+      statusCurrent = s;
     } else if (isCriticalStatus(s)) {
-      this.statusCurrent = s;
-      this.timerOverrideActive = false;
+      statusCurrent = s;
+      timerOverrideActive = false;
     }
+  }
+
+  private boolean isValidPlayerStatus(String s) {
+    return s != null
+        && s.indexOf(Lang.tr("timer.status.remaining").substring(0, 3)) == -1
+        && s.indexOf(Lang.tr("player.volume")) == -1;
   }
 
   private boolean isCriticalStatus(String status) {
@@ -809,12 +1189,83 @@ public final class PlayerScreen extends Canvas
   }
 
   private void setTimerOverride(String timerStatus) {
-    this.timerOverrideActive = true;
-    this.statusCurrent = timerStatus;
+    timerOverrideActive = true;
+    statusCurrent = timerStatus;
   }
 
   private void clearTimerOverride() {
-    this.timerOverrideActive = false;
-    this.statusCurrent = this.realPlayerStatus;
+    timerOverrideActive = false;
+    statusCurrent = realPlayerStatus;
+  }
+
+  private void initializeFonts() {
+    defaultFont = Font.getDefaultFont();
+    titleFont = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_BOLD, Font.SIZE_MEDIUM);
+    artistFont = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_SMALL);
+  }
+
+  private void updateFontsForLargeScreen() {
+    titleFont = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_BOLD, Font.SIZE_LARGE);
+    artistFont = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_MEDIUM);
+    textHeight = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_MEDIUM).getHeight();
+  }
+
+  private void detectOrientationChange(int w, int h) {
+    if (w <= 0 || h <= 0) {
+      return;
+    }
+    isLargeScreen = isLargeScreen(w, h);
+    isLandscape = isLandscape(w, h);
+  }
+
+  private void calculateResponsiveSizes() {
+    int[] sizes = new int[5];
+    calculateResponsiveSizes(displayWidth, displayHeight, sizes);
+    buttonWidth = sizes[0];
+    buttonHeight = sizes[1];
+    playButtonWidth = sizes[2];
+    playButtonHeight = sizes[3];
+    sliderHeight = sizes[4];
+  }
+
+  private void resetButtonPositions() {
+    playX = 0;
+  }
+
+  private boolean canLoadAlbumArt() {
+    return albumArtUrl != null && !loadingAlbumArt && !albumArtLoaded;
+  }
+
+  private void calculateSliderValue(long duration, long current, int sliderWidth) {
+    sliderValue = duration > 0 ? (float) sliderWidth * current / duration : 0;
+  }
+
+  private class ImageLoadCallback implements ImageLoadOperation.Listener {
+    public void onImageLoaded(Image image) {
+      albumArt = image;
+      albumArtLoaded = true;
+      if (albumArt != null) {
+        updateDisplay();
+      }
+      loadingAlbumArt = false;
+      currentImageLoadOperation = null;
+    }
+
+    public void onImageLoadError(Exception e) {
+      albumArt = null;
+      albumArtLoaded = true;
+      loadingAlbumArt = false;
+      currentImageLoadOperation = null;
+    }
+  }
+
+  private class SleepTimerCallback implements SleepTimerForm.SleepTimerCallback {
+    public void onTimerSet(int durationMinutes, int action) {
+      sleepTimerManager.setCallback(PlayerScreen.this);
+      sleepTimerManager.startCountdownTimer(durationMinutes, action);
+      navigator.back();
+      navigator.showAlert(Lang.tr("timer.status.set"), AlertType.CONFIRMATION, PlayerScreen.this);
+      updateSleepTimerCommands();
+    }
   }
 }

@@ -84,15 +84,18 @@ public class Configuration {
   public static Image chatIcon;
   public static Image settingsIcon;
   public static Image infoIcon;
-  public static Image nextIcon;
-  public static Image pauseIcon;
+
   public static Image playIcon;
-  public static Image previousIcon;
+  public static Image pauseIcon;
+  public static Image nextIcon;
+  public static Image prevIcon;
   public static Image repeatIcon;
   public static Image repeatOffIcon;
   public static Image repeatOneIcon;
   public static Image shuffleIcon;
   public static Image shuffleOffIcon;
+  public static Image nextDimIcon;
+  public static Image prevDimIcon;
 
   public static void loadIcons() throws IOException {
     folderIcon = loadIcon("/FolderSound.png");
@@ -111,16 +114,18 @@ public class Configuration {
     int activeIconColor = Theme.getPrimaryColor();
     int inactiveIconColor = Theme.getOutlineColor();
 
-    nextIcon = loadIcon("/Next.png", activeIconColor);
-    pauseIcon = loadIcon("/Pause.png", activeIconColor);
     playIcon = loadIcon("/Play.png", activeIconColor);
-    previousIcon = loadIcon("/Previous.png", activeIconColor);
+    pauseIcon = loadIcon("/Pause.png", activeIconColor);
+    nextIcon = loadIcon("/Next.png", activeIconColor);
+    prevIcon = loadIcon("/Previous.png", activeIconColor);
     repeatIcon = loadIcon("/Repeat.png", activeIconColor);
     repeatOneIcon = loadIcon("/RepeatOne.png", activeIconColor);
     shuffleIcon = loadIcon("/Shuffle.png", activeIconColor);
 
     repeatOffIcon = loadIcon("/Repeat.png", inactiveIconColor);
     shuffleOffIcon = loadIcon("/Shuffle.png", inactiveIconColor);
+    nextDimIcon = loadIcon("/Next.png", inactiveIconColor);
+    prevDimIcon = loadIcon("/Previous.png", inactiveIconColor);
   }
 
   private static Image loadIcon(String path) throws IOException {

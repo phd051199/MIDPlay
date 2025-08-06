@@ -94,14 +94,18 @@ public class Utils {
     return hasClass("javax.microedition.shell.MicroActivity");
   }
 
-  public static String replace(String text, String searchString, String replacement) {
+  public static String replace(String text, String search, String replacement) {
+    if (text == null || search == null) {
+      return text;
+    }
+
     StringBuffer sb = new StringBuffer();
-    int pos = 0;
-    int found;
-    int searchLength = searchString.length();
-    while ((found = text.indexOf(searchString, pos)) != -1) {
+    int pos = 0, found;
+    int searchLen = search.length();
+
+    while ((found = text.indexOf(search, pos)) != -1) {
       sb.append(text.substring(pos, found)).append(replacement);
-      pos = found + searchLength;
+      pos = found + searchLen;
     }
     sb.append(text.substring(pos));
     return sb.toString();
@@ -111,6 +115,7 @@ public class Utils {
     if (text == null) {
       return "";
     }
+
     try {
       byte[] bytes = text.getBytes("UTF-8");
       StringBuffer result = new StringBuffer(bytes.length + (bytes.length >> 1));
@@ -130,7 +135,6 @@ public class Utils {
               .append(HEX_DIGITS.charAt(b & 0xF));
         }
       }
-
       return result.toString();
     } catch (UnsupportedEncodingException e) {
       return "";
@@ -193,6 +197,113 @@ public class Utils {
     g.fillRect(0, 0, width, height);
 
     return image;
+  }
+
+  public static void drawScaledImage(Graphics g, Image image, int x, int y, int width, int height) {
+    if (image.getWidth() == width && image.getHeight() == height) {
+      g.drawImage(image, x, y, Graphics.LEFT | Graphics.TOP);
+    } else {
+      g.drawImage(resizeImageToFit(image, width, height), x, y, Graphics.LEFT | Graphics.TOP);
+    }
+  }
+
+  public static Image resizeImageToFit(Image src, int targetWidth, int targetHeight) {
+    int srcWidth = src.getWidth();
+    int srcHeight = src.getHeight();
+
+    if (srcWidth == targetWidth && srcHeight == targetHeight) {
+      return src;
+    }
+
+    double scaleX = (double) targetWidth / srcWidth;
+    double scaleY = (double) targetHeight / srcHeight;
+    double scale = Math.max(scaleX, scaleY);
+
+    int scaledWidth = (int) (srcWidth * scale);
+    int scaledHeight = (int) (srcHeight * scale);
+
+    Image scaledImage = resizeImageExact(src, scaledWidth, scaledHeight);
+    Image resizedImage =
+        cropImageToCenter(scaledImage, scaledWidth, scaledHeight, targetWidth, targetHeight);
+
+    return resizedImage;
+  }
+
+  public static Image cropImageToCenter(
+      Image scaledImage, int scaledWidth, int scaledHeight, int targetWidth, int targetHeight) {
+    int[] dst = new int[targetWidth * targetHeight];
+    int[] srcPixels = new int[scaledWidth * scaledHeight];
+    scaledImage.getRGB(srcPixels, 0, scaledWidth, 0, 0, scaledWidth, scaledHeight);
+
+    int offsetX = (scaledWidth - targetWidth) / 2;
+    int offsetY = (scaledHeight - targetHeight) / 2;
+
+    for (int y = 0; y < targetHeight; y++) {
+      for (int x = 0; x < targetWidth; x++) {
+        int srcX = x + offsetX;
+        int srcY = y + offsetY;
+        if (srcX >= 0 && srcX < scaledWidth && srcY >= 0 && srcY < scaledHeight) {
+          dst[y * targetWidth + x] = srcPixels[srcY * scaledWidth + srcX];
+        }
+      }
+    }
+    return Image.createRGBImage(dst, targetWidth, targetHeight, true);
+  }
+
+  public static Image resizeImageExact(Image src, int targetWidth, int targetHeight) {
+    int srcWidth = src.getWidth();
+    int srcHeight = src.getHeight();
+
+    int[] resizedPixels = new int[targetWidth * targetHeight];
+    int[] srcRowBuffer = new int[srcWidth];
+
+    int dstPixelIndex = 0;
+    int srcYAccumulator = 0;
+
+    for (int dstY = 0; dstY < targetHeight; dstY++) {
+      int srcY = srcYAccumulator / targetHeight;
+      int srcXAccumulator = 0;
+      src.getRGB(srcRowBuffer, 0, srcWidth, 0, srcY, srcWidth, 1);
+
+      for (int dstX = 0; dstX < targetWidth; dstX++) {
+        int srcX = srcXAccumulator / targetWidth;
+        resizedPixels[dstPixelIndex++] = srcRowBuffer[srcX];
+        srcXAccumulator += srcWidth;
+      }
+      srcYAccumulator += srcHeight;
+    }
+
+    return Image.createRGBImage(resizedPixels, targetWidth, targetHeight, true);
+  }
+
+  public static String truncateText(String text, Graphics g, int maxWidth) {
+    if (text == null || text.length() == 0) {
+      return "";
+    }
+    if (g.getFont().stringWidth(text) <= maxWidth) {
+      return text;
+    }
+
+    int ellipsisWidth = g.getFont().stringWidth("...");
+    int availableWidth = maxWidth - ellipsisWidth;
+    if (availableWidth <= 0) {
+      return "...";
+    }
+
+    for (int i = text.length() - 1; i > 0; i--) {
+      if (g.getFont().stringWidth(text.substring(0, i)) <= availableWidth) {
+        return text.substring(0, i) + "...";
+      }
+    }
+    return "...";
+  }
+
+  public static String formatTime(long microseconds) {
+    long totalSeconds = microseconds / 1000000L;
+    long minutes = totalSeconds / 60L;
+    long seconds = totalSeconds % 60L;
+
+    return (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
   }
 
   private Utils() {}
