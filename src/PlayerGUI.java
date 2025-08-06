@@ -171,9 +171,16 @@ public class PlayerGUI implements PlayerListener {
     closePlayer();
     closeResources();
     cleanupTimers();
+    resetDisplay();
     shuffleOrder = null;
     shufflePosition = 0;
     setStatus("");
+  }
+
+  private void resetDisplay() {
+    parent.resetTruncatedText();
+    parent.resetDurationText();
+    parent.resetImage();
   }
 
   public boolean isPlaying() {

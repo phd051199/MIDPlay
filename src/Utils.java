@@ -1,5 +1,6 @@
 import java.io.UnsupportedEncodingException;
 import java.util.Vector;
+import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 import model.MenuItem;
@@ -276,22 +277,22 @@ public class Utils {
     return Image.createRGBImage(resizedPixels, targetWidth, targetHeight, true);
   }
 
-  public static String truncateText(String text, Graphics g, int maxWidth) {
+  public static String truncateText(String text, Font font, int maxWidth) {
     if (text == null || text.length() == 0) {
       return "";
     }
-    if (g.getFont().stringWidth(text) <= maxWidth) {
+    if (font.stringWidth(text) <= maxWidth) {
       return text;
     }
 
-    int ellipsisWidth = g.getFont().stringWidth("...");
+    int ellipsisWidth = font.stringWidth("...");
     int availableWidth = maxWidth - ellipsisWidth;
     if (availableWidth <= 0) {
       return "...";
     }
 
     for (int i = text.length() - 1; i > 0; i--) {
-      if (g.getFont().stringWidth(text.substring(0, i)) <= availableWidth) {
+      if (font.stringWidth(text.substring(0, i)) <= availableWidth) {
         return text.substring(0, i) + "...";
       }
     }

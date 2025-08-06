@@ -122,10 +122,11 @@ public final class PlayerScreen extends Canvas
   }
 
   private final SleepTimerManager sleepTimerManager = new SleepTimerManager();
+  private final boolean touchSupported;
 
   private int displayWidth = -1, displayHeight = -1;
   private int textHeight = 10;
-  private boolean isLandscape, isLargeScreen, touchSupported;
+  private boolean isLandscape, isLargeScreen;
   private boolean volumeAlertShowing, timerOverrideActive;
   private int currentVolumeLevel;
   private String currentStatusKey = Configuration.PLAYER_STATUS_STOPPED;
@@ -148,15 +149,21 @@ public final class PlayerScreen extends Canvas
   private int sliderTop, sliderLeft, sliderWidth = 12, sliderHeight = 6;
 
   private Image albumArt;
+  private Image scaledAlbumArt;
+  private int lastScaledSize = -1;
   private String albumArtUrl;
   private boolean loadingAlbumArt, albumArtLoaded;
   private ImageLoadOperation currentImageLoadOperation;
+
+  private long lastDuration = -1;
+  private String durationText = "";
 
   private float sliderValue;
 
   private String title;
   private PlayerGUI gui;
   private Navigator navigator;
+  private String truncatedTrackName, truncatedSinger;
 
   public PlayerScreen(String title, Tracks tracks, int index, Navigator navigator) {
     this.title = title;
@@ -170,32 +177,41 @@ public final class PlayerScreen extends Canvas
     initializeFonts();
   }
 
+  private void manageCommands(boolean add) {
+    Command[] commands = {
+      Commands.back(),
+      Commands.playerPlay(),
+      Commands.playerNext(),
+      Commands.playerPrevious(),
+      Commands.playerStop(),
+      Commands.playerVolume(),
+      Commands.playerAddToPlaylist(),
+      Commands.playerShowPlaylist(),
+      Commands.playerRepeat(),
+      Commands.playerShuffle()
+    };
+
+    for (int i = 0; i < commands.length; i++) {
+      if (add) {
+        addCommand(commands[i]);
+      } else {
+        removeCommand(commands[i]);
+      }
+    }
+
+    if (add) {
+      updateSleepTimerCommands();
+    } else {
+      removeSleepTimerCommand();
+    }
+  }
+
   public void addCommands() {
-    addCommand(Commands.back());
-    addCommand(Commands.playerPlay());
-    addCommand(Commands.playerNext());
-    addCommand(Commands.playerPrevious());
-    addCommand(Commands.playerStop());
-    addCommand(Commands.playerVolume());
-    addCommand(Commands.playerAddToPlaylist());
-    addCommand(Commands.playerShowPlaylist());
-    addCommand(Commands.playerRepeat());
-    addCommand(Commands.playerShuffle());
-    updateSleepTimerCommands();
+    manageCommands(true);
   }
 
   public void clearCommands() {
-    removeCommand(Commands.back());
-    removeCommand(Commands.playerPlay());
-    removeCommand(Commands.playerNext());
-    removeCommand(Commands.playerPrevious());
-    removeCommand(Commands.playerStop());
-    removeCommand(Commands.playerVolume());
-    removeCommand(Commands.playerAddToPlaylist());
-    removeCommand(Commands.playerShowPlaylist());
-    removeCommand(Commands.playerRepeat());
-    removeCommand(Commands.playerShuffle());
-    removeSleepTimerCommand();
+    manageCommands(false);
   }
 
   public void refreshStatus() {
@@ -214,7 +230,6 @@ public final class PlayerScreen extends Canvas
     this.title = title;
     setTitle(title);
     this.navigator = navigator;
-    resetImage();
     getPlayerGUI().setPlaylist(tracks, index);
     getPlayerGUI().play();
   }
@@ -256,7 +271,15 @@ public final class PlayerScreen extends Canvas
   protected void sizeChanged(int w, int h) {
     detectOrientationChange(w, h);
     displayWidth = displayHeight = -1;
+    scaledAlbumArt = null;
+    lastScaledSize = -1;
     resetButtonPositions();
+    resetTruncatedText();
+  }
+
+  public void resetTruncatedText() {
+    truncatedTrackName = null;
+    truncatedSinger = null;
   }
 
   public void close() {
@@ -404,16 +427,6 @@ public final class PlayerScreen extends Canvas
     }
   }
 
-  private void resetImage() {
-    if (currentImageLoadOperation != null) {
-      currentImageLoadOperation.stop();
-      currentImageLoadOperation = null;
-    }
-    albumArt = null;
-    albumArtUrl = null;
-    loadingAlbumArt = albumArtLoaded = false;
-  }
-
   private void stopCurrentImageLoad() {
     if (currentImageLoadOperation != null) {
       currentImageLoadOperation.stop();
@@ -421,10 +434,22 @@ public final class PlayerScreen extends Canvas
     }
   }
 
+  private void clearImageData() {
+    albumArt = null;
+    scaledAlbumArt = null;
+    lastScaledSize = -1;
+    loadingAlbumArt = albumArtLoaded = false;
+  }
+
+  public void resetImage() {
+    stopCurrentImageLoad();
+    clearImageData();
+    albumArtUrl = null;
+  }
+
   private void resetImageState(String url) {
     albumArtUrl = url;
-    albumArt = null;
-    loadingAlbumArt = albumArtLoaded = false;
+    clearImageData();
   }
 
   private void loadAlbumArtAfterLayout() {
@@ -582,11 +607,11 @@ public final class PlayerScreen extends Canvas
   private void initSmallScreenLayout(Graphics g) {
     textHeight = defaultFont.getHeight();
     statusBarHeight = textHeight + 5;
-    textX = 95;
 
     calculateSmallScreenPositions();
     calculateSmallScreenSlider(g);
     calculateSmallScreenArt();
+    textX = albumX + albumSize + 16;
     loadAlbumArtAfterLayout();
   }
 
@@ -740,7 +765,13 @@ public final class PlayerScreen extends Canvas
       int innerSize = albumSize - 1;
       int innerX = albumX + 1;
       int innerY = albumY + 1;
-      Utils.drawScaledImage(g, albumArt, innerX, innerY, innerSize, innerSize);
+
+      if (scaledAlbumArt == null || lastScaledSize != innerSize) {
+        scaledAlbumArt = Utils.resizeImageToFit(albumArt, innerSize, innerSize);
+        lastScaledSize = innerSize;
+      }
+
+      g.drawImage(scaledAlbumArt, innerX, innerY, Graphics.LEFT | Graphics.TOP);
     } else {
       drawAlbumArtPlaceholder(g, albumX + albumSize / 2, albumY + albumSize / 2);
     }
@@ -798,60 +829,83 @@ public final class PlayerScreen extends Canvas
     paintArtistName(g, clipY, clipHeight, currentTrack, false);
   }
 
+  private void paintTrackInfoText(
+      Graphics g,
+      int clipY,
+      int clipHeight,
+      String text,
+      String[] truncatedTextRef,
+      Font font,
+      int fontHeight,
+      int yPosition,
+      int color,
+      boolean isLargeScreen) {
+    g.setFont(font);
+    if (intersects(clipY, clipHeight, yPosition, fontHeight)) {
+      g.setColor(color);
+      int maxWidth = calculateMaxTextWidth();
+      if (truncatedTextRef[0] == null) {
+        truncatedTextRef[0] = Utils.truncateText(text, font, maxWidth);
+      }
+
+      if (isLargeScreen) {
+        drawTrackText(g, truncatedTextRef[0], textX, yPosition);
+      } else {
+        g.drawString(truncatedTextRef[0], textX, yPosition, 20);
+      }
+    }
+  }
+
   private void paintTrackName(
       Graphics g, int clipY, int clipHeight, Track currentTrack, boolean isLargeScreen) {
     Font font = isLargeScreen ? titleFont : defaultFont;
     int fontHeight = isLargeScreen ? titleFont.getHeight() : textHeight;
+    String[] truncatedRef = new String[] {truncatedTrackName};
 
-    g.setFont(font);
-    if (intersects(clipY, clipHeight, titleY, fontHeight)) {
-      g.setColor(Theme.getOnBackgroundColor());
-      int maxWidth = calculateMaxTrackNameWidth();
-      String trackName = currentTrack.getName();
-      String truncatedTrackName = Utils.truncateText(trackName, g, maxWidth);
+    paintTrackInfoText(
+        g,
+        clipY,
+        clipHeight,
+        currentTrack.getName(),
+        truncatedRef,
+        font,
+        fontHeight,
+        titleY,
+        Theme.getOnBackgroundColor(),
+        isLargeScreen);
 
-      if (isLargeScreen) {
-        drawTrackText(g, truncatedTrackName, textX, titleY);
-      } else {
-        g.drawString(truncatedTrackName, textX, titleY, 20);
-      }
-    }
+    truncatedTrackName = truncatedRef[0];
   }
 
   private void paintArtistName(
       Graphics g, int clipY, int clipHeight, Track currentTrack, boolean isLargeScreen) {
     Font font = isLargeScreen ? artistFont : defaultFont;
     int fontHeight = isLargeScreen ? artistFont.getHeight() : textHeight;
+    String[] truncatedRef = new String[] {truncatedSinger};
 
-    g.setFont(font);
-    if (intersects(clipY, clipHeight, artistY, fontHeight)) {
-      g.setColor(Theme.getOnSurfaceVariantColor());
-      int maxWidth = calculateMaxSingerWidth();
-      String artistName = currentTrack.getArtist();
-      String truncatedSinger = Utils.truncateText(artistName, g, maxWidth);
+    paintTrackInfoText(
+        g,
+        clipY,
+        clipHeight,
+        currentTrack.getArtist(),
+        truncatedRef,
+        font,
+        fontHeight,
+        artistY,
+        Theme.getOnSurfaceVariantColor(),
+        isLargeScreen);
 
-      if (isLargeScreen) {
-        drawTrackText(g, truncatedSinger, textX, artistY);
-      } else {
-        g.drawString(truncatedSinger, textX, artistY, 20);
-      }
-    }
+    truncatedSinger = truncatedRef[0];
   }
 
-  private int calculateMaxTrackNameWidth() {
-    int maxWidth = displayWidth - 20;
-    if (isLandscape) {
-      maxWidth = calculateLandscapeTextWidth();
+  private int calculateMaxTextWidth() {
+    if (isLandscape && isLargeScreen) {
+      return calculateLandscapeTextWidth();
     }
-    return maxWidth;
-  }
 
-  private int calculateMaxSingerWidth() {
-    int maxWidth = displayWidth - 20;
-    if (isLandscape) {
-      maxWidth = calculateLandscapeTextWidth();
-    }
-    return maxWidth;
+    int padding = 20;
+    int textOffset = !isLargeScreen ? textX : 0;
+    return displayWidth - padding - textOffset;
   }
 
   private int calculateLandscapeTextWidth() {
@@ -864,7 +918,8 @@ public final class PlayerScreen extends Canvas
   private void paintTimeSlider(Graphics g, int clipY, int clipHeight) {
     long duration = getPlayerGUI().getDuration();
     long current = getPlayerGUI().getCurrentTime();
-    String strDuration = Utils.formatTime(duration);
+
+    String strDuration = getDurationText(duration);
     String strCurrent = Utils.formatTime(current);
 
     calculateSliderValue(duration, current, sliderWidth);
@@ -919,18 +974,20 @@ public final class PlayerScreen extends Canvas
     paintDurationTime(g, clipY, clipHeight, strDuration);
   }
 
-  private void paintCurrentTime(Graphics g, int clipY, int clipHeight, String strCurrent) {
+  private void paintTimeText(
+      Graphics g, int clipY, int clipHeight, String timeText, int x, int anchor) {
     if (intersects(clipY, clipHeight, timeY, textHeight)) {
       g.setColor(Theme.getOnSurfaceVariantColor());
-      g.drawString(strCurrent, 5, timeY, 20);
+      g.drawString(timeText, x, timeY, anchor);
     }
   }
 
+  private void paintCurrentTime(Graphics g, int clipY, int clipHeight, String strCurrent) {
+    paintTimeText(g, clipY, clipHeight, strCurrent, 5, 20);
+  }
+
   private void paintDurationTime(Graphics g, int clipY, int clipHeight, String strDuration) {
-    if (intersects(clipY, clipHeight, timeY, textHeight)) {
-      g.setColor(Theme.getOnSurfaceVariantColor());
-      g.drawString(strDuration, displayWidth - 5, timeY, 24);
-    }
+    paintTimeText(g, clipY, clipHeight, strDuration, displayWidth - 5, 24);
   }
 
   private void paintSliderBar(Graphics g) {
@@ -1242,22 +1299,39 @@ public final class PlayerScreen extends Canvas
     sliderValue = duration > 0 ? (float) sliderWidth * current / duration : 0;
   }
 
+  private String getDurationText(long duration) {
+    if (lastDuration != duration) {
+      lastDuration = duration;
+      durationText = Utils.formatTime(duration);
+    }
+    return durationText;
+  }
+
+  public void resetDurationText() {
+    lastDuration = -1;
+    durationText = "";
+  }
+
   private class ImageLoadCallback implements ImageLoadOperation.Listener {
-    public void onImageLoaded(Image image) {
-      albumArt = image;
+    private void finishImageLoad() {
+      scaledAlbumArt = null;
+      lastScaledSize = -1;
       albumArtLoaded = true;
-      if (albumArt != null) {
-        updateDisplay();
-      }
       loadingAlbumArt = false;
       currentImageLoadOperation = null;
     }
 
+    public void onImageLoaded(Image image) {
+      albumArt = image;
+      finishImageLoad();
+      if (albumArt != null) {
+        updateDisplay();
+      }
+    }
+
     public void onImageLoadError(Exception e) {
       albumArt = null;
-      albumArtLoaded = true;
-      loadingAlbumArt = false;
-      currentImageLoadOperation = null;
+      finishImageLoad();
     }
   }
 
