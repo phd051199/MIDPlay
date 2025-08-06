@@ -306,7 +306,23 @@ public final class PlayerScreen extends Canvas
 
   protected void keyPressed(int keycode) {
     try {
-      handleAction(getGameAction(keycode));
+      int action = getGameAction(keycode);
+      if (action != 0) {
+        handleAction(action);
+      } else {
+        // Bluetooth Control
+        switch (keycode) {
+          case -20: // Play/Resume
+            this.getPlayerGUI().toggle();
+            break;
+          case -21: // Previous Song
+            this.getPlayerGUI().previous();
+            break;
+          case -22: // Next Song
+            this.getPlayerGUI().next();
+            break;
+        }
+      }
     } catch (Throwable e) {
       e.printStackTrace();
     }
