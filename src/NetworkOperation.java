@@ -33,21 +33,21 @@ public abstract class NetworkOperation implements Network.NetworkListener {
   protected abstract void processResponse(String response);
 
   public void onDataReceived(String response) {
-    if (this.stopped) {
+    if (isStopped()) {
       return;
     }
     processResponse(response);
   }
 
   public void onNoDataReceived() {
-    if (this.stopped) {
+    if (isStopped()) {
       return;
     }
     handleNoData();
   }
 
   public void onError(Exception e) {
-    if (this.stopped) {
+    if (isStopped()) {
       return;
     }
     handleError(e);
@@ -58,7 +58,7 @@ public abstract class NetworkOperation implements Network.NetworkListener {
   protected abstract void handleError(Exception e);
 
   public void onResponse(String response) {
-    if (this.stopped) {
+    if (isStopped()) {
       return;
     }
     try {

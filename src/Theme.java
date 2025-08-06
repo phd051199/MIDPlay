@@ -22,7 +22,6 @@ public class Theme {
 
   public static void setDark(boolean isDark) {
     Theme.isDark = isDark;
-    applyDefaults(isDark);
   }
 
   public static void applyDefaults(boolean isDark) {
@@ -56,7 +55,9 @@ public class Theme {
   }
 
   public static void applyColors(JSONObject colors) {
-    if (colors == null) return;
+    if (colors == null) {
+      return;
+    }
 
     setPrimaryColor(colors.getInt("primary", primaryColor));
     setOnPrimaryColor(colors.getInt("onPrimary", onPrimaryColor));
