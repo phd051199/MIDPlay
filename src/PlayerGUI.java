@@ -417,7 +417,6 @@ public class PlayerGUI implements PlayerListener {
     if (tracks.length == 0) {
       return;
     }
-    cleanup();
     boolean trackChanged;
     if (isShuffleEnabled) {
       trackChanged = changeTrackShuffle(forward);
@@ -425,6 +424,7 @@ public class PlayerGUI implements PlayerListener {
       trackChanged = changeTrackNormal(forward);
     }
     if (trackChanged) {
+      cleanup();
       play();
     }
   }
