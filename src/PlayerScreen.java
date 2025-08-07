@@ -1256,16 +1256,13 @@ public final class PlayerScreen extends Canvas
   }
 
   private boolean isValidPlayerStatus(String s) {
-    return s != null
-        && s.indexOf(Lang.tr("timer.status.remaining").substring(0, 3)) == -1
-        && s.indexOf(Lang.tr("player.volume")) == -1;
+    return s != null && s.indexOf(Lang.tr("timer.status.remaining").substring(0, 3)) == -1;
   }
 
   private boolean isCriticalStatus(String status) {
     return status != null
         && (status.indexOf(Lang.tr("status.loading")) != -1
-            || status.toLowerCase().indexOf("error") != -1
-            || status.indexOf(Lang.tr("player.volume")) != -1);
+            || status.toLowerCase().indexOf("error") != -1);
   }
 
   private void setTimerOverride(String timerStatus) {
