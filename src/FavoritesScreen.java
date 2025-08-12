@@ -51,13 +51,13 @@ public final class FavoritesScreen extends BaseList {
 
   protected void handleSelection() {
     if (isSelectionMode) {
-      handleSelectionModeSelection();
+      handleSelectionMode();
     } else {
-      handleNormalModeSelection();
+      handleNormalMode();
     }
   }
 
-  private void handleSelectionModeSelection() {
+  private void handleSelectionMode() {
     if (this.size() == 0
         || this.getString(getSelectedIndex()).equals(Lang.tr("playlist.status.no_custom"))) {
       return;
@@ -66,7 +66,7 @@ public final class FavoritesScreen extends BaseList {
     if (selectedPlaylist == null) {
       return;
     }
-    int result = favoritesManager.addTrackToCustomPlaylist(selectedPlaylist, trackToAdd);
+    int result = favoritesManager.addTrackToPlaylist(selectedPlaylist, trackToAdd);
     if (result == FavoritesManager.SUCCESS) {
       navigator.back();
       navigator.showAlert(
@@ -78,7 +78,7 @@ public final class FavoritesScreen extends BaseList {
     }
   }
 
-  private void handleNormalModeSelection() {
+  private void handleNormalMode() {
     final Playlist selected = getSelectedPlaylist();
     if (selected == null) {
       return;
@@ -206,7 +206,7 @@ public final class FavoritesScreen extends BaseList {
   }
 
   private void performRemovePlaylist(Playlist playlist) {
-    if (favoritesManager.removePlaylistWithTracks(playlist)) {
+    if (favoritesManager.removePlaylistAndTracks(playlist)) {
       navigator.showAlert(Lang.tr("favorites.status.removed"), AlertType.CONFIRMATION);
       refresh();
     } else {

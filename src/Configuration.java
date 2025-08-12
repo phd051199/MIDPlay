@@ -122,10 +122,10 @@ public class Configuration {
     repeatOneIcon = loadIcon("/RepeatOne.png", activeIconColor);
     shuffleIcon = loadIcon("/Shuffle.png", activeIconColor);
 
-    repeatOffIcon = loadIcon("/Repeat.png", inactiveIconColor);
-    shuffleOffIcon = loadIcon("/Shuffle.png", inactiveIconColor);
-    nextDimIcon = loadIcon("/Next.png", inactiveIconColor);
-    prevDimIcon = loadIcon("/Previous.png", inactiveIconColor);
+    repeatOffIcon = Utils.applyColor(repeatIcon, inactiveIconColor);
+    shuffleOffIcon = Utils.applyColor(shuffleIcon, inactiveIconColor);
+    nextDimIcon = Utils.applyColor(nextIcon, inactiveIconColor);
+    prevDimIcon = Utils.applyColor(prevIcon, inactiveIconColor);
   }
 
   private static Image loadIcon(String path) throws IOException {

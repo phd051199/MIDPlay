@@ -103,7 +103,7 @@ public final class TrackListScreen extends BaseList {
     }
     Track selectedTrack = items.getTracks()[selectedIndex];
     FavoritesManager favoritesManager = FavoritesManager.getInstance();
-    if (favoritesManager.removeTrackFromCustomPlaylist(playlist, selectedTrack)) {
+    if (favoritesManager.removeTrackFromPlaylist(playlist, selectedTrack)) {
       navigator.showAlert(Lang.tr("playlist.status.track_removed"), AlertType.CONFIRMATION);
       refresh();
     } else {

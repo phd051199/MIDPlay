@@ -51,7 +51,7 @@ public class FavoritesManager {
     }
   }
 
-  public boolean removePlaylistWithTracks(Playlist playlist) {
+  public boolean removePlaylistAndTracks(Playlist playlist) {
     return removePlaylistInternal(playlist, true);
   }
 
@@ -105,12 +105,12 @@ public class FavoritesManager {
     tracksStorage.closeRecordStore();
   }
 
-  public int addTrackToCustomPlaylist(Playlist playlist, Track track) {
+  public int addTrackToPlaylist(Playlist playlist, Track track) {
     if (playlist == null || track == null || !playlist.isCustom()) {
       return FAILED;
     }
     try {
-      Vector trackList = getPlaylistTracksList(playlist.getKey());
+      Vector trackList = getPlaylistTracks(playlist.getKey());
       for (int i = 0; i < trackList.size(); i++) {
         Track existingTrack = (Track) trackList.elementAt(i);
         if (existingTrack.isSame(track)) {
@@ -124,12 +124,12 @@ public class FavoritesManager {
     }
   }
 
-  public boolean removeTrackFromCustomPlaylist(Playlist playlist, Track track) {
+  public boolean removeTrackFromPlaylist(Playlist playlist, Track track) {
     if (playlist == null || track == null || !playlist.isCustom()) {
       return false;
     }
     try {
-      Vector trackList = getPlaylistTracksList(playlist.getKey());
+      Vector trackList = getPlaylistTracks(playlist.getKey());
       for (int i = 0; i < trackList.size(); i++) {
         Track existingTrack = (Track) trackList.elementAt(i);
         if (existingTrack.isSame(track)) {
@@ -148,7 +148,7 @@ public class FavoritesManager {
       return null;
     }
     try {
-      Vector trackList = getPlaylistTracksList(playlist.getKey());
+      Vector trackList = getPlaylistTracks(playlist.getKey());
       return vectorToTracks(trackList);
     } catch (Exception e) {
       return new Tracks();
@@ -159,11 +159,11 @@ public class FavoritesManager {
     if (playlist == null || !playlist.isCustom()) {
       return 0;
     }
-    Vector trackList = getPlaylistTracksList(playlist.getKey());
+    Vector trackList = getPlaylistTracks(playlist.getKey());
     return trackList.size();
   }
 
-  private Vector getPlaylistTracksList(String playlistKey) {
+  private Vector getPlaylistTracks(String playlistKey) {
     Vector tracks = new Vector();
     try {
       RecordEnumeration enumeration = tracksStorage.enumerateRecords();

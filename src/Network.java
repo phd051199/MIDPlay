@@ -160,4 +160,10 @@ public class Network implements Runnable {
 
     void onError(Exception e);
   }
+
+  public class NetworkError extends Exception {
+    public NetworkError(String message) {
+      super(message);
+    }
+  }
 }
