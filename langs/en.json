@@ -72,12 +72,27 @@
     "stop": "Stop",
     "volume": "Volume"
   },
+  "details": {
+    "title": "Details",
+    "name": "Name",
+    "type": "Type",
+    "custom": "Custom",
+    "system": "System",
+    "track_count": "Track Count",
+    "artist": "Artist",
+    "duration": "Duration",
+    "url": "URL",
+    "unknown_artist": "Unknown Artist",
+    "unknown_duration": "Unknown Duration",
+    "no_url": "No URL"
+  },
   "playlist": {
     "add_track": "Add to Playlist",
     "create": "Create Playlist",
     "confirm": {
       "delete_with_tracks": "This playlist is not empty. Delete all?"
     },
+    "view_tracks": "View Track List",
     "error": {
       "add_track_failed": "Failed to add track to playlist",
       "track_already_exists": "Track already exists in playlist",

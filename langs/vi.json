@@ -66,12 +66,27 @@
     "stop": "Dừng",
     "volume": "Âm lượng"
   },
+  "details": {
+    "title": "Chi tiết",
+    "name": "Tên",
+    "type": "Loại",
+    "custom": "Tùy chỉnh",
+    "system": "Hệ thống",
+    "track_count": "Số bài hát",
+    "artist": "Nghệ sĩ",
+    "duration": "Thời lượng",
+    "url": "Đường dẫn",
+    "unknown_artist": "Nghệ sĩ không xác định",
+    "unknown_duration": "Thời lượng không xác định",
+    "no_url": "Không có đường dẫn"
+  },
   "playlist": {
     "add_track": "Thêm vào playlist",
     "create": "Tạo playlist",
     "confirm": {
       "delete_with_tracks": "Playlist này có chứa bài hát. Xóa tất cả?"
     },
+    "view_tracks": "Xem danh sách bài hát",
     "error": {
       "add_track_failed": "Lỗi thêm bài hát vào playlist",
       "track_already_exists": "Bài hát đã có trong playlist",

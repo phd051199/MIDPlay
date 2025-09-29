@@ -66,12 +66,27 @@
     "stop": "Durdur",
     "volume": "Ses"
   },
+  "details": {
+    "title": "Detaylar",
+    "name": "Ad",
+    "type": "Tür",
+    "custom": "Özel",
+    "system": "Sistem",
+    "track_count": "Şarkı Sayısı",
+    "artist": "Sanatçı",
+    "duration": "Süre",
+    "url": "URL",
+    "unknown_artist": "Bilinmeyen Sanatçı",
+    "unknown_duration": "Bilinmeyen Süre",
+    "no_url": "URL yok"
+  },
   "playlist": {
     "add_track": "Çalma Listesine Ekle",
     "create": "Çalma Listesi Oluştur",
     "confirm": {
       "delete_with_tracks": "Bu çalma listesinde şarkılar var. Çalma listesini ve tüm şarkıları sil?"
     },
+    "view_tracks": "Şarkı Listesini Görüntüle",
     "error": {
       "add_track_failed": "Şarkı çalma listesine eklenemedi",
       "track_already_exists": "Şarkı zaten çalma listesinde mevcut",

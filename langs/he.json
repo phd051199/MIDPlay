@@ -66,12 +66,27 @@
     "stop": "עצור",
     "volume": "עוצמת שמע"
   },
+  "details": {
+    "title": "פרטים",
+    "name": "שם",
+    "type": "סוג",
+    "custom": "מותאם אישית",
+    "system": "מערכת",
+    "track_count": "מספר רצועות",
+    "artist": "אמן",
+    "duration": "משך זמן",
+    "url": "כתובת URL",
+    "unknown_artist": "אמן לא ידוע",
+    "unknown_duration": "משך זמן לא ידוע",
+    "no_url": "אין כתובת URL"
+  },
   "playlist": {
     "add_track": "הוסף לרשימת השמעה",
     "create": "צור רשימת השמעה",
     "confirm": {
       "delete_with_tracks": "רשימת ההשמעה הזו מכילה שירים. למחוק את רשימת ההשמעה ואת כל השירים?"
     },
+    "view_tracks": "הצג רשימת רצועות",
     "error": {
       "add_track_failed": "הוספת הרצועה לרשימת ההשמעה נכשלה",
       "track_already_exists": "הרצועה כבר נמצאת ברשימת ההשמעה",

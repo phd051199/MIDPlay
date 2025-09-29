@@ -20,6 +20,7 @@ public final class TrackListScreen extends BaseList {
     this.title = title;
     this.playlist = playlist;
     addCommand(Commands.playerAddToPlaylist());
+    addCommand(Commands.details());
     if (playlist != null && playlist.isCustom()) {
       addCommand(Commands.playlistRemove());
     }
@@ -80,6 +81,8 @@ public final class TrackListScreen extends BaseList {
       addToPlaylist();
     } else if (c == Commands.playlistRemove()) {
       removeFromPlaylist();
+    } else if (c == Commands.details()) {
+      showTrackDetails();
     }
   }
 
@@ -109,5 +112,15 @@ public final class TrackListScreen extends BaseList {
     } else {
       navigator.showAlert(Lang.tr("playlist.error.remove_track_failed"), AlertType.ERROR);
     }
+  }
+
+  private void showTrackDetails() {
+    int selectedIndex = getSelectedIndex();
+    if (selectedIndex < 0 || selectedIndex >= items.getTracks().length) {
+      return;
+    }
+    Track selectedTrack = items.getTracks()[selectedIndex];
+    DetailScreen detailScreen = new DetailScreen(selectedTrack, navigator);
+    navigator.forward(detailScreen);
   }
 }

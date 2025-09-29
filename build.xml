@@ -5,9 +5,12 @@
 <project name="MIDPlay" default="jar" basedir=".">
     <description>Builds, tests, and runs the project .</description>
     <import file="nbproject/build-impl.xml"/>
-    <target name="-post-compile-proguard">
+    <target name="post-build">
         <taskdef resource="proguard/ant/task.properties" classpath="${basedir}/lib/proguard-ant.jar"/>
         <proguard configuration="${basedir}/midlets.pro"/>
+        <delete dir="${build.dir}" failonerror="false"/>
+        <delete file="${dist.dir}/${dist.jar}" failonerror="false"/>
+        <delete file="${dist.dir}/${dist.jad}" failonerror="false"/>
     </target>
     <!--
 

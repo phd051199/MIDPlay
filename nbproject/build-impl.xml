@@ -761,7 +761,7 @@
     <!--build-->
     <target name="pre-build"/>
     <target name="post-build"/>
-    <target name="build" depends="jar,pre-build,override-jad,semc-sis,increment-app-version,post-build,-post-compile-proguard" description="Builds final distribution of the application."/>
+    <target name="build" depends="jar,pre-build,override-jad,semc-sis,increment-app-version,post-build" description="Builds final distribution of the application."/>
     <!--open-netmon-->
     <target name="netmon.check">
         <condition property="netmon.allowed">

@@ -128,5 +128,13 @@ public class Commands {
     return get("menu.visibility", Command.SCREEN, 2);
   }
 
+  public static Command playlistViewTracks() {
+    return get("playlist.view_tracks", Command.SCREEN, 2);
+  }
+
+  public static Command details() {
+    return get("details.title", Command.ITEM, 2);
+  }
+
   private Commands() {}
 }

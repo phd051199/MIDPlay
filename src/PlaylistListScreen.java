@@ -24,6 +24,7 @@ public final class PlaylistListScreen extends BaseList {
     this.keyword = keyword;
     this.searchType = searchType;
     addCommand(Commands.playlistAdd());
+    addCommand(Commands.details());
     populateItems();
   }
 
@@ -70,6 +71,8 @@ public final class PlaylistListScreen extends BaseList {
   protected void handleCommand(Command c, Displayable d) {
     if (c == Commands.playlistAdd()) {
       addToFavorites();
+    } else if (c == Commands.details()) {
+      showPlaylistDetails();
     }
   }
 
@@ -122,6 +125,18 @@ public final class PlaylistListScreen extends BaseList {
     } else {
       navigator.showAlert(Lang.tr("favorites.error.save_failed"), AlertType.ERROR);
     }
+  }
+
+  private void showPlaylistDetails() {
+    int selectedIndex = getSelectedIndex();
+    if (isLoadMoreItem(selectedIndex)
+        || selectedIndex < 0
+        || selectedIndex >= items.getPlaylists().length) {
+      return;
+    }
+    Playlist selectedPlaylist = items.getPlaylists()[selectedIndex];
+    DetailScreen detailScreen = new DetailScreen(selectedPlaylist, navigator);
+    navigator.forward(detailScreen);
   }
 
   private boolean isLoadMoreItem(int selectedIndex) {
