@@ -489,7 +489,7 @@ public class MIDPlay extends MIDlet implements CommandListener {
     f.append("Version " + APP_VERSION + "\n");
     f.append("Platform: " + "Java ME (MIDP 2.0)\n");
     f.append("Author: " + getAppProperty("MIDlet-Vendor") + "\n");
-    f.append("Contributors: " + "symbuzzer, GoldenDragon\n");
+    f.append("Contributors: " + "symbuzzer, GoldenDragon, Spajciuch\n");
 
     f.addCommand(Commands.back());
     f.setCommandListener(
