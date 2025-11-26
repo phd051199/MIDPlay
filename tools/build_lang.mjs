@@ -1,8 +1,14 @@
 import fs from "fs/promises";
 import path from "path";
 
-const LANG_DIR = "./langs";
-const OUTPUT = "./src/Lang.java";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const LANG_DIR = path.join(__dirname, "..", "langs");
+const OUTPUT = path.join(__dirname, "..", "src", "Lang.java");
 
 function escapeJava(str) {
   return JSON.stringify(str);
