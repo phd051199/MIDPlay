@@ -1,0 +1,195 @@
+{
+  "action": {
+    "back": "Wróć",
+    "cancel": "Anuluj",
+    "exit": "Wyjdź",
+    "no": "Nie",
+    "ok": "OK",
+    "save": "Zapisz",
+    "yes": "Tak"
+  },
+  "app": {
+    "name": "MIDPlay"
+  },
+  "confirm": {
+    "exit": "Na pewno chcesz wyjść?"
+  },
+  "favorites": {
+    "add": "Dodaj do ulubionych",
+    "error": {
+      "remove_failed": "Nie udało się usunąć z ulubionych",
+      "save_failed": "Nie udało się dodać do ulubionych"
+    },
+    "remove": "Usuń z ulubionych",
+    "status": {
+      "added": "Dodano do ulubionych",
+      "already_exists": "Utwór już w ulubionych",
+      "removed": "Usunięto z ulubionych"
+    }
+  },
+  "media": {
+    "album": "Album",
+    "playlist": "Playlista",
+    "track": "Utwór",
+    "tracks": "Utwory"
+  },
+  "menu": {
+    "discover_playlists": "Odkrywaj playlisty",
+    "favorites": "Ulubione",
+    "hot_playlists": "Playlisty na czasie",
+    "main": "Menu główne",
+    "now_playing": "Teraz odtwarzane",
+    "reorder": "Przestaw menu",
+    "search": "Wyszukaj",
+    "chat": "AI Chat",
+    "settings": "Ustawienia",
+    "about": "Więcej informacji",
+    "visibility": "Widoczność menu"
+  },
+  "player": {
+    "next": "Następny",
+    "play": "Odtwórz",
+    "previous": "Poprzedni",
+    "repeat": "Powtórz",
+    "show_playlist": "Pokaż playlisty",
+    "shuffle": "Odtwarzanie losowe",
+    "status": {
+      "loading": "Ładowanie...",
+      "paused": "Zatrzymano",
+      "playing": "Odtwarzanie...",
+      "starting": "Uruchamiam...",
+      "stopped": "Zatrzymano",
+      "stopping": "Zatrzumuję...",
+      "finished": "Zakończono",
+      "ready": "Gotowy"
+    },
+    "stop": "Zatrzymaj",
+    "volume": "Głośność"
+  },
+  "details": {
+    "title": "Szczegóły",
+    "name": "Nazwa",
+    "type": "Typ",
+    "custom": "Własne",
+    "system": "System",
+    "track_count": "Ilość utworów",
+    "artist": "Wykonawca",
+    "duration": "Czas trwania",
+    "url": "URL",
+    "unknown_artist": "Nieznany wykonawca",
+    "unknown_duration": "Nieznany czas",
+    "no_url": "Brak URL"
+  },
+  "playlist": {
+    "add_track": "Dodaj do playlisty",
+    "create": "Utwórz playlistę",
+    "confirm": {
+      "delete_with_tracks": "Playlista nie jest pusta. Na pewno usunąć?"
+    },
+    "view_tracks": "Wyświetl listę utworów",
+    "error": {
+      "add_track_failed": "Nie udało się dodać utworu do playlisty",
+      "track_already_exists": "Utwór już jest w playliście",
+      "cannot_rename_system": "Nie można zmienić nazwy playlisty systemowej",
+      "create_failed": "Nie udało się stworzyć playlisty",
+      "empty_name": "Nazwa playlisty nie może być pusta",
+      "remove_track_failed": "Nie udało się usunąć utworu z playlisty",
+      "rename_failed": "Nie udało się zmienić nazwy"
+    },
+    "name": "Nazwa playlisty",
+    "rename": "Zmień nazwę playlisty",
+    "select": "Wybierz playlistę",
+    "status": {
+      "created": "Stworzono playlistę",
+      "no_custom": "Brak własnych playlist",
+      "renamed": "Zmieniono nazwę",
+      "track_added": "Dodano utwór",
+      "track_removed": "Usunięto utwór"
+    }
+  },
+  "search": {
+    "error": {
+      "empty_keyword": "Napisz co chcesz wyszukać"
+    },
+    "placeholder": "Wyszukaj...",
+    "results": "Wyniki wyszukiwania",
+    "status": {
+      "no_results": "Nic nie znaleziono",
+      "searching": "Szukanie: {0}"
+    },
+    "type": "Typ wyszukiwania"
+  },
+  "settings": {
+    "audio_quality": "Jakość dźwięku",
+    "auto_update": "Automatyczne aktualizacje",
+    "check_update": "Sprawdź aktualizacje",
+    "theme_mode": "Wygląd",
+    "theme_color": "Motyw",
+    "theme_mode_options": {
+      "dark": "Ciemny",
+      "light": "Jasny"
+    },
+    "player_method": "Sposób odtwarzania",
+    "player_method_options": {
+      "pass_inputstream": "Przekaż strumień wejściowy",
+      "pass_url": "Przekaż URL"
+    },
+    "error": {
+      "save_failed": "Nie udało się załadować ustawień"
+    },
+    "language": "Język",
+    "reorder": {
+      "instructions": "Najpierw wybierz ustawienie do przemieszczenia, następnie wybierz pozycję docelową",
+      "saved": "Kolejność zapisana"
+    },
+    "service": "Usługa",
+    "status": {
+      "saved": "Zapisano"
+    },
+    "visibility": {
+      "instructions": "Wybierz elementy do ukrycia/pokazania. [x] = pokaż, [] = ukryj",
+      "saved": "Zapisano"
+    }
+  },
+  "status": {
+    "error": "Wystąpił błąd",
+    "loading": "Ładowanie...",
+    "load_more": "Załaduj więcej...",
+    "no_data": "Brak danych!",
+    "no_updates": "Brak nowych aktualizacji. Masz najnowszą wersję",
+    "update_available": "Dostępna jest nowa wersja. Zaktualizować?"
+  },
+  "time": {
+    "error": {
+      "invalid_duration": "Czas musi być w zakresie 1-999 minut",
+      "invalid_format": "Zły format czasu"
+    },
+    "minutes": "Minuty"
+  },
+  "timer": {
+    "action": "Funkcje minutnika",
+    "actions": {
+      "exit_app": "Opuść aplikację",
+      "stop_playback": "Zatrzymaj odtwarzanie"
+    },
+    "cancel": "Zatrzymaj minutnik",
+    "confirm": {
+      "exit": "Minutnik zamknie aplikacje po określonym czasie, kontynuować?"
+    },
+    "set": "Ustaw minutnik",
+    "sleep_timer": "Minutnik",
+    "status": {
+      "cancelled": "Odliczanie zatrzymane",
+      "expired": "Koniec odliczania",
+      "remaining": "Pozostało minut: {0}",
+      "set": "Aktywowano odliczanie"
+    }
+  },
+  "chat": {
+    "input": "Wprowadź wiadomość",
+    "welcome_message": "Cześć! Jak mogę ci pomóc"
+  },
+  "error": {
+    "connection": "Brak połączenia. Spróbuj ponownie później."
+  }
+}
