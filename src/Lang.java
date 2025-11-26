@@ -8,54 +8,25 @@ public class Lang {
   private static boolean i = false;
 
   private static final String[] KEYS = {
-    "lang", "action.back", "action.cancel", "action.exit", "action.no", "action.ok", "action.save",
-        "action.yes", "app.name", "confirm.exit",
-    "favorites.add", "favorites.error.remove_failed", "favorites.error.save_failed",
-        "favorites.remove", "favorites.status.added", "favorites.status.already_exists",
-        "favorites.status.removed", "language.en", "language.tr", "language.vi",
-    "language.he", "media.album", "media.playlist", "media.track", "media.tracks",
-        "menu.discover_playlists", "menu.favorites", "menu.hot_playlists", "menu.main",
-        "menu.now_playing",
-    "menu.reorder", "menu.search", "menu.chat", "menu.settings", "menu.about", "menu.visibility",
-        "player.next", "player.play", "player.previous", "player.repeat",
-    "player.show_playlist", "player.shuffle", "player.status.loading", "player.status.paused",
-        "player.status.playing", "player.status.starting", "player.status.stopped",
-        "player.status.stopping", "player.status.finished", "player.status.ready",
-    "player.stop", "player.volume", "details.title", "details.name", "details.type",
-        "details.custom", "details.system", "details.track_count", "details.artist",
-        "details.duration",
-    "details.url", "details.unknown_artist", "details.unknown_duration", "details.no_url",
-        "playlist.add_track", "playlist.create", "playlist.confirm.delete_with_tracks",
-        "playlist.view_tracks", "playlist.error.add_track_failed",
-        "playlist.error.track_already_exists",
-    "playlist.error.cannot_rename_system", "playlist.error.create_failed",
-        "playlist.error.empty_name", "playlist.error.remove_track_failed",
-        "playlist.error.rename_failed", "playlist.name", "playlist.rename", "playlist.select",
-        "playlist.status.created", "playlist.status.no_custom",
-    "playlist.status.renamed", "playlist.status.track_added", "playlist.status.track_removed",
-        "search.error.empty_keyword", "search.placeholder", "search.results",
-        "search.status.no_results", "search.status.searching", "search.type",
-        "settings.audio_quality",
-    "settings.auto_update", "settings.check_update", "settings.theme_mode", "settings.theme_color",
-        "settings.theme_mode_options.dark", "settings.theme_mode_options.light",
-        "settings.player_method", "settings.player_method_options.pass_inputstream",
-        "settings.player_method_options.pass_url", "settings.error.save_failed",
-    "settings.language", "settings.reorder.instructions", "settings.reorder.saved",
-        "settings.service", "settings.status.saved", "settings.visibility.instructions",
-        "settings.visibility.saved", "status.error", "status.loading", "status.load_more",
-    "status.no_data", "status.no_updates", "status.update_available", "time.error.invalid_duration",
-        "time.error.invalid_format", "time.minutes", "timer.action", "timer.actions.exit_app",
-        "timer.actions.stop_playback", "timer.cancel",
-    "timer.confirm.exit", "timer.set", "timer.sleep_timer", "timer.status.cancelled",
-        "timer.status.expired", "timer.status.remaining", "timer.status.set", "chat.input",
-        "chat.welcome_message", "error.connection"
+    "lang", "action.back", "action.cancel", "action.exit", "action.no", "action.ok", "action.save", "action.yes", "app.name", "confirm.exit",
+    "favorites.add", "favorites.error.remove_failed", "favorites.error.save_failed", "favorites.remove", "favorites.status.added", "favorites.status.already_exists", "favorites.status.removed", "language.en", "language.tr", "language.vi",
+    "language.he", "media.album", "media.playlist", "media.track", "media.tracks", "menu.discover_playlists", "menu.favorites", "menu.hot_playlists", "menu.main", "menu.now_playing",
+    "menu.reorder", "menu.search", "menu.chat", "menu.settings", "menu.about", "menu.visibility", "player.next", "player.play", "player.previous", "player.repeat",
+    "player.show_playlist", "player.shuffle", "player.status.loading", "player.status.paused", "player.status.playing", "player.status.starting", "player.status.stopped", "player.status.stopping", "player.status.finished", "player.status.ready",
+    "player.stop", "player.volume", "details.title", "details.name", "details.type", "details.custom", "details.system", "details.track_count", "details.artist", "details.duration",
+    "details.url", "details.unknown_artist", "details.unknown_duration", "details.no_url", "playlist.add_track", "playlist.create", "playlist.confirm.delete_with_tracks", "playlist.view_tracks", "playlist.error.add_track_failed", "playlist.error.track_already_exists",
+    "playlist.error.cannot_rename_system", "playlist.error.create_failed", "playlist.error.empty_name", "playlist.error.remove_track_failed", "playlist.error.rename_failed", "playlist.name", "playlist.rename", "playlist.select", "playlist.status.created", "playlist.status.no_custom",
+    "playlist.status.renamed", "playlist.status.track_added", "playlist.status.track_removed", "search.error.empty_keyword", "search.placeholder", "search.results", "search.status.no_results", "search.status.searching", "search.type", "settings.audio_quality",
+    "settings.auto_update", "settings.check_update", "settings.theme_mode", "settings.theme_color", "settings.theme_mode_options.dark", "settings.theme_mode_options.light", "settings.player_method", "settings.player_method_options.pass_inputstream", "settings.player_method_options.pass_url", "settings.error.save_failed",
+    "settings.language", "settings.reorder.instructions", "settings.reorder.saved", "settings.service", "settings.status.saved", "settings.visibility.instructions", "settings.visibility.saved", "status.error", "status.loading", "status.load_more",
+    "status.no_data", "status.no_updates", "status.update_available", "time.error.invalid_duration", "time.error.invalid_format", "time.minutes", "timer.action", "timer.actions.exit_app", "timer.actions.stop_playback", "timer.cancel",
+    "timer.confirm.exit", "timer.set", "timer.sleep_timer", "timer.status.cancelled", "timer.status.expired", "timer.status.remaining", "timer.status.set", "chat.input", "chat.welcome_message", "error.connection"
   };
 
   private static final String[] EN_VALS = {
     "en", "Back", "Cancel", "Exit", "No",
     "OK", "Save", "Yes", "MIDPlay", "Are you sure you want to exit?",
-    "Add to Favorites", "Failed to remove favorite", "Failed to save favorite",
-        "Remove from Favorites", "Added to favorites",
+    "Add to Favorites", "Failed to remove favorite", "Failed to save favorite", "Remove from Favorites", "Added to favorites",
     "Already in favorites", "Removed from favorites", "English", "Türkçe", "Tiếng Việt",
     "עברית", "Album", "Playlist", "Track", "Tracks",
     "Discover Playlists", "Favorites", "Hot Playlists", "Main Menu", "Now Playing",
@@ -66,37 +37,25 @@ public class Lang {
     "Stop", "Volume", "Details", "Name", "Type",
     "Custom", "System", "Track Count", "Artist", "Duration",
     "URL", "Unknown Artist", "Unknown Duration", "No URL", "Add to Playlist",
-    "Create Playlist", "This playlist is not empty. Delete all?", "View Track List",
-        "Failed to add track to playlist", "Track already exists in playlist",
-    "Cannot rename system playlists", "Failed to create playlist", "Playlist name cannot be empty",
-        "Failed to remove track from playlist", "Failed to rename playlist",
-    "Playlist Name", "Rename Playlist", "Select Playlist", "Playlist created successfully",
-        "No custom playlists available",
-    "Playlist renamed successfully", "Track added to playlist successfully",
-        "Track removed from playlist successfully", "Please enter a keyword to search",
-        "Enter keywords to search...",
+    "Create Playlist", "This playlist is not empty. Delete all?", "View Track List", "Failed to add track to playlist", "Track already exists in playlist",
+    "Cannot rename system playlists", "Failed to create playlist", "Playlist name cannot be empty", "Failed to remove track from playlist", "Failed to rename playlist",
+    "Playlist Name", "Rename Playlist", "Select Playlist", "Playlist created successfully", "No custom playlists available",
+    "Playlist renamed successfully", "Track added to playlist successfully", "Track removed from playlist successfully", "Please enter a keyword to search", "Enter keywords to search...",
     "Search Results", "No results found", "Searching for: {0}", "Search Type", "Audio Quality",
     "Automatic Updates", "Check for Updates", "Appearance", "Theme Color", "Dark",
     "Light", "Player Method", "Pass Input Stream", "Pass URL", "Failed to save settings",
-    "Language", "Select an item to move, then select the destination position", "Order saved",
-        "Service", "Settings saved successfully",
-    "Select items to hide/show. [x] = show, [] = hide", "Visibility settings saved",
-        "An error occurred", "Loading...", "Load more...",
-    "No data available!", "No updates available. You have the latest version",
-        "New version available. Update now?", "Duration must be 1-999 minutes",
-        "Invalid time format",
+    "Language", "Select an item to move, then select the destination position", "Order saved", "Service", "Settings saved successfully",
+    "Select items to hide/show. [x] = show, [] = hide", "Visibility settings saved", "An error occurred", "Loading...", "Load more...",
+    "No data available!", "No updates available. You have the latest version", "New version available. Update now?", "Duration must be 1-999 minutes", "Invalid time format",
     "Minutes", "Timer Action", "Exit Application", "Stop Playback", "Cancel Timer",
-    "Timer will exit the application when expired. Continue?", "Set Timer", "Sleep Timer",
-        "Sleep timer cancelled", "Sleep timer expired",
-    "Time Remaining: {0}", "Sleep timer activated", "Enter message",
-        "Hello! How can I help you today?", "Connection error. Please try again"
+    "Timer will exit the application when expired. Continue?", "Set Timer", "Sleep Timer", "Sleep timer cancelled", "Sleep timer expired",
+    "Time Remaining: {0}", "Sleep timer activated", "Enter message", "Hello! How can I help you today?", "Connection error. Please try again"
   };
 
   private static final String[] HE_VALS = {
     "he", "חזור", "ביטול", "יציאה", "לא",
     "אישור", "שמור", "כן", "MIDPlay", "אתה בטוח שאתה רוצה לצאת?",
-    "הוסף למועדפים", "המחיקה מהמועדפים נכשלה", "שמירת המועדפים נכשלה", "מחק מהמועדפים",
-        "נוסף למועדפים",
+    "הוסף למועדפים", "המחיקה מהמועדפים נכשלה", "שמירת המועדפים נכשלה", "מחק מהמועדפים", "נוסף למועדפים",
     "כבר נמצא במועדפים", "נמחק מהמועדפים", "English", "Türkçe", "Tiếng Việt",
     "עברית", "אלבום", "רשימת השמעה", "רצועה", "רצועות",
     "גלה רשימות השמעה", "מועדפים", "רשימות השמעה חמות", "תפריט ראשי", "מושמע כעת",
@@ -107,36 +66,54 @@ public class Lang {
     "עצור", "עוצמת שמע", "פרטים", "שם", "סוג",
     "מותאם אישית", "מערכת", "מספר רצועות", "אמן", "משך זמן",
     "כתובת URL", "אמן לא ידוע", "משך זמן לא ידוע", "אין כתובת URL", "הוסף לרשימת השמעה",
-    "צור רשימת השמעה", "רשימת ההשמעה הזו מכילה שירים. למחוק את רשימת ההשמעה ואת כל השירים?",
-        "הצג רשימת רצועות", "הוספת הרצועה לרשימת ההשמעה נכשלה", "הרצועה כבר נמצאת ברשימת ההשמעה",
-    "לא ניתן לשנות את השם של רשימת השמעה של המערכת", "נכשל ביצירת רשימת השמעה",
-        "שם רשימת ההשמעה לא יכול להיות ריק", "מחיקת הרצועה מרשימת ההשמעה נכשל",
-        "שינוי השם של רשימת ההשמעה נכשל",
-    "שם רשימת השמעה", "שנה שם רשימת השמעה", "בחר רשימת השמעה", "רשימת השמעה נוצרה בהצלחה",
-        "אין רשימות השמעה מותאמות אישית זמינות",
-    "שמה של רשימת ההשמעה שונה בהצלחה", "הרצועה נוספה לרשימת ההשמעה בהצלחה",
-        "הרצועה נמחקה מרשימת ההשמעה בהצלחה", "אנא הכנס מונח לחיפוש", "הכנס מונח לחיפוש...",
+    "צור רשימת השמעה", "רשימת ההשמעה הזו מכילה שירים. למחוק את רשימת ההשמעה ואת כל השירים?", "הצג רשימת רצועות", "הוספת הרצועה לרשימת ההשמעה נכשלה", "הרצועה כבר נמצאת ברשימת ההשמעה",
+    "לא ניתן לשנות את השם של רשימת השמעה של המערכת", "נכשל ביצירת רשימת השמעה", "שם רשימת ההשמעה לא יכול להיות ריק", "מחיקת הרצועה מרשימת ההשמעה נכשל", "שינוי השם של רשימת ההשמעה נכשל",
+    "שם רשימת השמעה", "שנה שם רשימת השמעה", "בחר רשימת השמעה", "רשימת השמעה נוצרה בהצלחה", "אין רשימות השמעה מותאמות אישית זמינות",
+    "שמה של רשימת ההשמעה שונה בהצלחה", "הרצועה נוספה לרשימת ההשמעה בהצלחה", "הרצועה נמחקה מרשימת ההשמעה בהצלחה", "אנא הכנס מונח לחיפוש", "הכנס מונח לחיפוש...",
     "תוצאות חיפוש", "לא נמצאו תוצאות", "מחפש: {0}", "סוג חיפוש", "איכות שמע",
     "עדכון אוטומטי", "בדוק עדכונים זמינים", "ערכת נושא", "צבע ערכת הנושא", "כהה",
     "בהיר", "שיטת נגינה", "העבר Input Stream", "העבר URL", "שמירת ההגדרות נכשלה",
-    "Language/שפה", "בחר פריט להעביר, ואז בחר במיקום היעד", "הסידור נשמר", "שירות מוזיקה",
-        "ההגדרות נשמרו בהצלחה",
-    "בחר פריט להציג או להסתיר. [x] = מוצג, [] = מוסתר", "הגדרות הנראות נשמרו", "התרחשה שגיאה",
-        "טוען...", "טען עוד...",
-    "אין מידע זמין!", "אין עדכונים זמינים. ברשותך הגרסה העדכנית", "גרסה חדשה זמינה. לעדכן עכשיו?",
-        "משך זמן חייב להיות בין 1 ל- 999", "פורמט זמן שגוי",
+    "Language/שפה", "בחר פריט להעביר, ואז בחר במיקום היעד", "הסידור נשמר", "שירות מוזיקה", "ההגדרות נשמרו בהצלחה",
+    "בחר פריט להציג או להסתיר. [x] = מוצג, [] = מוסתר", "הגדרות הנראות נשמרו", "התרחשה שגיאה", "טוען...", "טען עוד...",
+    "אין מידע זמין!", "אין עדכונים זמינים. ברשותך הגרסה העדכנית", "גרסה חדשה זמינה. לעדכן עכשיו?", "משך זמן חייב להיות בין 1 ל- 999", "פורמט זמן שגוי",
     "דקות", "פעולת קוצב זמן", "סגור אפליקציה", "עצור השמעה", "בטל קוצב זמן",
-    "האפליקציה תסגר כאשר קוצב הזמן ייגמר. להמשיך?", "קבע קוצב זמן", "קוצב זמן לשינה",
-        "קוצב זמן לשינה בוטל", "קוצב זמן לשינה סיים",
-    "הזמן שנותר: {0}", "קוצב זמן לשינה הופעל", "שלח הודעה", "שלום! איך אני יכול לעזור היום?",
-        "בעיה בחיבור. אנא נסה שוב"
+    "האפליקציה תסגר כאשר קוצב הזמן ייגמר. להמשיך?", "קבע קוצב זמן", "קוצב זמן לשינה", "קוצב זמן לשינה בוטל", "קוצב זמן לשינה סיים",
+    "הזמן שנותר: {0}", "קוצב זמן לשינה הופעל", "שלח הודעה", "שלום! איך אני יכול לעזור היום?", "בעיה בחיבור. אנא נסה שוב"
+  };
+
+  private static final String[] PL_VALS = {
+    "pl", "Wróć", "Anuluj", "Wyjdź", "Nie",
+    "OK", "Zapisz", "Tak", "MIDPlay", "Na pewno chcesz wyjść?",
+    "Dodaj do ulubionych", "Nie udało się usunąć z ulubionych", "Nie udało się dodać do ulubionych", "Usuń z ulubionych", "Dodano do ulubionych",
+    "Utwór już w ulubionych", "Usunięto z ulubionych", "English", "Türkçe", "Tiếng Việt",
+    "עברית", "Album", "Playlista", "Utwór", "Utwory",
+    "Odkrywaj playlisty", "Ulubione", "Playlisty na czasie", "Menu główne", "Teraz odtwarzane",
+    "Przestaw menu", "Wyszukaj", "AI Chat", "Ustawienia", "Więcej informacji",
+    "Widoczność menu", "Następny", "Odtwórz", "Poprzedni", "Powtórz",
+    "Pokaż playlisty", "Odtwarzanie losowe", "Ładowanie...", "Zatrzymano", "Odtwarzanie...",
+    "Uruchamiam...", "Zatrzymano", "Zatrzymuję...", "Zakończono", "Gotowy",
+    "Zatrzymaj", "Głośność", "Szczegóły", "Nazwa", "Typ",
+    "Własne", "System", "Ilość utworów", "Wykonawca", "Czas trwania",
+    "URL", "Nieznany wykonawca", "Nieznany czas", "Brak URL", "Dodaj do playlisty",
+    "Utwórz playlistę", "Playlista nie jest pusta. Na pewno usunąć?", "Wyświetl listę utworów", "Nie udało się dodać utworu do playlisty", "Utwór już jest w playliście",
+    "Nie można zmienić nazwy playlisty systemowej", "Nie udało się stworzyć playlisty", "Nazwa playlisty nie może być pusta", "Nie udało się usunąć utworu z playlisty", "Nie udało się zmienić nazwy",
+    "Nazwa playlisty", "Zmień nazwę playlisty", "Wybierz playlistę", "Stworzono playlistę", "Brak własnych playlist",
+    "Zmieniono nazwę", "Dodano utwór", "Usunięto utwór", "Napisz co chcesz wyszukać", "Wyszukaj...",
+    "Wyniki wyszukiwania", "Nic nie znaleziono", "Szukanie: {0}", "Typ wyszukiwania", "Jakość dźwięku",
+    "Automatyczne aktualizacje", "Sprawdź aktualizacje", "Wygląd", "Motyw", "Ciemny",
+    "Jasny", "Sposób odtwarzania", "Przekaż strumień wejściowy", "Przekaż URL", "Nie udało się załadować ustawień",
+    "Język", "Najpierw wybierz ustawienie do przemieszczenia, następnie wybierz pozycję docelową", "Kolejność zapisana", "Usługa", "Zapisano",
+    "Wybierz elementy do ukrycia/pokazania. [x] = pokaż, [] = ukryj", "Zapisano", "Wystąpił błąd", "Ładowanie...", "Załaduj więcej...",
+    "Brak danych!", "Brak nowych aktualizacji. Masz najnowszą wersję", "Dostępna jest nowa wersja. Zaktualizować?", "Czas musi być w zakresie 1-999 minut", "Zły format czasu",
+    "Minuty", "Funkcje minutnika", "Opuść aplikację", "Zatrzymaj odtwarzanie", "Zatrzymaj minutnik",
+    "Minutnik zamknie aplikacje po określonym czasie, kontynuować?", "Ustaw minutnik", "Minutnik", "Odliczanie zatrzymane", "Koniec odliczania",
+    "Pozostało minut: {0}", "Aktywowano odliczanie", "Wprowadź wiadomość", "Cześć! Jak mogę ci pomóc", "Brak połączenia. Spróbuj ponownie później."
   };
 
   private static final String[] TR_VALS = {
     "tr", "Geri", "İptal", "Çık", "Hayır",
     "Tamam", "Kaydet", "Evet", "MIDPlay", "Çıkmak istediğinizden emin misiniz?",
-    "Favorilere Ekle", "Favori çıkarma hatası", "Favori kaydetme hatası", "Favorilerden Çıkar",
-        "Favorilere eklendi",
+    "Favorilere Ekle", "Favori çıkarma hatası", "Favori kaydetme hatası", "Favorilerden Çıkar", "Favorilere eklendi",
     "Zaten favorilerde", "Favorilerden çıkarıldı", "English", "Türkçe", "Tiếng Việt",
     "עברית", "Albüm", "Çalma Listesi", "Şarkı", "Şarkılar",
     "Çalma Listelerini Keşfet", "Favoriler", "Popüler Çalma Listeleri", "Ana Menü", "Şimdi Çalıyor",
@@ -147,40 +124,25 @@ public class Lang {
     "Durdur", "Ses", "Detaylar", "Ad", "Tür",
     "Özel", "Sistem", "Şarkı Sayısı", "Sanatçı", "Süre",
     "URL", "Bilinmeyen Sanatçı", "Bilinmeyen Süre", "URL yok", "Çalma Listesine Ekle",
-    "Çalma Listesi Oluştur",
-        "Bu çalma listesinde şarkılar var. Çalma listesini ve tüm şarkıları sil?",
-        "Şarkı Listesini Görüntüle", "Şarkı çalma listesine eklenemedi",
-        "Şarkı zaten çalma listesinde mevcut",
-    "Sistem çalma listesi yeniden adlandırılamaz", "Çalma listesi oluşturulamadı",
-        "Çalma listesi adı boş olamaz", "Şarkı çalma listesinden çıkarılamadı",
-        "Çalma listesi yeniden adlandırılamadı",
-    "Çalma Listesi Adı", "Çalma Listesini Yeniden Adlandır", "Çalma Listesi Seç",
-        "Çalma listesi başarıyla oluşturuldu", "Özel çalma listesi yok",
-    "Çalma listesi başarıyla yeniden adlandırıldı", "Şarkı çalma listesine eklendi",
-        "Şarkı çalma listesinden çıkarıldı", "Lütfen arama için bir anahtar kelime girin",
-        "Arama için anahtar kelime girin...",
+    "Çalma Listesi Oluştur", "Bu çalma listesinde şarkılar var. Çalma listesini ve tüm şarkıları sil?", "Şarkı Listesini Görüntüle", "Şarkı çalma listesine eklenemedi", "Şarkı zaten çalma listesinde mevcut",
+    "Sistem çalma listesi yeniden adlandırılamaz", "Çalma listesi oluşturulamadı", "Çalma listesi adı boş olamaz", "Şarkı çalma listesinden çıkarılamadı", "Çalma listesi yeniden adlandırılamadı",
+    "Çalma Listesi Adı", "Çalma Listesini Yeniden Adlandır", "Çalma Listesi Seç", "Çalma listesi başarıyla oluşturuldu", "Özel çalma listesi yok",
+    "Çalma listesi başarıyla yeniden adlandırıldı", "Şarkı çalma listesine eklendi", "Şarkı çalma listesinden çıkarıldı", "Lütfen arama için bir anahtar kelime girin", "Arama için anahtar kelime girin...",
     "Arama Sonuçları", "Sonuç bulunamadı", "Aranan: {0}", "Arama Türü", "Ses Kalitesi",
     "Otomatik Güncellemeler", "Güncellemeleri Kontrol Et", "Tema Modu", "Tema Rengi", "Koyu",
     "Açık", "Oynatıcı Yöntemi", "Input Stream Geçir", "URL Geçir", "Ayarlar kaydedilemedi",
-    "Dil", "Taşınacak öğeyi seçin, sonra hedef konumu seçin", "Sıralama kaydedildi", "Servis",
-        "Ayarlar başarıyla kaydedildi",
-    "Gizle/göster öğeleri seçin. [x] = göster, [] = gizle", "Görünürlük ayarları kaydedildi",
-        "Bir hata oluştu", "Yükleniyor...", "Daha fazla yükle...",
-    "Veri yok!", "Güncelleme yok. En son sürümü kullanıyorsunuz",
-        "Yeni sürüm mevcut. Şimdi güncellensin mi?", "Süre 1-999 dakika arasında olmalı",
-        "Geçersiz zaman formatı",
+    "Dil", "Taşınacak öğeyi seçin, sonra hedef konumu seçin", "Sıralama kaydedildi", "Servis", "Ayarlar başarıyla kaydedildi",
+    "Gizle/göster öğeleri seçin. [x] = göster, [] = gizle", "Görünürlük ayarları kaydedildi", "Bir hata oluştu", "Yükleniyor...", "Daha fazla yükle...",
+    "Veri yok!", "Güncelleme yok. En son sürümü kullanıyorsunuz", "Yeni sürüm mevcut. Şimdi güncellensin mi?", "Süre 1-999 dakika arasında olmalı", "Geçersiz zaman formatı",
     "Dakika", "Zamanlayıcı Eylemi", "Uygulamadan Çık", "Çalmayı Durdur", "Zamanlayıcıyı İptal Et",
-    "Zamanlayıcı süresi dolduğunda uygulamadan çıkacak. Devam et?", "Zamanlayıcı Ayarla",
-        "Uyku Zamanlayıcısı", "Uyku zamanlayıcısı iptal edildi", "Uyku zamanlayıcısı süresi doldu",
-    "Kalan Süre: {0}", "Uyku zamanlayıcısı etkinleştirildi", "Mesaj girin",
-        "Merhaba! Size nasıl yardımcı olabilirim?", "Bağlantı hatası. Lütfen tekrar deneyin"
+    "Zamanlayıcı süresi dolduğunda uygulamadan çıkacak. Devam et?", "Zamanlayıcı Ayarla", "Uyku Zamanlayıcısı", "Uyku zamanlayıcısı iptal edildi", "Uyku zamanlayıcısı süresi doldu",
+    "Kalan Süre: {0}", "Uyku zamanlayıcısı etkinleştirildi", "Mesaj girin", "Merhaba! Size nasıl yardımcı olabilirim?", "Bağlantı hatası. Lütfen tekrar deneyin"
   };
 
   private static final String[] VI_VALS = {
     "vi", "Quay lại", "Hủy", "Thoát", "Không",
     "OK", "Lưu", "Có", "MIDPlay", "Bạn có chắc muốn thoát?",
-    "Thêm vào yêu thích", "Lỗi xóa yêu thích", "Lỗi lưu yêu thích", "Xóa khỏi yêu thích",
-        "Đã thêm vào yêu thích",
+    "Thêm vào yêu thích", "Lỗi xóa yêu thích", "Lỗi lưu yêu thích", "Xóa khỏi yêu thích", "Đã thêm vào yêu thích",
     "Đã có trong yêu thích", "Đã xóa khỏi yêu thích", "English", "Türkçe", "Tiếng Việt",
     "עברית", "Album", "Playlist", "Bài hát", "Bài hát",
     "Khám phá playlist", "Yêu thích", "Playlist nổi bật", "Menu chính", "Đang phát",
@@ -190,32 +152,20 @@ public class Lang {
     "Đang khởi động...", "Đã dừng", "Đang dừng...", "Đã hoàn thành", "Sẵn sàng",
     "Dừng", "Âm lượng", "Chi tiết", "Tên", "Loại",
     "Tùy chỉnh", "Hệ thống", "Số bài hát", "Nghệ sĩ", "Thời lượng",
-    "Đường dẫn", "Nghệ sĩ không xác định", "Thời lượng không xác định", "Không có đường dẫn",
-        "Thêm vào playlist",
-    "Tạo playlist", "Playlist này có chứa bài hát. Xóa tất cả?", "Xem danh sách bài hát",
-        "Lỗi thêm bài hát vào playlist", "Bài hát đã có trong playlist",
-    "Không thể đổi tên playlist hệ thống", "Lỗi tạo playlist", "Tên playlist không được để trống",
-        "Lỗi xóa bài hát khỏi playlist", "Lỗi đổi tên playlist",
-    "Tên playlist", "Đổi tên playlist", "Chọn playlist", "Tạo playlist thành công",
-        "Không có playlist tùy chỉnh",
-    "Đổi tên playlist thành công", "Đã thêm bài hát vào playlist", "Đã xóa bài hát khỏi playlist",
-        "Vui lòng nhập từ khóa", "Nhập từ khóa để tìm kiếm...",
-    "Kết quả tìm kiếm", "Không tìm thấy kết quả", "Đang tìm: {0}", "Loại tìm kiếm",
-        "Chất lượng âm thanh",
+    "Đường dẫn", "Nghệ sĩ không xác định", "Thời lượng không xác định", "Không có đường dẫn", "Thêm vào playlist",
+    "Tạo playlist", "Playlist này có chứa bài hát. Xóa tất cả?", "Xem danh sách bài hát", "Lỗi thêm bài hát vào playlist", "Bài hát đã có trong playlist",
+    "Không thể đổi tên playlist hệ thống", "Lỗi tạo playlist", "Tên playlist không được để trống", "Lỗi xóa bài hát khỏi playlist", "Lỗi đổi tên playlist",
+    "Tên playlist", "Đổi tên playlist", "Chọn playlist", "Tạo playlist thành công", "Không có playlist tùy chỉnh",
+    "Đổi tên playlist thành công", "Đã thêm bài hát vào playlist", "Đã xóa bài hát khỏi playlist", "Vui lòng nhập từ khóa", "Nhập từ khóa để tìm kiếm...",
+    "Kết quả tìm kiếm", "Không tìm thấy kết quả", "Đang tìm: {0}", "Loại tìm kiếm", "Chất lượng âm thanh",
     "Tự động cập nhật", "Kiểm tra cập nhật", "Giao diện", "Màu chủ đề", "Tối",
     "Sáng", "Phương thức phát", "Truyền Input Stream", "Truyền URL", "Lỗi lưu cài đặt",
-    "Ngôn ngữ", "Chọn mục để di chuyển, sau đó chọn vị trí đích", "Đã lưu thứ tự", "Dịch vụ",
-        "Lưu cài đặt thành công",
-    "Chọn mục để ẩn/hiện. [x] = hiện, [] = ẩn", "Đã lưu cài đặt hiển thị", "Đã xảy ra lỗi",
-        "Đang tải...", "Tải thêm...",
-    "Không có dữ liệu!", "Không có cập nhật. Bạn đang dùng phiên bản mới nhất",
-        "Có phiên bản mới. Cập nhật ngay?", "Thời lượng phải từ 1-999 phút",
-        "Định dạng thời gian không hợp lệ",
+    "Ngôn ngữ", "Chọn mục để di chuyển, sau đó chọn vị trí đích", "Đã lưu thứ tự", "Dịch vụ", "Lưu cài đặt thành công",
+    "Chọn mục để ẩn/hiện. [x] = hiện, [] = ẩn", "Đã lưu cài đặt hiển thị", "Đã xảy ra lỗi", "Đang tải...", "Tải thêm...",
+    "Không có dữ liệu!", "Không có cập nhật. Bạn đang dùng phiên bản mới nhất", "Có phiên bản mới. Cập nhật ngay?", "Thời lượng phải từ 1-999 phút", "Định dạng thời gian không hợp lệ",
     "Phút", "Hành động khi hết giờ", "Thoát ứng dụng", "Dừng phát nhạc", "Hủy hẹn giờ",
-    "Hẹn giờ sẽ thoát ứng dụng khi hết thời gian. Tiếp tục?", "Đặt hẹn giờ", "Hẹn giờ tắt",
-        "Đã hủy hẹn giờ tắt", "Hẹn giờ tắt đã hết thời gian",
-    "Thời gian còn lại: {0}", "Đã kích hoạt hẹn giờ tắt", "Nhập tin nhắn",
-        "Xin chào! Tôi có thể giúp gì cho bạn?", "Lỗi kết nối. Vui lòng thử lại"
+    "Hẹn giờ sẽ thoát ứng dụng khi hết thời gian. Tiếp tục?", "Đặt hẹn giờ", "Hẹn giờ tắt", "Đã hủy hẹn giờ tắt", "Hẹn giờ tắt đã hết thời gian",
+    "Thời gian còn lại: {0}", "Đã kích hoạt hẹn giờ tắt", "Nhập tin nhắn", "Xin chào! Tôi có thể giúp gì cho bạn?", "Lỗi kết nối. Vui lòng thử lại"
   };
 
   private static void l(String code) {
@@ -227,6 +177,9 @@ public class Lang {
     String[] vals = EN_VALS;
     if ("he".equals(code)) {
       vals = HE_VALS;
+    }
+    if ("pl".equals(code)) {
+      vals = PL_VALS;
     }
     if ("tr".equals(code)) {
       vals = TR_VALS;
@@ -247,12 +200,10 @@ public class Lang {
     }
   }
 
-  public static String getCurrentLang() {
-    return c;
-  }
+  public static String getCurrentLang() { return c; }
 
   public static String[] getAvailableLanguages() {
-    return new String[] {"en", "he", "tr", "vi"};
+    return new String[] {"en", "he", "pl", "tr", "vi"};
   }
 
   public static String tr(String k) {
