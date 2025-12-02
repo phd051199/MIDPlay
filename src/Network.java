@@ -21,7 +21,7 @@ public class Network implements Runnable {
     this(null);
   }
 
-  private static final isBlackberry;
+  private static final boolean isBlackberry;
 
   static {
     String platform = System.getProperty("microedition.platform");
