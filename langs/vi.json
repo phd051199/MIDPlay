@@ -125,6 +125,7 @@
     "check_update": "Kiểm tra cập nhật",
     "theme_mode": "Giao diện",
     "theme_color": "Màu chủ đề",
+    "use_wifi": "Use Wi-Fi",
     "theme_mode_options": {
       "light": "Sáng",
       "dark": "Tối"

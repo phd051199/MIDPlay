@@ -75,6 +75,9 @@ public class Configuration {
   public static final String PLAYER_STATUS_STOPPING = "player.status.stopping";
   public static final String PLAYER_STATUS_FINISHED = "player.status.finished";
   public static final String PLAYER_STATUS_READY = "player.status.ready";
+  
+  public static final int BLACKBERRY_WIFI_OFF = 0;
+  public static final int BLACKBERRY_WIFI_ON = 1;
 
   public static Image folderIcon;
   public static Image musicIcon;

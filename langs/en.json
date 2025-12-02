@@ -132,6 +132,7 @@
     "check_update": "Check for Updates",
     "theme_mode": "Appearance",
     "theme_color": "Theme Color",
+    "use_wifi": "Use Wi-Fi",
     "theme_mode_options": {
       "dark": "Dark",
       "light": "Light"

@@ -344,7 +344,7 @@ public class PlayerGUI implements PlayerListener {
     if (stopped) {
       return;
     }
-    httpConnection = (HttpConnection) Connector.open(finalUrl);
+    httpConnection = Network.openConnection(finalUrl);
     if (stopped) {
       return;
     }
@@ -372,7 +372,7 @@ public class PlayerGUI implements PlayerListener {
     }
     HttpConnection connection = null;
     try {
-      connection = (HttpConnection) Connector.open(url);
+      connection = Network.openConnection(url);
       int responseCode = connection.getResponseCode();
       if (responseCode == HttpConnection.HTTP_MOVED_PERM
           || responseCode == HttpConnection.HTTP_MOVED_TEMP) {

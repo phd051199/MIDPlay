@@ -125,6 +125,7 @@
     "check_update": "בדוק עדכונים זמינים",
     "theme_mode": "ערכת נושא",
     "theme_color": "צבע ערכת הנושא",
+    "use_wifi": "Use Wi-Fi",
     "theme_mode_options": {
       "light": "בהיר",
       "dark": "כהה"
