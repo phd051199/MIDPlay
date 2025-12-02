@@ -21,15 +21,8 @@ public class Network implements Runnable {
     this(null);
   }
 
-  private static final boolean isBlackberry;
-
-  static {
-    String platform = System.getProperty("microedition.platform");
-    isBlackberry = (platform != null && platform.toLowerCase().startsWith("blackberry"));
-  }
-
   public static HttpConnection openConnection(String url) throws IOException {
-    if (isBlackberry) {
+    if (Utils.isBlackberry) {
       int blackberryWifi = SettingsManager.getInstance().getCurrentBlackberryWifi();
 
       if (blackberryWifi == Configuration.BLACKBERRY_WIFI_ON) {

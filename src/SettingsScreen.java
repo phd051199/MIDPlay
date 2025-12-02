@@ -76,7 +76,7 @@ public final class SettingsScreen extends BaseForm {
     append(qualityGroup);
     append(playerMethodGroup);
     append(autoUpdateGroup);
-    append(blackberryWifiGroup);
+    if (Utils.isBlackberry) append(blackberryWifiGroup);
   }
 
   private ChoiceGroup createChoiceGroup(
