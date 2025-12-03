@@ -21,6 +21,17 @@ public class Network implements Runnable {
     this(null);
   }
 
+  public static HttpConnection openConnection(String url) throws IOException {
+    if (Utils.isBlackberry) {
+      int blackberryWifi = SettingsManager.getInstance().getCurrentBlackberryWifi();
+
+      if (blackberryWifi == Configuration.BLACKBERRY_WIFI_ON) {
+        url += ";deviceside=true;interface=wifi";
+      }
+    }
+    return (HttpConnection) Connector.open(url);
+  }
+
   private String getUserAgent() {
     if (userAgent == null) {
       userAgent = System.getProperty("microedition.platform");
@@ -49,7 +60,7 @@ public class Network implements Runnable {
       if (cancelled) {
         throw new NetworkError("Operation cancelled");
       }
-      hcon = (HttpConnection) Connector.open(url);
+      hcon = openConnection(url);
       if (hcon == null) {
         throw new NetworkError("Failed to open connection");
       }

@@ -16,6 +16,7 @@ public class SettingsManager {
   private static int currentShuffleMode;
   private static int currentVolumeLevel;
   private static String currentThemeMode;
+  private static int currentBlackberryWifi;
 
   public static SettingsManager getInstance() {
     if (instance == null) {
@@ -47,6 +48,7 @@ public class SettingsManager {
     currentRepeatMode = settings.getInt("repeatMode", Configuration.PLAYER_REPEAT_ALL);
     currentShuffleMode = settings.getInt("shuffleMode", Configuration.PLAYER_SHUFFLE_OFF);
     currentVolumeLevel = settings.getInt("volumeLevel", Configuration.PLAYER_MAX_VOLUME);
+    currentBlackberryWifi = settings.getInt("blackberryWifi", Configuration.BLACKBERRY_WIFI_ON);
   }
 
   private JSONObject getSettingsJSON() {
@@ -73,6 +75,7 @@ public class SettingsManager {
     settings.put("autoUpdate", Configuration.AUTO_UPDATE_ENABLED);
     settings.put("playerMethod", getDefaultPlayerMethod());
     settings.put("themeMode", Configuration.THEME_LIGHT);
+    settings.put("blackberryWifi", Configuration.BLACKBERRY_WIFI_ON);
     return settings;
   }
 
@@ -162,6 +165,11 @@ public class SettingsManager {
     currentVolumeLevel = volumeLevel;
   }
 
+  public void saveBlackberryWifi(int blackberryWifi) throws RecordStoreException {
+    saveSetting("blackberryWifi", blackberryWifi);
+    currentBlackberryWifi = blackberryWifi;
+  }
+
   public void saveThemeColors(JSONObject lightColors, JSONObject darkColors, int selected)
       throws RecordStoreException {
     JSONObject themeData = new JSONObject();
@@ -249,6 +257,10 @@ public class SettingsManager {
 
   public int getCurrentVolumeLevel() {
     return currentVolumeLevel;
+  }
+
+  public int getCurrentBlackberryWifi() {
+    return currentBlackberryWifi;
   }
 
   public void cleanup() {

@@ -16,6 +16,7 @@ public final class SettingsScreen extends BaseForm {
   private ChoiceGroup serviceGroup;
   private ChoiceGroup qualityGroup;
   private ChoiceGroup autoUpdateGroup;
+  private ChoiceGroup blackberryWifiGroup;
   private ChoiceGroup playerMethodGroup;
 
   private String currentLanguage;
@@ -23,6 +24,7 @@ public final class SettingsScreen extends BaseForm {
   private String currentService;
   private String currentQuality;
   private int currentAutoUpdate;
+  private int currentBlackberryWifi;
   private String currentPlayerMethod;
   private int currentColorIndex;
 
@@ -57,6 +59,9 @@ public final class SettingsScreen extends BaseForm {
     autoUpdateGroup = new ChoiceGroup(Lang.tr("settings.auto_update"), ChoiceGroup.MULTIPLE);
     autoUpdateGroup.append(Lang.tr("settings.check_update"), null);
 
+    blackberryWifiGroup = new ChoiceGroup(Lang.tr("settings.use_wifi"), ChoiceGroup.MULTIPLE);
+    blackberryWifiGroup.append(Lang.tr("settings.use_wifi"), null);
+
     themeColorGroup = new ChoiceGroup(Lang.tr("settings.theme_color"), ChoiceGroup.POPUP);
     for (int i = 0; i < Configuration.THEME_COLOR_NAMES.length; i++) {
       themeColorGroup.append(
@@ -71,6 +76,7 @@ public final class SettingsScreen extends BaseForm {
     append(qualityGroup);
     append(playerMethodGroup);
     append(autoUpdateGroup);
+    if (Utils.isBlackberry) append(blackberryWifiGroup);
   }
 
   private ChoiceGroup createChoiceGroup(
@@ -90,6 +96,7 @@ public final class SettingsScreen extends BaseForm {
     currentService = settingsManager.getCurrentService();
     currentQuality = settingsManager.getCurrentQuality();
     currentAutoUpdate = settingsManager.getCurrentAutoUpdate();
+    currentBlackberryWifi = settingsManager.getCurrentBlackberryWifi();
     currentPlayerMethod = settingsManager.getCurrentPlayerMethod();
     currentColorIndex = settingsManager.getSavedColorIndex();
     selectChoice(languageGroup, availableLanguages, currentLanguage);
@@ -102,6 +109,7 @@ public final class SettingsScreen extends BaseForm {
     selectChoice(qualityGroup, Configuration.ALL_QUALITIES, currentQuality);
     selectChoice(playerMethodGroup, Configuration.ALL_PLAYER_METHODS, currentPlayerMethod);
     autoUpdateGroup.setSelectedIndex(0, currentAutoUpdate == Configuration.AUTO_UPDATE_ENABLED);
+    blackberryWifiGroup.setSelectedIndex(0, currentBlackberryWifi == Configuration.BLACKBERRY_WIFI_ON);
   }
 
   private void selectChoice(ChoiceGroup group, String[] values, String target) {
@@ -131,6 +139,10 @@ public final class SettingsScreen extends BaseForm {
           autoUpdateGroup.isSelected(0)
               ? Configuration.AUTO_UPDATE_ENABLED
               : Configuration.AUTO_UPDATE_DISABLED;
+      int selectedBlackberryWifi =
+          blackberryWifiGroup.isSelected(0)
+              ? Configuration.BLACKBERRY_WIFI_ON
+              : Configuration.BLACKBERRY_WIFI_OFF;
       int selectedThemeColor = themeColorGroup.getSelectedIndex();
       boolean hasChanges = false;
       if (!currentLanguage.equals(selectedLang)) {
@@ -157,6 +169,10 @@ public final class SettingsScreen extends BaseForm {
       if (currentAutoUpdate != selectedAutoUpdate) {
         hasChanges = true;
         settingsManager.saveAutoUpdate(selectedAutoUpdate);
+      }
+      if (currentBlackberryWifi != selectedBlackberryWifi) {
+        hasChanges = true;
+        settingsManager.saveBlackberryWifi(selectedBlackberryWifi);
       }
       if (!currentPlayerMethod.equals(selectedPlayerMethod)) {
         hasChanges = true;

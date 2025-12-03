@@ -125,6 +125,7 @@
     "check_update": "Güncellemeleri Kontrol Et",
     "theme_mode": "Tema Modu",
     "theme_color": "Tema Rengi",
+    "use_wifi": "Use Wi-Fi",
     "theme_mode_options": {
       "light": "Açık",
       "dark": "Koyu"
