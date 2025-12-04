@@ -109,7 +109,8 @@ public final class SettingsScreen extends BaseForm {
     selectChoice(qualityGroup, Configuration.ALL_QUALITIES, currentQuality);
     selectChoice(playerMethodGroup, Configuration.ALL_PLAYER_METHODS, currentPlayerMethod);
     autoUpdateGroup.setSelectedIndex(0, currentAutoUpdate == Configuration.AUTO_UPDATE_ENABLED);
-    blackberryWifiGroup.setSelectedIndex(0, currentBlackberryWifi == Configuration.BLACKBERRY_WIFI_ON);
+    blackberryWifiGroup.setSelectedIndex(
+        0, currentBlackberryWifi == Configuration.BLACKBERRY_WIFI_ON);
   }
 
   private void selectChoice(ChoiceGroup group, String[] values, String target) {

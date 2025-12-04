@@ -1,14 +1,16 @@
 import java.io.UnsupportedEncodingException;
 import java.util.Vector;
+
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
+
 import model.MenuItem;
 import model.Playlist;
 
 public class Utils {
   public static final boolean isBlackberry;
-  
+
   static {
     String platform = System.getProperty("microedition.platform");
     isBlackberry = (platform != null && platform.toLowerCase().startsWith("blackberry"));

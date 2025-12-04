@@ -3,7 +3,6 @@ import java.io.InputStream;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
 import javax.microedition.media.Manager;
 import javax.microedition.media.MediaException;
