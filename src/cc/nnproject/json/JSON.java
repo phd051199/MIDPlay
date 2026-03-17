@@ -48,8 +48,8 @@ public class JSON {
   // used internally for storing nulls, get methods must return real null
   public static final Object json_null = new Object();
 
-  public static final Boolean TRUE = (true ? Boolean.TRUE : Boolean.FALSE);
-  public static final Boolean FALSE = (false ? Boolean.TRUE : Boolean.FALSE);
+  public static final Boolean TRUE = Boolean.TRUE;
+  public static final Boolean FALSE = Boolean.FALSE;
 
   public static AbstractJSON get(String text) throws JSONException {
     if (text == null || text.length() <= 1) {

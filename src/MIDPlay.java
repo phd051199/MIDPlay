@@ -5,6 +5,7 @@ import javax.microedition.io.ConnectionNotFoundException;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Image;
@@ -162,7 +163,12 @@ public class MIDPlay extends MIDlet implements CommandListener {
   }
 
   private void goToPlayerScreen() {
-    navigator.forward(getPlayerScreen());
+    PlayerScreen currentPlayerScreen = getPlayerScreen();
+    if (currentPlayerScreen != null) {
+      navigator.forward(currentPlayerScreen);
+    } else {
+      navigator.showAlert(Lang.tr(Configuration.PLAYER_STATUS_STOPPED), AlertType.INFO);
+    }
   }
 
   private void handleSave() {
@@ -186,11 +192,15 @@ public class MIDPlay extends MIDlet implements CommandListener {
   }
 
   private void createMenu() {
+    initializeMenu();
+    navigator.forward(menu);
+  }
+
+  private void initializeMenu() {
     menu = new List(Lang.tr("app.name"), List.IMPLICIT);
     populateMenu();
     addMenuCommands();
     menu.setCommandListener(this);
-    navigator.forward(menu);
   }
 
   private void populateMenu() {
@@ -516,9 +526,10 @@ public class MIDPlay extends MIDlet implements CommandListener {
                 } else {
                   Commands.refresh();
                 }
+                int index = menu != null ? menu.getSelectedIndex() : -1;
+                initializeMenu();
                 navigator.clear();
-                int index = menu.getSelectedIndex();
-                createMenu();
+                Display.getDisplay(MIDPlay.this).setCurrent(menu);
                 int newSize = menu.size();
                 if (newSize > 0) {
                   if (index < 0) {

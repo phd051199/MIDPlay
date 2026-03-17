@@ -23,9 +23,16 @@ public class Track extends Base {
 
   public boolean isSame(Track track) {
     return track != null
-        && this.getName().equals(track.getName())
-        && this.getArtist().equals(track.getArtist())
+        && equalsNullable(this.getName(), track.getName())
+        && equalsNullable(this.getArtist(), track.getArtist())
         && this.getDuration() == track.getDuration();
+  }
+
+  private boolean equalsNullable(String left, String right) {
+    if (left == null) {
+      return right == null;
+    }
+    return left.equals(right);
   }
 
   public Track fromJSON(String jsonString) {
@@ -66,6 +73,14 @@ public class Track extends Base {
 
   public void setArtist(String artist) {
     this.artist = artist;
+  }
+
+  public String getDisplayTitle(String unknownArtistLabel) {
+    String normalizedArtist = normalizeDisplayText(getArtist());
+    if (normalizedArtist.length() == 0) {
+      normalizedArtist = normalizeDisplayText(unknownArtistLabel);
+    }
+    return buildDisplayTitle(normalizedArtist);
   }
 
   public String getImageUrl() {

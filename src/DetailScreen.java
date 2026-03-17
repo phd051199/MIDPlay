@@ -88,6 +88,12 @@ public final class DetailScreen extends BaseForm {
   private void loadPlaylistTracks() {
     if (playlist == null) return;
 
+    if (playlist.isCustom()) {
+      tracks = FavoritesManager.getInstance().getCustomPlaylistTracks(playlist);
+      updateTrackCount();
+      return;
+    }
+
     MIDPlay.startOperation(
         TracksOperation.getTracks(
             playlist.getKey(),

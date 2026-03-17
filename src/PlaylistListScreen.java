@@ -30,7 +30,7 @@ public final class PlaylistListScreen extends BaseList {
 
   protected void populateItems() {
     for (int i = 0; i < items.getPlaylists().length; i++) {
-      this.append(items.getPlaylists()[i].getName(), Configuration.folderIcon);
+      this.append(items.getPlaylists()[i].getDisplayTitle(), Configuration.folderIcon);
     }
     if (items.hasMore()) {
       this.append(Lang.tr("status.load_more"), Configuration.folderIcon);
@@ -77,16 +77,17 @@ public final class PlaylistListScreen extends BaseList {
   }
 
   private void loadMore() {
-    currentPage++;
+    final int nextPage = currentPage + 1;
+    final boolean shouldRestoreLoadMore = items.hasMore();
     removeLoadMoreItem();
     navigator.showLoadingAlert(Lang.tr("status.loading"));
     MIDPlay.startOperation(
-        PlaylistsOperation.searchPlaylists(
-            keyword,
-            searchType,
-            currentPage,
+        createLoadMoreOperation(
+            nextPage,
+            shouldRestoreLoadMore,
             new PlaylistsOperation.PlaylistsListener() {
               public void onDataReceived(Playlists newItems) {
+                currentPage = nextPage;
                 onLoadMoreSuccess(newItems);
                 if (!Utils.isJ2MELoader()) {
                   navigator.dismissAlert();
@@ -94,19 +95,42 @@ public final class PlaylistListScreen extends BaseList {
               }
 
               public void onNoDataReceived() {
+                restoreLoadMoreItem(shouldRestoreLoadMore);
                 navigator.showAlert(Lang.tr("status.no_data"), AlertType.INFO);
               }
 
               public void onError(Exception e) {
+                restoreLoadMoreItem(shouldRestoreLoadMore);
                 navigator.showAlert(e.toString(), AlertType.ERROR);
               }
             }));
+  }
+
+  private PlaylistsOperation createLoadMoreOperation(
+      int nextPage, boolean shouldRestoreLoadMore, PlaylistsOperation.PlaylistsListener listener) {
+    if (keyword != null && searchType != null) {
+      return PlaylistsOperation.searchPlaylists(keyword, searchType, nextPage, listener);
+    }
+    return PlaylistsOperation.getHotPlaylists(nextPage, listener);
   }
 
   private void onLoadMoreSuccess(Playlists newItems) {
     items.add(newItems);
     addNewItems(newItems.getPlaylists());
     addLoadMoreIfNeeded();
+  }
+
+  private void restoreLoadMoreItem(boolean shouldRestore) {
+    if (shouldRestore && !hasLoadMoreItem()) {
+      this.append(Lang.tr("status.load_more"), Configuration.folderIcon);
+    }
+  }
+
+  private boolean hasLoadMoreItem() {
+    if (this.size() == 0) {
+      return false;
+    }
+    return Lang.tr("status.load_more").equals(this.getString(this.size() - 1));
   }
 
   private void addToFavorites() {
@@ -156,7 +180,7 @@ public final class PlaylistListScreen extends BaseList {
 
   private void addNewItems(Playlist[] newPlaylists) {
     for (int i = 0; i < newPlaylists.length; i++) {
-      this.append(newPlaylists[i].getName(), Configuration.folderIcon);
+      this.append(newPlaylists[i].getDisplayTitle(), Configuration.folderIcon);
     }
   }
 

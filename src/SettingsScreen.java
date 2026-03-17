@@ -153,12 +153,6 @@ public final class SettingsScreen extends BaseForm {
       }
       boolean hasColorChange = currentColorIndex != selectedThemeColor;
       boolean hasModeChange = !currentThemeMode.equals(selectedThemeMode);
-
-      if (hasColorChange || hasModeChange) {
-        hasChanges = true;
-        handleThemeChanges(selectedThemeMode, selectedThemeColor, hasColorChange, hasModeChange);
-        return;
-      }
       if (!currentService.equals(selectedService)) {
         hasChanges = true;
         settingsManager.saveService(selectedService);
@@ -179,7 +173,11 @@ public final class SettingsScreen extends BaseForm {
         hasChanges = true;
         settingsManager.savePlayerMethod(selectedPlayerMethod);
       }
-      if (hasChanges) {
+
+      if (hasColorChange || hasModeChange) {
+        hasChanges = true;
+        handleThemeChanges(selectedThemeMode, selectedThemeColor, hasColorChange, hasModeChange);
+      } else if (hasChanges) {
         listener.onSettingsSaved();
       } else {
         navigator.back();
@@ -199,17 +197,21 @@ public final class SettingsScreen extends BaseForm {
     if (hasColorChange) {
       loadThemeColors(newColorIndex, newThemeMode, hasModeChange);
     } else if (hasModeChange) {
-      saveThemeMode(newThemeMode);
+      saveThemeMode(newThemeMode, true);
     }
   }
 
-  private void saveThemeMode(String newThemeMode) {
+  private boolean saveThemeMode(String newThemeMode, boolean notifySaved) {
     try {
       settingsManager.saveTheme(newThemeMode);
       listener.onThemeChanged();
-      listener.onSettingsSaved();
+      if (notifySaved) {
+        listener.onSettingsSaved();
+      }
+      return true;
     } catch (RecordStoreException e) {
       navigator.showAlert("Error saving theme: " + e.toString(), AlertType.ERROR);
+      return false;
     }
   }
 
@@ -217,12 +219,12 @@ public final class SettingsScreen extends BaseForm {
       final int selected, final String newThemeMode, final boolean hasModeChange) {
     if (selected < 0 || selected >= Configuration.THEME_COLORS.length) {
       if (hasModeChange) {
-        saveThemeMode(newThemeMode);
+        saveThemeMode(newThemeMode, true);
       }
       return;
     }
 
-    String colorHex = Integer.toHexString(Configuration.THEME_COLORS[selected]);
+    String colorHex = formatThemeColorHex(Configuration.THEME_COLORS[selected]);
     MIDPlay.startOperation(
         new ThemeColorOperation(
             colorHex,
@@ -242,14 +244,24 @@ public final class SettingsScreen extends BaseForm {
               }
 
               public void onError(Exception e) {
-                navigator.showAlert("Error loading theme: " + e.toString(), AlertType.ERROR);
                 if (hasModeChange) {
-                  saveThemeMode(newThemeMode);
+                  if (saveThemeMode(newThemeMode, false)) {
+                    navigator.showAlert(
+                        "Theme color update failed. Theme mode was saved.", AlertType.WARNING);
+                  }
                 } else {
-                  listener.onSettingsSaved();
+                  navigator.showAlert("Error loading theme: " + e.toString(), AlertType.ERROR);
                 }
               }
             }));
+  }
+
+  private String formatThemeColorHex(int color) {
+    String hex = Integer.toHexString(color & 0x00FFFFFF).toUpperCase();
+    while (hex.length() < 6) {
+      hex = "0" + hex;
+    }
+    return hex;
   }
 
   public interface Listener {

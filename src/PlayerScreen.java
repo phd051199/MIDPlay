@@ -173,8 +173,8 @@ public final class PlayerScreen extends Canvas
     addCommands();
     setCommandListener(this);
     touchSupported = hasPointerEvents();
-    change(title, tracks, index, navigator);
     initializeFonts();
+    change(title, tracks, index, navigator);
   }
 
   private void manageCommands(boolean add) {
@@ -230,8 +230,10 @@ public final class PlayerScreen extends Canvas
     this.title = title;
     setTitle(title);
     this.navigator = navigator;
-    getPlayerGUI().setPlaylist(tracks, index);
-    getPlayerGUI().play();
+    PlayerGUI playerGUI = getPlayerGUI();
+    if (playerGUI.setPlaylist(tracks, index)) {
+      playerGUI.play();
+    }
   }
 
   public void setupDisplay() {
@@ -322,19 +324,19 @@ public final class PlayerScreen extends Canvas
   private void handleMusicKey(int code) {
     switch (code) {
       case -20: // Play/Resume
-        this.getPlayerGUI().toggle();
+        togglePlayPause();
         break;
       case -21: // Previous
-        this.getPlayerGUI().previous();
+        previous();
         break;
       case -22: // Next
-        this.getPlayerGUI().next();
+        next();
         break;
     }
   }
 
   protected void pointerPressed(int x, int y) {
-    if (!touchSupported || isLoading()) {
+    if (!touchSupported) {
       return;
     }
 
@@ -351,6 +353,7 @@ public final class PlayerScreen extends Canvas
 
   public void paint(Graphics g) {
     try {
+      ensureFontsInitialized();
       if (displayHeight == -1) {
         initDisplayMetrics(g);
       }
@@ -402,8 +405,10 @@ public final class PlayerScreen extends Canvas
   }
 
   public void onTimerExpired(int action) {
+    clearTimerOverride();
     handleTimerAction(action);
     updateSleepTimerCommands();
+    updateDisplay();
   }
 
   public void onTimerUpdate(String remainingTime) {
@@ -439,7 +444,9 @@ public final class PlayerScreen extends Canvas
   }
 
   private void determinePlayerStatus() {
-    if (getPlayerGUI().isPlaying()) {
+    if (getPlayerGUI().isLoading()) {
+      setStatusByKey(Configuration.PLAYER_STATUS_LOADING);
+    } else if (getPlayerGUI().isPlaying()) {
       setStatusByKey(Configuration.PLAYER_STATUS_PLAYING);
     } else if (isStoppedState()) {
       setStatusByKey(Configuration.PLAYER_STATUS_STOPPED);
@@ -499,7 +506,7 @@ public final class PlayerScreen extends Canvas
   }
 
   private boolean isLoading() {
-    return statusCurrent != null && statusCurrent.indexOf(Lang.tr("status.loading")) != -1;
+    return getPlayerGUI().isLoading();
   }
 
   private void handleButtonTouch(int x, int y) {
@@ -541,7 +548,7 @@ public final class PlayerScreen extends Canvas
   }
 
   private void handleAction(int action) {
-    if (isLoading()) {
+    if (isLoading() && !isQueueableNavigationAction(action)) {
       return;
     }
 
@@ -570,6 +577,10 @@ public final class PlayerScreen extends Canvas
         hideVolumeAlert();
         break;
     }
+  }
+
+  private boolean isQueueableNavigationAction(int action) {
+    return action == Canvas.RIGHT || action == Canvas.LEFT;
   }
 
   private void handlePlayerAction(int action) {
@@ -601,6 +612,7 @@ public final class PlayerScreen extends Canvas
   }
 
   private void initDisplayMetrics(Graphics g) {
+    ensureFontsInitialized();
     displayWidth = getWidth();
     displayHeight = getHeight();
     detectOrientationChange(displayWidth, displayHeight);
@@ -626,6 +638,7 @@ public final class PlayerScreen extends Canvas
   }
 
   private void initSmallScreenLayout(Graphics g) {
+    ensureFontsInitialized();
     textHeight = defaultFont.getHeight();
     statusBarHeight = textHeight + 5;
 
@@ -1167,21 +1180,15 @@ public final class PlayerScreen extends Canvas
   }
 
   private void stop() {
-    getPlayerGUI().pause();
-    getPlayerGUI().seek(0L);
-    setStatusByKey(Configuration.PLAYER_STATUS_STOPPED);
+    getPlayerGUI().stop();
   }
 
   private void next() {
-    if (!isLoading()) {
-      getPlayerGUI().next();
-    }
+    getPlayerGUI().next();
   }
 
   private void previous() {
-    if (!isLoading()) {
-      getPlayerGUI().previous();
-    }
+    getPlayerGUI().previous();
   }
 
   private void addCurrentTrackToPlaylist() {
@@ -1202,7 +1209,17 @@ public final class PlayerScreen extends Canvas
 
     String playlistTitle = title != null ? title : Lang.tr("player.show_playlist");
     TrackListScreen trackListScreen = new TrackListScreen(playlistTitle, currentTracks, navigator);
-    trackListScreen.setSelectedIndex(getPlayerGUI().getCurrentIndex(), true);
+    int index = getPlayerGUI().getCurrentIndex();
+    int size = currentTracks.getTracks().length;
+    if (size > 0) {
+      if (index < 0) {
+        index = 0;
+      }
+      if (index >= size) {
+        index = size - 1;
+      }
+      trackListScreen.setSelectedIndex(index, true);
+    }
     navigator.forward(trackListScreen);
   }
 
@@ -1243,9 +1260,11 @@ public final class PlayerScreen extends Canvas
   }
 
   private void updateStatus(String s) {
-    if (isValidPlayerStatus(s)) {
-      realPlayerStatus = s;
+    if (s == null) {
+      s = "";
     }
+
+    realPlayerStatus = s;
 
     if (!timerOverrideActive) {
       statusCurrent = s;
@@ -1255,14 +1274,10 @@ public final class PlayerScreen extends Canvas
     }
   }
 
-  private boolean isValidPlayerStatus(String s) {
-    return s != null && s.indexOf(Lang.tr("timer.status.remaining").substring(0, 3)) == -1;
-  }
-
   private boolean isCriticalStatus(String status) {
     return status != null
         && (status.indexOf(Lang.tr("status.loading")) != -1
-            || status.toLowerCase().indexOf("error") != -1);
+            || status.indexOf(Lang.tr("status.error")) != -1);
   }
 
   private void setTimerOverride(String timerStatus) {
@@ -1279,6 +1294,12 @@ public final class PlayerScreen extends Canvas
     defaultFont = Font.getDefaultFont();
     titleFont = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_BOLD, Font.SIZE_MEDIUM);
     artistFont = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_SMALL);
+  }
+
+  private void ensureFontsInitialized() {
+    if (defaultFont == null || titleFont == null || artistFont == null) {
+      initializeFonts();
+    }
   }
 
   private void updateFontsForLargeScreen() {

@@ -29,7 +29,9 @@ public final class TrackListScreen extends BaseList {
 
   protected void populateItems() {
     for (int i = 0; i < items.getTracks().length; i++) {
-      this.append(items.getTracks()[i].getName(), Configuration.musicIcon);
+      this.append(
+          items.getTracks()[i].getDisplayTitle(Lang.tr("details.unknown_artist")),
+          Configuration.musicIcon);
     }
   }
 

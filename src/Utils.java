@@ -1,19 +1,22 @@
 import java.io.UnsupportedEncodingException;
 import java.util.Vector;
-
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
-
 import model.MenuItem;
 import model.Playlist;
 
 public class Utils {
   public static final boolean isBlackberry;
+  public static final boolean isSamsung;
 
   static {
     String platform = System.getProperty("microedition.platform");
     isBlackberry = (platform != null && platform.toLowerCase().startsWith("blackberry"));
+    isSamsung =
+        platform != null
+            && (platform.toLowerCase().indexOf("samsung") != -1
+                || platform.toLowerCase().indexOf("sgh") != -1);
   }
 
   private static String playerHttpMethod;

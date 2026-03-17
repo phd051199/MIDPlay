@@ -49,6 +49,9 @@ public class ChatScreen extends Canvas implements CommandListener {
   private TextBox inputBox;
   private Font font;
   private String sessionId;
+  private ChatOperation currentChatOperation;
+  private boolean isDisposed = false;
+  private boolean openingInputBox = false;
 
   private final Navigator navigator;
 
@@ -68,6 +71,11 @@ public class ChatScreen extends Canvas implements CommandListener {
 
   public void showNotify() {
     super.showNotify();
+    isDisposed = false;
+    openingInputBox = false;
+    if (this.sessionId == null) {
+      this.sessionId = generateRandomId(12);
+    }
 
     if (this.messages.isEmpty()) {
       addAIMessage(Lang.tr("chat.welcome_message"));
@@ -808,7 +816,7 @@ public class ChatScreen extends Canvas implements CommandListener {
       }
     } else if (c == Commands.back()) {
       if (d == this) {
-        cleanupTimerAndOperations();
+        cleanupTimerAndOperations(true);
       }
       navigator.back();
     } else if (c == Commands.input()) {
@@ -817,28 +825,85 @@ public class ChatScreen extends Canvas implements CommandListener {
   }
 
   private void sendChatMessage(final String message) {
-    MIDPlay.startOperation(
+    if (message == null || message.length() == 0 || sessionId == null) {
+      return;
+    }
+    final ChatOperation[] operationRef = new ChatOperation[1];
+    final ChatOperation operation =
         ChatOperation.sendMessage(
             message,
             sessionId,
             new ChatOperation.ChatListener() {
               public void onDataReceived(String response) {
+                if (!beginChatCallback(operationRef[0])) {
+                  return;
+                }
                 addAIResponseMessages(response);
                 isWaitingForResponse = false;
               }
 
               public void onNoDataReceived() {
-                messages.removeElementAt(messages.size() - 1);
+                if (!beginChatCallback(operationRef[0])) {
+                  return;
+                }
+                removeLoadingPlaceholder();
                 addAIMessage(Lang.tr("error.connection"));
                 isWaitingForResponse = false;
               }
 
               public void onError(Exception e) {
-                messages.removeElementAt(messages.size() - 1);
+                if (!beginChatCallback(operationRef[0])) {
+                  return;
+                }
+                removeLoadingPlaceholder();
                 addAIMessage(Lang.tr("error.connection"));
                 isWaitingForResponse = false;
               }
-            }));
+            });
+    operationRef[0] = operation;
+    setCurrentChatOperation(operation);
+    MIDPlay.startOperation(operation);
+  }
+
+  private synchronized boolean beginChatCallback(ChatOperation operation) {
+    if (operation == null || isDisposed || currentChatOperation != operation) {
+      return false;
+    }
+    currentChatOperation = null;
+    return true;
+  }
+
+  private void setCurrentChatOperation(ChatOperation operation) {
+    ChatOperation previous;
+    synchronized (this) {
+      previous = currentChatOperation;
+      currentChatOperation = operation;
+      isDisposed = false;
+    }
+    if (previous != null) {
+      previous.stop();
+    }
+  }
+
+  private void stopCurrentChatOperation() {
+    ChatOperation operation;
+    synchronized (this) {
+      operation = currentChatOperation;
+      currentChatOperation = null;
+    }
+    if (operation != null) {
+      operation.stop();
+    }
+  }
+
+  private void removeLoadingPlaceholder() {
+    if (messages.size() > 0) {
+      messages.removeElementAt(messages.size() - 1);
+    }
+  }
+
+  private boolean isInputBoxVisible() {
+    return openingInputBox || (inputBox != null && navigator.getCurrent() == inputBox);
   }
 
   private void openInputBox() {
@@ -846,11 +911,12 @@ public class ChatScreen extends Canvas implements CommandListener {
     inputBox.addCommand(Commands.ok());
     inputBox.addCommand(Commands.back());
     inputBox.setCommandListener(this);
+    openingInputBox = true;
     navigator.forward(inputBox);
   }
 
   public void hideNotify() {
-    cleanupTimerAndOperations();
+    cleanupTimerAndOperations(!isInputBoxVisible());
   }
 
   public void cancel() {
@@ -858,14 +924,24 @@ public class ChatScreen extends Canvas implements CommandListener {
   }
 
   public void quit() {
-    cleanupTimerAndOperations();
+    cleanupTimerAndOperations(true);
     this.sessionId = null;
   }
 
-  private void cleanupTimerAndOperations() {
+  private void cleanupTimerAndOperations(boolean dispose) {
     if (timer != null) {
       timer.cancel();
       timer = null;
     }
+    if (!dispose) {
+      return;
+    }
+    isDisposed = true;
+    if (isWaitingForResponse) {
+      removeLoadingPlaceholder();
+    }
+    isWaitingForResponse = false;
+    pendingMessages.removeAllElements();
+    stopCurrentChatOperation();
   }
 }

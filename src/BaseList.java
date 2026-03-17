@@ -30,7 +30,12 @@ public abstract class BaseList extends List implements CommandListener {
         if (previous instanceof PlayerScreen) {
           navigator.back();
         } else {
-          navigator.forward(MIDPlay.getPlayerScreen());
+          PlayerScreen playerScreen = MIDPlay.getPlayerScreen();
+          if (playerScreen != null) {
+            navigator.forward(playerScreen);
+          } else {
+            navigator.showAlert(Lang.tr(Configuration.PLAYER_STATUS_STOPPED), AlertType.INFO);
+          }
         }
       } else {
         handleCommand(c, d);
