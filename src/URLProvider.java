@@ -95,6 +95,28 @@ public class URLProvider {
     return urlBuffer.toString();
   }
 
+  public static String getTakumiTextImage(
+      String text, int width, int fontSize, int color, String align) {
+    int safeWidth = width > 0 ? width : 1;
+    int safeFontSize = fontSize > 0 ? fontSize : 1;
+    String hexColor = "#" + Utils.toHexRgb(color);
+
+    StringBuffer urlBuffer =
+        new StringBuffer(SERVICE_URL)
+            .append("/takumi?text=")
+            .append(Utils.urlEncode(text == null ? "" : text))
+            .append("&width=")
+            .append(safeWidth)
+            .append("&fontSize=")
+            .append(safeFontSize)
+            .append("&color=")
+            .append(Utils.urlEncode(hexColor));
+    if (align != null && align.length() > 0) {
+      urlBuffer.append("&align=").append(Utils.urlEncode(align));
+    }
+    return urlBuffer.toString();
+  }
+
   public static String getChatEndpoint(String message, String sessionId) {
     StringBuffer urlBuffer =
         new StringBuffer(SERVICE_URL)

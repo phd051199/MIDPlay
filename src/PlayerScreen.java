@@ -13,14 +13,6 @@ public final class PlayerScreen extends Canvas
     implements CommandListener, SleepTimerManager.SleepTimerCallback {
 
   // UI Utility methods
-  private static void drawCenteredText(Graphics g, String text, int x, int y) {
-    g.drawString(text, x, y, Graphics.HCENTER | Graphics.TOP);
-  }
-
-  private static void drawLeftAlignedText(Graphics g, String text, int x, int y) {
-    g.drawString(text, x, y, Graphics.LEFT | Graphics.TOP);
-  }
-
   private static boolean isPointInBounds(
       int x, int y, int boundsX, int boundsY, int width, int height) {
     return x >= boundsX && x <= boundsX + width && y >= boundsY && y <= boundsY + height;
@@ -163,7 +155,8 @@ public final class PlayerScreen extends Canvas
   private String title;
   private PlayerGUI gui;
   private Navigator navigator;
-  private String truncatedTrackName, truncatedSinger;
+  private TextImageSlot trackNameTextImage = new TextImageSlot();
+  private TextImageSlot artistTextImage = new TextImageSlot();
 
   public PlayerScreen(String title, Tracks tracks, int index, Navigator navigator) {
     this.title = title;
@@ -280,12 +273,12 @@ public final class PlayerScreen extends Canvas
   }
 
   public void resetTruncatedText() {
-    truncatedTrackName = null;
-    truncatedSinger = null;
+    resetTrackTextImages();
   }
 
   public void close() {
     resetImage();
+    resetTrackTextImages();
     sleepTimerManager.setCallback(null);
   }
 
@@ -475,6 +468,11 @@ public final class PlayerScreen extends Canvas
     albumArtUrl = null;
   }
 
+  private void resetTrackTextImages() {
+    trackNameTextImage.reset();
+    artistTextImage.reset();
+  }
+
   private void resetImageState(String url) {
     albumArtUrl = url;
     clearImageData();
@@ -603,12 +601,179 @@ public final class PlayerScreen extends Canvas
     }
   }
 
-  private void drawTrackText(Graphics g, String text, int x, int y) {
-    if (isLargeScreen) {
-      drawCenteredText(g, text, x, y);
-    } else {
-      drawLeftAlignedText(g, text, x, y);
+  private void drawTrackTextImage(Graphics g, Image image, int x, int y, boolean isLargeScreen) {
+    if (image == null) {
+      return;
     }
+    int anchor = isLargeScreen ? (Graphics.HCENTER | Graphics.TOP) : (Graphics.LEFT | Graphics.TOP);
+    g.drawImage(image, x, y, anchor);
+  }
+
+  private void drawTrackTextDefault(
+      Graphics g,
+      String text,
+      Font font,
+      int maxWidth,
+      int yPosition,
+      int color,
+      boolean isLargeScreen) {
+    String textToDraw = truncateTextForWidth(text, font, maxWidth);
+    g.setColor(color);
+    int anchor = isLargeScreen ? (Graphics.HCENTER | Graphics.TOP) : (Graphics.LEFT | Graphics.TOP);
+    g.drawString(textToDraw, textX, yPosition, anchor);
+  }
+
+  private String truncateTextForWidth(String text, Font font, int maxWidth) {
+    if (text == null || text.length() == 0) {
+      return "";
+    }
+    if (maxWidth <= 0 || font.stringWidth(text) <= maxWidth) {
+      return text;
+    }
+
+    int ellipsisWidth = font.stringWidth("...");
+    int availableWidth = maxWidth - ellipsisWidth;
+    if (availableWidth <= 0) {
+      return "...";
+    }
+
+    for (int i = text.length() - 1; i > 0; i--) {
+      if (font.stringWidth(text.substring(0, i)) <= availableWidth) {
+        return text.substring(0, i) + "...";
+      }
+    }
+    return "...";
+  }
+
+  private boolean shouldRenderWithTakumi(String text) {
+    return containsCjkCharacter(text);
+  }
+
+  private boolean containsCjkCharacter(String text) {
+    if (text == null || text.length() == 0) {
+      return false;
+    }
+    int length = text.length();
+    for (int i = 0; i < length; i++) {
+      char ch = text.charAt(i);
+      if (isCjkCharacter(ch)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean isCjkCharacter(char ch) {
+    return (ch >= 0x3400 && ch <= 0x4DBF) // CJK Unified Ideographs Extension A
+        || (ch >= 0x4E00 && ch <= 0x9FFF) // CJK Unified Ideographs
+        || (ch >= 0xF900 && ch <= 0xFAFF) // CJK Compatibility Ideographs
+        || (ch >= 0x3040 && ch <= 0x309F) // Hiragana
+        || (ch >= 0x30A0 && ch <= 0x30FF) // Katakana
+        || (ch >= 0x31F0 && ch <= 0x31FF) // Katakana Phonetic Extensions
+        || (ch >= 0x1100 && ch <= 0x11FF) // Hangul Jamo
+        || (ch >= 0x3130 && ch <= 0x318F) // Hangul Compatibility Jamo
+        || (ch >= 0xAC00 && ch <= 0xD7AF) // Hangul Syllables
+        || (ch >= 0x3000 && ch <= 0x303F) // CJK Symbols and Punctuation
+        || (ch >= 0xFF66 && ch <= 0xFF9D); // Halfwidth Katakana
+  }
+
+  private Image resolveTrackTextImage(
+      TextImageSlot slot,
+      String text,
+      int maxWidth,
+      int fontSize,
+      int color,
+      boolean isLargeScreen) {
+    if (slot == null || text == null || text.length() == 0 || maxWidth <= 0) {
+      if (slot != null) {
+        slot.reset();
+      }
+      return null;
+    }
+
+    int safeWidth = maxWidth > 0 ? maxWidth : 1;
+    int safeFontSize = fontSize > 0 ? fontSize : 1;
+    String align = isLargeScreen ? "center" : "";
+    String requestKey =
+        buildTrackTextImageKey(text, safeWidth, safeFontSize, color & 0x00FFFFFF, align);
+
+    if (!requestKey.equals(slot.requestKey)) {
+      slot.reset();
+      slot.requestKey = requestKey;
+    }
+
+    if (slot.image != null) {
+      return slot.image;
+    }
+
+    if (!slot.loading && !slot.failed) {
+      startTrackTextImageLoad(slot, text, safeWidth, safeFontSize, color, align);
+    }
+
+    return null;
+  }
+
+  private String buildTrackTextImageKey(
+      String text, int width, int fontSize, int colorRgb, String align) {
+    return new StringBuffer(text.length() + 32)
+        .append(text)
+        .append('|')
+        .append(width)
+        .append('|')
+        .append(fontSize)
+        .append('|')
+        .append(colorRgb)
+        .append('|')
+        .append(align)
+        .toString();
+  }
+
+  private void startTrackTextImageLoad(
+      final TextImageSlot slot, String text, int width, int fontSize, int color, String align) {
+    String imageUrl = URLProvider.getTakumiTextImage(text, width, fontSize, color, align);
+    if (imageUrl == null || imageUrl.length() == 0) {
+      slot.failed = true;
+      return;
+    }
+
+    slot.loading = true;
+    slot.failed = false;
+    final String expectedKey = slot.requestKey;
+    slot.operation =
+        new TextImageLoadOperation(
+            imageUrl,
+            new TextImageLoadOperation.Listener() {
+              public void onImageLoaded(Image image) {
+                if (!isTrackTextRequestCurrent(slot, expectedKey)) {
+                  return;
+                }
+                slot.operation = null;
+                slot.loading = false;
+                slot.image = image;
+                slot.failed = image == null;
+                if (slot.image != null) {
+                  updateDisplay();
+                }
+              }
+
+              public void onImageLoadError(Exception e) {
+                if (!isTrackTextRequestCurrent(slot, expectedKey)) {
+                  return;
+                }
+                slot.operation = null;
+                slot.loading = false;
+                slot.image = null;
+                slot.failed = true;
+              }
+            });
+    slot.operation.start();
+  }
+
+  private boolean isTrackTextRequestCurrent(TextImageSlot slot, String expectedKey) {
+    return slot != null
+        && expectedKey != null
+        && slot.requestKey != null
+        && expectedKey.equals(slot.requestKey);
   }
 
   private void initDisplayMetrics(Graphics g) {
@@ -868,24 +1033,27 @@ public final class PlayerScreen extends Canvas
       int clipY,
       int clipHeight,
       String text,
-      String[] truncatedTextRef,
       Font font,
       int fontHeight,
+      int fontSize,
       int yPosition,
       int color,
-      boolean isLargeScreen) {
+      boolean isLargeScreen,
+      TextImageSlot textImageSlot) {
     g.setFont(font);
     if (intersects(clipY, clipHeight, yPosition, fontHeight)) {
-      g.setColor(color);
       int maxWidth = calculateMaxTextWidth();
-      if (truncatedTextRef[0] == null) {
-        truncatedTextRef[0] = Utils.truncateText(text, font, maxWidth);
+      if (!shouldRenderWithTakumi(text)) {
+        textImageSlot.reset();
+        drawTrackTextDefault(g, text, font, maxWidth, yPosition, color, isLargeScreen);
+        return;
       }
 
-      if (isLargeScreen) {
-        drawTrackText(g, truncatedTextRef[0], textX, yPosition);
-      } else {
-        g.drawString(truncatedTextRef[0], textX, yPosition, 20);
+      Image renderedTextImage =
+          resolveTrackTextImage(textImageSlot, text, maxWidth, fontSize, color, isLargeScreen);
+
+      if (renderedTextImage != null) {
+        drawTrackTextImage(g, renderedTextImage, textX, yPosition, isLargeScreen);
       }
     }
   }
@@ -894,42 +1062,75 @@ public final class PlayerScreen extends Canvas
       Graphics g, int clipY, int clipHeight, Track currentTrack, boolean isLargeScreen) {
     Font font = isLargeScreen ? titleFont : defaultFont;
     int fontHeight = isLargeScreen ? titleFont.getHeight() : textHeight;
-    String[] truncatedRef = new String[] {truncatedTrackName};
+    int fontSize = fontHeight;
 
     paintTrackInfoText(
         g,
         clipY,
         clipHeight,
         currentTrack.getName(),
-        truncatedRef,
         font,
         fontHeight,
+        fontSize,
         titleY,
         Theme.getOnBackgroundColor(),
-        isLargeScreen);
-
-    truncatedTrackName = truncatedRef[0];
+        isLargeScreen,
+        trackNameTextImage);
   }
 
   private void paintArtistName(
       Graphics g, int clipY, int clipHeight, Track currentTrack, boolean isLargeScreen) {
     Font font = isLargeScreen ? artistFont : defaultFont;
     int fontHeight = isLargeScreen ? artistFont.getHeight() : textHeight;
-    String[] truncatedRef = new String[] {truncatedSinger};
+    int titleFontSize = isLargeScreen ? titleFont.getHeight() : textHeight;
+    int fontSize = fontHeight - 2;
+    if (fontSize >= titleFontSize) {
+      fontSize = titleFontSize - 1;
+    }
+    if (fontSize < 8) {
+      fontSize = 8;
+    }
 
     paintTrackInfoText(
         g,
         clipY,
         clipHeight,
         currentTrack.getArtist(),
-        truncatedRef,
         font,
         fontHeight,
+        fontSize,
         artistY,
-        Theme.getOnSurfaceVariantColor(),
-        isLargeScreen);
+        getFadedArtistColor(),
+        isLargeScreen,
+        artistTextImage);
+  }
 
-    truncatedSinger = truncatedRef[0];
+  private int getFadedArtistColor() {
+    return blendColorWithBackground(
+        Theme.getOnSurfaceVariantColor(), Theme.getBackgroundColor(), 15);
+  }
+
+  private int blendColorWithBackground(
+      int color, int backgroundColor, int backgroundWeightPercent) {
+    if (backgroundWeightPercent < 0) {
+      backgroundWeightPercent = 0;
+    } else if (backgroundWeightPercent > 100) {
+      backgroundWeightPercent = 100;
+    }
+
+    int colorWeight = 100 - backgroundWeightPercent;
+    int r =
+        ((((color >> 16) & 0xFF) * colorWeight)
+                + (((backgroundColor >> 16) & 0xFF) * backgroundWeightPercent))
+            / 100;
+    int g =
+        ((((color >> 8) & 0xFF) * colorWeight)
+                + (((backgroundColor >> 8) & 0xFF) * backgroundWeightPercent))
+            / 100;
+    int b =
+        (((color & 0xFF) * colorWeight) + ((backgroundColor & 0xFF) * backgroundWeightPercent))
+            / 100;
+    return (r << 16) | (g << 8) | b;
   }
 
   private int calculateMaxTextWidth() {
@@ -1349,6 +1550,29 @@ public final class PlayerScreen extends Canvas
   public void resetDurationText() {
     lastDuration = -1;
     durationText = "";
+  }
+
+  private class TextImageSlot {
+    private Image image;
+    private TextImageLoadOperation operation;
+    private String requestKey;
+    private boolean loading;
+    private boolean failed;
+
+    private void reset() {
+      stop();
+      image = null;
+      requestKey = null;
+      failed = false;
+    }
+
+    private void stop() {
+      if (operation != null) {
+        operation.stop();
+        operation = null;
+      }
+      loading = false;
+    }
   }
 
   private class ImageLoadCallback implements ImageLoadOperation.Listener {
