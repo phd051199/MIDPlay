@@ -59,6 +59,22 @@ public class FavoritesManager {
     return removePlaylistInternal(playlist, false);
   }
 
+  public boolean updatePlaylist(Playlist playlist) {
+    if (playlist == null) {
+      return false;
+    }
+    int recordId = findPlaylistRecord(playlist);
+    if (recordId == -1) {
+      return false;
+    }
+    try {
+      storage.setRecord(recordId, playlist.toJSON().toString());
+      return true;
+    } catch (RecordStoreException e) {
+      return false;
+    }
+  }
+
   private boolean removePlaylistInternal(Playlist playlist, boolean removeTracks) {
     if (playlist == null) {
       return false;

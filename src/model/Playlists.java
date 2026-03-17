@@ -3,9 +3,10 @@ package model;
 import cc.nnproject.json.JSON;
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
+import java.util.Vector;
 
 public class Playlists {
-  private Playlist[] playlists;
+  private Playlist[] playlists = new Playlist[0];
   private boolean hasMore;
 
   public Playlist[] getPlaylists() {
@@ -13,7 +14,7 @@ public class Playlists {
   }
 
   public void setPlaylists(Playlist[] playlists) {
-    this.playlists = playlists;
+    this.playlists = playlists != null ? playlists : new Playlist[0];
   }
 
   public boolean hasMore() {
@@ -50,7 +51,9 @@ public class Playlists {
 
   public Playlists fromJSON(String jsonString) {
     if (jsonString == null || jsonString.trim().length() == 0) {
-      return null;
+      playlists = new Playlist[0];
+      hasMore = false;
+      return this;
     }
     try {
       JSONObject json = JSON.getObject(jsonString);
@@ -61,7 +64,7 @@ public class Playlists {
       }
       if (json.has("Items")) {
         JSONArray jsonArray = json.getArray("Items");
-        playlists = new Playlist[jsonArray.size()];
+        Vector playlistVector = new Vector();
         for (int i = 0; i < jsonArray.size(); i++) {
           JSONObject item = null;
           try {
@@ -72,11 +75,20 @@ public class Playlists {
           if (item == null) {
             continue;
           }
-          playlists[i] = new Playlist().fromJSON(item.toString());
+          Playlist playlist = new Playlist().fromJSON(item.toString());
+          if (playlist != null) {
+            playlistVector.addElement(playlist);
+          }
         }
+        playlists = new Playlist[playlistVector.size()];
+        playlistVector.copyInto(playlists);
+      } else {
+        playlists = new Playlist[0];
       }
     } catch (Exception e) {
       e.printStackTrace();
+      playlists = new Playlist[0];
+      hasMore = false;
     }
     return this;
   }

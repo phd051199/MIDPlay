@@ -29,7 +29,12 @@ public class Navigator {
       if (current != null && !(current instanceof Alert)) {
         beforeAlert = current;
       }
-      display.setCurrent((Alert) newView, beforeAlert);
+      Alert alert = (Alert) newView;
+      if (beforeAlert != null) {
+        display.setCurrent(alert, beforeAlert);
+      } else {
+        display.setCurrent(alert);
+      }
     } else {
       if (current instanceof Alert) {
         if (beforeAlert != null) {
@@ -126,6 +131,10 @@ public class Navigator {
 
   public void dismissAlert() {
     Display display = Display.getDisplay(this.midlet);
+    Displayable current = display.getCurrent();
+    if (!(current instanceof Alert)) {
+      return;
+    }
     if (beforeAlert != null) {
       display.setCurrent(beforeAlert);
       beforeAlert = null;

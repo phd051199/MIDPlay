@@ -83,7 +83,7 @@ public class SleepTimerManager {
 
   private void executeTimerAction() {
     final int action = timerAction;
-    cancelTimer();
+    clearTimer(false);
     if (callback != null) {
       callback.onTimerExpired(action);
     }
@@ -100,6 +100,12 @@ public class SleepTimerManager {
   }
 
   public void cancelTimer() {
+    clearTimer(true);
+  }
+
+  private void clearTimer(boolean notifyCancelled) {
+    boolean wasActive = isActive;
+    isActive = false;
     if (sleepTimerTask != null) {
       sleepTimerTask.cancel();
       sleepTimerTask = null;
@@ -108,17 +114,16 @@ public class SleepTimerManager {
       sleepTimer.cancel();
       sleepTimer = null;
     }
-    if (isActive && callback != null) {
+    if (notifyCancelled && wasActive && callback != null) {
       callback.onTimerCancelled();
     }
-    isActive = false;
     targetTimeMillis = 0;
     timerAction = 0;
     timerDescription = "";
   }
 
   public void shutdown() {
-    cancelTimer();
+    clearTimer(false);
     callback = null;
   }
 

@@ -40,7 +40,7 @@ public final class FavoritesScreen extends BaseList {
     if (playlists != null && playlists.length > 0) {
       for (int i = 0; i < playlists.length; i++) {
         if (!isSelectionMode || playlists[i].isCustom()) {
-          this.append(playlists[i].getName(), Configuration.folderIcon);
+          this.append(playlists[i].getDisplayTitle(), Configuration.folderIcon);
         }
       }
     }
@@ -58,8 +58,11 @@ public final class FavoritesScreen extends BaseList {
   }
 
   private void handleSelectionMode() {
-    if (this.size() == 0
-        || this.getString(getSelectedIndex()).equals(Lang.tr("playlist.status.no_custom"))) {
+    int selectedIndex = getSelectedIndex();
+    if (this.size() == 0 || selectedIndex < 0 || selectedIndex >= this.size()) {
+      return;
+    }
+    if (this.getString(selectedIndex).equals(Lang.tr("playlist.status.no_custom"))) {
       return;
     }
     Playlist selectedPlaylist = getSelectedCustomPlaylist();
@@ -278,10 +281,10 @@ public final class FavoritesScreen extends BaseList {
 
   private void renamePlaylist(Playlist oldPlaylist, String newName) {
     Playlist renamedPlaylist =
-        new Playlist(oldPlaylist.getKey(), newName, oldPlaylist.getImageUrl());
+        new Playlist(
+            oldPlaylist.getKey(), newName, oldPlaylist.getImageUrl(), oldPlaylist.getArtist());
     renamedPlaylist.setId(oldPlaylist.getId());
-    if (favoritesManager.removePlaylist(oldPlaylist)
-        && favoritesManager.addPlaylist(renamedPlaylist) == FavoritesManager.SUCCESS) {
+    if (favoritesManager.updatePlaylist(renamedPlaylist)) {
       navigator.back();
       refresh();
       navigator.showAlert(Lang.tr("playlist.status.renamed"), AlertType.CONFIRMATION, this);
