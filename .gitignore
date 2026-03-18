@@ -71,3 +71,4 @@ nbdist/
 # End of https://www.toptal.com/developers/gitignore/api/java,netbeans,macos
 
 out.map
+google-java-format

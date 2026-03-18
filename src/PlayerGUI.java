@@ -29,6 +29,10 @@ public class PlayerGUI implements PlayerListener {
   private static final long PROCESSING_RETRY_SLICE_MS = 200L;
   private static final int PROCESSING_RESPONSE_CODE = 202;
   private static final int MAX_MEDIA_REDIRECTS = 5;
+  private static final int MAX_REDIRECT_NOT_FOUND_RECOVERY_ATTEMPTS = 3;
+  private static final int MAX_INPUTSTREAM_CREATE_RETRIES = 3;
+  private static final long INPUTSTREAM_CREATE_RETRY_DELAY_MS = 1200L;
+  private static final long INPUTSTREAM_CREATE_RETRY_SLICE_MS = 200L;
   private static final int RESPONSE_BUFFER_SIZE = 1024;
   private static final int COMMAND_TRACK_END = 1;
   private static final int COMMAND_APPLY_PENDING = 2;
@@ -83,12 +87,15 @@ public class PlayerGUI implements PlayerListener {
     final boolean processing;
     final int progress;
     final String status;
+    final int responseCode;
 
-    MediaResolutionResult(String resolvedUrl, boolean processing, int progress, String status) {
+    MediaResolutionResult(
+        String resolvedUrl, boolean processing, int progress, String status, int responseCode) {
       this.resolvedUrl = resolvedUrl;
       this.processing = processing;
       this.progress = progress;
       this.status = status;
+      this.responseCode = responseCode;
     }
   }
 
@@ -583,23 +590,29 @@ public class PlayerGUI implements PlayerListener {
     }
 
     PendingPlayback pending = new PendingPlayback();
-    String finalUrl = resolveRedirect(trackUrl, sessionId);
+    boolean keepPending = false;
+    try {
+      String finalUrl = resolveRedirect(trackUrl, sessionId);
 
-    if (!isSessionActive(sessionId)) {
-      return pending;
-    }
+      if (!isSessionActive(sessionId)) {
+        keepPending = true;
+        return pending;
+      }
 
-    if (Configuration.PLAYER_METHOD_PASS_INPUTSTREAM.equals(playerMethod)) {
-      if (!createInputStreamPlayback(pending, finalUrl, sessionId)) {
+      if (Configuration.PLAYER_METHOD_PASS_INPUTSTREAM.equals(playerMethod)) {
+        createInputStreamPlaybackWithRetry(pending, trackUrl, finalUrl, sessionId);
+      } else {
         pending.usedInputStream = false;
         pending.pendingPlayer = Manager.createPlayer(finalUrl);
       }
-    } else {
-      pending.usedInputStream = false;
-      pending.pendingPlayer = Manager.createPlayer(finalUrl);
-    }
 
-    return pending;
+      keepPending = true;
+      return pending;
+    } finally {
+      if (!keepPending) {
+        closePendingPlayback(pending);
+      }
+    }
   }
 
   private boolean createInputStreamPlayback(PendingPlayback pending, String finalUrl, int sessionId)
@@ -618,6 +631,25 @@ public class PlayerGUI implements PlayerListener {
       return true;
     }
 
+    int responseCode = pending.pendingConnection.getResponseCode();
+    if (responseCode == PROCESSING_RESPONSE_CODE) {
+      throw new IOException("Media still processing");
+    }
+    if (responseCode == HttpConnection.HTTP_MOVED_PERM
+        || responseCode == HttpConnection.HTTP_MOVED_TEMP) {
+      throw new IOException("Unexpected media redirect");
+    }
+    if (responseCode >= HttpConnection.HTTP_BAD_REQUEST) {
+      throw new IOException("Media HTTP error: " + responseCode);
+    }
+
+    String responseContentType = pending.pendingConnection.getType();
+    if (responseContentType != null
+        && responseContentType.length() > 0
+        && !isLikelyAudioContentType(responseContentType)) {
+      throw new IOException("Unexpected media content type: " + responseContentType);
+    }
+
     pending.pendingInputStream = pending.pendingConnection.openInputStream();
     if (!isSessionActive(sessionId)) {
       return true;
@@ -625,6 +657,93 @@ public class PlayerGUI implements PlayerListener {
 
     pending.pendingPlayer = Manager.createPlayer(pending.pendingInputStream, contentType);
     return true;
+  }
+
+  private void createInputStreamPlaybackWithRetry(
+      PendingPlayback pending, String originUrl, String resolvedUrl, int sessionId)
+      throws IOException, MediaException {
+    String currentUrl = resolvedUrl;
+    int retryCount = 0;
+
+    while (true) {
+      if (!isSessionActive(sessionId)) {
+        return;
+      }
+
+      try {
+        if (!createInputStreamPlayback(pending, currentUrl, sessionId)) {
+          pending.usedInputStream = false;
+          pending.pendingPlayer = Manager.createPlayer(currentUrl);
+        }
+        return;
+      } catch (IOException e) {
+        if (!shouldRetryInputStreamCreateFailure(e, retryCount, sessionId)) {
+          throw e;
+        }
+      } catch (MediaException e) {
+        if (!shouldRetryInputStreamCreateFailure(e, retryCount, sessionId)) {
+          throw e;
+        }
+      }
+
+      closePendingPlayback(pending);
+      retryCount++;
+      waitForInputStreamCreateRetry(sessionId);
+      if (!isSessionActive(sessionId)) {
+        return;
+      }
+      currentUrl = resolveRedirect(originUrl, sessionId);
+    }
+  }
+
+  private boolean shouldRetryInputStreamCreateFailure(
+      Exception error, int retryCount, int sessionId) {
+    return error != null
+        && retryCount < MAX_INPUTSTREAM_CREATE_RETRIES
+        && isSessionActive(sessionId)
+        && isLikelyTransientInputStreamFailure(error.toString());
+  }
+
+  private boolean isLikelyTransientInputStreamFailure(String reason) {
+    if (reason == null) {
+      return true;
+    }
+
+    String normalized = reason.toLowerCase();
+    return normalized.indexOf("could not create player") != -1
+        || normalized.indexOf("not found") != -1
+        || normalized.indexOf("404") != -1
+        || normalized.indexOf("processing") != -1
+        || normalized.indexOf("media http error") != -1
+        || normalized.indexOf("unexpected media redirect") != -1
+        || normalized.indexOf("unexpected media content type") != -1;
+  }
+
+  private void waitForInputStreamCreateRetry(int sessionId) {
+    long remaining = INPUTSTREAM_CREATE_RETRY_DELAY_MS;
+    while (remaining > 0L && isSessionActive(sessionId)) {
+      long sleepTime =
+          remaining > INPUTSTREAM_CREATE_RETRY_SLICE_MS
+              ? INPUTSTREAM_CREATE_RETRY_SLICE_MS
+              : remaining;
+      try {
+        Thread.sleep(sleepTime);
+      } catch (InterruptedException e) {
+      }
+      remaining -= sleepTime;
+    }
+  }
+
+  private boolean isLikelyAudioContentType(String contentType) {
+    if (contentType == null) {
+      return true;
+    }
+
+    String normalized = contentType.toLowerCase();
+    return normalized.indexOf("audio/") != -1
+        || normalized.indexOf("application/octet-stream") != -1
+        || normalized.indexOf("application/vnd.apple.mpegurl") != -1
+        || normalized.indexOf("application/x-mpegurl") != -1;
   }
 
   private void preparePendingPlayer(Player pendingPlayer, int sessionId) throws MediaException {
@@ -702,10 +821,25 @@ public class PlayerGUI implements PlayerListener {
       throw new IOException("Invalid media URL");
     }
 
+    String originUrl = url;
     String currentUrl = url;
     int redirectCount = 0;
+    int notFoundRecoveryAttempts = 0;
     while (isSessionActive(sessionId)) {
       MediaResolutionResult result = resolveMediaUrlOnce(currentUrl, sessionId);
+      if (shouldRetryResolutionFromOrigin(originUrl, currentUrl, result)) {
+        if (notFoundRecoveryAttempts >= MAX_REDIRECT_NOT_FOUND_RECOVERY_ATTEMPTS) {
+          throw new IOException(
+              "Media URL returned HTTP 404 after redirect recovery attempts: " + currentUrl);
+        }
+        notFoundRecoveryAttempts++;
+        currentUrl = originUrl;
+        redirectCount = 0;
+        updateProcessingStatus(-1, null, sessionId);
+        waitForProcessingRetry(sessionId);
+        continue;
+      }
+
       if (!result.processing
           && result.resolvedUrl != null
           && !result.resolvedUrl.equals(currentUrl)
@@ -731,7 +865,7 @@ public class PlayerGUI implements PlayerListener {
     InputStream responseStream = null;
     try {
       if (!isSessionActive(sessionId)) {
-        return new MediaResolutionResult(url, false, -1, null);
+        return new MediaResolutionResult(url, false, -1, null, -1);
       }
 
       connection = Network.openConnection(url);
@@ -744,23 +878,24 @@ public class PlayerGUI implements PlayerListener {
           || responseCode == HttpConnection.HTTP_MOVED_TEMP) {
         String redirectUrl = connection.getHeaderField("Location");
         if (redirectUrl != null && redirectUrl.length() > 0) {
-          return new MediaResolutionResult(redirectUrl, false, -1, null);
+          return new MediaResolutionResult(redirectUrl, false, -1, null, responseCode);
         }
       }
 
       if (responseCode == PROCESSING_RESPONSE_CODE) {
         responseStream = connection.openInputStream();
-        return parseProcessingResponse(url, readResponseBody(responseStream));
+        return parseProcessingResponse(url, readResponseBody(responseStream), responseCode);
       }
 
-      return new MediaResolutionResult(url, false, -1, null);
+      return new MediaResolutionResult(url, false, -1, null, responseCode);
     } finally {
       closeInputStreamQuietly(responseStream);
       closeHttpConnectionQuietly(connection);
     }
   }
 
-  private MediaResolutionResult parseProcessingResponse(String url, String responseBody) {
+  private MediaResolutionResult parseProcessingResponse(
+      String url, String responseBody, int responseCode) {
     String status = null;
     int progress = -1;
 
@@ -788,7 +923,16 @@ public class PlayerGUI implements PlayerListener {
       progress = 100;
     }
 
-    return new MediaResolutionResult(url, true, progress, status);
+    return new MediaResolutionResult(url, true, progress, status, responseCode);
+  }
+
+  private boolean shouldRetryResolutionFromOrigin(
+      String originUrl, String currentUrl, MediaResolutionResult result) {
+    return result != null
+        && result.responseCode == HttpConnection.HTTP_NOT_FOUND
+        && originUrl != null
+        && currentUrl != null
+        && !originUrl.equals(currentUrl);
   }
 
   private String readResponseBody(InputStream stream) throws IOException {
