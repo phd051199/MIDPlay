@@ -6,21 +6,12 @@
 
 -microedition
 
--overloadaggressively
--repackageclasses ''
-
--allowaccessmodification
--printmapping out.map
-
--keep public class * extends javax.microedition.midlet.MIDlet {
-    public void startApp();
-    public void pauseApp();
-    public void destroyApp(boolean);
-}
-
--dontwarn java.lang.**
--dontwarn javax.microedition.**
--dontwarn org.json.**
--dontnote java.io.ByteArrayOutputStream
+-keep public class * extends javax.microedition.midlet.MIDlet
 
 -dontoptimize
+
+-repackageclasses ''
+-dontusemixedcaseclassnames
+-allowaccessmodification
+-printmapping out.map
+-dontnote

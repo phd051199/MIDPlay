@@ -3,10 +3,8 @@
     "back": "Geri",
     "cancel": "İptal",
     "exit": "Çık",
-    "no": "Hayır",
     "ok": "Tamam",
-    "save": "Kaydet",
-    "yes": "Evet"
+    "save": "Kaydet"
   },
   "app": {
     "name": "MIDPlay"
@@ -30,18 +28,14 @@
   "media": {
     "album": "Albüm",
     "playlist": "Çalma Listesi",
-    "track": "Şarkı",
-    "tracks": "Şarkılar"
+    "track": "Şarkı"
   },
   "menu": {
     "discover_playlists": "Çalma Listelerini Keşfet",
     "favorites": "Favoriler",
-    "hot_playlists": "Popüler Çalma Listeleri",
-    "main": "Ana Menü",
     "now_playing": "Şimdi Çalıyor",
     "reorder": "Menüyü Yeniden Sırala",
     "search": "Arama",
-    "chat": "AI Sohbeti",
     "settings": "Ayarlar",
     "about": "Hakkında",
     "visibility": "Menü Görünürlüğü"
@@ -119,6 +113,9 @@
     },
     "type": "Arama Türü"
   },
+  "session": {
+    "resume_prompt": "Son oturumunuza devam edilsin mi?"
+  },
   "settings": {
     "audio_quality": "Ses Kalitesi",
     "auto_update": "Otomatik Güncellemeler",
@@ -182,15 +179,7 @@
     "status": {
       "cancelled": "Uyku zamanlayıcısı iptal edildi",
       "expired": "Uyku zamanlayıcısı süresi doldu",
-      "remaining": "Kalan Süre: {0}",
       "set": "Uyku zamanlayıcısı etkinleştirildi"
     }
-  },
-  "chat": {
-    "input": "Mesaj girin",
-    "welcome_message": "Merhaba! Size nasıl yardımcı olabilirim?"
-  },
-  "error": {
-    "connection": "Bağlantı hatası. Lütfen tekrar deneyin"
   }
 }

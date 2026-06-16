@@ -3,10 +3,8 @@
     "back": "חזור",
     "cancel": "ביטול",
     "exit": "יציאה",
-    "no": "לא",
     "ok": "אישור",
-    "save": "שמור",
-    "yes": "כן"
+    "save": "שמור"
   },
   "app": {
     "name": "MIDPlay"
@@ -30,18 +28,14 @@
   "media": {
     "album": "אלבום",
     "playlist": "רשימת השמעה",
-    "track": "רצועה",
-    "tracks": "רצועות"
+    "track": "רצועה"
   },
   "menu": {
     "discover_playlists": "גלה רשימות השמעה",
     "favorites": "מועדפים",
-    "hot_playlists": "רשימות השמעה חמות",
-    "main": "תפריט ראשי",
     "now_playing": "מושמע כעת",
     "reorder": "סדר תפריט",
     "search": "חיפוש",
-    "chat": "צ'אט בינה מלאכותית",
     "settings": "הגדרות",
     "about": "אודות",
     "visibility": "נראות התפריט"
@@ -119,6 +113,9 @@
     },
     "type": "סוג חיפוש"
   },
+  "session": {
+    "resume_prompt": "להמשיך את ההפעלה האחרונה?"
+  },
   "settings": {
     "audio_quality": "איכות שמע",
     "auto_update": "עדכון אוטומטי",
@@ -182,15 +179,7 @@
     "status": {
       "cancelled": "קוצב זמן לשינה בוטל",
       "expired": "קוצב זמן לשינה סיים",
-      "remaining": "הזמן שנותר: {0}",
       "set": "קוצב זמן לשינה הופעל"
     }
-  },
-  "chat": {
-    "input": "שלח הודעה",
-    "welcome_message": "שלום! איך אני יכול לעזור היום?"
-  },
-  "error": {
-    "connection": "בעיה בחיבור. אנא נסה שוב"
   }
 }

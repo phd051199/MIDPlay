@@ -21,46 +21,26 @@ SOFTWARE.
 */
 package cc.nnproject.json;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Hashtable;
-import java.util.Vector;
-
 /**
  * JSON Library compatible with CLDC 1.1 & JDK 1.1<br>
  * Usage:
  *
- * <p><code>JSONObject obj = JSON.getObject(str);</code> <b>When using proguard, add</b>:
- *
- * <p><code>-optimizations !code/simplification/object</code>
- *
- * @author Shinovon
- * @version 2.4
+ * <p><code>JSONObject obj = JSON.getObject(str);</code>
  */
 public class JSON {
 
-  // parse all nested elements once
-  static final boolean parse_members = false;
-
-  // identation for formatting
-  static final String FORMAT_TAB = "  ";
+  // Parse all nested elements eagerly. This app always consumes the items in a
+  // response (JsonListResult.buildItems iterates every track/playlist), so lazy nested
+  // values only added a per-element String[] wrapper allocation and deferred
+  // the same work. Eager parsing removes those wrappers and lets the (shared)
+  // source substrings resolve in one pass.
+  static final boolean parse_members = true;
 
   // used internally for storing nulls, get methods must return real null
   public static final Object json_null = new Object();
 
   public static final Boolean TRUE = Boolean.TRUE;
   public static final Boolean FALSE = Boolean.FALSE;
-
-  public static AbstractJSON get(String text) throws JSONException {
-    if (text == null || text.length() <= 1) {
-      throw new JSONException("Empty text");
-    }
-    char c = text.charAt(0);
-    if (c != '{' && c != '[') {
-      throw new JSONException("Not JSON object or array");
-    }
-    return (AbstractJSON) parseJSON(text.trim());
-  }
 
   public static JSONObject getObject(String text) throws JSONException {
     if (text == null || text.length() <= 1) {
@@ -80,19 +60,6 @@ public class JSON {
       throw new JSONException("Not JSON array");
     }
     return (JSONArray) parseJSON(text.trim());
-  }
-
-  static Object getJSON(Object obj) throws JSONException {
-    if (obj instanceof Hashtable) {
-      return new JSONObject((Hashtable) obj);
-    }
-    if (obj instanceof Vector) {
-      return new JSONArray((Vector) obj);
-    }
-    if (obj == null) {
-      return json_null;
-    }
-    return obj;
   }
 
   static Object parseJSON(String str) throws JSONException {
@@ -254,7 +221,14 @@ public class JSON {
               key = key.substring(1, key.length() - 1);
               nextDelimiter = ',';
             } else {
-              Object value = str.substring(i, splIndex).trim();
+              // Leading whitespace was already skipped by the space-skip loop;
+              // trim only the trailing run so we avoid trim()'s allocation on
+              // the per-value hot path.
+              int valueEnd = splIndex;
+              while (valueEnd > i && str.charAt(valueEnd - 1) <= ' ') {
+                valueEnd--;
+              }
+              Object value = str.substring(i, valueEnd);
               // don't check length because if value is empty, then exception is going to be thrown
               // anyway
               char c = ((String) value).charAt(0);
@@ -306,18 +280,14 @@ public class JSON {
           }
         }
         throw new JSONException("Couldn't be parsed: " + str);
-        //			return new String[](str);
     }
-  }
-
-  public static boolean isNull(Object obj) {
-    return obj == json_null || obj == null;
   }
 
   // transforms string for exporting
   static String escape_utf8(String s) {
     int len = s.length();
-    StringBuffer sb = new StringBuffer();
+    // Pre-size to avoid repeated grow+copy on the serialize path.
+    StringBuffer sb = new StringBuffer(len + 16);
     int i = 0;
     while (i < len) {
       char c = s.charAt(i);
@@ -342,7 +312,7 @@ public class JSON {
           sb.append("\\t");
           break;
         default:
-          if (c < 32 || c > 1103 || (c >= '\u0080' && c < '\u00a0')) {
+          if (c < 32 || c > 1103 || (c >= 128 && c < 160)) {
             String u = Integer.toHexString(c);
             sb.append("\\u");
             for (int z = u.length(); z < 4; z++) {
@@ -356,25 +326,6 @@ public class JSON {
       i++;
     }
     return sb.toString();
-  }
-
-  static double getDouble(Object o) throws JSONException {
-    try {
-      if (o instanceof String[]) {
-        return Double.parseDouble(((String[]) o)[0]);
-      }
-      if (o instanceof Integer) {
-        return ((Integer) o).intValue();
-      }
-      if (o instanceof Long) {
-        return ((Long) o).longValue();
-      }
-      if (o instanceof Double) {
-        return ((Double) o).doubleValue();
-      }
-    } catch (Throwable e) {
-    }
-    throw new JSONException("Cast to double failed: " + o);
   }
 
   static int getInt(Object o) throws JSONException {
@@ -413,52 +364,6 @@ public class JSON {
     } catch (Throwable e) {
     }
     throw new JSONException("Cast to long failed: " + o);
-  }
-
-  public static void writeString(OutputStream out, String s) throws IOException {
-    int len = s.length();
-    for (int i = 0; i < len; ++i) {
-      char c = s.charAt(i);
-      switch (c) {
-        case '"':
-        case '\\':
-          out.write((byte) '\\');
-          out.write((byte) c);
-          break;
-        case '\b':
-          out.write((byte) '\\');
-          out.write((byte) 'b');
-          break;
-        case '\f':
-          out.write((byte) '\\');
-          out.write((byte) 'f');
-          break;
-        case '\n':
-          out.write((byte) '\\');
-          out.write((byte) 'n');
-          break;
-        case '\r':
-          out.write((byte) '\\');
-          out.write((byte) 'r');
-          break;
-        case '\t':
-          out.write((byte) '\\');
-          out.write((byte) 't');
-          break;
-        default:
-          if (c < 32 || c > 255) {
-            out.write((byte) '\\');
-            out.write((byte) 'u');
-            String u = Integer.toHexString(c);
-            for (int z = u.length(); z < 4; z++) {
-              out.write((byte) '0');
-            }
-            out.write(u.getBytes());
-          } else {
-            out.write((byte) c);
-          }
-      }
-    }
   }
 
   private JSON() {}

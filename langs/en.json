@@ -3,10 +3,8 @@
     "back": "Back",
     "cancel": "Cancel",
     "exit": "Exit",
-    "no": "No",
     "ok": "OK",
-    "save": "Save",
-    "yes": "Yes"
+    "save": "Save"
   },
   "app": {
     "name": "MIDPlay"
@@ -37,18 +35,14 @@
   "media": {
     "album": "Album",
     "playlist": "Playlist",
-    "track": "Track",
-    "tracks": "Tracks"
+    "track": "Track"
   },
   "menu": {
     "discover_playlists": "Discover Playlists",
     "favorites": "Favorites",
-    "hot_playlists": "Hot Playlists",
-    "main": "Main Menu",
     "now_playing": "Now Playing",
     "reorder": "Reorder Menu",
     "search": "Search",
-    "chat": "AI Chat",
     "settings": "Settings",
     "about": "About",
     "visibility": "Menu Visibility"
@@ -126,6 +120,9 @@
     },
     "type": "Search Type"
   },
+  "session": {
+    "resume_prompt": "Resume your last session?"
+  },
   "settings": {
     "audio_quality": "Audio Quality",
     "auto_update": "Automatic Updates",
@@ -143,7 +140,10 @@
       "pass_url": "Pass URL"
     },
     "error": {
-      "save_failed": "Failed to save settings"
+      "save_failed": "Failed to save settings",
+      "save_theme": "Error saving theme: {0}",
+      "load_theme": "Error loading theme: {0}",
+      "color_update_failed": "Theme color update failed. Theme mode was saved."
     },
     "language": "Language",
     "reorder": {
@@ -189,15 +189,7 @@
     "status": {
       "cancelled": "Sleep timer cancelled",
       "expired": "Sleep timer expired",
-      "remaining": "Time Remaining: {0}",
       "set": "Sleep timer activated"
     }
-  },
-  "chat": {
-    "input": "Enter message",
-    "welcome_message": "Hello! How can I help you today?"
-  },
-  "error": {
-    "connection": "Connection error. Please try again"
   }
 }

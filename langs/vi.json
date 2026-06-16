@@ -3,10 +3,8 @@
     "back": "Quay lại",
     "cancel": "Hủy",
     "exit": "Thoát",
-    "no": "Không",
     "ok": "OK",
-    "save": "Lưu",
-    "yes": "Có"
+    "save": "Lưu"
   },
   "app": {
     "name": "MIDPlay"
@@ -30,18 +28,14 @@
   "media": {
     "album": "Album",
     "playlist": "Playlist",
-    "track": "Bài hát",
-    "tracks": "Bài hát"
+    "track": "Bài hát"
   },
   "menu": {
     "discover_playlists": "Khám phá playlist",
     "favorites": "Yêu thích",
-    "hot_playlists": "Playlist nổi bật",
-    "main": "Menu chính",
     "now_playing": "Đang phát",
     "reorder": "Sắp xếp menu",
     "search": "Tìm kiếm",
-    "chat": "Trò chuyện AI",
     "settings": "Cài đặt",
     "about": "Giới thiệu",
     "visibility": "Hiển thị menu"
@@ -119,6 +113,9 @@
     },
     "type": "Loại tìm kiếm"
   },
+  "session": {
+    "resume_prompt": "Tiếp tục phiên nghe gần nhất?"
+  },
   "settings": {
     "audio_quality": "Chất lượng âm thanh",
     "auto_update": "Tự động cập nhật",
@@ -136,7 +133,10 @@
       "pass_url": "Truyền URL"
     },
     "error": {
-      "save_failed": "Lỗi lưu cài đặt"
+      "save_failed": "Lỗi lưu cài đặt",
+      "save_theme": "Lỗi lưu chủ đề: {0}",
+      "load_theme": "Lỗi tải chủ đề: {0}",
+      "color_update_failed": "Cập nhật màu chủ đề thất bại. Đã lưu chế độ giao diện."
     },
     "language": "Ngôn ngữ",
     "reorder": {
@@ -182,15 +182,7 @@
     "status": {
       "cancelled": "Đã hủy hẹn giờ tắt",
       "expired": "Hẹn giờ tắt đã hết thời gian",
-      "remaining": "Thời gian còn lại: {0}",
       "set": "Đã kích hoạt hẹn giờ tắt"
     }
-  },
-  "chat": {
-    "input": "Nhập tin nhắn",
-    "welcome_message": "Xin chào! Tôi có thể giúp gì cho bạn?"
-  },
-  "error": {
-    "connection": "Lỗi kết nối. Vui lòng thử lại"
   }
 }

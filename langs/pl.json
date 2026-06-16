@@ -3,10 +3,8 @@
     "back": "Wróć",
     "cancel": "Anuluj",
     "exit": "Wyjdź",
-    "no": "Nie",
     "ok": "OK",
-    "save": "Zapisz",
-    "yes": "Tak"
+    "save": "Zapisz"
   },
   "app": {
     "name": "MIDPlay"
@@ -30,18 +28,14 @@
   "media": {
     "album": "Album",
     "playlist": "Playlista",
-    "track": "Utwór",
-    "tracks": "Utwory"
+    "track": "Utwór"
   },
   "menu": {
     "discover_playlists": "Odkrywaj playlisty",
     "favorites": "Ulubione",
-    "hot_playlists": "Playlisty na czasie",
-    "main": "Menu główne",
     "now_playing": "Teraz odtwarzane",
     "reorder": "Przestaw menu",
     "search": "Wyszukaj",
-    "chat": "AI Chat",
     "settings": "Ustawienia",
     "about": "Więcej informacji",
     "visibility": "Widoczność menu"
@@ -119,6 +113,9 @@
     },
     "type": "Typ wyszukiwania"
   },
+  "session": {
+    "resume_prompt": "Wznowić ostatnią sesję?"
+  },
   "settings": {
     "audio_quality": "Jakość dźwięku",
     "auto_update": "Automatyczne aktualizacje",
@@ -182,15 +179,7 @@
     "status": {
       "cancelled": "Odliczanie zatrzymane",
       "expired": "Koniec odliczania",
-      "remaining": "Pozostało minut: {0}",
       "set": "Aktywowano odliczanie"
     }
-  },
-  "chat": {
-    "input": "Wprowadź wiadomość",
-    "welcome_message": "Cześć! Jak mogę ci pomóc"
-  },
-  "error": {
-    "connection": "Brak połączenia. Spróbuj ponownie później."
   }
 }
