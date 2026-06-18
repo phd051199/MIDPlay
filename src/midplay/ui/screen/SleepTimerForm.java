@@ -1,15 +1,14 @@
 package midplay.ui.screen;
 
-import midplay.ui.BaseForm;
-import midplay.ui.Commands;
-import midplay.ui.Navigator;
-import midplay.util.Lang;
-
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.TextField;
+import midplay.ui.BaseForm;
+import midplay.ui.Commands;
+import midplay.ui.Navigator;
+import midplay.util.Lang;
 
 public class SleepTimerForm extends BaseForm {
   public static final int ACTION_STOP_PLAYBACK = 0;

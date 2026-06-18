@@ -1,7 +1,5 @@
 package midplay.store;
 
-import cc.nnproject.json.JSON;
-
 import javax.microedition.rms.InvalidRecordIDException;
 import javax.microedition.rms.RecordStoreException;
 

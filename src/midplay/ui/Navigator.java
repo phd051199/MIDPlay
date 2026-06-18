@@ -1,10 +1,5 @@
 package midplay.ui;
 
-import midplay.MIDPlay;
-import midplay.store.Configuration;
-import midplay.util.Lang;
-import midplay.util.Utils;
-
 import java.util.Stack;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -14,6 +9,10 @@ import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Gauge;
 import javax.microedition.midlet.MIDlet;
+import midplay.MIDPlay;
+import midplay.store.Configuration;
+import midplay.util.Lang;
+import midplay.util.Utils;
 
 public class Navigator {
   private final Stack navStack;
@@ -87,11 +86,6 @@ public class Navigator {
   public void clear() {
     navStack.removeAllElements();
     beforeAlert = null;
-  }
-
-  public Displayable getCurrent() {
-    Displayable current = Display.getDisplay(midlet).getCurrent();
-    return (current instanceof Alert && beforeAlert != null) ? beforeAlert : current;
   }
 
   // Run a runnable on the LCDUI event thread. Used to marshal off-thread

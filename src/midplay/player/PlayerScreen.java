@@ -1,15 +1,5 @@
 package midplay.player;
 
-import midplay.player.PlayerGUI;
-import midplay.player.SleepTimerManager;
-import midplay.store.Configuration;
-import midplay.ui.Commands;
-import midplay.ui.Navigator;
-import midplay.ui.screen.PlaylistPickerScreen;
-import midplay.ui.screen.SleepTimerForm;
-import midplay.ui.screen.TrackListScreen;
-import midplay.util.Lang;
-
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
@@ -19,6 +9,14 @@ import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import midplay.model.Track;
 import midplay.model.Tracks;
+import midplay.store.Configuration;
+import midplay.ui.Commands;
+import midplay.ui.Navigator;
+import midplay.ui.screen.PlaylistPickerScreen;
+import midplay.ui.screen.SleepTimerForm;
+import midplay.ui.screen.TrackListScreen;
+import midplay.util.Lang;
+import midplay.util.Utils;
 
 public final class PlayerScreen extends Canvas
     implements CommandListener, SleepTimerManager.SleepTimerCallback {
@@ -65,22 +63,9 @@ public final class PlayerScreen extends Canvas
   int textX, titleY, artistY, timeWidth;
   volatile int timeY;
   int buttonWidth = 40, buttonHeight = 40, playButtonWidth = 50, playButtonHeight = 50;
-  int playTop,
-      playX,
-      playY,
-      prevX,
-      prevY,
-      nextX,
-      nextY,
-      repeatX,
-      repeatY,
-      shuffleX,
-      shuffleY;
+  int playTop, playX, playY, prevX, prevY, nextX, nextY, repeatX, repeatY, shuffleX, shuffleY;
   int sliderLeft, sliderWidth = 12, sliderHeight = 6;
   volatile int sliderTop;
-
-  // Reusable buffer for calculateButtonPositions; avoids per-paint allocation.
-  final int[] buttonPositionCache = new int[5];
 
   final AlbumArtLoader albumArtLoader = new AlbumArtLoader(this);
   final TrackTextRenderer trackTextRenderer = new TrackTextRenderer(this);
@@ -238,8 +223,12 @@ public final class PlayerScreen extends Canvas
       updateDisplayAsync();
       return;
     }
-    int rowTop = sliderTop;
-    int rowBottom = timeY + textHeight;
+    // Repaint the full union of the slider bar and the time-text row. On small
+    // screens the slider is vertically centred inside the text row, so sliderTop
+    // sits a few px BELOW timeY — starting the clip at sliderTop left the top of
+    // the time digits uncleared each tick, smearing the time as it advanced.
+    int rowTop = Math.min(sliderTop, timeY);
+    int rowBottom = Math.max(sliderTop + sliderHeight, timeY + textHeight);
     if (rowBottom <= rowTop) {
       updateDisplayAsync();
       return;
@@ -559,17 +548,7 @@ public final class PlayerScreen extends Canvas
 
     String playlistTitle = title != null ? title : Lang.tr("player.show_playlist");
     TrackListScreen trackListScreen = new TrackListScreen(playlistTitle, currentTracks, navigator);
-    int index = getPlayerGUI().getCurrentIndex();
-    int size = currentTracks.getTracks().length;
-    if (size > 0) {
-      if (index < 0) {
-        index = 0;
-      }
-      if (index >= size) {
-        index = size - 1;
-      }
-      trackListScreen.setSelectedIndex(index, true);
-    }
+    Utils.clampAndSelect(trackListScreen, getPlayerGUI().getCurrentIndex());
     navigator.forward(trackListScreen);
   }
 

@@ -1,12 +1,12 @@
 package midplay.ui;
 
-import midplay.player.PlayerNavHelper;
-
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.List;
+import midplay.player.PlayerNavHelper;
+import midplay.util.Utils;
 
 public abstract class BaseList extends List implements CommandListener {
   protected final Navigator navigator;
@@ -45,16 +45,7 @@ public abstract class BaseList extends List implements CommandListener {
     int index = getSelectedIndex();
     this.deleteAll();
     populateItems();
-    int newSize = this.size();
-    if (newSize > 0) {
-      if (index < 0) {
-        index = 0;
-      }
-      if (index >= newSize) {
-        index = newSize - 1;
-      }
-      this.setSelectedIndex(index, true);
-    }
+    Utils.clampAndSelect(this, index);
   }
 
   protected abstract void handleSelection();

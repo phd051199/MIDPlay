@@ -1,11 +1,9 @@
 package midplay.player;
 
-import midplay.MIDPlay;
-import midplay.ui.screen.SleepTimerForm;
-import midplay.util.Lang;
-
 import java.util.Timer;
 import java.util.TimerTask;
+import midplay.MIDPlay;
+import midplay.ui.screen.SleepTimerForm;
 
 public class SleepTimerManager {
   // Lazy daemon timer reused across countdowns and the exit one-shot, so we
@@ -17,7 +15,6 @@ public class SleepTimerManager {
   private boolean isActive = false;
   private long targetTimeMillis;
   private int timerAction;
-  private String timerDescription;
 
   public SleepTimerManager() {}
 
@@ -27,10 +24,6 @@ public class SleepTimerManager {
 
   public boolean isActive() {
     return isActive;
-  }
-
-  public String getTimerDescription() {
-    return timerDescription;
   }
 
   public String getRemainingTime() {
@@ -62,7 +55,6 @@ public class SleepTimerManager {
     long durationMillis = durationMinutes * 60 * 1000L;
     targetTimeMillis = System.currentTimeMillis() + durationMillis;
     timerAction = action;
-    timerDescription = durationMinutes + " " + Lang.tr("time.minutes");
     startTimer();
   }
 
@@ -108,16 +100,17 @@ public class SleepTimerManager {
       callback.onTimerExpired(action);
     }
     if (action == SleepTimerForm.ACTION_EXIT_APP) {
-      timer().schedule(
-          new TimerTask() {
-            public void run() {
-              try {
-                MIDPlay.getInstance().notifyDestroyed();
-              } catch (Throwable t) {
-              }
-            }
-          },
-          1000);
+      timer()
+          .schedule(
+              new TimerTask() {
+                public void run() {
+                  try {
+                    MIDPlay.getInstance().notifyDestroyed();
+                  } catch (Throwable t) {
+                  }
+                }
+              },
+              1000);
     }
   }
 
@@ -139,16 +132,6 @@ public class SleepTimerManager {
     }
     targetTimeMillis = 0;
     timerAction = 0;
-    timerDescription = "";
-  }
-
-  public void shutdown() {
-    clearTimer(false);
-    if (timer != null) {
-      timer.cancel();
-      timer = null;
-    }
-    callback = null;
   }
 
   public interface SleepTimerCallback {

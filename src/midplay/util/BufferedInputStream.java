@@ -7,8 +7,8 @@ import java.io.InputStream;
  * Minimal buffered InputStream — CLDC 1.1 ships no {@code java.io.BufferedInputStream}.
  *
  * <p>Wrapping the media stream before {@code Manager.createPlayer(InputStream, ...)} avoids
- * byte-at-a-time reads on MMAPI implementations that read inefficiently from a raw socket
- * stream — a real CPU hit on slow feature phones.
+ * byte-at-a-time reads on MMAPI implementations that read inefficiently from a raw socket stream —
+ * a real CPU hit on slow feature phones.
  */
 public class BufferedInputStream extends InputStream {
 

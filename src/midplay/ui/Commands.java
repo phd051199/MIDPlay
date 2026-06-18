@@ -1,9 +1,8 @@
 package midplay.ui;
 
-import midplay.util.Lang;
-
 import java.util.Hashtable;
 import javax.microedition.lcdui.Command;
+import midplay.util.Lang;
 
 public class Commands {
   private static final Hashtable cache = new Hashtable();

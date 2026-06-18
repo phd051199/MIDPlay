@@ -1,11 +1,5 @@
 package midplay.player;
 
-import midplay.net.Network;
-import midplay.store.Configuration;
-import midplay.util.BufferedInputStream;
-import midplay.util.Lang;
-import midplay.util.Utils;
-
 import cc.nnproject.json.JSON;
 import cc.nnproject.json.JSONObject;
 import java.io.ByteArrayOutputStream;
@@ -17,13 +11,16 @@ import javax.microedition.media.MediaException;
 import javax.microedition.media.Player;
 import javax.microedition.media.control.VolumeControl;
 import midplay.model.Track;
+import midplay.net.Network;
+import midplay.store.Configuration;
+import midplay.util.BufferedInputStream;
+import midplay.util.Lang;
+import midplay.util.Utils;
 
-// Media resolution for PlayerGUI: turns a track URL into a prefetched, listener-
-// attached Player ready to be swapped in. Owns redirect/202-processing polling,
-// input-stream vs pass-url method selection, transient-failure retry, and the
-// supported-content-type probe. Extracted verbatim from PlayerGUI; it still
-// synchronizes on the PlayerGUI instance (passed as `gui`) so the session/lock
-// protocol is unchanged.
+// Turns a track URL into a prefetched, listener-attached Player. Owns redirect/
+// 202-processing polling, input-stream vs pass-url method selection, transient-
+// failure retry, and the content-type probe. Synchronizes on the PlayerGUI
+// instance (passed as `gui`).
 public class MediaResolver {
   private static final String[] MP3_CONTENT_TYPE_CANDIDATES = {
     "audio/mpeg", "audio/mp3", "audio/x-mp3", "audio/mpeg3"

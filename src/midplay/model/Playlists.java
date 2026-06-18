@@ -35,11 +35,6 @@ public class Playlists extends JsonListResult {
     setPlaylists(arr);
   }
 
-  public Playlists fromJSON(String jsonString) {
-    parse(jsonString);
-    return this;
-  }
-
   public void add(Playlists newPlaylists) {
     if (newPlaylists == null) {
       return;

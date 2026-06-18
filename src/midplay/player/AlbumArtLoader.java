@@ -1,9 +1,8 @@
 package midplay.player;
 
+import javax.microedition.lcdui.Image;
 import midplay.net.BinaryImageLoadOperation;
 import midplay.util.Utils;
-
-import javax.microedition.lcdui.Image;
 
 public final class AlbumArtLoader {
 
@@ -42,8 +41,9 @@ public final class AlbumArtLoader {
     stopCurrentImageLoad();
     loadingAlbumArt = true;
     final String imageUrl = albumArtUrl;
-    int targetSize = calculateAlbumArtSize(
-        screen.displayWidth, screen.displayHeight, screen.isLandscape, screen.isLargeScreen);
+    int targetSize =
+        calculateAlbumArtSize(
+            screen.displayWidth, screen.displayHeight, screen.isLandscape, screen.isLargeScreen);
     final int key = ++artLoadKey;
 
     currentImageLoadOperation =

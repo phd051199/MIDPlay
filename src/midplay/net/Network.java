@@ -1,9 +1,5 @@
 package midplay.net;
 
-import midplay.store.Configuration;
-import midplay.store.SettingsManager;
-import midplay.util.Utils;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -12,6 +8,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
+import midplay.store.Configuration;
+import midplay.store.SettingsManager;
+import midplay.util.Utils;
 
 public class Network {
   private static final int BUFFER_SIZE = 4096;
@@ -31,8 +30,7 @@ public class Network {
   private String userAgent;
   private volatile boolean cancelled = false;
 
-  public Network() {
-  }
+  public Network() {}
 
   public static HttpConnection openConnection(String url) throws IOException {
     if (Utils.isBlackberry) {
@@ -116,8 +114,7 @@ public class Network {
       int responseCode = hcon.getResponseCode();
       // Accept 200 and 206 (partial content) — some carrier/proxy stacks
       // transform GET responses into 206. Treat only >= 400 as an error.
-      if (responseCode != HttpConnection.HTTP_OK
-          && responseCode != HttpConnection.HTTP_PARTIAL) {
+      if (responseCode != HttpConnection.HTTP_OK && responseCode != HttpConnection.HTTP_PARTIAL) {
         throw new NetworkError("HTTP Error: " + responseCode);
       }
       // Size the buffer from Content-Length when the server provides it, so the
@@ -159,12 +156,7 @@ public class Network {
     TimerTask task =
         new TimerTask() {
           public void run() {
-            try {
-              if (conn != null) {
-                conn.close();
-              }
-            } catch (IOException e) {
-            }
+            Utils.closeQuietly(conn);
           }
         };
     watchdogTimer.schedule(task, SOCKET_TIMEOUT_MS);
@@ -172,18 +164,8 @@ public class Network {
   }
 
   private void closeResources(DataInputStream dis, HttpConnection hcon) {
-    if (dis != null) {
-      try {
-        dis.close();
-      } catch (IOException e) {
-      }
-    }
-    if (hcon != null) {
-      try {
-        hcon.close();
-      } catch (IOException e) {
-      }
-    }
+    Utils.closeQuietly(dis);
+    Utils.closeQuietly(hcon);
   }
 
   public void cancel() {

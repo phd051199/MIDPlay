@@ -1,7 +1,5 @@
 package midplay.store;
 
-import midplay.util.Utils;
-
 import cc.nnproject.json.JSON;
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
@@ -11,6 +9,7 @@ import midplay.model.Playlist;
 import midplay.model.Playlists;
 import midplay.model.Track;
 import midplay.model.Tracks;
+import midplay.util.Utils;
 
 public class FavoritesManager {
   private static FavoritesManager instance;
@@ -133,7 +132,9 @@ public class FavoritesManager {
         return FAILED;
       }
       record.tracks.addElement(track);
-      return savePlaylistTracks(playlist.getKey(), record.tracks, record.recordId) ? SUCCESS : FAILED;
+      return savePlaylistTracks(playlist.getKey(), record.tracks, record.recordId)
+          ? SUCCESS
+          : FAILED;
     } catch (Exception e) {
       return FAILED;
     }
@@ -276,7 +277,7 @@ public class FavoritesManager {
   }
 
   private int findPlaylistRecord(final Playlist playlist) {
-    final int[] found = { -1 };
+    final int[] found = {-1};
     storage.forEachRecord(
         new RecordStoreManager.RecordHandler() {
           public boolean handle(int recordId, String data) {

@@ -1,5 +1,11 @@
 package midplay.ui.screen;
 
+import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.Command;
+import javax.microedition.lcdui.Displayable;
+import midplay.model.Playlist;
+import midplay.model.Track;
+import midplay.model.Tracks;
 import midplay.player.NowPlaying;
 import midplay.player.PlayerNavHelper;
 import midplay.store.Configuration;
@@ -9,13 +15,6 @@ import midplay.ui.Commands;
 import midplay.ui.Navigator;
 import midplay.util.Lang;
 import midplay.util.Utils;
-
-import javax.microedition.lcdui.AlertType;
-import javax.microedition.lcdui.Command;
-import javax.microedition.lcdui.Displayable;
-import midplay.model.Playlist;
-import midplay.model.Track;
-import midplay.model.Tracks;
 
 public final class TrackListScreen extends BaseList {
   // ASCII marker (font-glyph safe on every J2ME handset) prefixing the row that

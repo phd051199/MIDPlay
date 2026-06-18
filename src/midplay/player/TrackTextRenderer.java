@@ -1,11 +1,10 @@
 package midplay.player;
 
-import midplay.net.BinaryImageLoadOperation;
-import midplay.net.URLProvider;
-
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
+import midplay.net.BinaryImageLoadOperation;
+import midplay.net.URLProvider;
 
 public final class TrackTextRenderer {
 

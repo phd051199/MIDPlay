@@ -15,3 +15,4 @@
 -allowaccessmodification
 -printmapping out.map
 -dontnote
+-dontwarn

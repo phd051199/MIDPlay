@@ -1,5 +1,17 @@
 package midplay;
 
+import java.io.IOException;
+import javax.microedition.io.ConnectionNotFoundException;
+import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.Command;
+import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Display;
+import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Form;
+import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.ImageItem;
+import javax.microedition.midlet.MIDlet;
+import javax.microedition.midlet.MIDletStateChangeException;
 import midplay.model.Tracks;
 import midplay.net.CheckUpdateOperation;
 import midplay.net.JsonOperation;
@@ -20,19 +32,7 @@ import midplay.ui.screen.FavoritesScreen;
 import midplay.ui.screen.SearchScreen;
 import midplay.ui.screen.SettingsScreen;
 import midplay.util.Lang;
-
-import java.io.IOException;
-import javax.microedition.io.ConnectionNotFoundException;
-import javax.microedition.lcdui.AlertType;
-import javax.microedition.lcdui.Command;
-import javax.microedition.lcdui.CommandListener;
-import javax.microedition.lcdui.Display;
-import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.Form;
-import javax.microedition.lcdui.Image;
-import javax.microedition.lcdui.ImageItem;
-import javax.microedition.midlet.MIDlet;
-import javax.microedition.midlet.MIDletStateChangeException;
+import midplay.util.Utils;
 
 // The MIDlet: lifecycle + singletons + navigation/update-check orchestration.
 // The root menu (its view and the sort/visibility edit controller) lives in
@@ -193,7 +193,8 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
           Tracks current = gui.getCurrentTracks();
           if (current != null && current.getTracks() != null && current.getTracks().length > 0) {
             try {
-              LastSessionManager.getInstance().save(playerScreen.getTitle(), current, gui.getCurrentIndex());
+              LastSessionManager.getInstance()
+                  .save(playerScreen.getTitle(), current, gui.getCurrentIndex());
             } catch (Exception e) {
             }
           }
@@ -311,7 +312,7 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
                 mainMenu = new MainMenuScreen(navigator, menuManager, MIDPlay.this);
                 navigator.clear();
                 Display.getDisplay(MIDPlay.this).setCurrent(mainMenu);
-                MainMenuScreen.clampAndSetIndex(mainMenu, index);
+                Utils.clampAndSelect(mainMenu, index);
               }
 
               public void onThemeChanged() {

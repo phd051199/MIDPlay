@@ -19,9 +19,4 @@ public final class NowPlaying {
       return null;
     }
   }
-
-  public static boolean isCurrent(Track track) {
-    Track current = currentTrack();
-    return current != null && current.isSame(track);
-  }
 }

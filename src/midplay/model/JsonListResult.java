@@ -6,11 +6,9 @@ import cc.nnproject.json.JSONObject;
 import java.util.Vector;
 
 // Base for paged list results (Tracks/Playlists): owns the shared JSON-list
-// parsing algorithm and the hasMore flag so the two near-identical fromJSON
-// bodies collapse into one template method. Subclasses supply the item factory,
-// how the typed items are stashed, and their element count. Tracks/Playlists are
-// containers (this hierarchy), distinct from the domain Base supertype that
-// Track/Playlist use.
+// parsing algorithm and the hasMore flag. Subclasses supply the item factory,
+// how the typed items are stashed, and their element count. Distinct from the
+// domain Base supertype that Track/Playlist use.
 public abstract class JsonListResult {
   private boolean hasMore;
 

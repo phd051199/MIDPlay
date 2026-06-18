@@ -1,14 +1,13 @@
 package midplay.player;
 
-import midplay.store.Configuration;
-import midplay.ui.Theme;
-import midplay.util.Lang;
-import midplay.util.Utils;
-
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 import midplay.model.Track;
+import midplay.store.Configuration;
+import midplay.ui.Theme;
+import midplay.util.Lang;
+import midplay.util.Utils;
 
 public final class PlayerPainter {
 
@@ -21,6 +20,12 @@ public final class PlayerPainter {
   private static final int ANCHOR_HCENTER_TOP = Graphics.HCENTER | Graphics.TOP;
   private static final int ANCHOR_LEFT_TOP = Graphics.LEFT | Graphics.TOP;
   private static final int ANCHOR_RIGHT_TOP = Graphics.RIGHT | Graphics.TOP;
+  private static final int ANCHOR_HCENTER_VCENTER = Graphics.HCENTER | Graphics.VCENTER;
+
+  // Small-screen album-art box; calculateSmallScreenArt (layout) and the paint
+  // path must use the same size/x or the art and its border misalign.
+  private static final int SMALL_ALBUM_SIZE = 72;
+  private static final int SMALL_ALBUM_X = 8;
 
   private final PlayerScreen screen;
 
@@ -58,7 +63,28 @@ public final class PlayerPainter {
     return value < min ? min : (value > max ? max : value);
   }
 
-  private static void calculateResponsiveSizes(int screenWidth, int screenHeight, int[] sizes) {
+  private static final class ResponsiveSizes {
+    final int buttonWidth;
+    final int buttonHeight;
+    final int playButtonWidth;
+    final int playButtonHeight;
+    final int sliderHeight;
+
+    ResponsiveSizes(
+        int buttonWidth,
+        int buttonHeight,
+        int playButtonWidth,
+        int playButtonHeight,
+        int sliderHeight) {
+      this.buttonWidth = buttonWidth;
+      this.buttonHeight = buttonHeight;
+      this.playButtonWidth = playButtonWidth;
+      this.playButtonHeight = playButtonHeight;
+      this.sliderHeight = sliderHeight;
+    }
+  }
+
+  private static ResponsiveSizes calculateResponsiveSizes(int screenWidth, int screenHeight) {
     int minDimension = Math.min(screenWidth, screenHeight);
 
     int buttonSize = minDimension / 10;
@@ -68,23 +94,31 @@ public final class PlayerPainter {
     buttonSize = clamp(buttonSize, 30, 60);
     playButtonSize = clamp(playButtonSize, 38, 75);
 
-    sizes[0] = buttonSize; // buttonWidth
-    sizes[1] = buttonSize; // buttonHeight
-    sizes[2] = playButtonSize; // playButtonWidth
-    sizes[3] = playButtonSize; // playButtonHeight
-    sizes[4] = sliderHeight; // sliderHeight
+    return new ResponsiveSizes(
+        buttonSize, buttonSize, playButtonSize, playButtonSize, sliderHeight);
   }
 
-  private static void calculateButtonPositions(
-      int screenWidth,
-      int screenHeight,
-      boolean isLandscape,
-      boolean isLargeScreen,
-      int[] positions) {
+  private static final class ButtonPositions {
+    final int play;
+    final int prev;
+    final int next;
+    final int repeat;
+    final int shuffle;
+
+    ButtonPositions(int play, int prev, int next, int repeat, int shuffle) {
+      this.play = play;
+      this.prev = prev;
+      this.next = next;
+      this.repeat = repeat;
+      this.shuffle = shuffle;
+    }
+  }
+
+  private static ButtonPositions calculateButtonPositions(
+      int screenWidth, boolean isLandscape, boolean isLargeScreen, int buttonWidth) {
     int centerX = screenWidth / 2;
     int buttonGap = screenWidth / 5;
     int margin = isLargeScreen ? (screenWidth / 40) : 8;
-    int buttonWidth = positions[4]; // Get buttonWidth from passed array
 
     if (isLargeScreen && isLandscape) {
       int leftPanelWidth = screenWidth * LANDSCAPE_LEFT_PANEL_PCT / 100;
@@ -93,18 +127,19 @@ public final class PlayerPainter {
       int rightPanelCenter = rightPanelLeft + (rightPanelWidth >> 1);
       buttonGap = rightPanelWidth / 5;
 
-      positions[0] = rightPanelCenter; // play
-      positions[1] = rightPanelCenter - buttonGap; // prev
-      positions[2] = rightPanelCenter + buttonGap; // next
-      positions[3] = rightPanelLeft + margin + (buttonWidth / 2); // repeat
-      positions[4] = rightPanelLeft + rightPanelWidth - margin - (buttonWidth / 2); // shuffle
-    } else {
-      positions[0] = centerX; // play
-      positions[1] = centerX - buttonGap; // prev
-      positions[2] = centerX + buttonGap; // next
-      positions[3] = margin + (buttonWidth / 2); // repeat
-      positions[4] = screenWidth - margin - (buttonWidth / 2); // shuffle
+      return new ButtonPositions(
+          rightPanelCenter,
+          rightPanelCenter - buttonGap,
+          rightPanelCenter + buttonGap,
+          rightPanelLeft + margin + (buttonWidth / 2),
+          rightPanelLeft + rightPanelWidth - margin - (buttonWidth / 2));
     }
+    return new ButtonPositions(
+        centerX,
+        centerX - buttonGap,
+        centerX + buttonGap,
+        margin + (buttonWidth / 2),
+        screenWidth - margin - (buttonWidth / 2));
   }
 
   void paint(Graphics g) {
@@ -119,10 +154,10 @@ public final class PlayerPainter {
 
       paintBackground(g);
       paintStatusBar(g, clipY, clipHeight);
-      paintAlbumArt(g);
+      paintAlbumArt(g, clipY, clipHeight);
       paintTrackInfo(g, clipY, clipHeight);
       paintTimeSlider(g, clipY, clipHeight);
-      paintControlButtons(g);
+      paintControlButtons(g, clipY, clipHeight);
 
       if (screen.volumeAlertShowing) {
         paintVolumeAlert(g);
@@ -201,8 +236,8 @@ public final class PlayerPainter {
   }
 
   private void calculateSmallScreenArt() {
-    screen.albumSize = 72;
-    screen.albumX = 8;
+    screen.albumSize = SMALL_ALBUM_SIZE;
+    screen.albumX = SMALL_ALBUM_X;
     screen.albumY = 2 + screen.statusBarHeight + 8;
   }
 
@@ -255,7 +290,8 @@ public final class PlayerPainter {
 
   private void initLargePortraitLayout(Graphics g) {
     int margin = screen.displayWidth / 20;
-    screen.albumSize = Math.min(screen.displayWidth - margin * 2, (screen.displayHeight * 40) / 100);
+    screen.albumSize =
+        Math.min(screen.displayWidth - margin * 2, (screen.displayHeight * 40) / 100);
     screen.albumX = (screen.displayWidth - screen.albumSize) / 2;
 
     int availableHeight = screen.displayHeight - screen.statusBarHeight;
@@ -277,7 +313,8 @@ public final class PlayerPainter {
     screen.titleY = currentTop;
     currentTop += (screen.displayHeight / 80) + screen.titleFont.getHeight();
     screen.artistY = currentTop;
-    currentTop += (screen.displayHeight / 50) + screen.artistFont.getHeight() + (screen.displayHeight / 25);
+    currentTop +=
+        (screen.displayHeight / 50) + screen.artistFont.getHeight() + (screen.displayHeight / 25);
 
     screen.sliderLeft = margin;
     screen.sliderWidth = screen.displayWidth - margin * 2;
@@ -323,7 +360,13 @@ public final class PlayerPainter {
     g.drawString(screen.getStatusCurrent(), screen.displayWidth >> 1, 2, ANCHOR_HCENTER_TOP);
   }
 
-  private void paintAlbumArt(Graphics g) {
+  private void paintAlbumArt(Graphics g, int clipY, int clipHeight) {
+    // The slider/time tick repaints a row well below the art; skip the (clipped-
+    // to-nothing) album-art draws so the per-second tick stays cheap. A load
+    // completion triggers a full repaint(), so the art is never starved.
+    if (!intersects(clipY, clipHeight, screen.albumY, screen.albumSize)) {
+      return;
+    }
     if (screen.isLargeScreen) {
       paintLargeScreenAlbumArt(g);
     } else {
@@ -343,21 +386,27 @@ public final class PlayerPainter {
         g.drawImage(scaled, screen.albumX + 1, screen.albumY + 1, Graphics.LEFT | Graphics.TOP);
       }
     } else {
-      drawAlbumArtPlaceholder(g, screen.albumX + screen.albumSize / 2, screen.albumY + screen.albumSize / 2);
+      drawAlbumArtPlaceholder(
+          g, screen.albumX + screen.albumSize / 2, screen.albumY + screen.albumSize / 2);
     }
   }
 
   private void paintSmallScreenAlbumArt(Graphics g) {
     if (screen.albumArtLoader.albumArt != null) {
-      g.drawImage(screen.albumArtLoader.albumArt, 8 + 36, screen.albumY + 36, Graphics.HCENTER | Graphics.VCENTER);
+      g.drawImage(
+          screen.albumArtLoader.albumArt,
+          SMALL_ALBUM_X + SMALL_ALBUM_SIZE / 2,
+          screen.albumY + SMALL_ALBUM_SIZE / 2,
+          ANCHOR_HCENTER_VCENTER);
       g.setColor(Theme.getOutlineColor());
-      g.drawRect(8, screen.albumY, 72, 72);
+      g.drawRect(SMALL_ALBUM_X, screen.albumY, SMALL_ALBUM_SIZE, SMALL_ALBUM_SIZE);
     } else {
       g.setColor(Theme.getSurfaceVariantColor());
-      g.fillRect(8, screen.albumY, 72, 72);
+      g.fillRect(SMALL_ALBUM_X, screen.albumY, SMALL_ALBUM_SIZE, SMALL_ALBUM_SIZE);
       g.setColor(Theme.getOutlineColor());
-      g.drawRect(8, screen.albumY, 72, 72);
-      drawAlbumArtPlaceholder(g, 44, screen.albumY + 36);
+      g.drawRect(SMALL_ALBUM_X, screen.albumY, SMALL_ALBUM_SIZE, SMALL_ALBUM_SIZE);
+      drawAlbumArtPlaceholder(
+          g, SMALL_ALBUM_X + SMALL_ALBUM_SIZE / 2, screen.albumY + SMALL_ALBUM_SIZE / 2);
     }
   }
 
@@ -436,10 +485,12 @@ public final class PlayerPainter {
       }
 
       Image renderedTextImage =
-          screen.trackTextRenderer.resolveTrackTextImage(textImageSlot, text, maxWidth, fontSize, color, isLargeScreen);
+          screen.trackTextRenderer.resolveTrackTextImage(
+              textImageSlot, text, maxWidth, fontSize, color, isLargeScreen);
 
       if (renderedTextImage != null) {
-        screen.trackTextRenderer.drawTrackTextImage(g, renderedTextImage, screen.textX, yPosition, isLargeScreen);
+        screen.trackTextRenderer.drawTrackTextImage(
+            g, renderedTextImage, screen.textX, yPosition, isLargeScreen);
       }
     }
   }
@@ -625,7 +676,17 @@ public final class PlayerPainter {
     g.fillRect(screen.sliderLeft, screen.sliderTop, screen.sliderValue, screen.sliderHeight);
   }
 
-  private void paintControlButtons(Graphics g) {
+  private void paintControlButtons(Graphics g, int clipY, int clipHeight) {
+    // Skip the control-button band on row repaints (time tick, status bar).
+    // All buttons share playTop; the tallest is the play button (playButtonHeight).
+    if (screen.playTop > 0
+        && !intersects(
+            clipY,
+            clipHeight,
+            screen.playTop - screen.playButtonHeight / 2,
+            screen.playButtonHeight)) {
+      return;
+    }
     initButtonPositions();
 
     paintPlayPauseButton(g);
@@ -637,7 +698,7 @@ public final class PlayerPainter {
     boolean isPlaying = screen.getPlayerGUI().isPlaying();
     Image playPauseImg = isPlaying ? Configuration.pauseIcon : Configuration.playIcon;
     if (playPauseImg != null) {
-      g.drawImage(playPauseImg, screen.playX, screen.playY, 3);
+      g.drawImage(playPauseImg, screen.playX, screen.playY, ANCHOR_HCENTER_VCENTER);
     }
   }
 
@@ -647,12 +708,12 @@ public final class PlayerPainter {
     boolean loading = screen.isLoading();
     Image prevImg = loading ? Configuration.prevDimIcon : Configuration.prevIcon;
     if (prevImg != null) {
-      g.drawImage(prevImg, screen.prevX, screen.prevY, 3);
+      g.drawImage(prevImg, screen.prevX, screen.prevY, ANCHOR_HCENTER_VCENTER);
     }
 
     Image nextImg = loading ? Configuration.nextDimIcon : Configuration.nextIcon;
     if (nextImg != null) {
-      g.drawImage(nextImg, screen.nextX, screen.nextY, 3);
+      g.drawImage(nextImg, screen.nextX, screen.nextY, ANCHOR_HCENTER_VCENTER);
     }
   }
 
@@ -660,7 +721,7 @@ public final class PlayerPainter {
     int repeatMode = screen.getPlayerGUI().getRepeatMode();
     Image repeatImg = getRepeatIcon(repeatMode);
     if (repeatImg != null) {
-      g.drawImage(repeatImg, screen.repeatX, screen.repeatY, 3);
+      g.drawImage(repeatImg, screen.repeatX, screen.repeatY, ANCHOR_HCENTER_VCENTER);
     }
 
     Image shuffleImg =
@@ -668,7 +729,7 @@ public final class PlayerPainter {
             ? Configuration.shuffleIcon
             : Configuration.shuffleOffIcon;
     if (shuffleImg != null) {
-      g.drawImage(shuffleImg, screen.shuffleX, screen.shuffleY, 3);
+      g.drawImage(shuffleImg, screen.shuffleX, screen.shuffleY, ANCHOR_HCENTER_VCENTER);
     }
   }
 
@@ -687,19 +748,19 @@ public final class PlayerPainter {
       return;
     }
 
-    int[] positions = screen.buttonPositionCache;
-    positions[4] = screen.buttonWidth; // Pass buttonWidth for calculations
-    calculateButtonPositions(screen.displayWidth, screen.displayHeight, screen.isLandscape, screen.isLargeScreen, positions);
+    ButtonPositions positions =
+        calculateButtonPositions(
+            screen.displayWidth, screen.isLandscape, screen.isLargeScreen, screen.buttonWidth);
 
-    screen.playX = positions[0];
+    screen.playX = positions.play;
     screen.playY = screen.playTop;
-    screen.prevX = positions[1];
+    screen.prevX = positions.prev;
     screen.prevY = screen.playTop;
-    screen.nextX = positions[2];
+    screen.nextX = positions.next;
     screen.nextY = screen.playTop;
-    screen.repeatX = positions[3];
+    screen.repeatX = positions.repeat;
     screen.repeatY = screen.playTop;
-    screen.shuffleX = positions[4];
+    screen.shuffleX = positions.shuffle;
     screen.shuffleY = screen.playTop;
   }
 
@@ -739,7 +800,8 @@ public final class PlayerPainter {
     g.setColor(Theme.getOutlineVariantColor());
     g.fillRect(barX, barY, barWidth, barHeight);
 
-    int progressWidth = (barWidth * screen.getPlayerGUI().getVolumeLevel()) / Configuration.PLAYER_MAX_VOLUME;
+    int progressWidth =
+        (barWidth * screen.getPlayerGUI().getVolumeLevel()) / Configuration.PLAYER_MAX_VOLUME;
     g.setColor(Theme.getPrimaryColor());
     g.fillRect(barX, barY, progressWidth, barHeight);
 
@@ -762,7 +824,8 @@ public final class PlayerPainter {
   void updateFontsForLargeScreen() {
     screen.titleFont = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_BOLD, Font.SIZE_LARGE);
     screen.artistFont = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_MEDIUM);
-    screen.textHeight = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_MEDIUM).getHeight();
+    screen.textHeight =
+        Font.getFont(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_MEDIUM).getHeight();
   }
 
   void detectOrientationChange(int w, int h) {
@@ -774,13 +837,12 @@ public final class PlayerPainter {
   }
 
   private void calculateResponsiveSizes() {
-    int[] sizes = new int[5];
-    calculateResponsiveSizes(screen.displayWidth, screen.displayHeight, sizes);
-    screen.buttonWidth = sizes[0];
-    screen.buttonHeight = sizes[1];
-    screen.playButtonWidth = sizes[2];
-    screen.playButtonHeight = sizes[3];
-    screen.sliderHeight = sizes[4];
+    ResponsiveSizes sizes = calculateResponsiveSizes(screen.displayWidth, screen.displayHeight);
+    screen.buttonWidth = sizes.buttonWidth;
+    screen.buttonHeight = sizes.buttonHeight;
+    screen.playButtonWidth = sizes.playButtonWidth;
+    screen.playButtonHeight = sizes.playButtonHeight;
+    screen.sliderHeight = sizes.sliderHeight;
   }
 
   void resetButtonPositions() {

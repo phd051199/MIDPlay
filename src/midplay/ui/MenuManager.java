@@ -1,9 +1,5 @@
 package midplay.ui;
 
-import midplay.store.Configuration;
-import midplay.store.JsonRecordStore;
-import midplay.util.Utils;
-
 import cc.nnproject.json.JSON;
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONException;
@@ -12,6 +8,9 @@ import java.util.Hashtable;
 import java.util.Vector;
 import javax.microedition.rms.RecordStoreException;
 import midplay.model.MenuItem;
+import midplay.store.Configuration;
+import midplay.store.JsonRecordStore;
+import midplay.util.Utils;
 
 public class MenuManager {
   private static final int MENU_ID = 1;
@@ -34,7 +33,9 @@ public class MenuManager {
   private MenuItem[] sortedAllCache;
 
   private MenuManager() {
-    storage = new JsonRecordStore(Configuration.STORAGE_MENU, MENU_ID, createDefaultMenuJSON().toString());
+    storage =
+        new JsonRecordStore(
+            Configuration.STORAGE_MENU, MENU_ID, createDefaultMenuJSON().toString());
     actions = new Hashtable();
     menuItems = new Vector();
     loadMenuConfig();

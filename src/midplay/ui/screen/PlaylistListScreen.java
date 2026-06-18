@@ -51,10 +51,7 @@ public final class PlaylistListScreen extends BaseList {
     for (int i = 0; i < items.getPlaylists().length; i++) {
       this.append(items.getPlaylists()[i].getDisplayTitle(), Configuration.folderIcon);
     }
-    if (items.hasMore()) {
-      this.append(Lang.tr("status.load_more"), Configuration.folderIcon);
-      loadMoreIndex = this.size() - 1;
-    }
+    addLoadMoreIfNeeded();
   }
 
   protected void handleSelection() {
@@ -129,13 +126,13 @@ public final class PlaylistListScreen extends BaseList {
 
   private void restoreLoadMoreItem(boolean shouldRestore) {
     if (shouldRestore && loadMoreIndex < 0) {
-      this.append(Lang.tr("status.load_more"), Configuration.folderIcon);
-      loadMoreIndex = this.size() - 1;
+      appendLoadMoreItem();
     }
   }
 
-  private boolean hasLoadMoreItem() {
-    return loadMoreIndex >= 0;
+  private void appendLoadMoreItem() {
+    this.append(Lang.tr("status.load_more"), Configuration.folderIcon);
+    loadMoreIndex = this.size() - 1;
   }
 
   private void addToFavorites() {
@@ -181,8 +178,7 @@ public final class PlaylistListScreen extends BaseList {
 
   private void addLoadMoreIfNeeded() {
     if (items.hasMore()) {
-      this.append(Lang.tr("status.load_more"), Configuration.folderIcon);
-      loadMoreIndex = this.size() - 1;
+      appendLoadMoreItem();
     }
   }
 }

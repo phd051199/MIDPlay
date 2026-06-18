@@ -1,17 +1,13 @@
 package midplay.player;
 
+import java.util.TimerTask;
 import midplay.store.Configuration;
 
-import java.util.TimerTask;
-
-
-// Playback failure recovery for PlayerGUI: handles PlayerListener.ERROR, the
-// start watchdog (which promotes a started-but-unreported player or falls back
-// to the alternate player method on timeout), and the inputstream/url method
-// fallback. Extracted verbatim from PlayerGUI; it still synchronizes on the
-// PlayerGUI instance (passed as `gui`) so the session/lock protocol — including
-// the "Locked" calling convention (caller already holds the gui lock) — is
-// unchanged.
+// Playback failure recovery: handles PlayerListener.ERROR, the start watchdog
+// (promotes a started-but-unreported player or falls back to the alternate
+// method on timeout), and the inputstream/url method fallback. Synchronizes on
+// the PlayerGUI instance (passed as `gui`); the "*Locked" methods assume the
+// caller already holds the gui lock.
 public class PlaybackRecovery {
   private static final long START_WATCHDOG_TIMEOUT_MS = 2500L;
 
@@ -109,7 +105,9 @@ public class PlaybackRecovery {
       return false;
     }
 
-    if (gui.sessionMethodSessionId != sessionId || gui.sessionUsedInputStream != usedInputStream || gui.sessionStarted) {
+    if (gui.sessionMethodSessionId != sessionId
+        || gui.sessionUsedInputStream != usedInputStream
+        || gui.sessionStarted) {
       return false;
     }
 

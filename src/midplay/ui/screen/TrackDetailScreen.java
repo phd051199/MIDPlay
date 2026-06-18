@@ -1,21 +1,19 @@
 package midplay.ui.screen;
 
-import midplay.player.PlayerNavHelper;
-import midplay.ui.BaseForm;
-import midplay.ui.Commands;
-import midplay.ui.Navigator;
-import midplay.util.Lang;
-
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.StringItem;
 import javax.microedition.lcdui.TextField;
 import midplay.model.Track;
 import midplay.model.Tracks;
+import midplay.player.PlayerNavHelper;
+import midplay.ui.BaseForm;
+import midplay.ui.Commands;
+import midplay.ui.Navigator;
+import midplay.util.Lang;
 
-// Track variant of the detail screen (split from the former fused DetailScreen,
-// which branched on track != null). Shows name/artist/duration/url and lets the
-// user play the track or add it to a custom playlist.
+// Track detail screen: shows name/artist/duration/url and lets the user play the
+// track or add it to a custom playlist.
 public final class TrackDetailScreen extends BaseForm {
   private final Track track;
 

@@ -3,13 +3,9 @@ package midplay.net;
 import javax.microedition.lcdui.Image;
 
 /**
- * Downloads a small binary image (album art or a server-rendered text image) off
- * the UI thread and decodes it into an {@link Image}.
- *
- * <p>Replaces the previous near-identical {@code ImageLoadOperation} (album art,
- * resized via {@code URLProvider.getSizedImage}) and {@code TextImageLoadOperation}
- * (raw text image). The two-argument constructor targets the text-image path
- * (no resizing); the three-argument constructor targets album art.
+ * Downloads a small binary image (album art or a server-rendered text image) off the UI thread and
+ * decodes it into an {@link Image}. The two-argument constructor targets the text-image path (no
+ * resizing); the three-argument constructor targets album art.
  */
 public class BinaryImageLoadOperation extends NetworkOperation {
 

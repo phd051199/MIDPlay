@@ -1,19 +1,18 @@
 package midplay.player;
 
-import midplay.MIDPlay;
-import midplay.store.Configuration;
-import midplay.ui.BaseList;
-import midplay.ui.Navigator;
-import midplay.util.Lang;
-
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Displayable;
+import midplay.MIDPlay;
 import midplay.model.Tracks;
+import midplay.store.Configuration;
+import midplay.ui.Navigator;
+import midplay.util.Lang;
 
 public final class PlayerNavHelper {
   private PlayerNavHelper() {}
 
-  public static void playTrackFromList(String title, Tracks tracks, int index, Navigator navigator) {
+  public static void playTrackFromList(
+      String title, Tracks tracks, int index, Navigator navigator) {
     PlayerScreen playerScreen = MIDPlay.getPlayerScreen();
     if (playerScreen != null) {
       playerScreen.change(title, tracks, index, navigator);

@@ -7,11 +7,7 @@ import midplay.net.JsonOperation;
 import midplay.ui.screen.TrackListScreen;
 import midplay.util.Lang;
 
-// Standard handler for "fetch tracks on a worker thread, then open them in a
-// TrackListScreen". Replaces the near-identical anonymous listener instances
-// that were inlined into every track-opening screen. PlaylistDetailScreen is
-// not a fit (it updates an in-place count instead of navigating), so it keeps
-// its own listener.
+// Fetches tracks on a worker thread and opens them in a TrackListScreen.
 public class TracksListForwarder implements JsonOperation.JsonListListener {
   private final Navigator navigator;
   private final String title;

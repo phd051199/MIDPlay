@@ -1,13 +1,16 @@
 package midplay.util;
 
-import midplay.store.Configuration;
-
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Vector;
+import javax.microedition.io.HttpConnection;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.List;
 import midplay.model.MenuItem;
 import midplay.model.Playlist;
+import midplay.store.Configuration;
 
 public class Utils {
   public static final boolean isBlackberry;
@@ -30,7 +33,6 @@ public class Utils {
   public static void setPlayerHttpMethod() {
     String platform = System.getProperty("microedition.platform");
 
-    // Check Symbian variants
     boolean symbianJrt = platform != null && platform.indexOf("platform=S60") != -1;
     boolean symbian =
         symbianJrt
@@ -39,9 +41,8 @@ public class Utils {
             || hasClass("com.symbian.midp.io.protocol.http.Protocol")
             || hasClass("com.symbian.lcdjava.io.File");
 
-    String method = Configuration.PLAYER_METHOD_PASS_URL; // default
+    String method = Configuration.PLAYER_METHOD_PASS_URL;
 
-    // Nokia S40 detection
     if (hasClass("com.nokia.mid.impl.isa.jam.Jam")) {
       // S40v1 uses sun impl for media and i/o so it should work fine with URL
       // S40v2+ breaks http locator parsing so needs InputStream
@@ -49,9 +50,7 @@ public class Utils {
           hasClass("com.sun.mmedia.protocol.CommonDS")
               ? Configuration.PLAYER_METHOD_PASS_URL
               : Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
-    }
-    // Symbian-specific logic
-    else if (symbian) {
+    } else if (symbian) {
       if (symbianJrt
           && platform != null
           && (platform.indexOf("java_build_version=2.") != -1
@@ -64,9 +63,7 @@ public class Utils {
         // MMF (S60v3.2-) - use InputStream
         method = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
       }
-    }
-    // J2ME Loader
-    else if (isJ2MELoader()) {
+    } else if (isJ2MELoader()) {
       method = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
     }
 
@@ -321,6 +318,38 @@ public class Utils {
     long seconds = totalSeconds % 60L;
 
     return (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+  }
+
+  // Clamp index into the list's [0, size-1] range and select it; no-op when empty.
+  public static void clampAndSelect(List list, int index) {
+    int size = list.size();
+    if (size <= 0) {
+      return;
+    }
+    if (index < 0) {
+      index = 0;
+    } else if (index >= size) {
+      index = size - 1;
+    }
+    list.setSelectedIndex(index, true);
+  }
+
+  public static void closeQuietly(InputStream in) {
+    if (in != null) {
+      try {
+        in.close();
+      } catch (IOException e) {
+      }
+    }
+  }
+
+  public static void closeQuietly(HttpConnection connection) {
+    if (connection != null) {
+      try {
+        connection.close();
+      } catch (IOException e) {
+      }
+    }
   }
 
   private Utils() {}

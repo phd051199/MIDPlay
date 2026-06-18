@@ -5,11 +5,10 @@ import midplay.model.Playlists;
 import midplay.model.Tracks;
 
 /**
- * Unified JSON network operation: fetches a URL on a worker thread, parses the JSON response into a
- * JsonListResult, and dispatches the typed result to a listener. The result is parsed into a
- * prototype supplied by the static factory (a Tracks or Playlists), so a single listener and a
- * single dispatch path serve both — the former TracksListener/PlaylistsListener pair plus their
- * TYPE_* switch dispatch collapse away. Callers cast the result to the concrete type they requested.
+ * Fetches a URL on a worker thread, parses the JSON response into a JsonListResult, and dispatches
+ * the typed result to a listener. The result is parsed into a prototype supplied by the static
+ * factory (a Tracks or Playlists), so one listener and dispatch path serve both; callers cast to
+ * the concrete type they requested.
  */
 public class JsonOperation extends NetworkOperation {
 

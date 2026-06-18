@@ -13,10 +13,7 @@ import midplay.ui.BaseList;
 import midplay.ui.Navigator;
 import midplay.util.Lang;
 
-// Modal "pick a custom playlist to add this track to" screen. Split out of the
-// former dual-mode FavoritesScreen: because it only ever lists custom
-// playlists, the selected row maps 1:1 to the custom-playlist list, so no
-// index remapping is needed.
+// Modal "pick a custom playlist to add this track to" screen.
 public final class PlaylistPickerScreen extends BaseList {
   private final FavoritesManager favoritesManager;
   private final Track trackToAdd;

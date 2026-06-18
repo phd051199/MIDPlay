@@ -1,6 +1,13 @@
 package midplay.ui.screen;
 
+import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.Command;
+import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.StringItem;
 import midplay.MIDPlay;
+import midplay.model.JsonListResult;
+import midplay.model.Playlist;
+import midplay.model.Tracks;
 import midplay.net.JsonOperation;
 import midplay.store.FavoritesManager;
 import midplay.ui.BaseForm;
@@ -9,17 +16,8 @@ import midplay.ui.FavoritesActions;
 import midplay.ui.Navigator;
 import midplay.util.Lang;
 
-import javax.microedition.lcdui.AlertType;
-import javax.microedition.lcdui.Command;
-import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.StringItem;
-import midplay.model.JsonListResult;
-import midplay.model.Playlist;
-import midplay.model.Tracks;
-
-// Playlist variant of the detail screen (split from the former fused
-// DetailScreen, which branched on playlist != null). Shows name/type/track
-// count; count comes from RMS for custom playlists or a network fetch otherwise.
+// Playlist detail screen: shows name/type/track count; count comes from RMS for
+// custom playlists or a network fetch otherwise.
 public final class PlaylistDetailScreen extends BaseForm {
   private final Playlist playlist;
   private Tracks tracks;

@@ -1,6 +1,15 @@
 package midplay.ui.screen;
 
+import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.Command;
+import javax.microedition.lcdui.CommandListener;
+import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Form;
+import javax.microedition.lcdui.TextField;
 import midplay.MIDPlay;
+import midplay.model.Playlist;
+import midplay.model.Playlists;
+import midplay.model.Tracks;
 import midplay.net.JsonOperation;
 import midplay.store.Configuration;
 import midplay.store.FavoritesManager;
@@ -9,16 +18,6 @@ import midplay.ui.Commands;
 import midplay.ui.Navigator;
 import midplay.ui.TracksListForwarder;
 import midplay.util.Lang;
-
-import javax.microedition.lcdui.AlertType;
-import javax.microedition.lcdui.Command;
-import javax.microedition.lcdui.CommandListener;
-import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.Form;
-import javax.microedition.lcdui.TextField;
-import midplay.model.Playlist;
-import midplay.model.Playlists;
-import midplay.model.Tracks;
 
 public final class FavoritesScreen extends BaseList {
   private final FavoritesManager favoritesManager;

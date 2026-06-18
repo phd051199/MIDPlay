@@ -1,8 +1,5 @@
 package midplay.ui;
 
-import midplay.store.Configuration;
-import midplay.util.Lang;
-
 import java.util.Hashtable;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
@@ -11,6 +8,9 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
 import midplay.model.MenuItem;
+import midplay.store.Configuration;
+import midplay.util.Lang;
+import midplay.util.Utils;
 
 // The root menu screen, split out of the MIDlet (MIDPlay). Owns the whole menu
 // feature: the List itself, its command dispatch, and the sort/visibility
@@ -93,22 +93,7 @@ public final class MainMenuScreen extends List implements CommandListener {
     } else {
       populateMenu();
     }
-    clampAndSetIndex(this, index);
-  }
-
-  // Clamp an index into the list's range and select it. Public so the host can
-  // restore selection after rebuilding the menu on a language change.
-  public static void clampAndSetIndex(List list, int index) {
-    int newSize = list.size();
-    if (newSize > 0) {
-      if (index < 0) {
-        index = 0;
-      }
-      if (index >= newSize) {
-        index = newSize - 1;
-      }
-      list.setSelectedIndex(index, true);
-    }
+    Utils.clampAndSelect(this, index);
   }
 
   private void populateMenu() {

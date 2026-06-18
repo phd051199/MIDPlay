@@ -1,5 +1,12 @@
 package midplay.ui.screen;
 
+import cc.nnproject.json.JSONObject;
+import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.ChoiceGroup;
+import javax.microedition.lcdui.Command;
+import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Image;
+import javax.microedition.rms.RecordStoreException;
 import midplay.MIDPlay;
 import midplay.net.ThemeColorOperation;
 import midplay.store.Configuration;
@@ -9,14 +16,6 @@ import midplay.ui.Commands;
 import midplay.ui.Navigator;
 import midplay.util.Lang;
 import midplay.util.Utils;
-
-import cc.nnproject.json.JSONObject;
-import javax.microedition.lcdui.AlertType;
-import javax.microedition.lcdui.ChoiceGroup;
-import javax.microedition.lcdui.Command;
-import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.Image;
-import javax.microedition.rms.RecordStoreException;
 
 public final class SettingsScreen extends BaseForm {
   // Theme-color swatches are immutable (built from static color constants), so

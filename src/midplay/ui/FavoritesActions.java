@@ -1,9 +1,8 @@
 package midplay.ui;
 
+import javax.microedition.lcdui.AlertType;
 import midplay.store.FavoritesManager;
 import midplay.util.Lang;
-
-import javax.microedition.lcdui.AlertType;
 
 // Maps a FavoritesManager result code to the standard alert. Replaces the
 // identical three-way if/else (SUCCESS/ALREADY_EXISTS/else) that was inlined

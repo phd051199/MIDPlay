@@ -2,10 +2,8 @@ package midplay.player;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Vector;
 import javax.microedition.io.HttpConnection;
 import javax.microedition.media.MediaException;
 import javax.microedition.media.Player;
@@ -24,22 +22,19 @@ public class PlayerGUI implements PlayerListener {
   private static final int VOLUME_STEP = 10;
   private static final int MAX_PENDING_TRACK_STEPS = 20;
   private static final long MEDIA_SAMPLE_WINDOW_MS = 250L;
-  private static final int COMMAND_TRACK_END = 1;
-  private static final int COMMAND_APPLY_PENDING = 2;
 
   private final PlayerScreen parent;
   private final SettingsManager settingsManager;
   final MediaResolver mediaResolver = new MediaResolver(this);
   private final PlaybackRecovery recovery = new PlaybackRecovery(this);
+  private final CommandWorker commandWorker = new CommandWorker(this);
   Player player;
   private Tracks trackList;
   private int currentTrackIndex;
   int volumeLevel = Configuration.PLAYER_MAX_VOLUME;
   private int repeatMode = Configuration.PLAYER_REPEAT_ALL;
   private boolean isShuffleEnabled = false;
-  private int[] shuffleOrder;
-  private int shufflePosition;
-  private final Random random = new Random();
+  private final ShuffleController shuffle = new ShuffleController();
   private HttpConnection httpConnection;
   private InputStream inputStream;
   private Timer mainTimer;
@@ -64,36 +59,25 @@ public class PlayerGUI implements PlayerListener {
   int playbackSessionId = 0;
   private boolean handlingTrackEnd = false;
   private int pendingTrackDelta = 0;
-  private final Vector commandQueue = new Vector();
-  private Thread commandThread;
-  private boolean commandWorkerStopRequested = false;
   PlaybackMethod pendingPlayerMethodOverride;
   boolean sessionUsedInputStream = false;
   boolean sessionStarted = false;
   int sessionMethodSessionId = -1;
   int startWatchdogSessionId = -1;
   int lastFallbackSessionId = -1;
+  // Consecutive playback failures auto-advanced past. Once this hits the cap (or
+  // there is no next track) a terminal error surfaces instead of spinning the
+  // whole list. Reset to 0 on a successful start.
+  private int consecutivePlaybackErrors = 0;
+  private static final int MAX_CONSECUTIVE_PLAYBACK_ERRORS = 3;
 
-  private long cachedMediaTimeMicros = 0L;
-  private long cachedDurationMicros = 0L;
-  private long cachedSampleTimeMs = 0L;
-  private int cachedSessionId = -1;
-
-  private static final class CommandTask {
-    final int type;
-    final int sessionId;
-
-    CommandTask(int type, int sessionId) {
-      this.type = type;
-      this.sessionId = sessionId;
-    }
-  }
+  private final MediaTimeCache mediaTimeCache = new MediaTimeCache();
 
   public PlayerGUI(PlayerScreen parent) {
     this.parent = parent;
     this.settingsManager = SettingsManager.getInstance();
     loadSettings();
-    startCommandWorker();
+    commandWorker.start();
     setStatus("");
   }
 
@@ -127,18 +111,14 @@ public class PlayerGUI implements PlayerListener {
     }
 
     synchronized (this) {
-      startCommandWorker();
-      resetPlaybackStateLocked();
-      clearPendingTrackChangesLocked();
-      clearCommandQueueLocked();
-      clearPendingPlayerMethodOverrideLocked();
+      commandWorker.start();
+      resetCorePlaybackStateLocked();
       this.trackList = tracks;
       this.currentTrackIndex = normalizedIndex;
       if (hasTracks && isShuffleEnabled) {
-        createShuffleLocked();
+        createShuffle();
       } else {
-        shuffleOrder = null;
-        shufflePosition = 0;
+        shuffle.clear();
       }
       destroyed = false;
     }
@@ -195,10 +175,7 @@ public class PlayerGUI implements PlayerListener {
   public void stop() {
     synchronized (this) {
       destroyed = false;
-      resetPlaybackStateLocked();
-      clearPendingTrackChangesLocked();
-      clearCommandQueueLocked();
-      clearPendingPlayerMethodOverrideLocked();
+      resetCorePlaybackStateLocked();
       loading = false;
     }
     resetDisplay();
@@ -261,10 +238,9 @@ public class PlayerGUI implements PlayerListener {
     isShuffleEnabled = !isShuffleEnabled;
     synchronized (this) {
       if (isShuffleEnabled) {
-        createShuffleLocked();
+        createShuffle();
       } else {
-        shuffleOrder = null;
-        shufflePosition = 0;
+        shuffle.clear();
       }
     }
     saveShuffleMode();
@@ -284,9 +260,9 @@ public class PlayerGUI implements PlayerListener {
     try {
       currentPlayer.setMediaTime(time);
       synchronized (this) {
-        cachedMediaTimeMicros = time;
-        cachedSampleTimeMs = System.currentTimeMillis();
-        cachedSessionId = playbackSessionId;
+        mediaTimeCache.cachedMediaTimeMicros = time;
+        mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
+        mediaTimeCache.cachedSessionId = playbackSessionId;
       }
       parent.updateDisplayAsync();
     } catch (Exception e) {
@@ -297,14 +273,10 @@ public class PlayerGUI implements PlayerListener {
   public void cleanup() {
     synchronized (this) {
       destroyed = true;
-      resetPlaybackStateLocked();
-      clearPendingTrackChangesLocked();
-      clearCommandQueueLocked();
-      clearPendingPlayerMethodOverrideLocked();
-      shuffleOrder = null;
-      shufflePosition = 0;
+      resetCorePlaybackStateLocked();
+      shuffle.clear();
     }
-    stopCommandWorker();
+    commandWorker.stop();
     shutdownTimer();
 
     resetDisplay();
@@ -351,11 +323,11 @@ public class PlayerGUI implements PlayerListener {
     synchronized (this) {
       currentPlayer = player;
       sessionId = playbackSessionId;
-      if (currentPlayer != null && cachedSessionId == playbackSessionId) {
+      if (currentPlayer != null && mediaTimeCache.cachedSessionId == playbackSessionId) {
         mayEstimateFromCache = true;
-        cachedTime = cachedMediaTimeMicros;
-        cachedDuration = cachedDurationMicros;
-        cachedAt = cachedSampleTimeMs;
+        cachedTime = mediaTimeCache.cachedMediaTimeMicros;
+        cachedDuration = mediaTimeCache.cachedDurationMicros;
+        cachedAt = mediaTimeCache.cachedSampleTimeMs;
       }
     }
     if (currentPlayer == null) {
@@ -388,12 +360,30 @@ public class PlayerGUI implements PlayerListener {
 
     long sampledTime = getMediaTimeSafe(currentPlayer);
     long sampledDuration = getDurationSafe(currentPlayer);
+
+    // Monotonic guard for the displayed time. getMediaTime() on HTTP/streaming
+    // players can return coarse, stale, or momentarily-regressing values, which
+    // would yank the slider and current-time label backward each 1s tick (the
+    // visible "glitch"). While playing, never report less than the smooth
+    // wall-clock extrapolation of the last trusted sample — the running time may
+    // only advance. A deliberate seek reseeds the cache to its target, so this
+    // floor follows seeks (forward and backward) instead of fighting them.
+    if (started && mayEstimateFromCache && cachedAt > 0L) {
+      long extrapolated = cachedTime + (now - cachedAt) * 1000L;
+      if (cachedDuration > 0L && extrapolated > cachedDuration) {
+        extrapolated = cachedDuration;
+      }
+      if (sampledTime < extrapolated) {
+        sampledTime = extrapolated;
+      }
+    }
+
     synchronized (this) {
       if (sessionId == playbackSessionId) {
-        cachedMediaTimeMicros = sampledTime;
-        cachedDurationMicros = sampledDuration;
-        cachedSampleTimeMs = now;
-        cachedSessionId = playbackSessionId;
+        mediaTimeCache.cachedMediaTimeMicros = sampledTime;
+        mediaTimeCache.cachedDurationMicros = sampledDuration;
+        mediaTimeCache.cachedSampleTimeMs = now;
+        mediaTimeCache.cachedSessionId = playbackSessionId;
       }
     }
     return sampledTime;
@@ -415,8 +405,9 @@ public class PlayerGUI implements PlayerListener {
     synchronized (this) {
       currentPlayer = player;
       sessionId = playbackSessionId;
-      if (cachedSessionId == playbackSessionId && cachedDurationMicros > 0L) {
-        return cachedDurationMicros;
+      if (mediaTimeCache.cachedSessionId == playbackSessionId
+          && mediaTimeCache.cachedDurationMicros > 0L) {
+        return mediaTimeCache.cachedDurationMicros;
       }
     }
     if (currentPlayer == null) {
@@ -426,8 +417,8 @@ public class PlayerGUI implements PlayerListener {
     long sampledDuration = getDurationSafe(currentPlayer);
     synchronized (this) {
       if (sampledDuration > 0L && sessionId == playbackSessionId) {
-        cachedDurationMicros = sampledDuration;
-        cachedSessionId = playbackSessionId;
+        mediaTimeCache.cachedDurationMicros = sampledDuration;
+        mediaTimeCache.cachedSessionId = playbackSessionId;
       }
     }
     return sampledDuration;
@@ -459,8 +450,10 @@ public class PlayerGUI implements PlayerListener {
         if (recovery.handlePlayerError(eventData)) {
           return;
         }
-        stopTimer();
-        parent.updateDisplayAsync();
+        // ponytail: recovery exhausted — keep the queue flowing by advancing
+        // past the dead track instead of stalling silently.
+        terminalPlaybackError(
+            "player error: " + (eventData == null ? "unknown" : String.valueOf(eventData)));
       } else if (PlayerListener.STOPPED.equals(event) || PlayerListener.CLOSED.equals(event)) {
         stopTimer();
         parent.updateDisplayAsync();
@@ -480,13 +473,14 @@ public class PlayerGUI implements PlayerListener {
       sessionStarted = true;
       sessionMethodSessionId = playbackSessionId;
       startWatchdogSessionId = -1;
-      cachedSampleTimeMs = System.currentTimeMillis();
-      cachedSessionId = playbackSessionId;
+      consecutivePlaybackErrors = 0;
+      mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
+      mediaTimeCache.cachedSessionId = playbackSessionId;
       sessionId = playbackSessionId;
     }
     startTimer();
     setStatusByKey(Configuration.PLAYER_STATUS_PLAYING);
-    enqueueCommand(COMMAND_APPLY_PENDING, sessionId);
+    commandWorker.enqueue(CommandWorker.APPLY_PENDING, sessionId);
   }
 
   private void startLoadThread() {
@@ -562,7 +556,7 @@ public class PlayerGUI implements PlayerListener {
         if (recovery.recoverFromFailure("load io error: " + e.toString())) {
           return;
         }
-        handleLoadError(e);
+        handleError(e);
       }
     } catch (MediaException me) {
       if (isSessionActive(sessionId)) {
@@ -576,7 +570,7 @@ public class PlayerGUI implements PlayerListener {
         if (recovery.recoverFromFailure("load error: " + e.toString())) {
           return;
         }
-        handleLoadError(e);
+        handleError(e);
       }
     } finally {
       mediaResolver.closePendingPlayback(pending);
@@ -622,7 +616,7 @@ public class PlayerGUI implements PlayerListener {
       shouldApplyPending = pendingTrackDelta != 0;
     }
     if (shouldApplyPending) {
-      enqueueCommand(COMMAND_APPLY_PENDING, sessionId);
+      commandWorker.enqueue(CommandWorker.APPLY_PENDING, sessionId);
     }
   }
 
@@ -664,7 +658,7 @@ public class PlayerGUI implements PlayerListener {
       }
     } catch (Exception e) {
       if (isCurrentPlayer(currentPlayer)) {
-        handleLoadError(e);
+        handleError(e);
       }
     }
   }
@@ -686,7 +680,13 @@ public class PlayerGUI implements PlayerListener {
       }
 
       if (isShuffleEnabled) {
-        trackChanged = changeTrackShuffleLocked(forward);
+        int next =
+            shuffle.advance(
+                forward, RepeatMode.isOff(repeatMode), tracks.length, currentTrackIndex);
+        if (next >= 0) {
+          currentTrackIndex = next;
+          trackChanged = true;
+        }
       } else {
         trackChanged = changeTrackNormalLocked(forward);
       }
@@ -731,77 +731,10 @@ public class PlayerGUI implements PlayerListener {
     return true;
   }
 
-  private boolean changeTrackShuffleLocked(boolean forward) {
-    if (shuffleOrder == null || shuffleOrder.length == 0) {
-      createShuffleLocked();
-      if (shuffleOrder == null || shuffleOrder.length == 0) {
-        return false;
-      }
-    }
-
-    if (shuffleOrder.length == 1) {
-      return false;
-    }
-
-    if (forward) {
-      shufflePosition++;
-      if (shufflePosition >= shuffleOrder.length) {
-        if (RepeatMode.isOff(repeatMode)) {
-          shufflePosition = shuffleOrder.length - 1;
-          return false;
-        }
-        createShuffleLocked();
-        shufflePosition = 0;
-      }
-    } else {
-      shufflePosition--;
-      if (shufflePosition < 0) {
-        if (RepeatMode.isOff(repeatMode)) {
-          shufflePosition = 0;
-          return false;
-        }
-        shufflePosition = shuffleOrder.length - 1;
-      }
-    }
-
-    currentTrackIndex = shuffleOrder[shufflePosition];
-    return true;
-  }
-
-  private synchronized void createShuffleLocked() {
-    if (trackList == null || trackList.getTracks() == null) {
-      shuffleOrder = null;
-      shufflePosition = 0;
-      return;
-    }
-
-    Track[] tracks = trackList.getTracks();
-    int size = tracks.length;
-    if (size <= 0) {
-      shuffleOrder = null;
-      shufflePosition = 0;
-      return;
-    }
-
-    shuffleOrder = new int[size];
-    for (int i = 0; i < size; i++) {
-      shuffleOrder[i] = i;
-    }
-
-    for (int i = size - 1; i > 0; i--) {
-      int j = random.nextInt(i + 1);
-      int temp = shuffleOrder[i];
-      shuffleOrder[i] = shuffleOrder[j];
-      shuffleOrder[j] = temp;
-    }
-
-    shufflePosition = 0;
-    for (int i = 0; i < size; i++) {
-      if (shuffleOrder[i] == currentTrackIndex) {
-        shufflePosition = i;
-        break;
-      }
-    }
+  private void createShuffle() {
+    int size =
+        trackList != null && trackList.getTracks() != null ? trackList.getTracks().length : 0;
+    shuffle.rebuild(size, currentTrackIndex);
   }
 
   private void handleTrackEnd() {
@@ -816,10 +749,16 @@ public class PlayerGUI implements PlayerListener {
 
     stopTimer();
     parent.updateDisplayAsync();
-    enqueueCommand(COMMAND_TRACK_END, sessionId);
+    commandWorker.enqueue(CommandWorker.TRACK_END, sessionId);
   }
 
-  private void processTrackEnd() {
+  void clearHandlingTrackEndFlag() {
+    synchronized (this) {
+      handlingTrackEnd = false;
+    }
+  }
+
+  void processTrackEnd() {
     try {
       boolean shouldRepeatCurrent;
       boolean shouldGoNext;
@@ -862,9 +801,9 @@ public class PlayerGUI implements PlayerListener {
       if (player != null) {
         try {
           player.setMediaTime(0L);
-          cachedMediaTimeMicros = 0L;
-          cachedSampleTimeMs = System.currentTimeMillis();
-          cachedSessionId = playbackSessionId;
+          mediaTimeCache.cachedMediaTimeMicros = 0L;
+          mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
+          mediaTimeCache.cachedSessionId = playbackSessionId;
           if (player.getState() < Player.STARTED) {
             player.start();
           }
@@ -903,10 +842,7 @@ public class PlayerGUI implements PlayerListener {
     }
 
     if (isShuffleEnabled) {
-      if (shuffleOrder == null || shuffleOrder.length == 0) {
-        return false;
-      }
-      return shufflePosition < shuffleOrder.length - 1;
+      return shuffle.hasNext();
     }
 
     return currentTrackIndex < tracks.length - 1;
@@ -1054,6 +990,17 @@ public class PlayerGUI implements PlayerListener {
     stopScheduledTasksLocked();
   }
 
+  // Shared teardown of in-flight playback state for setPlaylist/stop/cleanup:
+  // session + player/resources, the pending track-change queue, and the pending
+  // method override. Each caller sets its own flags (destroyed/loading/shuffle)
+  // around it.
+  private synchronized void resetCorePlaybackStateLocked() {
+    resetPlaybackStateLocked();
+    clearPendingTrackChangesLocked();
+    commandWorker.clearQueue();
+    clearPendingPlayerMethodOverrideLocked();
+  }
+
   private synchronized void clearPendingTrackChangesLocked() {
     pendingTrackDelta = 0;
   }
@@ -1063,10 +1010,7 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void resetMediaCacheLocked() {
-    cachedMediaTimeMicros = 0L;
-    cachedDurationMicros = 0L;
-    cachedSampleTimeMs = 0L;
-    cachedSessionId = playbackSessionId;
+    mediaTimeCache.reset(playbackSessionId);
   }
 
   private void enqueuePendingTrackChangeLocked(int delta) {
@@ -1096,7 +1040,7 @@ public class PlayerGUI implements PlayerListener {
     return 0;
   }
 
-  private void applyPendingTrackChange() {
+  void applyPendingTrackChange() {
     int direction = pollPendingTrackDirectionLocked();
     if (direction == 0) {
       return;
@@ -1105,100 +1049,8 @@ public class PlayerGUI implements PlayerListener {
     changeTrack(direction > 0, false);
   }
 
-  private void startCommandWorker() {
-    synchronized (commandQueue) {
-      if (commandThread != null && commandThread.isAlive()) {
-        return;
-      }
-
-      commandWorkerStopRequested = false;
-      commandThread =
-          new Thread(
-              new Runnable() {
-                public void run() {
-                  commandLoop();
-                }
-              });
-      commandThread.start();
-    }
-  }
-
-  private void stopCommandWorker() {
-    synchronized (commandQueue) {
-      commandWorkerStopRequested = true;
-      commandQueue.removeAllElements();
-      commandQueue.notifyAll();
-    }
-  }
-
-  private void clearCommandQueueLocked() {
-    synchronized (commandQueue) {
-      commandQueue.removeAllElements();
-    }
-  }
-
-  private void enqueueCommand(int commandType, int sessionId) {
-    if (sessionId <= 0) {
-      return;
-    }
-    startCommandWorker();
-    synchronized (commandQueue) {
-      commandQueue.addElement(new CommandTask(commandType, sessionId));
-      commandQueue.notifyAll();
-    }
-  }
-
-  private CommandTask pollCommand() {
-    synchronized (commandQueue) {
-      while (commandQueue.size() == 0 && !commandWorkerStopRequested) {
-        try {
-          commandQueue.wait();
-        } catch (InterruptedException e) {
-        }
-      }
-      if (commandWorkerStopRequested) {
-        return null;
-      }
-
-      CommandTask command = (CommandTask) commandQueue.elementAt(0);
-      commandQueue.removeElementAt(0);
-      return command;
-    }
-  }
-
   synchronized boolean isCurrentSession(int sessionId) {
     return sessionId == playbackSessionId;
-  }
-
-  private void commandLoop() {
-    while (true) {
-      CommandTask command = pollCommand();
-      if (command == null) {
-        synchronized (commandQueue) {
-          if (commandWorkerStopRequested) {
-            commandWorkerStopRequested = false;
-            commandThread = null;
-            return;
-          }
-        }
-        continue;
-      }
-
-      if (!isCurrentSession(command.sessionId)) {
-        if (command.type == COMMAND_TRACK_END) {
-          synchronized (this) {
-            handlingTrackEnd = false;
-          }
-        }
-        continue;
-      }
-
-      if (command.type == COMMAND_TRACK_END) {
-        processTrackEnd();
-      } else if (command.type == COMMAND_APPLY_PENDING) {
-        applyPendingTrackChange();
-      }
-    }
   }
 
   private void closePlayerLocked() {
@@ -1209,14 +1061,10 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void closeResourcesLocked() {
-    if (inputStream != null) {
-      closeInputStreamQuietly(inputStream);
-      inputStream = null;
-    }
-    if (httpConnection != null) {
-      closeHttpConnectionQuietly(httpConnection);
-      httpConnection = null;
-    }
+    Utils.closeQuietly(inputStream);
+    inputStream = null;
+    Utils.closeQuietly(httpConnection);
+    httpConnection = null;
   }
 
   void closePlayerQuietly(Player targetPlayer) {
@@ -1243,27 +1091,9 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
-  private void closeInputStreamQuietly(InputStream stream) {
-    if (stream != null) {
-      try {
-        stream.close();
-      } catch (IOException e) {
-      }
-    }
-  }
-
-  private void closeHttpConnectionQuietly(HttpConnection connection) {
-    if (connection != null) {
-      try {
-        connection.close();
-      } catch (IOException e) {
-      }
-    }
-  }
-
   void closeHttpResources(InputStream stream, HttpConnection connection) {
-    closeInputStreamQuietly(stream);
-    closeHttpConnectionQuietly(connection);
+    Utils.closeQuietly(stream);
+    Utils.closeQuietly(connection);
   }
 
   private synchronized void invalidateSessionLocked() {
@@ -1351,14 +1181,38 @@ public class PlayerGUI implements PlayerListener {
     parent.resetImage();
   }
 
-  private void handleError(MediaException me) {
-    setStatus(Lang.tr("status.error"));
-    parent.showError(me.toString());
+  private void handleError(Exception e) {
+    terminalPlaybackError(e == null ? "error" : e.toString());
   }
 
-  private void handleLoadError(Exception e) {
+  // Last-resort fallback for a track that exhausted every in-track recovery
+  // (resolution/inputstream retries + inputstream<->url method swap): keep
+  // playback flowing by advancing to the next track instead of dead-stopping the
+  // queue. After MAX_CONSECUTIVE_PLAYBACK_ERRORS in a row, or when there is no
+  // next track, give up and surface the error. changeTrack(true, true) advances
+  // immediately when idle, or queues the skip onto the pending-delta path while a
+  // load is still unwinding, so this is safe from the load thread, the start
+  // path, and the PlayerListener callback thread alike.
+  private void terminalPlaybackError(String reason) {
+    boolean advanced = false;
+    synchronized (this) {
+      if (!destroyed) {
+        consecutivePlaybackErrors++;
+        advanced =
+            consecutivePlaybackErrors <= MAX_CONSECUTIVE_PLAYBACK_ERRORS && hasNextTrackLocked();
+      }
+    }
+
+    if (advanced) {
+      setStatusByKey(Configuration.PLAYER_STATUS_LOADING);
+      changeTrack(true, true);
+      return;
+    }
+
+    consecutivePlaybackErrors = 0;
+    stopTimer();
     setStatus(Lang.tr("status.error"));
-    parent.showError(e.toString());
+    parent.showError(reason);
   }
 
   void setStatus(String status) {

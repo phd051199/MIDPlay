@@ -1,5 +1,11 @@
 package midplay.ui.screen;
 
+import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.ChoiceGroup;
+import javax.microedition.lcdui.Command;
+import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.TextField;
+import javax.microedition.rms.RecordStoreException;
 import midplay.MIDPlay;
 import midplay.net.JsonOperation;
 import midplay.store.Configuration;
@@ -10,13 +16,6 @@ import midplay.ui.Navigator;
 import midplay.ui.PlaylistsListForwarder;
 import midplay.ui.TracksListForwarder;
 import midplay.util.Lang;
-
-import javax.microedition.lcdui.AlertType;
-import javax.microedition.lcdui.ChoiceGroup;
-import javax.microedition.lcdui.Command;
-import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.TextField;
-import javax.microedition.rms.RecordStoreException;
 
 public final class SearchScreen extends BaseForm {
   private static final int MAX_INPUT_LENGTH = 150;
@@ -83,8 +82,7 @@ public final class SearchScreen extends BaseForm {
     if (searchType.equals(Configuration.SEARCH_TRACK)) {
       MIDPlay.startOperation(
           JsonOperation.searchTracks(
-              keyword,
-              new TracksListForwarder(navigator, title, "search.status.no_results")));
+              keyword, new TracksListForwarder(navigator, title, "search.status.no_results")));
     } else {
       MIDPlay.startOperation(
           JsonOperation.searchPlaylists(

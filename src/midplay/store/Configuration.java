@@ -1,10 +1,9 @@
 package midplay.store;
 
-import midplay.ui.Theme;
-import midplay.util.Utils;
-
 import java.io.IOException;
 import javax.microedition.lcdui.Image;
+import midplay.ui.Theme;
+import midplay.util.Utils;
 
 public class Configuration {
   public static final int ALERT_TIMEOUT = 2000;

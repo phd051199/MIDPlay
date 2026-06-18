@@ -1,13 +1,12 @@
 package midplay.store;
 
-import midplay.ui.Theme;
-import midplay.util.Lang;
-import midplay.util.Utils;
-
 import cc.nnproject.json.JSON;
 import cc.nnproject.json.JSONException;
 import cc.nnproject.json.JSONObject;
 import javax.microedition.rms.RecordStoreException;
+import midplay.ui.Theme;
+import midplay.util.Lang;
+import midplay.util.Utils;
 
 public class SettingsManager {
   private static final int SETTINGS_ID = 1;
@@ -46,7 +45,9 @@ public class SettingsManager {
   }
 
   private SettingsManager() {
-    storage = new JsonRecordStore(Configuration.STORAGE_SETTINGS, SETTINGS_ID, createDefaultSettings().toString());
+    storage =
+        new JsonRecordStore(
+            Configuration.STORAGE_SETTINGS, SETTINGS_ID, createDefaultSettings().toString());
   }
 
   public String getDefaultPlayerMethod() {
