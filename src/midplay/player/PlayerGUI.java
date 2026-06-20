@@ -21,7 +21,12 @@ public class PlayerGUI implements PlayerListener {
   private static final int TIMER_INTERVAL = 1000;
   private static final int VOLUME_STEP = 10;
   private static final int MAX_PENDING_TRACK_STEPS = 20;
-  private static final long MEDIA_SAMPLE_WINDOW_MS = 250L;
+  // ponytail: widened from 250ms to 1200ms so the 1s repaint tick usually
+  // extrapolates from the cached sample instead of native-sampling
+  // getMediaTime/getDuration every second. Ceiling: extrapolation drifts <1s
+  // between re-samples (invisible at tick resolution); a re-sample every ~2s
+  // still corrects it and the monotonic guard prevents backward jumps.
+  private static final long MEDIA_SAMPLE_WINDOW_MS = 1200L;
 
   private final PlayerScreen parent;
   private final SettingsManager settingsManager;
@@ -37,6 +42,17 @@ public class PlayerGUI implements PlayerListener {
   private final ShuffleController shuffle = new ShuffleController();
   private HttpConnection httpConnection;
   private InputStream inputStream;
+  // Resolved media URL + total content length of the currently attached playback,
+  // captured at attach time so seek() can reload an InputStream player from a byte
+  // offset (InputStream players can't setMediaTime). Null/-1 when not applicable
+  // (the pass_url method has no live HttpConnection, so it seeks natively instead).
+  private String currentResolvedUrl;
+  private long currentContentLength = -1;
+  // Resume position (micros) carried from a restored session: set before play()
+  // and applied as a seek once playback actually starts (onPlaybackStarted). -1
+  // when not resuming, so a normal play() doesn't seek. Seeking must wait until
+  // the player is loaded/started — calling seek() before that is a no-op.
+  private long pendingResumeSeekMicros = -1;
   private Timer mainTimer;
   private TimerTask displayTask;
   // True while the player canvas is hidden (hideNotify). startTimer() refuses
@@ -246,27 +262,179 @@ public class PlayerGUI implements PlayerListener {
     saveShuffleMode();
   }
 
+  // Stash a position to seek to once playback starts (resume). Harmless to call
+  // with 0/-1: a non-positive value just clears any pending resume seek.
+  void setPendingResumeSeek(long micros) {
+    synchronized (this) {
+      pendingResumeSeekMicros = micros;
+    }
+  }
+
   public void seek(long time) {
     if (time < 0) {
       return;
     }
     Player currentPlayer;
     synchronized (this) {
+      if (destroyed) {
+        return;
+      }
+      // An InputStream seek reloads the media (no native setMediaTime). If a reload
+      // is already in flight, drop this seek instead of reseeding the display to a
+      // target that won't load — otherwise holding/dragging to seek desyncs the
+      // slider from the audio until the in-flight reload lands.
+      if (sessionUsedInputStream && loading) {
+        return;
+      }
       currentPlayer = player;
+      // Jump the display to the target immediately; the audio catches up below.
+      mediaTimeCache.cachedMediaTimeMicros = time;
+      mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
+      mediaTimeCache.cachedSessionId = playbackSessionId;
     }
+    parent.updateDisplayAsync();
     if (currentPlayer == null) {
+      return;
+    }
+
+    // InputStream-based players can't setMediaTime (it's a silent no-op): reload
+    // the media from the seek byte offset (HTTP Range) on a worker thread so it
+    // actually plays from the seek point. The pass_url method seeks natively.
+    if (sessionUsedInputStream && currentResolvedUrl != null && currentContentLength > 0) {
+      startSeekReload(time);
       return;
     }
     try {
       currentPlayer.setMediaTime(time);
+      parent.updateDisplayAsync();
+    } catch (Exception e) {
+      // setMediaTime() on a non-prefetched/unsupported player may throw; ignore.
+    }
+  }
+
+  // Lightweight scrub preview: jumps the displayed playhead to `time` WITHOUT
+  // touching the player (no setMediaTime, no InputStream reload), so dragging the
+  // slider or holding a seek key tracks smoothly instead of lagging on a reload
+  // per move. The real seek runs once via seek() when the interaction ends.
+  public void seekPreview(long time) {
+    if (time < 0) {
+      time = 0;
+    }
+    synchronized (this) {
+      if (destroyed) {
+        return;
+      }
+      mediaTimeCache.cachedMediaTimeMicros = time;
+      mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
+      mediaTimeCache.cachedSessionId = playbackSessionId;
+    }
+    parent.updateDisplayAsync();
+  }
+
+  // Reload the current InputStream player from the byte offset for seekTimeMicros
+  // so it actually plays from the seek point (setMediaTime is a silent no-op on
+  // those players). Runs on a worker thread; createPlayer + prefetch block on the
+  // network. byte = length * time / duration assumes CBR (off by ~1 MP3 frame;
+  // the decoder resyncs to the next frame).
+  private void startSeekReload(final long seekTimeMicros) {
+    final int sessionId;
+    final String url;
+    final long startByte;
+    synchronized (this) {
+      if (destroyed || loading) {
+        return;
+      }
+      long length = currentContentLength;
+      long duration = getDuration();
+      if (currentResolvedUrl == null || length <= 0 || duration <= 0) {
+        return;
+      }
+      long computed = (length * seekTimeMicros) / duration;
+      if (computed < 0 || computed >= length) {
+        return;
+      }
+      sessionId = playbackSessionId;
+      url = currentResolvedUrl;
+      startByte = computed;
+      loading = true;
+      // The rebuilt player only starts once the network reload lands, so stop the
+      // old audio now — otherwise the pre-seek position keeps playing (and overlaps
+      // the seek point) for the whole reload window on release. Not closed here:
+      // attachPendingPlayback closes it on swap, and on reload failure it just stays
+      // paused. A stopped player also freezes getCurrentTime() at the seek target, so
+      // the slider holds instead of drifting during the reload.
+      if (player != null) {
+        try {
+          int state = player.getState();
+          if (state != Player.CLOSED && state >= Player.STARTED) {
+            player.stop();
+          }
+        } catch (Exception e) {
+          // stop() on an unsupported state throws IllegalStateException; ignore.
+        }
+      }
+    }
+    setStatusByKey(Configuration.PLAYER_STATUS_LOADING);
+    Thread seekThread =
+        new Thread(
+            new Runnable() {
+              public void run() {
+                loadSeekSession(sessionId, url, startByte, seekTimeMicros);
+              }
+            });
+    this.loadThread = seekThread;
+    seekThread.start();
+  }
+
+  private void loadSeekSession(
+      int sessionId, String resolvedUrl, long startByte, long seekTimeMicros) {
+    MediaResolver.PendingPlayback pending = null;
+    boolean attached = false;
+    try {
+      if (!isSessionActive(sessionId)) {
+        return;
+      }
+      // Build the new partial-stream player FIRST while the old one keeps playing
+      // (and the album art stays loaded), so the slider/art don't blank during the
+      // reload. attachPendingPlayback closes the old player atomically at the swap.
+      pending = mediaResolver.createSeekPlayback(resolvedUrl, startByte, sessionId);
+      if (pending == null || pending.pendingPlayer == null || !isSessionActive(sessionId)) {
+        return;
+      }
+      mediaResolver.preparePendingPlayer(pending.pendingPlayer, sessionId);
+      if (!isSessionActive(sessionId)) {
+        return;
+      }
+      attachPendingPlayback(pending, sessionId);
+      pending = null;
+      attached = true;
+      // Anchor the display at the seek target; the rebuilt player starts there.
       synchronized (this) {
-        mediaTimeCache.cachedMediaTimeMicros = time;
+        mediaTimeCache.cachedMediaTimeMicros = seekTimeMicros;
         mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
         mediaTimeCache.cachedSessionId = playbackSessionId;
       }
+      // Repaint only — no full relayout (setupDisplay would reset layout + reload
+      // album art, causing the seek glitch).
       parent.updateDisplayAsync();
+      startPlayback();
+    } catch (IOException e) {
+      // If we already swapped to the new player, surface the error; otherwise the
+      // old player is untouched, so abort the seek quietly and keep playing.
+      if (attached && isSessionActive(sessionId)) {
+        handleError(e);
+      }
+    } catch (MediaException e) {
+      if (attached && isSessionActive(sessionId)) {
+        handleError(e);
+      }
     } catch (Exception e) {
-      // setMediaTime() on a non-prefetched player may throw; ignore.
+      if (attached && isSessionActive(sessionId)) {
+        handleError(e);
+      }
+    } finally {
+      mediaResolver.closePendingPlayback(pending);
+      finishLoadSession(sessionId);
     }
   }
 
@@ -467,6 +635,7 @@ public class PlayerGUI implements PlayerListener {
 
   void onPlaybackStarted() {
     int sessionId;
+    long resumeSeek;
     synchronized (this) {
       loading = false;
       handlingTrackEnd = false;
@@ -477,10 +646,19 @@ public class PlayerGUI implements PlayerListener {
       mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
       mediaTimeCache.cachedSessionId = playbackSessionId;
       sessionId = playbackSessionId;
+      resumeSeek = pendingResumeSeekMicros;
+      pendingResumeSeekMicros = -1;
     }
     startTimer();
     setStatusByKey(Configuration.PLAYER_STATUS_PLAYING);
     commandWorker.enqueue(CommandWorker.APPLY_PENDING, sessionId);
+
+    // Resume: seek to the saved in-track position once playback is live (the
+    // player, resolved URL, content length, and duration are all populated by
+    // now, so seek() works for both the pass_url and InputStream methods).
+    if (resumeSeek > 0) {
+      seek(resumeSeek);
+    }
   }
 
   private void startLoadThread() {
@@ -603,6 +781,20 @@ public class PlayerGUI implements PlayerListener {
     sessionStarted = false;
     sessionMethodSessionId = sessionId;
     startWatchdogSessionId = -1;
+
+    // Capture the resolved URL + total size for seek-by-reload (InputStream method).
+    currentResolvedUrl = null;
+    currentContentLength = -1;
+    if (httpConnection != null) {
+      try {
+        currentResolvedUrl = httpConnection.getURL();
+      } catch (Exception e) {
+      }
+      try {
+        currentContentLength = httpConnection.getLength();
+      } catch (Exception e) {
+      }
+    }
 
     pending.pendingPlayer = null;
     pending.pendingConnection = null;

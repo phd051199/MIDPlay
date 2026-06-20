@@ -79,7 +79,7 @@ public final class TrackListScreen extends BaseList {
   protected void handleSelection() {
     int index = getSelectedIndex();
     if (isValidSelection(index)) {
-      PlayerNavHelper.playTrackFromList(title, items, index, navigator);
+      PlayerNavHelper.playTrackFromList(title, items, index, 0L, navigator);
     }
   }
 

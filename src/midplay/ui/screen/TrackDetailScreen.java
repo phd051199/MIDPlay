@@ -78,7 +78,7 @@ public final class TrackDetailScreen extends BaseForm {
   private void playTrack() {
     Tracks singleTrackPlaylist = new Tracks();
     singleTrackPlaylist.setTracks(new Track[] {track});
-    PlayerNavHelper.playTrackFromList(track.getName(), singleTrackPlaylist, 0, navigator);
+    PlayerNavHelper.playTrackFromList(track.getName(), singleTrackPlaylist, 0, 0L, navigator);
   }
 
   private void addTrackToPlaylist() {

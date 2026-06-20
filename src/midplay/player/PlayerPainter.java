@@ -26,6 +26,10 @@ public final class PlayerPainter {
   // path must use the same size/x or the art and its border misalign.
   private static final int SMALL_ALBUM_SIZE = 72;
   private static final int SMALL_ALBUM_X = 8;
+  // Small-screen spacing: gap from the art box to the track text, and the
+  // section gap reused between the artist/time and time/buttons rows.
+  private static final int SMALL_TEXT_ART_GAP = 16;
+  private static final int SMALL_SECTION_GAP = 24;
 
   private final PlayerScreen screen;
 
@@ -114,6 +118,28 @@ public final class PlayerPainter {
     }
   }
 
+  private static final class LandscapeRightPanel {
+    final int left;
+    final int width;
+    final int center;
+
+    LandscapeRightPanel(int left, int width) {
+      this.left = left;
+      this.width = width;
+      this.center = left + (width >> 1);
+    }
+  }
+
+  // The landscape right panel (track info / slider / buttons) is derived from
+  // the left-panel split. Computed once here instead of being re-derived in
+  // four places (button positions, track info, slider, text width) — diverging
+  // copies had shifted the bar relative to the thumb before.
+  private static LandscapeRightPanel landscapeRightPanel(int leftPanelWidth, int displayWidth) {
+    int rightPanelLeft = leftPanelWidth + (displayWidth / 40);
+    int rightPanelWidth = displayWidth - rightPanelLeft - (displayWidth / 30);
+    return new LandscapeRightPanel(rightPanelLeft, rightPanelWidth);
+  }
+
   private static ButtonPositions calculateButtonPositions(
       int screenWidth, boolean isLandscape, boolean isLargeScreen, int buttonWidth) {
     int centerX = screenWidth / 2;
@@ -121,18 +147,16 @@ public final class PlayerPainter {
     int margin = isLargeScreen ? (screenWidth / 40) : 8;
 
     if (isLargeScreen && isLandscape) {
-      int leftPanelWidth = screenWidth * LANDSCAPE_LEFT_PANEL_PCT / 100;
-      int rightPanelLeft = leftPanelWidth + (screenWidth / 40);
-      int rightPanelWidth = screenWidth - rightPanelLeft - (screenWidth / 30);
-      int rightPanelCenter = rightPanelLeft + (rightPanelWidth >> 1);
-      buttonGap = rightPanelWidth / 5;
+      LandscapeRightPanel panel =
+          landscapeRightPanel(screenWidth * LANDSCAPE_LEFT_PANEL_PCT / 100, screenWidth);
+      buttonGap = panel.width / 5;
 
       return new ButtonPositions(
-          rightPanelCenter,
-          rightPanelCenter - buttonGap,
-          rightPanelCenter + buttonGap,
-          rightPanelLeft + margin + (buttonWidth / 2),
-          rightPanelLeft + rightPanelWidth - margin - (buttonWidth / 2));
+          panel.center,
+          panel.center - buttonGap,
+          panel.center + buttonGap,
+          panel.left + margin + (buttonWidth / 2),
+          panel.left + panel.width - margin - (buttonWidth / 2));
     }
     return new ButtonPositions(
         centerX,
@@ -214,7 +238,7 @@ public final class PlayerPainter {
     calculateSmallScreenPositions();
     calculateSmallScreenSlider(g);
     calculateSmallScreenArt();
-    screen.textX = screen.albumX + screen.albumSize + 16;
+    screen.textX = screen.albumX + screen.albumSize + SMALL_TEXT_ART_GAP;
     screen.albumArtLoader.loadAlbumArt();
   }
 
@@ -223,9 +247,9 @@ public final class PlayerPainter {
     screen.titleY = currentTop;
     currentTop += 5 + screen.textHeight;
     screen.artistY = currentTop;
-    currentTop += 10 + screen.textHeight + 24;
+    currentTop += 10 + screen.textHeight + SMALL_SECTION_GAP;
     screen.timeY = currentTop;
-    screen.playTop = screen.timeY + screen.textHeight + 24;
+    screen.playTop = screen.timeY + screen.textHeight + SMALL_SECTION_GAP;
   }
 
   private void calculateSmallScreenSlider(Graphics g) {
@@ -248,7 +272,7 @@ public final class PlayerPainter {
 
     calculateLandscapeArtDimensions(margin, availableHeight, leftPanelWidth);
     calculateLandscapeTrackInfo(leftPanelWidth, availableHeight);
-    calculateLandscapeSlider(leftPanelWidth, margin, availableHeight);
+    calculateLandscapeSlider(leftPanelWidth, availableHeight);
     calculateLandscapeControls(availableHeight);
   }
 
@@ -260,25 +284,22 @@ public final class PlayerPainter {
   }
 
   private void calculateLandscapeTrackInfo(int leftPanelWidth, int availableHeight) {
-    int rightPanelLeft = leftPanelWidth + (screen.displayWidth / 40);
-    int rightPanelWidth = screen.displayWidth - rightPanelLeft - (screen.displayWidth / 30);
-    int rightPanelCenter = rightPanelLeft + (rightPanelWidth >> 1);
+    LandscapeRightPanel panel = landscapeRightPanel(leftPanelWidth, screen.displayWidth);
 
-    screen.textX = rightPanelCenter;
+    screen.textX = panel.center;
     int trackInfoSection = availableHeight / 4;
     screen.titleY = screen.statusBarHeight + trackInfoSection - screen.titleFont.getHeight();
     screen.artistY = screen.titleY + (screen.displayHeight / 80) + screen.titleFont.getHeight();
   }
 
-  private void calculateLandscapeSlider(int leftPanelWidth, int margin, int availableHeight) {
-    int rightPanelLeft = leftPanelWidth + (screen.displayWidth / 40);
-    int rightPanelWidth = screen.displayWidth - rightPanelLeft - margin;
+  private void calculateLandscapeSlider(int leftPanelWidth, int availableHeight) {
+    LandscapeRightPanel panel = landscapeRightPanel(leftPanelWidth, screen.displayWidth);
 
     int timeSliderSection = availableHeight / 2;
     screen.sliderTop = screen.statusBarHeight + timeSliderSection - screen.sliderHeight / 2;
     screen.timeWidth = screen.defaultFont.stringWidth("0:00:0  ");
-    screen.sliderLeft = rightPanelLeft + (screen.displayWidth / 80);
-    screen.sliderWidth = rightPanelWidth - (screen.displayWidth / 40);
+    screen.sliderLeft = panel.left + (screen.displayWidth / 80);
+    screen.sliderWidth = panel.width - (screen.displayWidth / 40);
 
     screen.timeY = screen.sliderTop + screen.sliderHeight + (screen.displayHeight / 60);
   }
@@ -587,10 +608,10 @@ public final class PlayerPainter {
   }
 
   private int calculateLandscapeTextWidth() {
-    int leftPanelWidth = screen.displayWidth * LANDSCAPE_LEFT_PANEL_PCT / 100;
-    int rightPanelLeft = leftPanelWidth + (screen.displayWidth / 40);
-    int rightPanelWidth = screen.displayWidth - rightPanelLeft - (screen.displayWidth / 30);
-    return rightPanelWidth - 20;
+    LandscapeRightPanel panel =
+        landscapeRightPanel(
+            screen.displayWidth * LANDSCAPE_LEFT_PANEL_PCT / 100, screen.displayWidth);
+    return panel.width - 20;
   }
 
   private void paintTimeSlider(Graphics g, int clipY, int clipHeight) {
@@ -765,18 +786,11 @@ public final class PlayerPainter {
   }
 
   private void paintVolumeAlert(Graphics g) {
-    int alertWidth = screen.displayWidth - 2 * screen.VOLUME_ALERT_MARGIN;
-    int alertHeight = screen.VOLUME_ALERT_HEIGHT;
-    int alertX = screen.VOLUME_ALERT_MARGIN;
-    int alertY = (screen.displayHeight - alertHeight) / 2;
-    int barWidth = alertWidth - 2 * screen.VOLUME_BAR_INSET;
-    int barX = alertX + screen.VOLUME_BAR_INSET;
-    int barY = alertY + screen.VOLUME_BAR_TOP_OFFSET;
-    int barHeight = screen.VOLUME_BAR_HEIGHT;
-
-    paintVolumeAlertBackground(g, alertX, alertY, alertWidth, alertHeight);
-    paintVolumeAlertTitle(g, alertX, alertY, alertWidth);
-    paintVolumeBar(g, barX, barY, barWidth, barHeight);
+    PlayerScreen.VolumeAlertLayout layout = screen.volumeAlertLayout();
+    paintVolumeAlertBackground(
+        g, layout.alertX, layout.alertY, layout.alertWidth, layout.alertHeight);
+    paintVolumeAlertTitle(g, layout.alertX, layout.alertY, layout.alertWidth);
+    paintVolumeBar(g, layout.barX, layout.barY, layout.barWidth, layout.barHeight);
   }
 
   private void paintVolumeAlertBackground(

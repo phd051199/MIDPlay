@@ -152,6 +152,7 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
     final String title = session.getTitle();
     final Tracks tracks = session.getTracks();
     final int index = session.getIndex();
+    final long position = session.getPosition();
     session.clear();
     if (tracks == null || tracks.getTracks() == null || tracks.getTracks().length == 0) {
       return;
@@ -160,7 +161,7 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
         Lang.tr("session.resume_prompt"),
         new Runnable() {
           public void run() {
-            PlayerNavHelper.playTrackFromList(title, tracks, index, navigator);
+            PlayerNavHelper.playTrackFromList(title, tracks, index, position, navigator);
           }
         });
   }
@@ -194,7 +195,11 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
           if (current != null && current.getTracks() != null && current.getTracks().length > 0) {
             try {
               LastSessionManager.getInstance()
-                  .save(playerScreen.getTitle(), current, gui.getCurrentIndex());
+                  .save(
+                      playerScreen.getTitle(),
+                      current,
+                      gui.getCurrentIndex(),
+                      gui.getCurrentTime());
             } catch (Exception e) {
             }
           }

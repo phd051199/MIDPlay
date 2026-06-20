@@ -7,12 +7,13 @@ import javax.microedition.rms.RecordStoreException;
 import midplay.model.Track;
 import midplay.model.Tracks;
 
-// Persists the last playback session (playlist title, track list, current index)
-// so the app can offer to resume it on next launch. One JSON document in RMS,
-// mirroring SettingsManager. Tracks are stored Items-wrapped so they round-trip
-// through the existing Tracks.fromJSON parse path. Playback position within the
-// track is intentionally not saved: HTTP streams can't be seeked reliably, so
-// resume restarts the in-progress track from its beginning.
+// Persists the last playback session (playlist title, track list, current index,
+// and in-track position) so the app can offer to resume it on next launch. One
+// JSON document in RMS, mirroring SettingsManager. Tracks are stored
+// Items-wrapped so they round-trip through the existing Tracks.fromJSON parse
+// path. Position is in microseconds and is applied as a seek after the resumed
+// track starts (seek handles both the pass_url native setMediaTime path and the
+// InputStream byte-offset reload).
 public class LastSessionManager {
   private static LastSessionManager instance;
 
@@ -41,7 +42,7 @@ public class LastSessionManager {
     return cached;
   }
 
-  public void save(String title, Tracks tracks, int index) {
+  public void save(String title, Tracks tracks, int index, long positionMicros) {
     if (tracks == null || tracks.getTracks() == null || tracks.getTracks().length == 0) {
       return;
     }
@@ -58,6 +59,9 @@ public class LastSessionManager {
       JSONObject root = new JSONObject();
       root.put("title", title == null ? "" : title);
       root.put("index", index);
+      // ponytail: store position as a JSON number (micros). Long fits JS numbers
+      // fine for media durations (<2^53); no string parse round-trip needed.
+      root.put("position", positionMicros < 0 ? 0L : positionMicros);
       root.put("tracks", tracksObj);
       cached = root;
       storage.save(root.toString());
@@ -83,6 +87,12 @@ public class LastSessionManager {
 
   public int getIndex() {
     return session().getInt("index", 0);
+  }
+
+  // Microseconds into the resumed track to seek to. 0 (or absent on older
+  // saves) means start from the beginning — the pre-position-save behavior.
+  public long getPosition() {
+    return session().getLong("position", 0L);
   }
 
   public Tracks getTracks() {

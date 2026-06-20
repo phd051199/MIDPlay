@@ -12,10 +12,10 @@ public final class PlayerNavHelper {
   private PlayerNavHelper() {}
 
   public static void playTrackFromList(
-      String title, Tracks tracks, int index, Navigator navigator) {
+      String title, Tracks tracks, int index, long positionMicros, Navigator navigator) {
     PlayerScreen playerScreen = MIDPlay.getPlayerScreen();
     if (playerScreen != null) {
-      playerScreen.change(title, tracks, index, navigator);
+      playerScreen.change(title, tracks, index, positionMicros, navigator);
       Displayable previous = navigator.getPrevious();
       if (previous instanceof PlayerScreen) {
         navigator.back();
@@ -23,7 +23,7 @@ public final class PlayerNavHelper {
         navigator.forward(playerScreen);
       }
     } else {
-      playerScreen = new PlayerScreen(title, tracks, index, navigator);
+      playerScreen = new PlayerScreen(title, tracks, index, positionMicros, navigator);
       MIDPlay.setPlayerScreen(playerScreen);
       navigator.forward(playerScreen);
     }

@@ -104,6 +104,17 @@ public final class AlbumArtLoader {
     }
   }
 
+  private Image normalizeSmallScreenArt(Image image) {
+    if (screen.isLargeScreen || image == null || screen.albumSize <= 0) {
+      return image;
+    }
+    if (image.getWidth() == screen.albumSize && image.getHeight() == screen.albumSize) {
+      return image;
+    }
+    Image resized = Utils.resizeImageToFit(image, screen.albumSize, screen.albumSize);
+    return resized != null ? resized : image;
+  }
+
   void clearImageData() {
     albumArt = null;
     scaledAlbumArt = null;
@@ -158,7 +169,7 @@ public final class AlbumArtLoader {
               if (key != artLoadKey) {
                 return; // stale: a newer load started or art was reset
               }
-              albumArt = image;
+              albumArt = normalizeSmallScreenArt(image);
               finishImageLoad();
               // Pre-scale off the synchronous paint path (see prepareScaledAlbumArt).
               prepareScaledAlbumArt();

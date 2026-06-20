@@ -128,6 +128,65 @@ public class MediaResolver {
     }
   }
 
+  // Build a Player for a seek: opens a Range GET at startByte and wraps it in an
+  // InputStream player. InputStream-based players can't setMediaTime, so true
+  // seeking reloads the media from the seek byte offset (HTTP Range). The new
+  // player's media-time 0 == startByte == the requested seek position (the MP3
+  // decoder resyncs to the next frame, so the cut is frame-accurate enough).
+  PendingPlayback createSeekPlayback(String resolvedUrl, long startByte, int sessionId)
+      throws IOException, MediaException {
+    PendingPlayback pending = new PendingPlayback();
+    boolean keepPending = false;
+    try {
+      String contentType = getPreferredInputStreamContentType();
+      if (contentType == null || contentType.length() == 0) {
+        throw new IOException("No content type for seek playback");
+      }
+      if (!gui.isSessionActive(sessionId)) {
+        keepPending = true;
+        return pending;
+      }
+
+      pending.usedInputStream = true;
+      pending.pendingConnection = Network.openConnection(resolvedUrl);
+      if (pending.pendingConnection == null) {
+        throw new IOException("Failed to open seek connection");
+      }
+      pending.pendingConnection.setRequestMethod(HttpConnection.GET);
+      pending.pendingConnection.setRequestProperty("Range", "bytes=" + startByte + "-");
+      int responseCode = pending.pendingConnection.getResponseCode();
+      if (responseCode != HttpConnection.HTTP_PARTIAL && responseCode != HttpConnection.HTTP_OK) {
+        throw new IOException("Seek HTTP error: " + responseCode);
+      }
+      if (!gui.isSessionActive(sessionId)) {
+        keepPending = true;
+        return pending;
+      }
+
+      InputStream raw = pending.pendingConnection.openInputStream();
+      // Server ignored Range (200, full body): skip to the seek byte manually so
+      // the player still starts at the requested position.
+      if (responseCode == HttpConnection.HTTP_OK) {
+        long remaining = startByte;
+        while (remaining > 0) {
+          long skipped = raw.skip(remaining);
+          if (skipped <= 0) {
+            break;
+          }
+          remaining -= skipped;
+        }
+      }
+      pending.pendingInputStream = new BufferedInputStream(raw);
+      pending.pendingPlayer = Manager.createPlayer(pending.pendingInputStream, contentType);
+      keepPending = true;
+      return pending;
+    } finally {
+      if (!keepPending) {
+        closePendingPlayback(pending);
+      }
+    }
+  }
+
   private boolean createInputStreamPlayback(PendingPlayback pending, String finalUrl, int sessionId)
       throws IOException, MediaException {
     String contentType = getPreferredInputStreamContentType();

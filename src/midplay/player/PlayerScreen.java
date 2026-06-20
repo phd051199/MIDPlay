@@ -26,12 +26,53 @@ public final class PlayerScreen extends Canvas
   private static final int KEY_MEDIA_PREVIOUS = -21;
   private static final int KEY_MEDIA_NEXT = -22;
 
-  // Volume alert layout (must match between paintVolumeAlert and handleVolumeAlertTouch)
+  // Volume-alert geometry lives in volumeAlertLayout() below so the painter and
+  // the touch handler always agree (they used to recompute it independently and
+  // could drift).
   static final int VOLUME_ALERT_MARGIN = 20;
   static final int VOLUME_ALERT_HEIGHT = 100;
   static final int VOLUME_BAR_INSET = 20;
   static final int VOLUME_BAR_TOP_OFFSET = 40;
   static final int VOLUME_BAR_HEIGHT = 20;
+
+  static final class VolumeAlertLayout {
+    final int alertX, alertY, alertWidth, alertHeight;
+    final int barX, barY, barWidth, barHeight;
+
+    VolumeAlertLayout(
+        int alertX,
+        int alertY,
+        int alertWidth,
+        int alertHeight,
+        int barX,
+        int barY,
+        int barWidth,
+        int barHeight) {
+      this.alertX = alertX;
+      this.alertY = alertY;
+      this.alertWidth = alertWidth;
+      this.alertHeight = alertHeight;
+      this.barX = barX;
+      this.barY = barY;
+      this.barWidth = barWidth;
+      this.barHeight = barHeight;
+    }
+  }
+
+  // Single source of truth for the volume-alert box + bar rectangles, shared by
+  // paintVolumeAlert (PlayerPainter) and handleVolumeAlertTouch.
+  VolumeAlertLayout volumeAlertLayout() {
+    int alertWidth = displayWidth - 2 * VOLUME_ALERT_MARGIN;
+    int alertHeight = VOLUME_ALERT_HEIGHT;
+    int alertX = VOLUME_ALERT_MARGIN;
+    int alertY = (displayHeight - alertHeight) / 2;
+    int barWidth = alertWidth - 2 * VOLUME_BAR_INSET;
+    int barX = alertX + VOLUME_BAR_INSET;
+    int barY = alertY + VOLUME_BAR_TOP_OFFSET;
+    int barHeight = VOLUME_BAR_HEIGHT;
+    return new VolumeAlertLayout(
+        alertX, alertY, alertWidth, alertHeight, barX, barY, barWidth, barHeight);
+  }
 
   // UI Utility methods
   private static boolean isPointInBounds(
@@ -49,6 +90,24 @@ public final class PlayerScreen extends Canvas
 
   private final SleepTimerManager sleepTimerManager = new SleepTimerManager();
   private final boolean touchSupported;
+  // True while a press that began on the progress slider is being dragged, so
+  // pointerDragged keeps scrubbing by x even as the finger drifts off the bar.
+  private boolean seeking;
+  // True while a press that began on the volume-alert bar is being dragged, so
+  // pointerDragged keeps adjusting the volume even as the finger drifts off the bar.
+  private boolean volumeDragging;
+
+  // Hold-to-seek on keypad LEFT/RIGHT: a quick tap = prev/next track (acted on
+  // release), a held key = seek once auto-repeat kicks in. heldKey tracks the
+  // deferred LEFT/RIGHT keyCode; heldRepeatCount classifies tap vs hold.
+  private static final int SEEK_REPEAT_THRESHOLD = 2; // 2nd event (1st repeat) starts seeking
+  private static final long SEEK_STEP_MICROS = 2000000L; // 2s per repeat
+  private int heldKey;
+  private int heldAction;
+  private int heldRepeatCount;
+  // Pending scrub target accumulated during a drag/hold (preview only); the real
+  // seek commits this value when the finger/key is released. -1 when idle.
+  private long pendingSeekMicros = -1;
 
   // Read by the repaint Timer thread in onRepaintTick but written by the UI/
   // paint thread (sizeChanged / initDisplayMetrics); volatile guarantees the
@@ -93,6 +152,11 @@ public final class PlayerScreen extends Canvas
   Navigator navigator;
 
   public PlayerScreen(String title, Tracks tracks, int index, Navigator navigator) {
+    this(title, tracks, index, 0L, navigator);
+  }
+
+  public PlayerScreen(
+      String title, Tracks tracks, int index, long positionMicros, Navigator navigator) {
     this.title = title;
     this.navigator = navigator;
 
@@ -101,7 +165,7 @@ public final class PlayerScreen extends Canvas
     setCommandListener(this);
     touchSupported = hasPointerEvents();
     painter.initializeFonts();
-    change(title, tracks, index, navigator);
+    change(title, tracks, index, positionMicros, navigator);
   }
 
   private void manageCommands(boolean add) {
@@ -160,11 +224,16 @@ public final class PlayerScreen extends Canvas
   }
 
   public void change(String title, Tracks tracks, int index, Navigator navigator) {
+    change(title, tracks, index, 0L, navigator);
+  }
+
+  public void change(String title, Tracks tracks, int index, long positionMicros, Navigator navigator) {
     this.title = title;
     setTitle(title);
     this.navigator = navigator;
     PlayerGUI playerGUI = getPlayerGUI();
     if (playerGUI.setPlaylist(tracks, index)) {
+      playerGUI.setPendingResumeSeek(positionMicros);
       playerGUI.play();
     }
   }
@@ -271,15 +340,98 @@ public final class PlayerScreen extends Canvas
     try {
       int action = getGameAction(keycode);
 
+      // Keypad LEFT/RIGHT in normal player mode are deferred so a quick tap skips
+      // a track (on release) while a held key seeks. Volume mode keeps its
+      // existing immediate LEFT/RIGHT handling.
+      if (!volumeAlertShowing && (action == Canvas.LEFT || action == Canvas.RIGHT)) {
+        if (heldKey == keycode) {
+          // Some platforms repeat by firing keyPressed again instead of keyRepeated.
+          onSeekRepeat();
+        } else {
+          heldKey = keycode;
+          heldAction = action;
+          heldRepeatCount = 1;
+        }
+        return;
+      }
+
       if (action != 0) {
         handleAction(action);
       } else {
         handleMusicKey(keycode);
       }
-
     } catch (Throwable e) {
       e.printStackTrace();
     }
+  }
+
+  protected void keyRepeated(int keycode) {
+    try {
+      if (heldKey == keycode
+          && !volumeAlertShowing
+          && (heldAction == Canvas.LEFT || heldAction == Canvas.RIGHT)) {
+        onSeekRepeat();
+      }
+    } catch (Throwable e) {
+      e.printStackTrace();
+    }
+  }
+
+  protected void keyReleased(int keycode) {
+    try {
+      if (keycode != heldKey) {
+        return;
+      }
+      boolean wasTap = heldRepeatCount < SEEK_REPEAT_THRESHOLD;
+      int action = heldAction;
+      heldKey = 0;
+      heldAction = 0;
+      heldRepeatCount = 0;
+      long pending = pendingSeekMicros;
+      pendingSeekMicros = -1;
+      // A short press with no auto-repeat: prev/next track. A held key previewed
+      // a scrub — commit the real seek once now.
+      if (wasTap) {
+        if (action == Canvas.LEFT) {
+          previous();
+        } else if (action == Canvas.RIGHT) {
+          next();
+        }
+      } else if (pending >= 0) {
+        getPlayerGUI().seek(pending);
+      }
+    } catch (Throwable e) {
+      e.printStackTrace();
+    }
+  }
+
+  // Each auto-repeat event while LEFT/RIGHT is held advances the scrub preview by
+  // one 2s step in that direction (no reload per step). seek() commits the
+  // accumulated target once on key release.
+  private void onSeekRepeat() {
+    heldRepeatCount++;
+    if (heldRepeatCount < SEEK_REPEAT_THRESHOLD || heldAction == 0) {
+      return;
+    }
+    PlayerGUI gui = getPlayerGUI();
+    long duration = gui.getDuration();
+    if (duration <= 0) {
+      return;
+    }
+    if (pendingSeekMicros < 0) {
+      pendingSeekMicros = gui.getCurrentTime();
+    }
+    long target =
+        heldAction == Canvas.RIGHT
+            ? pendingSeekMicros + SEEK_STEP_MICROS
+            : pendingSeekMicros - SEEK_STEP_MICROS;
+    if (target < 0) {
+      target = 0;
+    } else if (target > duration) {
+      target = duration;
+    }
+    pendingSeekMicros = target;
+    gui.seekPreview(target);
   }
 
   private void handleMusicKey(int code) {
@@ -304,12 +456,50 @@ public final class PlayerScreen extends Canvas
     try {
       if (volumeAlertShowing) {
         handleVolumeAlertTouch(x, y);
+      } else if (isPointOnSlider(x, y)) {
+        seeking = true;
+        handleSliderSeek(x);
       } else {
         handleButtonTouch(x, y);
       }
     } catch (Throwable e) {
       e.printStackTrace();
     }
+  }
+
+  protected void pointerDragged(int x, int y) {
+    if (!touchSupported) {
+      return;
+    }
+    try {
+      if (volumeAlertShowing) {
+        // While the volume alert is up, dragging adjusts the volume (if the press
+        // began on the bar); seek is irrelevant here.
+        if (volumeDragging) {
+          setVolumeFromBarX(x);
+        }
+        return;
+      }
+      if (seeking) {
+        handleSliderSeek(x);
+      }
+    } catch (Throwable e) {
+      e.printStackTrace();
+    }
+  }
+
+  protected void pointerReleased(int x, int y) {
+    // Commit the slider scrub: the preview tracked the finger during the drag,
+    // now run the real seek once.
+    if (seeking) {
+      seeking = false;
+      if (pendingSeekMicros >= 0) {
+        long pending = pendingSeekMicros;
+        pendingSeekMicros = -1;
+        getPlayerGUI().seek(pending);
+      }
+    }
+    volumeDragging = false;
   }
 
   public void paint(Graphics g) {
@@ -416,27 +606,68 @@ public final class PlayerScreen extends Canvas
     }
   }
 
-  private void handleVolumeAlertTouch(int x, int y) {
-    int alertWidth = displayWidth - 2 * VOLUME_ALERT_MARGIN;
-    int alertHeight = VOLUME_ALERT_HEIGHT;
-    int alertX = VOLUME_ALERT_MARGIN;
-    int alertY = (displayHeight - alertHeight) / 2;
-    int barWidth = alertWidth - 2 * VOLUME_BAR_INSET;
-    int barX = alertX + VOLUME_BAR_INSET;
-    int barY = alertY + VOLUME_BAR_TOP_OFFSET;
-    int barHeight = VOLUME_BAR_HEIGHT;
+  // Touch target for the progress slider: full slider width, but a taller band
+  // than the ~4-6px bar so a finger tap registers reliably.
+  private boolean isPointOnSlider(int x, int y) {
+    int touchHeight = Math.max(sliderHeight + 18, 24);
+    int top = sliderTop + (sliderHeight >> 1) - (touchHeight >> 1);
+    return x >= sliderLeft && x <= sliderLeft + sliderWidth && y >= top && y <= top + touchHeight;
+  }
 
-    if (isPointInBounds(x, y, alertX, alertY, alertWidth, alertHeight)) {
-      if (isPointInBounds(x, y, barX, barY, barWidth, barHeight)) {
-        int tapPosition = x - barX;
-        int newVolume = (tapPosition * Configuration.PLAYER_MAX_VOLUME) / barWidth;
-        newVolume = Math.max(0, Math.min(Configuration.PLAYER_MAX_VOLUME, newVolume));
-        getPlayerGUI().setVolumeLevel(newVolume);
-        updateDisplay();
+  // Seek the progress bar to a tap/drag x. No-op when the duration is unknown
+  // (streaming/indeterminate) — the slider can't map a ratio without it. seek()
+  // reseeds the time cache and triggers a repaint, so the bar + label jump.
+  // Slider press/drag: preview the position smoothly (no reload per move); the
+  // real seek commits on pointerReleased via the pending target.
+  private void handleSliderSeek(int x) {
+    int left = sliderLeft;
+    int width = sliderWidth;
+    if (width <= 0) {
+      return;
+    }
+    if (x < left) {
+      x = left;
+    } else if (x > left + width) {
+      x = left + width;
+    }
+    PlayerGUI gui = getPlayerGUI();
+    long duration = gui.getDuration();
+    if (duration <= 0) {
+      return;
+    }
+    pendingSeekMicros = (duration * (long) (x - left)) / width;
+    gui.seekPreview(pendingSeekMicros);
+  }
+
+  private void handleVolumeAlertTouch(int x, int y) {
+    VolumeAlertLayout layout = volumeAlertLayout();
+    if (isPointInBounds(
+        x, y, layout.alertX, layout.alertY, layout.alertWidth, layout.alertHeight)) {
+      if (isPointInBounds(x, y, layout.barX, layout.barY, layout.barWidth, layout.barHeight)) {
+        // Begin a drag so pointerDragged keeps tracking the finger along the bar.
+        volumeDragging = true;
+        setVolumeFromBarX(x);
       }
     } else {
       hideVolumeAlert();
     }
+  }
+
+  // Map a screen x to a volume level, clamping to the bar so a finger dragged
+  // past either end pins at min/max instead of running off the bar. Shared by the
+  // press (tap) and the drag so both use the same mapping.
+  private void setVolumeFromBarX(int x) {
+    VolumeAlertLayout layout = volumeAlertLayout();
+    if (x < layout.barX) {
+      x = layout.barX;
+    } else if (x > layout.barX + layout.barWidth) {
+      x = layout.barX + layout.barWidth;
+    }
+    int tapPosition = x - layout.barX;
+    int newVolume = (tapPosition * Configuration.PLAYER_MAX_VOLUME) / layout.barWidth;
+    newVolume = Math.max(0, Math.min(Configuration.PLAYER_MAX_VOLUME, newVolume));
+    getPlayerGUI().setVolumeLevel(newVolume);
+    updateDisplay();
   }
 
   private void handleAction(int action) {
