@@ -83,6 +83,11 @@ public class PlayerGUI implements PlayerListener {
   private boolean handlingTrackEnd = false;
   // Re-entry guard for the background similar-tracks fetch (auto-queue).
   private boolean autoQueueInFlight = false;
+  // Auto-queue opts in per session: only single-track plays (search / recent /
+  // detail) extend the queue with similar tracks. Folder plays (album / playlist
+  // / favorites) keep their own list and never auto-queue. Reset to false on
+  // every setPlaylist, re-enabled by PlayerNavHelper.playSingleTrack.
+  private boolean autoQueueEnabled = false;
   private int pendingTrackDelta = 0;
   PlaybackMethod pendingPlayerMethodOverride;
   boolean sessionUsedInputStream = false;
@@ -138,6 +143,7 @@ public class PlayerGUI implements PlayerListener {
     synchronized (this) {
       commandWorker.start();
       resetCorePlaybackStateLocked();
+      this.autoQueueEnabled = false;
       this.trackList = tracks;
       this.currentTrackIndex = normalizedIndex;
       if (hasTracks && isShuffleEnabled) {
@@ -183,6 +189,20 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
+  // Mark the current session as auto-queue eligible (a single-track play from
+  // search / recent / detail) and fire the first prefetch. setPlaylist ran
+  // synchronously inside playTrackFromList before this, so its own maybeAutoQueue
+  // saw the (reset) disabled flag and skipped — this re-fires it now enabled.
+  void enableAutoQueue() {
+    synchronized (this) {
+      if (destroyed) {
+        return;
+      }
+      autoQueueEnabled = true;
+    }
+    maybeAutoQueue();
+  }
+
   // Auto-queue ("infinite playlist"): when the playing position is within
   // AUTO_QUEUE_THRESHOLD of the queue end (and the feature is on, not in
   // repeat-one), fetch tracks similar to the current one and append them so
@@ -193,6 +213,9 @@ public class PlayerGUI implements PlayerListener {
     int len;
     synchronized (this) {
       if (destroyed || autoQueueInFlight) {
+        return;
+      }
+      if (!autoQueueEnabled) {
         return;
       }
       if (settingsManager.getCurrentAutoQueue() != Configuration.AUTO_QUEUE_ON) {

@@ -39,6 +39,12 @@ public final class PlayerNavHelper {
     Tracks single = new Tracks();
     single.setTracks(new Track[] {track});
     playTrackFromList(title, single, 0, 0L, navigator);
+    // Single-track plays (search / recent / detail) opt into auto-queue; folder
+    // plays go through playTrackFromList directly and stay opted out.
+    PlayerScreen ps = MIDPlay.getPlayerScreen();
+    if (ps != null) {
+      ps.getPlayerGUI().enableAutoQueue();
+    }
   }
 
   // Add tracks to the current queue. If nothing is playing yet (no player
