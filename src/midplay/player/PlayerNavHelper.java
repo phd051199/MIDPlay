@@ -3,8 +3,10 @@ package midplay.player;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Displayable;
 import midplay.MIDPlay;
+import midplay.model.Track;
 import midplay.model.Tracks;
 import midplay.store.Configuration;
+import midplay.store.RecentManager;
 import midplay.ui.Navigator;
 import midplay.util.Lang;
 
@@ -27,6 +29,34 @@ public final class PlayerNavHelper {
       MIDPlay.setPlayerScreen(playerScreen);
       navigator.forward(playerScreen);
     }
+  }
+
+  // Play exactly one track in its own single-item list and record it to Recent.
+  // Centralises the record + wrap + playTrackFromList idiom that list/detail
+  // screens used to copy verbatim.
+  public static void playSingleTrack(String title, Track track, Navigator navigator) {
+    RecentManager.getInstance().recordTrack(track);
+    Tracks single = new Tracks();
+    single.setTracks(new Track[] {track});
+    playTrackFromList(title, single, 0, 0L, navigator);
+  }
+
+  // Add tracks to the current queue. If nothing is playing yet (no player
+  // screen has ever been created), start playback instead so "Add to queue" from
+  // a cold state is visible rather than silently enqueued into nothing.
+  public static void addToQueue(Track[] toAdd, String title, Navigator navigator) {
+    if (toAdd == null || toAdd.length == 0) {
+      return;
+    }
+    PlayerScreen playerScreen = MIDPlay.getPlayerScreen();
+    if (playerScreen == null) {
+      Tracks seeds = new Tracks();
+      seeds.setTracks(toAdd);
+      playTrackFromList(title, seeds, 0, 0L, navigator);
+      return;
+    }
+    playerScreen.getPlayerGUI().addToQueue(toAdd);
+    navigator.showAlert(Lang.tr("queue.added"), AlertType.CONFIRMATION);
   }
 
   // "Now Playing" entry from a list or menu: reuse the singleton PlayerScreen

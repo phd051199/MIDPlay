@@ -146,6 +146,58 @@ public class PlayerGUI implements PlayerListener {
     return hasTracks;
   }
 
+  // Append tracks to the current queue without disturbing playback. The
+  // currently-playing track and index are untouched; shuffle order is rebuilt so
+  // the appended tracks participate (ponytail: rebuild re-randomizes the whole
+  // order — per-item append that preserves already-heard continuity isn't worth
+  // it until someone notices).
+  public synchronized void addToQueue(Track[] toAdd) {
+    if (toAdd == null || toAdd.length == 0) {
+      return;
+    }
+    Track[] current = (trackList != null) ? trackList.getTracks() : null;
+    int currentLen = (current != null) ? current.length : 0;
+    Track[] merged = new Track[currentLen + toAdd.length];
+    if (current != null) {
+      System.arraycopy(current, 0, merged, 0, currentLen);
+    }
+    System.arraycopy(toAdd, 0, merged, currentLen, toAdd.length);
+    if (trackList == null) {
+      trackList = new Tracks();
+    }
+    trackList.setTracks(merged);
+    if (isShuffleEnabled) {
+      createShuffle();
+    } else {
+      shuffle.clear();
+    }
+  }
+
+  // Adopt a reordered queue (manual sort). Playback keeps going on the same
+  // physical track: we re-resolve currentTrackIndex to wherever that track now
+  // lives in newOrder (by isSame), and rebuild shuffle if on.
+  public synchronized void reorderQueue(Track[] newOrder) {
+    if (trackList == null || newOrder == null || newOrder.length == 0) {
+      return;
+    }
+    Track current = getCurrentTrackLocked();
+    trackList.setTracks(newOrder);
+    currentTrackIndex = 0;
+    if (current != null) {
+      for (int i = 0; i < newOrder.length; i++) {
+        if (newOrder[i] != null && current.isSame(newOrder[i])) {
+          currentTrackIndex = i;
+          break;
+        }
+      }
+    }
+    if (isShuffleEnabled) {
+      createShuffle();
+    } else {
+      shuffle.clear();
+    }
+  }
+
   void play() {
     Track currentTrack = getCurrentTrack();
     if (currentTrack == null) {
@@ -418,17 +470,9 @@ public class PlayerGUI implements PlayerListener {
       // album art, causing the seek glitch).
       parent.updateDisplayAsync();
       startPlayback();
-    } catch (IOException e) {
+    } catch (Exception e) {
       // If we already swapped to the new player, surface the error; otherwise the
       // old player is untouched, so abort the seek quietly and keep playing.
-      if (attached && isSessionActive(sessionId)) {
-        handleError(e);
-      }
-    } catch (MediaException e) {
-      if (attached && isSessionActive(sessionId)) {
-        handleError(e);
-      }
-    } catch (Exception e) {
       if (attached && isSessionActive(sessionId)) {
         handleError(e);
       }
@@ -512,14 +556,7 @@ public class PlayerGUI implements PlayerListener {
     if (mayEstimateFromCache
         && cachedAt > 0L
         && (!started || now - cachedAt < MEDIA_SAMPLE_WINDOW_MS)) {
-      long estimated = cachedTime;
-      if (started) {
-        long deltaMicros = (now - cachedAt) * 1000L;
-        estimated += deltaMicros;
-      }
-      if (cachedDuration > 0L && estimated > cachedDuration) {
-        estimated = cachedDuration;
-      }
+      long estimated = extrapolate(cachedTime, cachedAt, now, cachedDuration, started);
       if (estimated < 0L) {
         estimated = 0L;
       }
@@ -537,10 +574,7 @@ public class PlayerGUI implements PlayerListener {
     // only advance. A deliberate seek reseeds the cache to its target, so this
     // floor follows seeks (forward and backward) instead of fighting them.
     if (started && mayEstimateFromCache && cachedAt > 0L) {
-      long extrapolated = cachedTime + (now - cachedAt) * 1000L;
-      if (cachedDuration > 0L && extrapolated > cachedDuration) {
-        extrapolated = cachedDuration;
-      }
+      long extrapolated = extrapolate(cachedTime, cachedAt, now, cachedDuration, started);
       if (sampledTime < extrapolated) {
         sampledTime = extrapolated;
       }
@@ -555,6 +589,21 @@ public class PlayerGUI implements PlayerListener {
       }
     }
     return sampledTime;
+  }
+
+  // Wall-clock extrapolation of a cached sample: cached value plus elapsed
+  // time while playing, clamped to the known duration. Shared by the
+  // cache-hit fast path and the streaming monotonic floor in getCurrentTime.
+  private long extrapolate(
+      long cachedTime, long cachedAt, long now, long cachedDuration, boolean started) {
+    long estimated = cachedTime;
+    if (started) {
+      estimated += (now - cachedAt) * 1000L;
+    }
+    if (cachedDuration > 0L && estimated > cachedDuration) {
+      estimated = cachedDuration;
+    }
+    return estimated;
   }
 
   public long getDuration() {
@@ -730,30 +779,28 @@ public class PlayerGUI implements PlayerListener {
       parent.setupDisplay();
       startPlayback();
     } catch (IOException e) {
-      if (isSessionActive(sessionId)) {
-        if (recovery.recoverFromFailure("load io error: " + e.toString())) {
-          return;
-        }
-        handleError(e);
-      }
+      handleLoadFailure(e, "load io error", sessionId);
     } catch (MediaException me) {
-      if (isSessionActive(sessionId)) {
-        if (recovery.recoverFromFailure("load media error: " + me.toString())) {
-          return;
-        }
-        handleError(me);
-      }
+      handleLoadFailure(me, "load media error", sessionId);
     } catch (Exception e) {
-      if (isSessionActive(sessionId)) {
-        if (recovery.recoverFromFailure("load error: " + e.toString())) {
-          return;
-        }
-        handleError(e);
-      }
+      handleLoadFailure(e, "load error", sessionId);
     } finally {
       mediaResolver.closePendingPlayback(pending);
       finishLoadSession(sessionId);
     }
+  }
+
+  // Common recovery path for the load thread's catch arms: if the session is
+  // still current, try one auto-recovery; otherwise surface the error. Each arm
+  // only differs in the diagnostic label passed to the recovery logger.
+  private void handleLoadFailure(Exception e, String label, int sessionId) {
+    if (!isSessionActive(sessionId)) {
+      return;
+    }
+    if (recovery.recoverFromFailure(label + ": " + e.toString())) {
+      return;
+    }
+    handleError(e);
   }
 
   private void freeHeapForInputStreamPlayback() {

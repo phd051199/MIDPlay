@@ -59,7 +59,43 @@ public class MenuManager {
               item.getString("key"), item.getInt("order"), item.getBoolean("enabled", true));
       menuItems.addElement(menuItem);
     }
+    ensureDefaultItemsPresent();
     invalidateMenuCache();
+  }
+
+  // Existing installs saved a menu before newer default items (e.g. MENU_RECENT)
+  // existed; append any missing default key so new entries appear without a
+  // fresh install. Mirrors how a schema bump would work, minus the version field.
+  private void ensureDefaultItemsPresent() {
+    JSONArray defaults = createDefaultMenuJSON();
+    int maxOrder = 0;
+    for (int i = 0; i < menuItems.size(); i++) {
+      int order = ((MenuItem) menuItems.elementAt(i)).order;
+      if (order > maxOrder) {
+        maxOrder = order;
+      }
+    }
+    boolean added = false;
+    for (int i = 0; i < defaults.size(); i++) {
+      String key = defaults.getObject(i).getString("key");
+      if (!hasMenuItem(key)) {
+        maxOrder++;
+        menuItems.addElement(new MenuItem(key, maxOrder, true));
+        added = true;
+      }
+    }
+    if (added) {
+      saveMenuConfig();
+    }
+  }
+
+  private boolean hasMenuItem(String key) {
+    for (int i = 0; i < menuItems.size(); i++) {
+      if (key.equals(((MenuItem) menuItems.elementAt(i)).key)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private void invalidateMenuCache() {
@@ -72,8 +108,9 @@ public class MenuManager {
     defaultConfig.add(createMenuItem(Configuration.MENU_SEARCH, 1, true));
     defaultConfig.add(createMenuItem(Configuration.MENU_FAVORITES, 2, true));
     defaultConfig.add(createMenuItem(Configuration.MENU_DISCOVER_PLAYLISTS, 3, true));
-    defaultConfig.add(createMenuItem(Configuration.MENU_SETTINGS, 4, true));
-    defaultConfig.add(createMenuItem(Configuration.MENU_ABOUT, 5, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_RECENT, 4, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_SETTINGS, 5, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_ABOUT, 6, true));
     return defaultConfig;
   }
 

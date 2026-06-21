@@ -5,7 +5,6 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.StringItem;
 import javax.microedition.lcdui.TextField;
 import midplay.model.Track;
-import midplay.model.Tracks;
 import midplay.player.PlayerNavHelper;
 import midplay.ui.BaseForm;
 import midplay.ui.Commands;
@@ -76,9 +75,7 @@ public final class TrackDetailScreen extends BaseForm {
   }
 
   private void playTrack() {
-    Tracks singleTrackPlaylist = new Tracks();
-    singleTrackPlaylist.setTracks(new Track[] {track});
-    PlayerNavHelper.playTrackFromList(track.getName(), singleTrackPlaylist, 0, 0L, navigator);
+    PlayerNavHelper.playSingleTrack(track.getName(), track, navigator);
   }
 
   private void addTrackToPlaylist() {

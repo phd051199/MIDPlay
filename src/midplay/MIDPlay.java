@@ -22,6 +22,7 @@ import midplay.player.PlayerScreen;
 import midplay.store.Configuration;
 import midplay.store.FavoritesManager;
 import midplay.store.LastSessionManager;
+import midplay.store.RecentManager;
 import midplay.store.SettingsManager;
 import midplay.ui.Commands;
 import midplay.ui.MainMenuScreen;
@@ -29,6 +30,7 @@ import midplay.ui.MenuManager;
 import midplay.ui.Navigator;
 import midplay.ui.PlaylistsListForwarder;
 import midplay.ui.screen.FavoritesScreen;
+import midplay.ui.screen.RecentListScreen;
 import midplay.ui.screen.SearchScreen;
 import midplay.ui.screen.SettingsScreen;
 import midplay.util.Lang;
@@ -104,6 +106,13 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
         new Runnable() {
           public void run() {
             goToDiscoverPlaylistsScreen();
+          }
+        });
+    menuManager.registerAction(
+        Configuration.MENU_RECENT,
+        new Runnable() {
+          public void run() {
+            goToRecentScreen();
           }
         });
     menuManager.registerAction(
@@ -231,6 +240,10 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
       LastSessionManager.getInstance().close();
     } catch (Exception e) {
     }
+    try {
+      RecentManager.getInstance().close();
+    } catch (Exception e) {
+    }
   }
 
   // --- MainMenuScreen.MenuHost ---
@@ -339,6 +352,11 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
   private void goToFavoritesScreen() {
     FavoritesScreen favoritesScreen = new FavoritesScreen(navigator);
     navigator.forward(favoritesScreen);
+  }
+
+  private void goToRecentScreen() {
+    RecentListScreen recentScreen = new RecentListScreen(navigator);
+    navigator.forward(recentScreen);
   }
 
   private void showExitConfirmation() {

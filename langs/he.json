@@ -34,6 +34,7 @@
     "discover_playlists": "גלה רשימות השמעה",
     "favorites": "מועדפים",
     "now_playing": "מושמע כעת",
+    "recent": "אחרונים",
     "reorder": "סדר תפריט",
     "search": "חיפוש",
     "settings": "הגדרות",
@@ -101,6 +102,22 @@
       "track_removed": "הרצועה נמחקה מרשימת ההשמעה בהצלחה"
     }
   },
+  "queue": {
+    "add_to_queue": "הוסף לתור",
+    "add_all_to_queue": "הוסף הכל לתור",
+    "added": "נוסף לתור",
+    "sort": "מיין תור",
+    "save_as_playlist": "שמור כרשימת השמעה"
+  },
+  "recent": {
+    "clear": "נקה היסטוריה",
+    "confirm": {
+      "clear": "לנקות את כל הפריטים האחרונים?"
+    },
+    "status": {
+      "cleared": "ההיסטוריה נוקתה"
+    }
+  },
   "search": {
     "error": {
       "empty_keyword": "אנא הכנס מונח לחיפוש"
@@ -129,7 +146,7 @@
     },
     "player_method": "שיטת נגינה",
     "player_method_options": {
-      "pass_inputstream": "העבר Input Stream",
+      "pass_inputstream": "העבר InputStream",
       "pass_url": "העבר URL"
     },
     "error": {

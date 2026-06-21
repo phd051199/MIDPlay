@@ -10,10 +10,12 @@ import midplay.model.Playlists;
 import midplay.net.JsonOperation;
 import midplay.store.Configuration;
 import midplay.store.FavoritesManager;
+import midplay.store.RecentManager;
 import midplay.ui.BaseList;
 import midplay.ui.Commands;
 import midplay.ui.FavoritesActions;
 import midplay.ui.Navigator;
+import midplay.ui.QueueAppender;
 import midplay.ui.TracksListForwarder;
 import midplay.util.Lang;
 import midplay.util.Utils;
@@ -42,6 +44,7 @@ public final class PlaylistListScreen extends BaseList {
     this.keyword = keyword;
     this.searchType = searchType;
     addCommand(Commands.playlistAdd());
+    addCommand(Commands.addAllToQueue());
     addCommand(Commands.details());
     populateItems();
   }
@@ -64,6 +67,7 @@ public final class PlaylistListScreen extends BaseList {
       return;
     }
     final Playlist selectedPlaylist = items.getPlaylists()[selectedIndex];
+    RecentManager.getInstance().recordFolder(selectedPlaylist);
     navigator.showLoadingAlert(Lang.tr("status.loading"));
     MIDPlay.startOperation(
         JsonOperation.getTracks(
@@ -74,9 +78,25 @@ public final class PlaylistListScreen extends BaseList {
   protected void handleCommand(Command c, Displayable d) {
     if (c == Commands.playlistAdd()) {
       addToFavorites();
+    } else if (c == Commands.addAllToQueue()) {
+      addAllToQueue();
     } else if (c == Commands.details()) {
       showPlaylistDetails();
     }
+  }
+
+  private void addAllToQueue() {
+    int selectedIndex = getSelectedIndex();
+    if (isLoadMoreItem(selectedIndex)
+        || selectedIndex < 0
+        || selectedIndex >= items.getPlaylists().length) {
+      return;
+    }
+    final Playlist selectedPlaylist = items.getPlaylists()[selectedIndex];
+    navigator.showLoadingAlert(Lang.tr("status.loading"));
+    MIDPlay.startOperation(
+        JsonOperation.getTracks(
+            selectedPlaylist.getKey(), new QueueAppender(navigator, selectedPlaylist.getName())));
   }
 
   private void loadMore() {

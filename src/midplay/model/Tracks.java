@@ -25,6 +25,13 @@ public class Tracks extends JsonListResult {
     return tracks.length;
   }
 
+  // Null-safe emptiness check. getTracks() never returns null (the field is
+  // initialised to an empty array and setTracks coerces null), so this is the
+  // single correct way to test "no tracks" without a triple-null guard.
+  public static boolean isEmpty(Tracks t) {
+    return t == null || t.tracks.length == 0;
+  }
+
   protected JsonItemFactory factory() {
     return TRACK_FACTORY;
   }

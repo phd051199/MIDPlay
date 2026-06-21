@@ -53,6 +53,7 @@ public final class MainMenuScreen extends List implements CommandListener {
     iconMap.put(Configuration.MENU_SEARCH, Configuration.searchIcon);
     iconMap.put(Configuration.MENU_FAVORITES, Configuration.favoriteIcon);
     iconMap.put(Configuration.MENU_DISCOVER_PLAYLISTS, Configuration.playlistIcon);
+    iconMap.put(Configuration.MENU_RECENT, Configuration.recentIcon);
     iconMap.put(Configuration.MENU_SETTINGS, Configuration.settingsIcon);
     iconMap.put(Configuration.MENU_ABOUT, Configuration.infoIcon);
   }
@@ -201,8 +202,7 @@ public final class MainMenuScreen extends List implements CommandListener {
   private void handleSortSelection(int currentIndex) {
     if (selectedItemIndex == -1) {
       selectedItemIndex = currentIndex;
-      String currentText = getString(currentIndex);
-      set(currentIndex, Configuration.SORT_ICON + currentText, getImage(currentIndex));
+      ListReorder.toggleMarker(this, currentIndex, Configuration.SORT_ICON, true);
     } else {
       if (selectedItemIndex != currentIndex) {
         swapMenuItems(selectedItemIndex, currentIndex);
@@ -214,22 +214,11 @@ public final class MainMenuScreen extends List implements CommandListener {
   }
 
   private void swapMenuItems(int index1, int index2) {
-    String item1 = getString(index1);
-    String item2 = getString(index2);
-    Image image1 = getImage(index1);
-    Image image2 = getImage(index2);
-    if (item1.startsWith(Configuration.SORT_ICON)) {
-      item1 = item1.substring(Configuration.SORT_ICON.length());
-    }
-    set(index1, item2, image2);
-    set(index2, item1, image1);
+    ListReorder.swapRows(this, index1, index2, Configuration.SORT_ICON);
   }
 
   private void deselectSortItem(int index) {
-    String currentText = getString(index);
-    if (currentText.startsWith(Configuration.SORT_ICON)) {
-      set(index, currentText.substring(Configuration.SORT_ICON.length()), getImage(index));
-    }
+    ListReorder.toggleMarker(this, index, Configuration.SORT_ICON, false);
   }
 
   private void toggleVisibilityMode() {
@@ -299,10 +288,7 @@ public final class MainMenuScreen extends List implements CommandListener {
   private void saveCurrentOrder() {
     MenuItem[] originalItems = menuManager.getSortedMenuItems();
     for (int i = 0; i < size(); i++) {
-      String displayText = getString(i);
-      if (displayText.startsWith(Configuration.SORT_ICON)) {
-        displayText = displayText.substring(Configuration.SORT_ICON.length());
-      }
+      String displayText = ListReorder.stripMarker(getString(i), Configuration.SORT_ICON);
       for (int j = 0; j < originalItems.length; j++) {
         if (Lang.tr(originalItems[j].key).equals(displayText)) {
           menuManager.updateItemOrder(originalItems[j].key, i + 1);

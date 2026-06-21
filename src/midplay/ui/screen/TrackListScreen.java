@@ -16,27 +16,37 @@ import midplay.ui.Navigator;
 import midplay.util.Lang;
 import midplay.util.Utils;
 
-public final class TrackListScreen extends BaseList {
+public class TrackListScreen extends BaseList {
   // ASCII marker (font-glyph safe on every J2ME handset) prefixing the row that
   // matches the player's current track.
   private static final String NOW_PLAYING_MARKER = "> ";
 
-  private Tracks items;
-  private final String title;
-  private final Playlist playlist;
-  private Track[] tracks;
-  private String[] rowTexts;
+  // Package-private so the QueueTrackListScreen subclass (sort / save-as-playlist)
+  // can reorder tracks and read the backing list without re-exposing them publicly.
+  Tracks items;
+  final String title;
+  final Playlist playlist;
+  Track[] tracks;
+  String[] rowTexts;
   private int nowPlayingIndex = -1;
+  private final boolean playSingleTrack;
 
   public TrackListScreen(String title, Tracks items, Navigator navigator) {
-    this(title, items, navigator, null);
+    this(title, items, navigator, null, false);
   }
 
   public TrackListScreen(String title, Tracks items, Navigator navigator, Playlist playlist) {
+    this(title, items, navigator, playlist, false);
+  }
+
+  public TrackListScreen(
+      String title, Tracks items, Navigator navigator, Playlist playlist, boolean playSingleTrack) {
     super(title, navigator);
     this.items = items;
     this.title = title;
     this.playlist = playlist;
+    this.playSingleTrack = playSingleTrack;
+    addCommand(Commands.addToQueue());
     addCommand(Commands.playerAddToPlaylist());
     addCommand(Commands.details());
     if (playlist != null && playlist.isCustom()) {
@@ -78,19 +88,37 @@ public final class TrackListScreen extends BaseList {
 
   protected void handleSelection() {
     int index = getSelectedIndex();
-    if (isValidSelection(index)) {
+    if (!isValidSelection(index)) {
+      return;
+    }
+    // playSingleTrack (search results): play only the tapped track so the search
+    // list does not become the queue. Records it as a recent standalone play.
+    if (playSingleTrack) {
+      PlayerNavHelper.playSingleTrack(title, tracks[index], navigator);
+    } else {
       PlayerNavHelper.playTrackFromList(title, items, index, 0L, navigator);
     }
   }
 
   protected void handleCommand(Command c, Displayable d) {
-    if (c == Commands.playerAddToPlaylist()) {
+    if (c == Commands.addToQueue()) {
+      addToQueueSelected();
+    } else if (c == Commands.playerAddToPlaylist()) {
       addToPlaylist();
     } else if (c == Commands.playlistRemove()) {
       removeFromPlaylist();
     } else if (c == Commands.details()) {
       showTrackDetails();
     }
+  }
+
+  private void addToQueueSelected() {
+    int selectedIndex = getSelectedIndex();
+    if (!isValidSelection(selectedIndex)) {
+      return;
+    }
+    Track selectedTrack = tracks[selectedIndex];
+    PlayerNavHelper.addToQueue(new Track[] {selectedTrack}, title, navigator);
   }
 
   private void addToPlaylist() {

@@ -16,12 +16,14 @@ public class Configuration {
   public static final String STORAGE_FAVORITES = "storage.favorites";
   public static final String STORAGE_TRACKS = "storage.tracks";
   public static final String STORAGE_LAST_SESSION = "storage.last_session";
+  public static final String STORAGE_RECENT = "storage.recent";
 
   public static final String MENU_SEARCH = "menu.search";
   public static final String MENU_FAVORITES = "menu.favorites";
   public static final String MENU_DISCOVER_PLAYLISTS = "menu.discover_playlists";
   public static final String MENU_SETTINGS = "menu.settings";
   public static final String MENU_ABOUT = "menu.about";
+  public static final String MENU_RECENT = "menu.recent";
 
   public static final String SERVICE_NCT = "NCT";
   public static final String SERVICE_SOUNDCLOUD = "SoundCloud";
@@ -90,6 +92,7 @@ public class Configuration {
   public static Image playlistIcon;
   public static Image settingsIcon;
   public static Image infoIcon;
+  public static Image recentIcon;
 
   public static Image playIcon;
   public static Image pauseIcon;
@@ -111,6 +114,7 @@ public class Configuration {
     playlistIcon = loadIcon("/Album.png");
     settingsIcon = loadIcon("/Setting.png");
     infoIcon = loadIcon("/Information.png");
+    recentIcon = loadIcon("/Recent.png");
 
     loadPlayerIcons();
   }

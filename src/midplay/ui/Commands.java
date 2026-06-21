@@ -104,6 +104,26 @@ public class Commands {
     return get("playlist.add_track", Command.SCREEN, 8);
   }
 
+  public static Command addToQueue() {
+    return get("queue.add_to_queue", Command.SCREEN, 6);
+  }
+
+  public static Command addAllToQueue() {
+    return get("queue.add_all_to_queue", Command.SCREEN, 7);
+  }
+
+  public static Command queueSort() {
+    return get("queue.sort", Command.SCREEN, 5);
+  }
+
+  public static Command queueSaveAsPlaylist() {
+    return get("queue.save_as_playlist", Command.SCREEN, 4);
+  }
+
+  public static Command recentClear() {
+    return get("recent.clear", Command.SCREEN, 3);
+  }
+
   public static Command playerShowPlaylist() {
     return get("player.show_playlist", Command.SCREEN, 9);
   }

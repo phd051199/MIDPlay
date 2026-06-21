@@ -34,6 +34,7 @@
     "discover_playlists": "Çalma Listelerini Keşfet",
     "favorites": "Favoriler",
     "now_playing": "Şimdi Çalıyor",
+    "recent": "Son çalınanlar",
     "reorder": "Menüyü Yeniden Sırala",
     "search": "Arama",
     "settings": "Ayarlar",
@@ -101,6 +102,22 @@
       "track_removed": "Şarkı çalma listesinden çıkarıldı"
     }
   },
+  "queue": {
+    "add_to_queue": "Sıraya ekle",
+    "add_all_to_queue": "Tümünü sıraya ekle",
+    "added": "Sıraya eklendi",
+    "sort": "Sırala",
+    "save_as_playlist": "Çalma listesi olarak kaydet"
+  },
+  "recent": {
+    "clear": "Geçmişi Temizle",
+    "confirm": {
+      "clear": "Tüm son çalınanlar silinsin mi?"
+    },
+    "status": {
+      "cleared": "Geçmiş temizlendi"
+    }
+  },
   "search": {
     "error": {
       "empty_keyword": "Lütfen arama için bir anahtar kelime girin"
@@ -129,7 +146,7 @@
     },
     "player_method": "Oynatıcı Yöntemi",
     "player_method_options": {
-      "pass_inputstream": "Input Stream Geçir",
+      "pass_inputstream": "InputStream Geçir",
       "pass_url": "URL Geçir"
     },
     "error": {

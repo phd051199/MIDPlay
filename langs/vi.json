@@ -34,6 +34,7 @@
     "discover_playlists": "Khám phá playlist",
     "favorites": "Yêu thích",
     "now_playing": "Đang phát",
+    "recent": "Gần đây",
     "reorder": "Sắp xếp menu",
     "search": "Tìm kiếm",
     "settings": "Cài đặt",
@@ -101,6 +102,22 @@
       "track_removed": "Đã xóa bài hát khỏi playlist"
     }
   },
+  "queue": {
+    "add_to_queue": "Thêm vào hàng đợi",
+    "add_all_to_queue": "Thêm tất cả vào hàng đợi",
+    "added": "Đã thêm vào hàng đợi",
+    "sort": "Sắp xếp hàng đợi",
+    "save_as_playlist": "Lưu thành danh sách"
+  },
+  "recent": {
+    "clear": "Xóa lịch sử",
+    "confirm": {
+      "clear": "Xóa toàn bộ mục gần đây?"
+    },
+    "status": {
+      "cleared": "Đã xóa lịch sử"
+    }
+  },
   "search": {
     "error": {
       "empty_keyword": "Vui lòng nhập từ khóa"
@@ -129,7 +146,7 @@
     },
     "player_method": "Phương thức phát",
     "player_method_options": {
-      "pass_inputstream": "Truyền Input Stream",
+      "pass_inputstream": "Truyền InputStream",
       "pass_url": "Truyền URL"
     },
     "error": {

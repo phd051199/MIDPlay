@@ -34,6 +34,7 @@
     "discover_playlists": "Odkrywaj playlisty",
     "favorites": "Ulubione",
     "now_playing": "Teraz odtwarzane",
+    "recent": "Ostatnie",
     "reorder": "Przestaw menu",
     "search": "Wyszukaj",
     "settings": "Ustawienia",
@@ -99,6 +100,22 @@
       "renamed": "Zmieniono nazwę",
       "track_added": "Dodano utwór",
       "track_removed": "Usunięto utwór"
+    }
+  },
+  "queue": {
+    "add_to_queue": "Dodaj do kolejki",
+    "add_all_to_queue": "Dodaj wszystko do kolejki",
+    "added": "Dodano do kolejkę",
+    "sort": "Sortuj kolejkę",
+    "save_as_playlist": "Zapisz jako playlistę"
+  },
+  "recent": {
+    "clear": "Wyczyść historię",
+    "confirm": {
+      "clear": "Wyczyścić całą historię?"
+    },
+    "status": {
+      "cleared": "Historia wyczyszczona"
     }
   },
   "search": {

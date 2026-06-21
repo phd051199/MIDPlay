@@ -2,20 +2,21 @@ package midplay.ui.screen;
 
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
-import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.Form;
-import javax.microedition.lcdui.TextField;
 import midplay.MIDPlay;
 import midplay.model.Playlist;
 import midplay.model.Playlists;
 import midplay.model.Tracks;
 import midplay.net.JsonOperation;
+import midplay.player.PlayerNavHelper;
 import midplay.store.Configuration;
 import midplay.store.FavoritesManager;
+import midplay.store.RecentManager;
 import midplay.ui.BaseList;
 import midplay.ui.Commands;
+import midplay.ui.FormHelpers;
 import midplay.ui.Navigator;
+import midplay.ui.QueueAppender;
 import midplay.ui.TracksListForwarder;
 import midplay.util.Lang;
 
@@ -27,6 +28,7 @@ public final class FavoritesScreen extends BaseList {
     super(Lang.tr("menu.favorites"), navigator);
     this.favoritesManager = FavoritesManager.getInstance();
     addCommand(Commands.playlistCreate());
+    addCommand(Commands.addAllToQueue());
     addCommand(Commands.playlistRemove());
     addCommand(Commands.playlistRename());
     populateItems();
@@ -47,6 +49,7 @@ public final class FavoritesScreen extends BaseList {
     if (selected == null) {
       return;
     }
+    RecentManager.getInstance().recordFolder(selected);
     navigator.showLoadingAlert(Lang.tr("status.loading"));
     if (selected.isCustom()) {
       loadCustomPlaylistTracks(selected);
@@ -57,7 +60,7 @@ public final class FavoritesScreen extends BaseList {
 
   private void loadCustomPlaylistTracks(final Playlist playlist) {
     Tracks tracks = favoritesManager.getCustomPlaylistTracks(playlist);
-    if (tracks == null || tracks.getTracks().length == 0) {
+    if (Tracks.isEmpty(tracks)) {
       navigator.showAlert(Lang.tr("status.no_data"), AlertType.INFO);
     } else {
       TrackListScreen trackListScreen =
@@ -80,6 +83,28 @@ public final class FavoritesScreen extends BaseList {
       showCreatePlaylistForm();
     } else if (c == Commands.playlistRename()) {
       showRenamePlaylistForm();
+    } else if (c == Commands.addAllToQueue()) {
+      addAllToQueue();
+    }
+  }
+
+  private void addAllToQueue() {
+    final Playlist selected = getSelectedPlaylist();
+    if (selected == null) {
+      return;
+    }
+    if (selected.isCustom()) {
+      Tracks tracks = favoritesManager.getCustomPlaylistTracks(selected);
+      if (Tracks.isEmpty(tracks)) {
+        navigator.showAlert(Lang.tr("status.no_data"), AlertType.INFO);
+        return;
+      }
+      PlayerNavHelper.addToQueue(tracks.getTracks(), selected.getName(), navigator);
+    } else {
+      navigator.showLoadingAlert(Lang.tr("status.loading"));
+      MIDPlay.startOperation(
+          JsonOperation.getTracks(
+              selected.getKey(), new QueueAppender(navigator, selected.getName())));
     }
   }
 
@@ -141,36 +166,20 @@ public final class FavoritesScreen extends BaseList {
   }
 
   private void showPlaylistForm(final Playlist existingPlaylist, String formTitle) {
-    final Form f = new Form(formTitle);
-    final TextField nameField =
-        new TextField(
-            Lang.tr("playlist.name"),
-            existingPlaylist != null ? existingPlaylist.getName() : "",
-            50,
-            TextField.ANY);
-    f.append(nameField);
-    f.addCommand(Commands.ok());
-    f.addCommand(Commands.cancel());
-    f.setCommandListener(
-        new CommandListener() {
-          public void commandAction(Command c, Displayable d) {
-            if (c == Commands.ok()) {
-              String name = nameField.getString().trim();
-              if (name.length() > 0) {
-                if (existingPlaylist != null) {
-                  renamePlaylist(existingPlaylist, name);
-                } else {
-                  createNewPlaylist(name);
-                }
-              } else {
-                navigator.showAlert(Lang.tr("playlist.error.empty_name"), AlertType.ERROR);
-              }
-            } else if (c == Commands.cancel()) {
-              navigator.back();
+    String initialName = existingPlaylist != null ? existingPlaylist.getName() : "";
+    FormHelpers.promptName(
+        navigator,
+        formTitle,
+        initialName,
+        new FormHelpers.NameSubmitHandler() {
+          public void onSubmit(String name) {
+            if (existingPlaylist != null) {
+              renamePlaylist(existingPlaylist, name);
+            } else {
+              createNewPlaylist(name);
             }
           }
         });
-    navigator.forward(f);
   }
 
   private void createNewPlaylist(String name) {

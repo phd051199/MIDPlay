@@ -13,8 +13,8 @@ import midplay.store.Configuration;
 import midplay.ui.Commands;
 import midplay.ui.Navigator;
 import midplay.ui.screen.PlaylistPickerScreen;
+import midplay.ui.screen.QueueTrackListScreen;
 import midplay.ui.screen.SleepTimerForm;
-import midplay.ui.screen.TrackListScreen;
 import midplay.util.Lang;
 import midplay.util.Utils;
 
@@ -227,7 +227,8 @@ public final class PlayerScreen extends Canvas
     change(title, tracks, index, 0L, navigator);
   }
 
-  public void change(String title, Tracks tracks, int index, long positionMicros, Navigator navigator) {
+  public void change(
+      String title, Tracks tracks, int index, long positionMicros, Navigator navigator) {
     this.title = title;
     setTitle(title);
     this.navigator = navigator;
@@ -425,13 +426,20 @@ public final class PlayerScreen extends Canvas
         heldAction == Canvas.RIGHT
             ? pendingSeekMicros + SEEK_STEP_MICROS
             : pendingSeekMicros - SEEK_STEP_MICROS;
+    previewClamped(target, duration);
+  }
+
+  // Clamp a scrub target into [0, duration], stage it as the pending seek and
+  // push a live preview. Shared by the keypad auto-repeat and the touch slider
+  // seek paths.
+  private void previewClamped(long target, long duration) {
     if (target < 0) {
       target = 0;
     } else if (target > duration) {
       target = duration;
     }
     pendingSeekMicros = target;
-    gui.seekPreview(target);
+    getPlayerGUI().seekPreview(target);
   }
 
   private void handleMusicKey(int code) {
@@ -635,8 +643,7 @@ public final class PlayerScreen extends Canvas
     if (duration <= 0) {
       return;
     }
-    pendingSeekMicros = (duration * (long) (x - left)) / width;
-    gui.seekPreview(pendingSeekMicros);
+    previewClamped((duration * (long) (x - left)) / width, duration);
   }
 
   private void handleVolumeAlertTouch(int x, int y) {
@@ -778,7 +785,8 @@ public final class PlayerScreen extends Canvas
     }
 
     String playlistTitle = title != null ? title : Lang.tr("player.show_playlist");
-    TrackListScreen trackListScreen = new TrackListScreen(playlistTitle, currentTracks, navigator);
+    QueueTrackListScreen trackListScreen =
+        new QueueTrackListScreen(playlistTitle, currentTracks, navigator);
     Utils.clampAndSelect(trackListScreen, getPlayerGUI().getCurrentIndex());
     navigator.forward(trackListScreen);
   }
