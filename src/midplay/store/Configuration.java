@@ -60,6 +60,11 @@ public class Configuration {
   public static final int AUTO_UPDATE_DISABLED = 0;
   public static final int AUTO_UPDATE_ENABLED = 1;
 
+  // Auto-queue ("infinite playlist"): append similar tracks as the queue nears
+  // its end so playback never stops.
+  public static final int AUTO_QUEUE_OFF = 0;
+  public static final int AUTO_QUEUE_ON = 1;
+
   public static final String PLAYER_METHOD_PASS_INPUTSTREAM = "pass_inputstream";
   public static final String PLAYER_METHOD_PASS_URL = "pass_url";
   public static final String[] ALL_PLAYER_METHODS = {

@@ -144,6 +144,8 @@
     "audio_quality": "Audio Quality",
     "auto_update": "Automatic Updates",
     "check_update": "Check for Updates",
+    "auto_queue": "Auto queue",
+    "auto_queue_continue": "Play similar when queue ends",
     "theme_mode": "Appearance",
     "theme_color": "Theme Color",
     "use_wifi": "Use Wi-Fi",

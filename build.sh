@@ -27,7 +27,7 @@ cd "$SCRIPT_DIR"
 BUILD_DIR="build/standalone"
 COMPILED_DIR="$BUILD_DIR/compiled"
 DIST_DIR="dist"
-VERSION="1.6.1"
+VERSION="1.6.2"
 
 # ProGuard (and only ProGuard) runs on any modern JDK.
 RUN_JAVA="${RUN_JAVA:-$(command -v java)}"

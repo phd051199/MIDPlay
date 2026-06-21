@@ -22,6 +22,7 @@ public class SettingsManager {
   private static int currentVolumeLevel;
   private static String currentThemeMode;
   private static int currentBlackberryWifi;
+  private static int currentAutoQueue;
 
   public static SettingsManager getInstance() {
     if (instance == null) {
@@ -70,6 +71,7 @@ public class SettingsManager {
     currentShuffleMode = settings.getInt("shuffleMode", Configuration.PLAYER_SHUFFLE_OFF);
     currentVolumeLevel = settings.getInt("volumeLevel", Configuration.PLAYER_MAX_VOLUME);
     currentBlackberryWifi = settings.getInt("blackberryWifi", Configuration.BLACKBERRY_WIFI_ON);
+    currentAutoQueue = settings.getInt("autoQueue", Configuration.AUTO_QUEUE_ON);
   }
 
   private JSONObject getSettingsJSON() {
@@ -93,6 +95,7 @@ public class SettingsManager {
     settings.put("playerMethod", getDefaultPlayerMethod());
     settings.put("themeMode", Configuration.THEME_LIGHT);
     settings.put("blackberryWifi", Configuration.BLACKBERRY_WIFI_ON);
+    settings.put("autoQueue", Configuration.AUTO_QUEUE_ON);
     return settings;
   }
 
@@ -173,6 +176,11 @@ public class SettingsManager {
   public void saveBlackberryWifi(int blackberryWifi) throws RecordStoreException {
     saveSetting("blackberryWifi", blackberryWifi);
     currentBlackberryWifi = blackberryWifi;
+  }
+
+  public void saveAutoQueue(int autoQueue) throws RecordStoreException {
+    saveSetting("autoQueue", autoQueue);
+    currentAutoQueue = autoQueue;
   }
 
   public void saveThemeColors(JSONObject lightColors, JSONObject darkColors, int selected)
@@ -266,6 +274,10 @@ public class SettingsManager {
 
   public int getCurrentBlackberryWifi() {
     return currentBlackberryWifi;
+  }
+
+  public int getCurrentAutoQueue() {
+    return currentAutoQueue;
   }
 
   public void cleanup() {

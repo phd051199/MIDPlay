@@ -64,6 +64,21 @@ public class URLProvider {
     return urlBuffer.toString();
   }
 
+  // Similar tracks to the given artist/track, used by the player's auto-queue
+  // ("infinite playlist"). Same {Items, GetMore} shape as /tracks/search, so the
+  // client parses it through the existing Tracks path.
+  public static String getSimilar(String artist, String track) {
+    StringBuffer urlBuffer =
+        new StringBuffer(SERVICE_URL)
+            .append("/getSimilar")
+            .append("?artist=")
+            .append(Utils.urlEncode(artist))
+            .append("&track=")
+            .append(Utils.urlEncode(track));
+    appendCommonParams(urlBuffer);
+    return urlBuffer.toString();
+  }
+
   public static String getTracks(String listKey) {
     StringBuffer urlBuffer =
         new StringBuffer(SERVICE_URL)

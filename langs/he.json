@@ -25,6 +25,13 @@
       "removed": "נמחק מהמועדפים"
     }
   },
+  "language": {
+    "en": "English",
+    "tr": "Türkçe",
+    "vi": "Tiếng Việt",
+    "he": "עברית",
+    "pl": "Polski"
+  },
   "media": {
     "album": "אלבום",
     "playlist": "רשימת השמעה",
@@ -137,6 +144,8 @@
     "audio_quality": "איכות שמע",
     "auto_update": "עדכון אוטומטי",
     "check_update": "בדוק עדכונים זמינים",
+    "auto_queue": "תור אוטומטי",
+    "auto_queue_continue": "נגן רצועות דומות בסיום התור",
     "theme_mode": "ערכת נושא",
     "theme_color": "צבע ערכת הנושא",
     "use_wifi": "Use Wi-Fi",
@@ -150,7 +159,10 @@
       "pass_url": "העבר URL"
     },
     "error": {
-      "save_failed": "שמירת ההגדרות נכשלה"
+      "save_failed": "שמירת ההגדרות נכשלה",
+      "save_theme": "שגיאה בשמירת ערכת הנושא: {0}",
+      "load_theme": "שגיאה בטעינת ערכת הנושא: {0}",
+      "color_update_failed": "עדכון צבע ערכת הנושא נכשל. מצב ערכת הנושא נשמר."
     },
     "language": "Language/שפה",
     "reorder": {

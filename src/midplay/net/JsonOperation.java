@@ -35,6 +35,11 @@ public class JsonOperation extends NetworkOperation {
     return new JsonOperation(URLProvider.getTracks(listKey), new Tracks(), listener);
   }
 
+  // Similar tracks for the player's auto-queue. Parsed as a Tracks list.
+  public static JsonOperation getSimilar(String artist, String track, JsonListListener listener) {
+    return new JsonOperation(URLProvider.getSimilar(artist, track), new Tracks(), listener);
+  }
+
   // --- Playlists ---
   public static JsonOperation searchPlaylists(
       String keyword, String type, int page, JsonListListener listener) {

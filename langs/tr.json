@@ -25,6 +25,13 @@
       "removed": "Favorilerden çıkarıldı"
     }
   },
+  "language": {
+    "en": "English",
+    "tr": "Türkçe",
+    "vi": "Tiếng Việt",
+    "he": "עברית",
+    "pl": "Polski"
+  },
   "media": {
     "album": "Albüm",
     "playlist": "Çalma Listesi",
@@ -137,6 +144,8 @@
     "audio_quality": "Ses Kalitesi",
     "auto_update": "Otomatik Güncellemeler",
     "check_update": "Güncellemeleri Kontrol Et",
+    "auto_queue": "Otomatik sıra",
+    "auto_queue_continue": "Sıra bittiğinde benzerlerini çal",
     "theme_mode": "Tema Modu",
     "theme_color": "Tema Rengi",
     "use_wifi": "Use Wi-Fi",
@@ -150,7 +159,10 @@
       "pass_url": "URL Geçir"
     },
     "error": {
-      "save_failed": "Ayarlar kaydedilemedi"
+      "save_failed": "Ayarlar kaydedilemedi",
+      "save_theme": "Tema kaydedilirken hata: {0}",
+      "load_theme": "Tema yüklenirken hata: {0}",
+      "color_update_failed": "Tema rengi güncellenemedi. Tema modu kaydedildi."
     },
     "language": "Dil",
     "reorder": {

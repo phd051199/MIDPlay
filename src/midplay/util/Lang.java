@@ -19,11 +19,11 @@ public class Lang {
     "playlist.add_track", "playlist.create", "playlist.confirm.delete_with_tracks", "playlist.view_tracks", "playlist.error.add_track_failed", "playlist.error.track_already_exists", "playlist.error.cannot_rename_system", "playlist.error.create_failed", "playlist.error.empty_name", "playlist.error.remove_track_failed",
     "playlist.error.rename_failed", "playlist.name", "playlist.rename", "playlist.select", "playlist.status.created", "playlist.status.no_custom", "playlist.status.renamed", "playlist.status.track_added", "playlist.status.track_removed", "queue.add_to_queue",
     "queue.add_all_to_queue", "queue.added", "queue.sort", "queue.save_as_playlist", "recent.clear", "recent.confirm.clear", "recent.status.cleared", "search.error.empty_keyword", "search.placeholder", "search.results",
-    "search.status.no_results", "search.status.searching", "search.type", "session.resume_prompt", "settings.audio_quality", "settings.auto_update", "settings.check_update", "settings.theme_mode", "settings.theme_color", "settings.use_wifi",
-    "settings.theme_mode_options.dark", "settings.theme_mode_options.light", "settings.player_method", "settings.player_method_options.pass_inputstream", "settings.player_method_options.pass_url", "settings.error.save_failed", "settings.error.save_theme", "settings.error.load_theme", "settings.error.color_update_failed", "settings.language",
-    "settings.reorder.instructions", "settings.reorder.saved", "settings.service", "settings.status.saved", "settings.visibility.instructions", "settings.visibility.saved", "status.error", "status.loading", "status.load_more", "status.no_data",
-    "status.no_updates", "status.update_available", "time.error.invalid_duration", "time.error.invalid_format", "time.minutes", "timer.action", "timer.actions.exit_app", "timer.actions.stop_playback", "timer.cancel", "timer.confirm.exit",
-    "timer.set", "timer.sleep_timer", "timer.status.cancelled", "timer.status.expired", "timer.status.set"
+    "search.status.no_results", "search.status.searching", "search.type", "session.resume_prompt", "settings.audio_quality", "settings.auto_update", "settings.check_update", "settings.auto_queue", "settings.auto_queue_continue", "settings.theme_mode",
+    "settings.theme_color", "settings.use_wifi", "settings.theme_mode_options.dark", "settings.theme_mode_options.light", "settings.player_method", "settings.player_method_options.pass_inputstream", "settings.player_method_options.pass_url", "settings.error.save_failed", "settings.error.save_theme", "settings.error.load_theme",
+    "settings.error.color_update_failed", "settings.language", "settings.reorder.instructions", "settings.reorder.saved", "settings.service", "settings.status.saved", "settings.visibility.instructions", "settings.visibility.saved", "status.error", "status.loading",
+    "status.load_more", "status.no_data", "status.no_updates", "status.update_available", "time.error.invalid_duration", "time.error.invalid_format", "time.minutes", "timer.action", "timer.actions.exit_app", "timer.actions.stop_playback",
+    "timer.cancel", "timer.confirm.exit", "timer.set", "timer.sleep_timer", "timer.status.cancelled", "timer.status.expired", "timer.status.set"
   };
 
   private static final String[] EN_VALS = {
@@ -46,14 +46,15 @@ public class Lang {
     "Add All to Queue", "Added to queue", "Sort Queue", "Save as Playlist", "Clear History",
     "Clear all recent items?", "History cleared", "Please enter a keyword to search", "Enter keywords to search...", "Search Results",
     "No results found", "Searching for: {0}", "Search Type", "Resume your last session?", "Audio Quality",
-    "Automatic Updates", "Check for Updates", "Appearance", "Theme Color", "Use Wi-Fi",
-    "Dark", "Light", "Player Method", "Pass InputStream", "Pass URL",
-    "Failed to save settings", "Error saving theme: {0}", "Error loading theme: {0}", "Theme color update failed. Theme mode was saved.", "Language",
-    "Select an item to move, then select the destination position", "Order saved", "Service", "Settings saved successfully", "Select items to hide/show. [x] = show, [] = hide",
-    "Visibility settings saved", "An error occurred", "Loading...", "Load more...", "No data available!",
-    "No updates available. You have the latest version", "New version available. Update now?", "Duration must be 1-999 minutes", "Invalid time format", "Minutes",
-    "Timer Action", "Exit Application", "Stop Playback", "Cancel Timer", "Timer will exit the application when expired. Continue?",
-    "Set Timer", "Sleep Timer", "Sleep timer cancelled", "Sleep timer expired", "Sleep timer activated"
+    "Automatic Updates", "Check for Updates", "Auto queue", "Play similar when queue ends", "Appearance",
+    "Theme Color", "Use Wi-Fi", "Dark", "Light", "Player Method",
+    "Pass InputStream", "Pass URL", "Failed to save settings", "Error saving theme: {0}", "Error loading theme: {0}",
+    "Theme color update failed. Theme mode was saved.", "Language", "Select an item to move, then select the destination position", "Order saved", "Service",
+    "Settings saved successfully", "Select items to hide/show. [x] = show, [] = hide", "Visibility settings saved", "An error occurred", "Loading...",
+    "Load more...", "No data available!", "No updates available. You have the latest version", "New version available. Update now?", "Duration must be 1-999 minutes",
+    "Invalid time format", "Minutes", "Timer Action", "Exit Application", "Stop Playback",
+    "Cancel Timer", "Timer will exit the application when expired. Continue?", "Set Timer", "Sleep Timer", "Sleep timer cancelled",
+    "Sleep timer expired", "Sleep timer activated"
   };
 
   private static final String[] HE_VALS = {
@@ -76,14 +77,15 @@ public class Lang {
     "הוסף הכל לתור", "נוסף לתור", "מיין תור", "שמור כרשימת השמעה", "נקה היסטוריה",
     "לנקות את כל הפריטים האחרונים?", "ההיסטוריה נוקתה", "אנא הכנס מונח לחיפוש", "הכנס מונח לחיפוש...", "תוצאות חיפוש",
     "לא נמצאו תוצאות", "מחפש: {0}", "סוג חיפוש", "להמשיך את ההפעלה האחרונה?", "איכות שמע",
-    "עדכון אוטומטי", "בדוק עדכונים זמינים", "ערכת נושא", "צבע ערכת הנושא", "Use Wi-Fi",
-    "כהה", "בהיר", "שיטת נגינה", "העבר InputStream", "העבר URL",
-    "שמירת ההגדרות נכשלה", "Error saving theme: {0}", "Error loading theme: {0}", "Theme color update failed. Theme mode was saved.", "Language/שפה",
-    "בחר פריט להעביר, ואז בחר במיקום היעד", "הסידור נשמר", "שירות מוזיקה", "ההגדרות נשמרו בהצלחה", "בחר פריט להציג או להסתיר. [x] = מוצג, [] = מוסתר",
-    "הגדרות הנראות נשמרו", "התרחשה שגיאה", "טוען...", "טען עוד...", "אין מידע זמין!",
-    "אין עדכונים זמינים. ברשותך הגרסה העדכנית", "גרסה חדשה זמינה. לעדכן עכשיו?", "משך זמן חייב להיות בין 1 ל- 999", "פורמט זמן שגוי", "דקות",
-    "פעולת קוצב זמן", "סגור אפליקציה", "עצור השמעה", "בטל קוצב זמן", "האפליקציה תסגר כאשר קוצב הזמן ייגמר. להמשיך?",
-    "קבע קוצב זמן", "קוצב זמן לשינה", "קוצב זמן לשינה בוטל", "קוצב זמן לשינה סיים", "קוצב זמן לשינה הופעל"
+    "עדכון אוטומטי", "בדוק עדכונים זמינים", "תור אוטומטי", "נגן רצועות דומות בסיום התור", "ערכת נושא",
+    "צבע ערכת הנושא", "Use Wi-Fi", "כהה", "בהיר", "שיטת נגינה",
+    "העבר InputStream", "העבר URL", "שמירת ההגדרות נכשלה", "שגיאה בשמירת ערכת הנושא: {0}", "שגיאה בטעינת ערכת הנושא: {0}",
+    "עדכון צבע ערכת הנושא נכשל. מצב ערכת הנושא נשמר.", "Language/שפה", "בחר פריט להעביר, ואז בחר במיקום היעד", "הסידור נשמר", "שירות מוזיקה",
+    "ההגדרות נשמרו בהצלחה", "בחר פריט להציג או להסתיר. [x] = מוצג, [] = מוסתר", "הגדרות הנראות נשמרו", "התרחשה שגיאה", "טוען...",
+    "טען עוד...", "אין מידע זמין!", "אין עדכונים זמינים. ברשותך הגרסה העדכנית", "גרסה חדשה זמינה. לעדכן עכשיו?", "משך זמן חייב להיות בין 1 ל- 999",
+    "פורמט זמן שגוי", "דקות", "פעולת קוצב זמן", "סגור אפליקציה", "עצור השמעה",
+    "בטל קוצב זמן", "האפליקציה תסגר כאשר קוצב הזמן ייגמר. להמשיך?", "קבע קוצב זמן", "קוצב זמן לשינה", "קוצב זמן לשינה בוטל",
+    "קוצב זמן לשינה סיים", "קוצב זמן לשינה הופעל"
   };
 
   private static final String[] PL_VALS = {
@@ -106,14 +108,15 @@ public class Lang {
     "Dodaj wszystko do kolejki", "Dodano do kolejkę", "Sortuj kolejkę", "Zapisz jako playlistę", "Wyczyść historię",
     "Wyczyścić całą historię?", "Historia wyczyszczona", "Napisz co chcesz wyszukać", "Wyszukaj...", "Wyniki wyszukiwania",
     "Nic nie znaleziono", "Szukanie: {0}", "Typ wyszukiwania", "Wznowić ostatnią sesję?", "Jakość dźwięku",
-    "Automatyczne aktualizacje", "Sprawdź aktualizacje", "Wygląd", "Motyw", "Use Wi-Fi",
-    "Ciemny", "Jasny", "Sposób odtwarzania", "Przekaż strumień wejściowy", "Przekaż URL",
-    "Nie udało się załadować ustawień", "Error saving theme: {0}", "Error loading theme: {0}", "Theme color update failed. Theme mode was saved.", "Język",
-    "Najpierw wybierz ustawienie do przemieszczenia, następnie wybierz pozycję docelową", "Kolejność zapisana", "Usługa", "Zapisano", "Wybierz elementy do ukrycia/pokazania. [x] = pokaż, [] = ukryj",
-    "Zapisano", "Wystąpił błąd", "Ładowanie...", "Załaduj więcej...", "Brak danych!",
-    "Brak nowych aktualizacji. Masz najnowszą wersję", "Dostępna jest nowa wersja. Zaktualizować?", "Czas musi być w zakresie 1-999 minut", "Zły format czasu", "Minuty",
-    "Funkcje minutnika", "Opuść aplikację", "Zatrzymaj odtwarzanie", "Zatrzymaj minutnik", "Minutnik zamknie aplikacje po określonym czasie, kontynuować?",
-    "Ustaw minutnik", "Minutnik", "Odliczanie zatrzymane", "Koniec odliczania", "Aktywowano odliczanie"
+    "Automatyczne aktualizacje", "Sprawdź aktualizacje", "Automatyczna kolejka", "Odtwarzaj podobne po zakończeniu kolejki", "Wygląd",
+    "Motyw", "Use Wi-Fi", "Ciemny", "Jasny", "Sposób odtwarzania",
+    "Przekaż strumień wejściowy", "Przekaż URL", "Nie udało się załadować ustawień", "Błąd zapisywania motywu: {0}", "Błąd ładowania motywu: {0}",
+    "Aktualizacja koloru motywu nie powiodła się. Zapisano tryb wyglądu.", "Język", "Najpierw wybierz ustawienie do przemieszczenia, następnie wybierz pozycję docelową", "Kolejność zapisana", "Usługa",
+    "Zapisano", "Wybierz elementy do ukrycia/pokazania. [x] = pokaż, [] = ukryj", "Zapisano", "Wystąpił błąd", "Ładowanie...",
+    "Załaduj więcej...", "Brak danych!", "Brak nowych aktualizacji. Masz najnowszą wersję", "Dostępna jest nowa wersja. Zaktualizować?", "Czas musi być w zakresie 1-999 minut",
+    "Zły format czasu", "Minuty", "Funkcje minutnika", "Opuść aplikację", "Zatrzymaj odtwarzanie",
+    "Zatrzymaj minutnik", "Minutnik zamknie aplikacje po określonym czasie, kontynuować?", "Ustaw minutnik", "Minutnik", "Odliczanie zatrzymane",
+    "Koniec odliczania", "Aktywowano odliczanie"
   };
 
   private static final String[] TR_VALS = {
@@ -136,14 +139,15 @@ public class Lang {
     "Tümünü sıraya ekle", "Sıraya eklendi", "Sırala", "Çalma listesi olarak kaydet", "Geçmişi Temizle",
     "Tüm son çalınanlar silinsin mi?", "Geçmiş temizlendi", "Lütfen arama için bir anahtar kelime girin", "Arama için anahtar kelime girin...", "Arama Sonuçları",
     "Sonuç bulunamadı", "Aranan: {0}", "Arama Türü", "Son oturumunuza devam edilsin mi?", "Ses Kalitesi",
-    "Otomatik Güncellemeler", "Güncellemeleri Kontrol Et", "Tema Modu", "Tema Rengi", "Use Wi-Fi",
-    "Koyu", "Açık", "Oynatıcı Yöntemi", "InputStream Geçir", "URL Geçir",
-    "Ayarlar kaydedilemedi", "Error saving theme: {0}", "Error loading theme: {0}", "Theme color update failed. Theme mode was saved.", "Dil",
-    "Taşınacak öğeyi seçin, sonra hedef konumu seçin", "Sıralama kaydedildi", "Servis", "Ayarlar başarıyla kaydedildi", "Gizle/göster öğeleri seçin. [x] = göster, [] = gizle",
-    "Görünürlük ayarları kaydedildi", "Bir hata oluştu", "Yükleniyor...", "Daha fazla yükle...", "Veri yok!",
-    "Güncelleme yok. En son sürümü kullanıyorsunuz", "Yeni sürüm mevcut. Şimdi güncellensin mi?", "Süre 1-999 dakika arasında olmalı", "Geçersiz zaman formatı", "Dakika",
-    "Zamanlayıcı Eylemi", "Uygulamadan Çık", "Çalmayı Durdur", "Zamanlayıcıyı İptal Et", "Zamanlayıcı süresi dolduğunda uygulamadan çıkacak. Devam et?",
-    "Zamanlayıcı Ayarla", "Uyku Zamanlayıcısı", "Uyku zamanlayıcısı iptal edildi", "Uyku zamanlayıcısı süresi doldu", "Uyku zamanlayıcısı etkinleştirildi"
+    "Otomatik Güncellemeler", "Güncellemeleri Kontrol Et", "Otomatik sıra", "Sıra bittiğinde benzerlerini çal", "Tema Modu",
+    "Tema Rengi", "Use Wi-Fi", "Koyu", "Açık", "Oynatıcı Yöntemi",
+    "InputStream Geçir", "URL Geçir", "Ayarlar kaydedilemedi", "Tema kaydedilirken hata: {0}", "Tema yüklenirken hata: {0}",
+    "Tema rengi güncellenemedi. Tema modu kaydedildi.", "Dil", "Taşınacak öğeyi seçin, sonra hedef konumu seçin", "Sıralama kaydedildi", "Servis",
+    "Ayarlar başarıyla kaydedildi", "Gizle/göster öğeleri seçin. [x] = göster, [] = gizle", "Görünürlük ayarları kaydedildi", "Bir hata oluştu", "Yükleniyor...",
+    "Daha fazla yükle...", "Veri yok!", "Güncelleme yok. En son sürümü kullanıyorsunuz", "Yeni sürüm mevcut. Şimdi güncellensin mi?", "Süre 1-999 dakika arasında olmalı",
+    "Geçersiz zaman formatı", "Dakika", "Zamanlayıcı Eylemi", "Uygulamadan Çık", "Çalmayı Durdur",
+    "Zamanlayıcıyı İptal Et", "Zamanlayıcı süresi dolduğunda uygulamadan çıkacak. Devam et?", "Zamanlayıcı Ayarla", "Uyku Zamanlayıcısı", "Uyku zamanlayıcısı iptal edildi",
+    "Uyku zamanlayıcısı süresi doldu", "Uyku zamanlayıcısı etkinleştirildi"
   };
 
   private static final String[] VI_VALS = {
@@ -166,14 +170,15 @@ public class Lang {
     "Thêm tất cả vào hàng đợi", "Đã thêm vào hàng đợi", "Sắp xếp hàng đợi", "Lưu thành danh sách", "Xóa lịch sử",
     "Xóa toàn bộ mục gần đây?", "Đã xóa lịch sử", "Vui lòng nhập từ khóa", "Nhập từ khóa để tìm kiếm...", "Kết quả tìm kiếm",
     "Không tìm thấy kết quả", "Đang tìm: {0}", "Loại tìm kiếm", "Tiếp tục phiên nghe gần nhất?", "Chất lượng âm thanh",
-    "Tự động cập nhật", "Kiểm tra cập nhật", "Giao diện", "Màu chủ đề", "Use Wi-Fi",
-    "Tối", "Sáng", "Phương thức phát", "Truyền InputStream", "Truyền URL",
-    "Lỗi lưu cài đặt", "Lỗi lưu chủ đề: {0}", "Lỗi tải chủ đề: {0}", "Cập nhật màu chủ đề thất bại. Đã lưu chế độ giao diện.", "Ngôn ngữ",
-    "Chọn mục để di chuyển, sau đó chọn vị trí đích", "Đã lưu thứ tự", "Dịch vụ", "Lưu cài đặt thành công", "Chọn mục để ẩn/hiện. [x] = hiện, [] = ẩn",
-    "Đã lưu cài đặt hiển thị", "Đã xảy ra lỗi", "Đang tải...", "Tải thêm...", "Không có dữ liệu!",
-    "Không có cập nhật. Bạn đang dùng phiên bản mới nhất", "Có phiên bản mới. Cập nhật ngay?", "Thời lượng phải từ 1-999 phút", "Định dạng thời gian không hợp lệ", "Phút",
-    "Hành động khi hết giờ", "Thoát ứng dụng", "Dừng phát nhạc", "Hủy hẹn giờ", "Hẹn giờ sẽ thoát ứng dụng khi hết thời gian. Tiếp tục?",
-    "Đặt hẹn giờ", "Hẹn giờ tắt", "Đã hủy hẹn giờ tắt", "Hẹn giờ tắt đã hết thời gian", "Đã kích hoạt hẹn giờ tắt"
+    "Tự động cập nhật", "Kiểm tra cập nhật", "Auto queue", "Phát bài tương tự khi hết danh sách", "Giao diện",
+    "Màu chủ đề", "Use Wi-Fi", "Tối", "Sáng", "Phương thức phát",
+    "Truyền InputStream", "Truyền URL", "Lỗi lưu cài đặt", "Lỗi lưu chủ đề: {0}", "Lỗi tải chủ đề: {0}",
+    "Cập nhật màu chủ đề thất bại. Đã lưu chế độ giao diện.", "Ngôn ngữ", "Chọn mục để di chuyển, sau đó chọn vị trí đích", "Đã lưu thứ tự", "Dịch vụ",
+    "Lưu cài đặt thành công", "Chọn mục để ẩn/hiện. [x] = hiện, [] = ẩn", "Đã lưu cài đặt hiển thị", "Đã xảy ra lỗi", "Đang tải...",
+    "Tải thêm...", "Không có dữ liệu!", "Không có cập nhật. Bạn đang dùng phiên bản mới nhất", "Có phiên bản mới. Cập nhật ngay?", "Thời lượng phải từ 1-999 phút",
+    "Định dạng thời gian không hợp lệ", "Phút", "Hành động khi hết giờ", "Thoát ứng dụng", "Dừng phát nhạc",
+    "Hủy hẹn giờ", "Hẹn giờ sẽ thoát ứng dụng khi hết thời gian. Tiếp tục?", "Đặt hẹn giờ", "Hẹn giờ tắt", "Đã hủy hẹn giờ tắt",
+    "Hẹn giờ tắt đã hết thời gian", "Đã kích hoạt hẹn giờ tắt"
   };
 
   private static void l(String code) {

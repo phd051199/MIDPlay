@@ -10,8 +10,10 @@ import javax.microedition.media.Player;
 import javax.microedition.media.PlayerListener;
 import javax.microedition.media.control.VolumeControl;
 import javax.microedition.rms.RecordStoreException;
+import midplay.model.JsonListResult;
 import midplay.model.Track;
 import midplay.model.Tracks;
+import midplay.net.JsonOperation;
 import midplay.store.Configuration;
 import midplay.store.SettingsManager;
 import midplay.util.Lang;
@@ -21,6 +23,11 @@ public class PlayerGUI implements PlayerListener {
   private static final int TIMER_INTERVAL = 1000;
   private static final int VOLUME_STEP = 10;
   private static final int MAX_PENDING_TRACK_STEPS = 20;
+  // Auto-queue ("infinite playlist"): prefetch this many tracks before the end
+  // so the similar-tracks fetch finishes before playback runs out.
+  private static final int AUTO_QUEUE_THRESHOLD = 2;
+  // ponytail: J2ME heap is tiny; cap queue growth. Raise if a device allows.
+  private static final int AUTO_QUEUE_MAX_SIZE = 120;
   // ponytail: widened from 250ms to 1200ms so the 1s repaint tick usually
   // extrapolates from the cached sample instead of native-sampling
   // getMediaTime/getDuration every second. Ceiling: extrapolation drifts <1s
@@ -74,6 +81,8 @@ public class PlayerGUI implements PlayerListener {
   boolean destroyed = false;
   int playbackSessionId = 0;
   private boolean handlingTrackEnd = false;
+  // Re-entry guard for the background similar-tracks fetch (auto-queue).
+  private boolean autoQueueInFlight = false;
   private int pendingTrackDelta = 0;
   PlaybackMethod pendingPlayerMethodOverride;
   boolean sessionUsedInputStream = false;
@@ -143,6 +152,7 @@ public class PlayerGUI implements PlayerListener {
     setStatusByKey(
         hasTracks ? Configuration.PLAYER_STATUS_READY : Configuration.PLAYER_STATUS_STOPPED);
     parent.updateDisplay();
+    maybeAutoQueue();
     return hasTracks;
   }
 
@@ -171,6 +181,122 @@ public class PlayerGUI implements PlayerListener {
     } else {
       shuffle.clear();
     }
+  }
+
+  // Auto-queue ("infinite playlist"): when the playing position is within
+  // AUTO_QUEUE_THRESHOLD of the queue end (and the feature is on, not in
+  // repeat-one), fetch tracks similar to the current one and append them so
+  // playback never stops. Runs the fetch on its own thread — NOT via
+  // MIDPlay.startOperation, which would cancel any in-flight UI operation.
+  private void maybeAutoQueue() {
+    Track seed;
+    int len;
+    synchronized (this) {
+      if (destroyed || autoQueueInFlight) {
+        return;
+      }
+      if (settingsManager.getCurrentAutoQueue() != Configuration.AUTO_QUEUE_ON) {
+        return;
+      }
+      if (RepeatMode.isOne(repeatMode)) {
+        return;
+      }
+      if (trackList == null) {
+        return;
+      }
+      Track[] tracks = trackList.getTracks();
+      len = tracks.length;
+      if (len >= AUTO_QUEUE_MAX_SIZE) {
+        return;
+      }
+      if (currentTrackIndex < len - AUTO_QUEUE_THRESHOLD) {
+        return;
+      }
+      seed = getCurrentTrackLocked();
+      if (seed == null || isEmptyText(seed.getArtist()) || isEmptyText(seed.getName())) {
+        return;
+      }
+      autoQueueInFlight = true;
+    }
+    final Track seedTrack = seed;
+    JsonOperation.getSimilar(
+            seedTrack.getArtist(),
+            seedTrack.getName(),
+            new JsonOperation.JsonListListener() {
+              public void onDataReceived(JsonListResult result) {
+                // Drop stale results: if the seed is no longer in the queue the
+                // user replaced the playlist, so don't pollute the new one.
+                if (seedStillInQueue(seedTrack)) {
+                  Track[] fresh = dedupAgainstQueue(((Tracks) result).getTracks());
+                  if (fresh.length > 0) {
+                    addToQueue(fresh);
+                  }
+                }
+                releaseAutoQueue();
+              }
+
+              public void onNoData() {
+                releaseAutoQueue();
+              }
+
+              public void onError(Exception e) {
+                releaseAutoQueue();
+              }
+            })
+        .start();
+  }
+
+  private void releaseAutoQueue() {
+    synchronized (this) {
+      autoQueueInFlight = false;
+    }
+    // Re-arm: if still near the end (and under the cap), top up again.
+    maybeAutoQueue();
+  }
+
+  // True if the seed track is still present in the current queue — guards
+  // against appending after the user swapped the playlist mid-fetch.
+  private synchronized boolean seedStillInQueue(Track seed) {
+    return trackList != null && containsTrack(trackList.getTracks(), seed);
+  }
+
+  // Filter out tracks already in the queue (and the seed). Compacts the freshly
+  // parsed array in place; the array is private to this fetch, so that's safe.
+  private synchronized Track[] dedupAgainstQueue(Track[] fetched) {
+    if (fetched == null || fetched.length == 0) {
+      return new Track[0];
+    }
+    Track[] current = (trackList != null) ? trackList.getTracks() : null;
+    int count = 0;
+    for (int i = 0; i < fetched.length; i++) {
+      Track t = fetched[i];
+      if (t == null || containsTrack(current, t)) {
+        continue;
+      }
+      fetched[count++] = t;
+    }
+    if (count == fetched.length) {
+      return fetched;
+    }
+    Track[] result = new Track[count];
+    System.arraycopy(fetched, 0, result, 0, count);
+    return result;
+  }
+
+  private static boolean containsTrack(Track[] haystack, Track needle) {
+    if (haystack == null) {
+      return false;
+    }
+    for (int i = 0; i < haystack.length; i++) {
+      if (haystack[i] != null && haystack[i].isSame(needle)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean isEmptyText(String s) {
+    return s == null || s.length() == 0;
   }
 
   // Adopt a reordered queue (manual sort). Playback keeps going on the same
@@ -939,6 +1065,7 @@ public class PlayerGUI implements PlayerListener {
       resetDisplay();
       play();
     }
+    maybeAutoQueue();
   }
 
   private boolean changeTrackNormalLocked(boolean forward) {

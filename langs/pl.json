@@ -25,6 +25,13 @@
       "removed": "Usunięto z ulubionych"
     }
   },
+  "language": {
+    "en": "English",
+    "tr": "Türkçe",
+    "vi": "Tiếng Việt",
+    "he": "עברית",
+    "pl": "Polski"
+  },
   "media": {
     "album": "Album",
     "playlist": "Playlista",
@@ -137,6 +144,8 @@
     "audio_quality": "Jakość dźwięku",
     "auto_update": "Automatyczne aktualizacje",
     "check_update": "Sprawdź aktualizacje",
+    "auto_queue": "Automatyczna kolejka",
+    "auto_queue_continue": "Odtwarzaj podobne po zakończeniu kolejki",
     "theme_mode": "Wygląd",
     "theme_color": "Motyw",
     "use_wifi": "Use Wi-Fi",
@@ -150,7 +159,10 @@
       "pass_url": "Przekaż URL"
     },
     "error": {
-      "save_failed": "Nie udało się załadować ustawień"
+      "save_failed": "Nie udało się załadować ustawień",
+      "save_theme": "Błąd zapisywania motywu: {0}",
+      "load_theme": "Błąd ładowania motywu: {0}",
+      "color_update_failed": "Aktualizacja koloru motywu nie powiodła się. Zapisano tryb wyglądu."
     },
     "language": "Język",
     "reorder": {
