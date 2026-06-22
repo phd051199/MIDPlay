@@ -17,7 +17,6 @@ import midplay.net.CheckUpdateOperation;
 import midplay.net.JsonOperation;
 import midplay.net.NetworkOperation;
 import midplay.player.PlayerGUI;
-import midplay.player.PlayerNavHelper;
 import midplay.player.PlayerScreen;
 import midplay.store.Configuration;
 import midplay.store.FavoritesManager;
@@ -28,6 +27,7 @@ import midplay.ui.Commands;
 import midplay.ui.MainMenuScreen;
 import midplay.ui.MenuManager;
 import midplay.ui.Navigator;
+import midplay.ui.PlayerNavHelper;
 import midplay.ui.PlaylistsListForwarder;
 import midplay.ui.screen.FavoritesScreen;
 import midplay.ui.screen.RecentListScreen;
@@ -36,10 +36,6 @@ import midplay.ui.screen.SettingsScreen;
 import midplay.util.Lang;
 import midplay.util.Utils;
 
-// The MIDlet: lifecycle + singletons + navigation/update-check orchestration.
-// The root menu (its view and the sort/visibility edit controller) lives in
-// MainMenuScreen; this class implements its MenuHost for the few commands that
-// need the MIDlet or other screens (exit / check-for-update / open now-playing).
 public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
   private static NetworkOperation operation;
   public static String APP_VERSION = "1.0";
@@ -149,10 +145,6 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
     autoCheckForUpdate();
   }
 
-  // Offer to resume the last playback session over the just-shown main menu.
-  // The session is read out and cleared up front so it never lingers regardless
-  // of whether the user accepts or cancels; the captured locals feed the OK
-  // handler, which rebuilds the player from the saved (self-contained) tracks.
   private void maybeOfferResume() {
     LastSessionManager session = LastSessionManager.getInstance();
     if (!session.hasSession()) {
@@ -176,13 +168,12 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
   }
 
   public void pauseApp() {
-    // Incoming call / background: pause audio + stop the repaint timer so we
-    // don't hold audio resources or burn CPU while inactive (Decision A).
     try {
       if (playerScreen != null) {
         PlayerGUI gui = playerScreen.getPlayerGUI();
         if (gui != null) {
           gui.pause();
+          gui.deallocate();
         }
       }
     } catch (Exception e) {
@@ -197,19 +188,20 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
     try {
       if (playerScreen != null) {
         PlayerGUI gui = playerScreen.getPlayerGUI();
-        // Persist the session while the PlayerGUI is still alive (its track list
-        // and index are readable until cleanup()), so launch can offer to resume.
         if (gui != null) {
           Tracks current = gui.getCurrentTracks();
           if (current != null && current.getTracks() != null && current.getTracks().length > 0) {
-            try {
-              LastSessionManager.getInstance()
-                  .save(
-                      playerScreen.getTitle(),
-                      current,
-                      gui.getCurrentIndex(),
-                      gui.getCurrentTime());
-            } catch (Exception e) {
+            if (SettingsManager.getInstance().getCurrentSaveLastSession()
+                == Configuration.SAVE_LAST_SESSION_ON) {
+              try {
+                LastSessionManager.getInstance()
+                    .save(
+                        playerScreen.getTitle(),
+                        current,
+                        gui.getCurrentIndex(),
+                        gui.getCurrentTime());
+              } catch (Exception e) {
+              }
             }
           }
         }
@@ -246,8 +238,6 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
     }
   }
 
-  // --- MainMenuScreen.MenuHost ---
-
   public void exitApp() {
     showExitConfirmation();
   }
@@ -259,8 +249,6 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
   public void openNowPlaying() {
     goToPlayerScreen();
   }
-
-  // --- Navigation ---
 
   private void goToPlayerScreen() {
     PlayerScreen currentPlayerScreen = getPlayerScreen();
@@ -297,7 +285,6 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
     }
     f.append(getAppProperty("MIDlet-Name") + "\n");
     f.append("Version " + APP_VERSION + "\n");
-    f.append("Platform: " + "Java ME (MIDP 2.0)\n");
     f.append("Author: " + getAppProperty("MIDlet-Vendor") + "\n");
     f.append("Contributors: " + "symbuzzer, GoldenDragon, Spajciuch, gtrxAC\n");
 
@@ -372,8 +359,6 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
   private void showError(String message) {
     navigator.showAlert(message, AlertType.ERROR);
   }
-
-  // --- Update check ---
 
   private void autoCheckForUpdate() {
     if (settingsManager.getCurrentAutoUpdate() == Configuration.AUTO_UPDATE_ENABLED) {

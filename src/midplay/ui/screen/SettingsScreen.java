@@ -18,9 +18,6 @@ import midplay.util.Lang;
 import midplay.util.Utils;
 
 public final class SettingsScreen extends BaseForm {
-  // Theme-color swatches are immutable (built from static color constants), so
-  // cache them once across every SettingsScreen open instead of allocating a
-  // fresh RGB image per swatch per construction.
   private static Image[] themeColorSwatches;
 
   private final SettingsManager settingsManager;
@@ -32,10 +29,11 @@ public final class SettingsScreen extends BaseForm {
   private ChoiceGroup themeColorGroup;
   private ChoiceGroup serviceGroup;
   private ChoiceGroup qualityGroup;
-  private ChoiceGroup autoUpdateGroup;
-  private ChoiceGroup blackberryWifiGroup;
+  private ChoiceGroup togglesGroup;
   private ChoiceGroup playerMethodGroup;
-  private ChoiceGroup autoQueueGroup;
+  private int autoUpdateIndex;
+  private int saveLastSessionIndex;
+  private int blackberryWifiIndex = -1;
 
   private String currentLanguage;
   private String currentThemeMode;
@@ -43,7 +41,7 @@ public final class SettingsScreen extends BaseForm {
   private String currentQuality;
   private int currentAutoUpdate;
   private int currentBlackberryWifi;
-  private int currentAutoQueue;
+  private int currentSaveLastSession;
   private String currentPlayerMethod;
   private int currentColorIndex;
 
@@ -85,14 +83,12 @@ public final class SettingsScreen extends BaseForm {
             Configuration.ALL_PLAYER_METHODS,
             "settings.player_method_options.");
 
-    autoUpdateGroup = new ChoiceGroup(Lang.tr("settings.auto_update"), ChoiceGroup.MULTIPLE);
-    autoUpdateGroup.append(Lang.tr("settings.check_update"), null);
-
-    blackberryWifiGroup = new ChoiceGroup(Lang.tr("settings.use_wifi"), ChoiceGroup.MULTIPLE);
-    blackberryWifiGroup.append(Lang.tr("settings.use_wifi"), null);
-
-    autoQueueGroup = new ChoiceGroup(Lang.tr("settings.auto_queue"), ChoiceGroup.MULTIPLE);
-    autoQueueGroup.append(Lang.tr("settings.auto_queue_continue"), null);
+    togglesGroup = new ChoiceGroup(Lang.tr("settings.options"), ChoiceGroup.MULTIPLE);
+    autoUpdateIndex = togglesGroup.append(Lang.tr("settings.check_update"), null);
+    saveLastSessionIndex = togglesGroup.append(Lang.tr("settings.save_last_session"), null);
+    if (Utils.isBlackberry) {
+      blackberryWifiIndex = togglesGroup.append(Lang.tr("settings.use_wifi"), null);
+    }
 
     themeColorGroup = new ChoiceGroup(Lang.tr("settings.theme_color"), ChoiceGroup.POPUP);
     Image[] swatches = getThemeColorSwatches();
@@ -106,9 +102,7 @@ public final class SettingsScreen extends BaseForm {
     append(serviceGroup);
     append(qualityGroup);
     append(playerMethodGroup);
-    append(autoUpdateGroup);
-    append(autoQueueGroup);
-    if (Utils.isBlackberry) append(blackberryWifiGroup);
+    append(togglesGroup);
   }
 
   private ChoiceGroup createChoiceGroup(
@@ -129,7 +123,7 @@ public final class SettingsScreen extends BaseForm {
     currentQuality = settingsManager.getCurrentQuality();
     currentAutoUpdate = settingsManager.getCurrentAutoUpdate();
     currentBlackberryWifi = settingsManager.getCurrentBlackberryWifi();
-    currentAutoQueue = settingsManager.getCurrentAutoQueue();
+    currentSaveLastSession = settingsManager.getCurrentSaveLastSession();
     currentPlayerMethod = settingsManager.getCurrentPlayerMethod();
     currentColorIndex = settingsManager.getSavedColorIndex();
     selectChoice(languageGroup, availableLanguages, currentLanguage);
@@ -141,10 +135,14 @@ public final class SettingsScreen extends BaseForm {
     selectChoice(serviceGroup, Configuration.ALL_SERVICES, currentService);
     selectChoice(qualityGroup, Configuration.ALL_QUALITIES, currentQuality);
     selectChoice(playerMethodGroup, Configuration.ALL_PLAYER_METHODS, currentPlayerMethod);
-    autoUpdateGroup.setSelectedIndex(0, currentAutoUpdate == Configuration.AUTO_UPDATE_ENABLED);
-    blackberryWifiGroup.setSelectedIndex(
-        0, currentBlackberryWifi == Configuration.BLACKBERRY_WIFI_ON);
-    autoQueueGroup.setSelectedIndex(0, currentAutoQueue == Configuration.AUTO_QUEUE_ON);
+    togglesGroup.setSelectedIndex(
+        autoUpdateIndex, currentAutoUpdate == Configuration.AUTO_UPDATE_ENABLED);
+    togglesGroup.setSelectedIndex(
+        saveLastSessionIndex, currentSaveLastSession == Configuration.SAVE_LAST_SESSION_ON);
+    if (blackberryWifiIndex >= 0) {
+      togglesGroup.setSelectedIndex(
+          blackberryWifiIndex, currentBlackberryWifi == Configuration.BLACKBERRY_WIFI_ON);
+    }
   }
 
   private void selectChoice(ChoiceGroup group, String[] values, String target) {
@@ -171,15 +169,17 @@ public final class SettingsScreen extends BaseForm {
               Configuration.ALL_PLAYER_METHODS,
               settingsManager.getDefaultPlayerMethod());
       int selectedAutoUpdate =
-          autoUpdateGroup.isSelected(0)
+          togglesGroup.isSelected(autoUpdateIndex)
               ? Configuration.AUTO_UPDATE_ENABLED
               : Configuration.AUTO_UPDATE_DISABLED;
+      int selectedSaveLastSession =
+          togglesGroup.isSelected(saveLastSessionIndex)
+              ? Configuration.SAVE_LAST_SESSION_ON
+              : Configuration.SAVE_LAST_SESSION_OFF;
       int selectedBlackberryWifi =
-          blackberryWifiGroup.isSelected(0)
+          blackberryWifiIndex >= 0 && togglesGroup.isSelected(blackberryWifiIndex)
               ? Configuration.BLACKBERRY_WIFI_ON
               : Configuration.BLACKBERRY_WIFI_OFF;
-      int selectedAutoQueue =
-          autoQueueGroup.isSelected(0) ? Configuration.AUTO_QUEUE_ON : Configuration.AUTO_QUEUE_OFF;
       int selectedThemeColor = themeColorGroup.getSelectedIndex();
       boolean hasChanges = false;
       if (!currentLanguage.equals(selectedLang)) {
@@ -201,13 +201,13 @@ public final class SettingsScreen extends BaseForm {
         hasChanges = true;
         settingsManager.saveAutoUpdate(selectedAutoUpdate);
       }
+      if (currentSaveLastSession != selectedSaveLastSession) {
+        hasChanges = true;
+        settingsManager.saveSaveLastSession(selectedSaveLastSession);
+      }
       if (currentBlackberryWifi != selectedBlackberryWifi) {
         hasChanges = true;
         settingsManager.saveBlackberryWifi(selectedBlackberryWifi);
-      }
-      if (currentAutoQueue != selectedAutoQueue) {
-        hasChanges = true;
-        settingsManager.saveAutoQueue(selectedAutoQueue);
       }
       if (!currentPlayerMethod.equals(selectedPlayerMethod)) {
         hasChanges = true;

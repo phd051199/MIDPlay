@@ -25,9 +25,6 @@ public class Tracks extends JsonListResult {
     return tracks.length;
   }
 
-  // Null-safe emptiness check. getTracks() never returns null (the field is
-  // initialised to an empty array and setTracks coerces null), so this is the
-  // single correct way to test "no tracks" without a triple-null guard.
   public static boolean isEmpty(Tracks t) {
     return t == null || t.tracks.length == 0;
   }
@@ -40,10 +37,5 @@ public class Tracks extends JsonListResult {
     Track[] arr = new Track[items.size()];
     items.copyInto(arr);
     setTracks(arr);
-  }
-
-  public Tracks fromJSON(String jsonString) {
-    parse(jsonString);
-    return this;
   }
 }

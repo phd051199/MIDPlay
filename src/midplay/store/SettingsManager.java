@@ -17,12 +17,14 @@ public class SettingsManager {
   private static String currentSearchType;
   private static int currentAutoUpdate;
   private static String currentPlayerMethod;
+  private static String detectedDefaultMethod;
+  private static boolean detectedDefaultMethodResolved;
   private static int currentRepeatMode;
   private static int currentShuffleMode;
   private static int currentVolumeLevel;
   private static String currentThemeMode;
   private static int currentBlackberryWifi;
-  private static int currentAutoQueue;
+  private static int currentSaveLastSession;
 
   public static SettingsManager getInstance() {
     if (instance == null) {
@@ -32,10 +34,6 @@ public class SettingsManager {
   }
 
   private final JsonRecordStore storage;
-  // Parsed settings kept in memory for the session so setters don't re-read and
-  // re-parse the whole RMS document on every change (volume keystrokes, setting
-  // toggles). Lazily populated, mutated in place, and written through to RMS on
-  // save.
   private JSONObject cachedSettings;
 
   private JSONObject settings() {
@@ -52,15 +50,58 @@ public class SettingsManager {
   }
 
   public String getDefaultPlayerMethod() {
-    return Utils.getDefaultPlayerHttpMethod();
+    if (!detectedDefaultMethodResolved) {
+      detectedDefaultMethodResolved = true;
+      detectedDefaultMethod = detectPlayerHttpMethod();
+    }
+    return detectedDefaultMethod;
+  }
+
+  // Detect the best MMAPI player method (URL vs InputStream) from device platform
+  // quirks. reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
+  private static String detectPlayerHttpMethod() {
+    String platform = System.getProperty("microedition.platform");
+
+    boolean symbianJrt = platform != null && platform.indexOf("platform=S60") != -1;
+    boolean symbian =
+        symbianJrt
+            || Utils.hasProperty("com.symbian.midp.serversocket.support")
+            || Utils.hasProperty("com.symbian.default.to.suite.icon")
+            || Utils.hasClass("com.symbian.midp.io.protocol.http.Protocol")
+            || Utils.hasClass("com.symbian.lcdjava.io.File");
+
+    String method = Configuration.PLAYER_METHOD_PASS_URL;
+
+    if (Utils.hasClass("com.nokia.mid.impl.isa.jam.Jam")) {
+      // S40v1 uses sun impl for media and i/o so it should work fine with URL
+      // S40v2+ breaks http locator parsing so needs InputStream
+      method =
+          Utils.hasClass("com.sun.mmedia.protocol.CommonDS")
+              ? Configuration.PLAYER_METHOD_PASS_URL
+              : Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
+    } else if (symbian) {
+      if (symbianJrt
+          && platform != null
+          && (platform.indexOf("java_build_version=2.") != -1
+              || platform.indexOf("java_build_version=1.4") != -1)) {
+        // EMC (S60v5+) supports mp3 streaming - keep default URL method
+      } else if (Utils.hasClass("com.symbian.mmapi.PlayerImpl")) {
+        // UIQ - use InputStream
+        method = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
+      } else {
+        // MMF (S60v3.2-) - use InputStream
+        method = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
+      }
+    } else if (Utils.isJ2MELoader()) {
+      method = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
+    }
+
+    return method;
   }
 
   public void loadSettings() {
     JSONObject settings = settings();
     setCurrentLanguage(settings.getString("language", "en"));
-    // setCurrentThemeMode already applies the matching theme colors, so the
-    // previous standalone loadAndApplyThemeColors() call here was a redundant
-    // re-parse of the same RMS document.
     setCurrentThemeMode(settings.getString("themeMode", Configuration.THEME_LIGHT));
     currentService = settings.getString("service", Configuration.SERVICE_NCT);
     currentQuality = settings.getString("quality", Configuration.QUALITY_128);
@@ -71,7 +112,8 @@ public class SettingsManager {
     currentShuffleMode = settings.getInt("shuffleMode", Configuration.PLAYER_SHUFFLE_OFF);
     currentVolumeLevel = settings.getInt("volumeLevel", Configuration.PLAYER_MAX_VOLUME);
     currentBlackberryWifi = settings.getInt("blackberryWifi", Configuration.BLACKBERRY_WIFI_ON);
-    currentAutoQueue = settings.getInt("autoQueue", Configuration.AUTO_QUEUE_ON);
+    currentSaveLastSession =
+        settings.getInt("saveLastSession", Configuration.SAVE_LAST_SESSION_OFF);
   }
 
   private JSONObject getSettingsJSON() {
@@ -95,7 +137,7 @@ public class SettingsManager {
     settings.put("playerMethod", getDefaultPlayerMethod());
     settings.put("themeMode", Configuration.THEME_LIGHT);
     settings.put("blackberryWifi", Configuration.BLACKBERRY_WIFI_ON);
-    settings.put("autoQueue", Configuration.AUTO_QUEUE_ON);
+    settings.put("saveLastSession", Configuration.SAVE_LAST_SESSION_OFF);
     return settings;
   }
 
@@ -105,31 +147,38 @@ public class SettingsManager {
 
   private void saveSetting(String key, String value) throws RecordStoreException {
     JSONObject settings = settings();
+    if (settings.has(key) && value != null && value.equals(settings.getString(key, ""))) {
+      return;
+    }
     settings.put(key, value);
     saveJSON(settings);
   }
 
   private void saveSetting(String key, int value) throws RecordStoreException {
     JSONObject settings = settings();
+    if (settings.has(key) && value == settings.getInt(key, value)) {
+      return;
+    }
     settings.put(key, value);
     saveJSON(settings);
   }
 
   private void saveSetting(String key, JSONObject value) throws RecordStoreException {
     JSONObject settings = settings();
+    if (settings.has(key) && value == settings.getObject(key)) {
+      return;
+    }
     settings.put(key, value);
     saveJSON(settings);
   }
 
   public void saveLanguage(String langCode) throws RecordStoreException {
     saveSetting("language", langCode);
-    currentLanguage = langCode;
     setCurrentLanguage(langCode);
   }
 
   public void saveTheme(String mode) throws RecordStoreException {
     saveSetting("themeMode", mode);
-    currentThemeMode = mode;
     setCurrentThemeMode(mode);
   }
 
@@ -151,6 +200,11 @@ public class SettingsManager {
   public void saveAutoUpdate(int autoUpdate) throws RecordStoreException {
     saveSetting("autoUpdate", autoUpdate);
     currentAutoUpdate = autoUpdate;
+  }
+
+  public void saveSaveLastSession(int saveLastSession) throws RecordStoreException {
+    saveSetting("saveLastSession", saveLastSession);
+    currentSaveLastSession = saveLastSession;
   }
 
   public void savePlayerMethod(String playerMethod) throws RecordStoreException {
@@ -176,11 +230,6 @@ public class SettingsManager {
   public void saveBlackberryWifi(int blackberryWifi) throws RecordStoreException {
     saveSetting("blackberryWifi", blackberryWifi);
     currentBlackberryWifi = blackberryWifi;
-  }
-
-  public void saveAutoQueue(int autoQueue) throws RecordStoreException {
-    saveSetting("autoQueue", autoQueue);
-    currentAutoQueue = autoQueue;
   }
 
   public void saveThemeColors(JSONObject lightColors, JSONObject darkColors, int selected)
@@ -256,6 +305,10 @@ public class SettingsManager {
     return currentAutoUpdate;
   }
 
+  public int getCurrentSaveLastSession() {
+    return currentSaveLastSession;
+  }
+
   public String getCurrentPlayerMethod() {
     return currentPlayerMethod;
   }
@@ -274,10 +327,6 @@ public class SettingsManager {
 
   public int getCurrentBlackberryWifi() {
     return currentBlackberryWifi;
-  }
-
-  public int getCurrentAutoQueue() {
-    return currentAutoQueue;
   }
 
   public void cleanup() {

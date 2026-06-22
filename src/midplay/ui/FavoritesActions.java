@@ -4,9 +4,6 @@ import javax.microedition.lcdui.AlertType;
 import midplay.store.FavoritesManager;
 import midplay.util.Lang;
 
-// Maps a FavoritesManager result code to the standard alert. Replaces the
-// identical three-way if/else (SUCCESS/ALREADY_EXISTS/else) that was inlined
-// into every screen that adds a playlist to favorites.
 public final class FavoritesActions {
   public static void showAddPlaylistResult(Navigator navigator, int result) {
     if (result == FavoritesManager.SUCCESS) {

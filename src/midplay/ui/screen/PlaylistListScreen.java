@@ -15,8 +15,7 @@ import midplay.ui.BaseList;
 import midplay.ui.Commands;
 import midplay.ui.FavoritesActions;
 import midplay.ui.Navigator;
-import midplay.ui.QueueAppender;
-import midplay.ui.TracksListForwarder;
+import midplay.ui.PlayerNavHelper;
 import midplay.util.Lang;
 import midplay.util.Utils;
 
@@ -26,10 +25,6 @@ public final class PlaylistListScreen extends BaseList {
   private int currentPage = 1;
   private final String keyword;
   private final String searchType;
-  // Index of the trailing "Load more" row, or -1 when absent. Tracking it by
-  // index (instead of comparing row text against Lang.tr("status.load_more"))
-  // avoids a translation lookup per selection and survives a locale change —
-  // the appended row text is from the old locale and would stop matching.
   private int loadMoreIndex = -1;
 
   public PlaylistListScreen(String title, Playlists items, Navigator navigator) {
@@ -63,16 +58,14 @@ public final class PlaylistListScreen extends BaseList {
       loadMore();
       return;
     }
-    if (selectedIndex < 0 || selectedIndex >= items.getPlaylists().length) {
+    if (!isValidSelection(selectedIndex, items.getPlaylists().length)) {
       return;
     }
     final Playlist selectedPlaylist = items.getPlaylists()[selectedIndex];
     RecentManager.getInstance().recordFolder(selectedPlaylist);
     navigator.showLoadingAlert(Lang.tr("status.loading"));
-    MIDPlay.startOperation(
-        JsonOperation.getTracks(
-            selectedPlaylist.getKey(),
-            new TracksListForwarder(navigator, selectedPlaylist.getName(), "status.no_data")));
+    PlayerNavHelper.loadRemotePlaylistTracks(
+        navigator, selectedPlaylist.getKey(), selectedPlaylist.getName());
   }
 
   protected void handleCommand(Command c, Displayable d) {
@@ -88,15 +81,13 @@ public final class PlaylistListScreen extends BaseList {
   private void addAllToQueue() {
     int selectedIndex = getSelectedIndex();
     if (isLoadMoreItem(selectedIndex)
-        || selectedIndex < 0
-        || selectedIndex >= items.getPlaylists().length) {
+        || !isValidSelection(selectedIndex, items.getPlaylists().length)) {
       return;
     }
     final Playlist selectedPlaylist = items.getPlaylists()[selectedIndex];
     navigator.showLoadingAlert(Lang.tr("status.loading"));
-    MIDPlay.startOperation(
-        JsonOperation.getTracks(
-            selectedPlaylist.getKey(), new QueueAppender(navigator, selectedPlaylist.getName())));
+    PlayerNavHelper.loadRemotePlaylistToQueue(
+        navigator, selectedPlaylist.getKey(), selectedPlaylist.getName());
   }
 
   private void loadMore() {
@@ -158,8 +149,7 @@ public final class PlaylistListScreen extends BaseList {
   private void addToFavorites() {
     int selectedIndex = getSelectedIndex();
     if (isLoadMoreItem(selectedIndex)
-        || selectedIndex < 0
-        || selectedIndex >= items.getPlaylists().length) {
+        || !isValidSelection(selectedIndex, items.getPlaylists().length)) {
       return;
     }
     Playlist selectedPlaylist = items.getPlaylists()[selectedIndex];
@@ -170,8 +160,7 @@ public final class PlaylistListScreen extends BaseList {
   private void showPlaylistDetails() {
     int selectedIndex = getSelectedIndex();
     if (isLoadMoreItem(selectedIndex)
-        || selectedIndex < 0
-        || selectedIndex >= items.getPlaylists().length) {
+        || !isValidSelection(selectedIndex, items.getPlaylists().length)) {
       return;
     }
     Playlist selectedPlaylist = items.getPlaylists()[selectedIndex];

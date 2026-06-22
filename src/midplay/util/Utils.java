@@ -8,9 +8,8 @@ import javax.microedition.io.HttpConnection;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.List;
-import midplay.model.MenuItem;
-import midplay.model.Playlist;
-import midplay.store.Configuration;
+import javax.microedition.media.Player;
+import javax.microedition.media.PlayerListener;
 
 public class Utils {
   public static final boolean isBlackberry;
@@ -25,50 +24,7 @@ public class Utils {
                 || platform.toLowerCase().indexOf("sgh") != -1);
   }
 
-  private static String playerHttpMethod;
-
   private static final String HEX_DIGITS = "0123456789ABCDEF";
-
-  // reference https://github.com/shinovon/mpgram-client/blob/master/src/MP.java
-  public static void setPlayerHttpMethod() {
-    String platform = System.getProperty("microedition.platform");
-
-    boolean symbianJrt = platform != null && platform.indexOf("platform=S60") != -1;
-    boolean symbian =
-        symbianJrt
-            || hasProperty("com.symbian.midp.serversocket.support")
-            || hasProperty("com.symbian.default.to.suite.icon")
-            || hasClass("com.symbian.midp.io.protocol.http.Protocol")
-            || hasClass("com.symbian.lcdjava.io.File");
-
-    String method = Configuration.PLAYER_METHOD_PASS_URL;
-
-    if (hasClass("com.nokia.mid.impl.isa.jam.Jam")) {
-      // S40v1 uses sun impl for media and i/o so it should work fine with URL
-      // S40v2+ breaks http locator parsing so needs InputStream
-      method =
-          hasClass("com.sun.mmedia.protocol.CommonDS")
-              ? Configuration.PLAYER_METHOD_PASS_URL
-              : Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
-    } else if (symbian) {
-      if (symbianJrt
-          && platform != null
-          && (platform.indexOf("java_build_version=2.") != -1
-              || platform.indexOf("java_build_version=1.4") != -1)) {
-        // EMC (S60v5+) supports mp3 streaming - keep default URL method
-      } else if (hasClass("com.symbian.mmapi.PlayerImpl")) {
-        // UIQ - use InputStream
-        method = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
-      } else {
-        // MMF (S60v3.2-) - use InputStream
-        method = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
-      }
-    } else if (isJ2MELoader()) {
-      method = Configuration.PLAYER_METHOD_PASS_INPUTSTREAM;
-    }
-
-    playerHttpMethod = method;
-  }
 
   private static boolean isUrlSafeCharacter(char c) {
     return (c >= 'A' && c <= 'Z')
@@ -80,7 +36,7 @@ public class Utils {
         || c == '~';
   }
 
-  private static boolean hasClass(String s) {
+  public static boolean hasClass(String s) {
     try {
       Class.forName(s);
       return true;
@@ -89,17 +45,8 @@ public class Utils {
     }
   }
 
-  private static boolean hasProperty(String propertyName) {
+  public static boolean hasProperty(String propertyName) {
     return System.getProperty(propertyName) != null;
-  }
-
-  public static String getDefaultPlayerHttpMethod() {
-    setPlayerHttpMethod();
-    return playerHttpMethod;
-  }
-
-  public static String getPlayerHttpMethod() {
-    return playerHttpMethod;
   }
 
   public static boolean isJ2MELoader() {
@@ -123,44 +70,102 @@ public class Utils {
     return sb.toString();
   }
 
+  public static int indexOfIgnoreCase(String haystack, String needle) {
+    if (haystack == null || needle == null) {
+      return -1;
+    }
+    int hLen = haystack.length();
+    int nLen = needle.length();
+    if (nLen == 0) {
+      return 0;
+    }
+    for (int i = 0; i <= hLen - nLen; i++) {
+      int j = 0;
+      for (; j < nLen; j++) {
+        char h = haystack.charAt(i + j);
+        char n = needle.charAt(j);
+        if (h >= 'A' && h <= 'Z') {
+          h += 32;
+        }
+        if (n >= 'A' && n <= 'Z') {
+          n += 32;
+        }
+        if (h != n) {
+          break;
+        }
+      }
+      if (j == nLen) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  public static boolean containsAnyIgnoreCase(String haystack, String[] needles) {
+    if (haystack == null || needles == null) {
+      return false;
+    }
+    for (int i = 0; i < needles.length; i++) {
+      if (indexOfIgnoreCase(haystack, needles[i]) != -1) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public static byte[] utf8ToBytes(String s) {
+    if (s == null) {
+      return new byte[0];
+    }
+    try {
+      return s.getBytes("UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      return s.getBytes();
+    }
+  }
+
+  public static String bytesToUtf8(byte[] data) {
+    if (data == null || data.length == 0) {
+      return "";
+    }
+    try {
+      return new String(data, "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      return new String(data);
+    }
+  }
+
   public static String urlEncode(String text) {
     if (text == null) {
       return "";
     }
 
-    try {
-      byte[] bytes = text.getBytes("UTF-8");
-      StringBuffer result = new StringBuffer(bytes.length + (bytes.length >> 1));
+    byte[] bytes = utf8ToBytes(text);
+    StringBuffer result = new StringBuffer(bytes.length + (bytes.length >> 1));
 
-      for (int i = 0; i < bytes.length; i++) {
-        int b = bytes[i] & 0xFF;
-        char c = (char) b;
+    for (int i = 0; i < bytes.length; i++) {
+      int b = bytes[i] & 0xFF;
+      char c = (char) b;
 
-        if (c == ' ') {
-          result.append('+');
-        } else if (isUrlSafeCharacter(c)) {
-          result.append(c);
-        } else {
-          result
-              .append('%')
-              .append(HEX_DIGITS.charAt((b >> 4) & 0xF))
-              .append(HEX_DIGITS.charAt(b & 0xF));
-        }
+      if (c == ' ') {
+        result.append('+');
+      } else if (isUrlSafeCharacter(c)) {
+        result.append(c);
+      } else {
+        result
+            .append('%')
+            .append(HEX_DIGITS.charAt((b >> 4) & 0xF))
+            .append(HEX_DIGITS.charAt(b & 0xF));
       }
-      return result.toString();
-    } catch (UnsupportedEncodingException e) {
-      return "";
     }
+    return result.toString();
   }
 
-  // Strategy hook for the shared bubble sort, so each typed sort supplies only
-  // its comparison without a magic int selecting the element type.
-  private interface Comparator {
-    // true when a should be placed after b (i.e. the pair is out of order).
+  public interface Comparator {
     boolean shouldSwap(Object a, Object b);
   }
 
-  private static void bubbleSort(Vector vector, Comparator comparator) {
+  public static void bubbleSort(Vector vector, Comparator comparator) {
     int size = vector.size();
     if (size < 2) {
       return;
@@ -184,34 +189,18 @@ public class Utils {
     }
   }
 
-  // Sort playlists ascending by id.
-  public static void sortPlaylistsById(final Vector vector) {
-    bubbleSort(
-        vector,
-        new Comparator() {
-          public boolean shouldSwap(Object a, Object b) {
-            return ((Playlist) a).getId() < ((Playlist) b).getId();
-          }
-        });
-  }
-
-  // Sort menu items descending by order.
-  public static void sortMenuItemsByOrder(final Vector vector) {
-    bubbleSort(
-        vector,
-        new Comparator() {
-          public boolean shouldSwap(Object a, Object b) {
-            return ((MenuItem) a).order > ((MenuItem) b).order;
-          }
-        });
-  }
-
   public static String toHexRgb(int color) {
     String hex = Integer.toHexString(color & 0x00FFFFFF).toUpperCase();
-    while (hex.length() < 6) {
-      hex = "0" + hex;
+    int pad = 6 - hex.length();
+    if (pad <= 0) {
+      return hex;
     }
-    return hex;
+    StringBuffer sb = new StringBuffer(6);
+    for (int i = 0; i < pad; i++) {
+      sb.append('0');
+    }
+    sb.append(hex);
+    return sb.toString();
   }
 
   public static Image applyColor(Image img, int targetColor) {
@@ -253,74 +242,56 @@ public class Utils {
 
     double scaleX = (double) targetWidth / srcWidth;
     double scaleY = (double) targetHeight / srcHeight;
-    double scale = Math.max(scaleX, scaleY);
+    double scale = scaleX > scaleY ? scaleX : scaleY;
 
     int scaledWidth = (int) (srcWidth * scale);
     int scaledHeight = (int) (srcHeight * scale);
-
-    Image scaledImage = resizeImageExact(src, scaledWidth, scaledHeight);
-    Image resizedImage =
-        cropImageToCenter(scaledImage, scaledWidth, scaledHeight, targetWidth, targetHeight);
-
-    return resizedImage;
-  }
-
-  public static Image cropImageToCenter(
-      Image scaledImage, int scaledWidth, int scaledHeight, int targetWidth, int targetHeight) {
-    int[] dst = new int[targetWidth * targetHeight];
-    int[] srcPixels = new int[scaledWidth * scaledHeight];
-    scaledImage.getRGB(srcPixels, 0, scaledWidth, 0, 0, scaledWidth, scaledHeight);
-
     int offsetX = (scaledWidth - targetWidth) / 2;
     int offsetY = (scaledHeight - targetHeight) / 2;
 
-    for (int y = 0; y < targetHeight; y++) {
-      for (int x = 0; x < targetWidth; x++) {
-        int srcX = x + offsetX;
-        int srcY = y + offsetY;
-        if (srcX >= 0 && srcX < scaledWidth && srcY >= 0 && srcY < scaledHeight) {
-          dst[y * targetWidth + x] = srcPixels[srcY * scaledWidth + srcX];
-        }
+    int[] dst = new int[targetWidth * targetHeight];
+    int[] srcRow = new int[srcWidth];
+    int dstIndex = 0;
+
+    for (int dy = 0; dy < targetHeight; dy++) {
+      int srcY = ((offsetY + dy) * srcHeight) / scaledHeight;
+      src.getRGB(srcRow, 0, srcWidth, 0, srcY, srcWidth, 1);
+      for (int dx = 0; dx < targetWidth; dx++) {
+        int srcX = ((offsetX + dx) * srcWidth) / scaledWidth;
+        dst[dstIndex++] = srcRow[srcX];
       }
     }
+
     return Image.createRGBImage(dst, targetWidth, targetHeight, true);
   }
 
-  public static Image resizeImageExact(Image src, int targetWidth, int targetHeight) {
-    int srcWidth = src.getWidth();
-    int srcHeight = src.getHeight();
-
-    int[] resizedPixels = new int[targetWidth * targetHeight];
-    int[] srcRowBuffer = new int[srcWidth];
-
-    int dstPixelIndex = 0;
-    int srcYAccumulator = 0;
-
-    for (int dstY = 0; dstY < targetHeight; dstY++) {
-      int srcY = srcYAccumulator / targetHeight;
-      int srcXAccumulator = 0;
-      src.getRGB(srcRowBuffer, 0, srcWidth, 0, srcY, srcWidth, 1);
-
-      for (int dstX = 0; dstX < targetWidth; dstX++) {
-        int srcX = srcXAccumulator / targetWidth;
-        resizedPixels[dstPixelIndex++] = srcRowBuffer[srcX];
-        srcXAccumulator += srcWidth;
-      }
-      srcYAccumulator += srcHeight;
-    }
-
-    return Image.createRGBImage(resizedPixels, targetWidth, targetHeight, true);
-  }
-
   public static String formatTime(long microseconds) {
-    long totalSeconds = microseconds / 1000000L;
-    long minutes = totalSeconds / 60L;
-    long seconds = totalSeconds % 60L;
-
-    return (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+    return formatClock(microseconds / 1000000L, false);
   }
 
-  // Clamp index into the list's [0, size-1] range and select it; no-op when empty.
+  public static String formatClock(long totalSeconds, boolean withHours) {
+    long hours = totalSeconds / 3600;
+    long minutes = withHours ? (totalSeconds % 3600) / 60 : totalSeconds / 60;
+    long seconds = totalSeconds % 60;
+
+    StringBuffer sb = new StringBuffer(withHours ? 8 : 5);
+    if (withHours) {
+      appendPadded(sb, hours);
+      sb.append(':');
+    }
+    appendPadded(sb, minutes);
+    sb.append(':');
+    appendPadded(sb, seconds);
+    return sb.toString();
+  }
+
+  private static void appendPadded(StringBuffer sb, long value) {
+    if (value < 10) {
+      sb.append('0');
+    }
+    sb.append(value);
+  }
+
   public static void clampAndSelect(List list, int index) {
     int size = list.size();
     if (size <= 0) {
@@ -349,6 +320,29 @@ public class Utils {
         connection.close();
       } catch (IOException e) {
       }
+    }
+  }
+
+  public static void closePlayerQuietly(Player player, PlayerListener listener) {
+    if (player == null) {
+      return;
+    }
+    if (listener != null) {
+      try {
+        player.removePlayerListener(listener);
+      } catch (Exception e) {
+      }
+    }
+    try {
+      int state = player.getState();
+      if (state != Player.CLOSED && state >= Player.REALIZED) {
+        player.stop();
+      }
+    } catch (Exception e) {
+    }
+    try {
+      player.close();
+    } catch (Exception e) {
     }
   }
 

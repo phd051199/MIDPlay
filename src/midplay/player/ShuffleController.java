@@ -2,18 +2,11 @@ package midplay.player;
 
 import java.util.Random;
 
-// Shuffle-order state for PlayerGUI: owns the shuffled index sequence and the
-// cursor into it. Pure stateful helper — PlayerGUI holds the playback lock at
-// every call site, so no internal synchronization is needed.
 final class ShuffleController {
   private int[] order;
   private int position;
   private final Random random = new Random();
 
-  // Advance the shuffle cursor. Returns the new current-track index, or -1 if the
-  // track did not change (single-track list, or OFF-repeat at the boundary).
-  // Lazily (re)builds the order when empty; on an ALL-repeat wrap it rebuilds a
-  // fresh order from position 0.
   int advance(boolean forward, boolean repeatOff, int size, int currentIndex) {
     if (order == null || order.length == 0) {
       rebuild(size, currentIndex);
@@ -50,8 +43,18 @@ final class ShuffleController {
     return order[position];
   }
 
-  // Build a fresh Fisher-Yates shuffle of [0, size) and point the cursor at the
-  // current track. Clears when size <= 0.
+  void append(int newSize) {
+    if (order == null || newSize <= order.length) {
+      return;
+    }
+    int[] grown = new int[newSize];
+    System.arraycopy(order, 0, grown, 0, order.length);
+    for (int i = order.length; i < newSize; i++) {
+      grown[i] = i;
+    }
+    order = grown;
+  }
+
   void rebuild(int size, int currentIndex) {
     if (size <= 0) {
       order = null;
@@ -80,12 +83,18 @@ final class ShuffleController {
     }
   }
 
-  // True if a forward step remains before the OFF-repeat boundary.
   boolean hasNext() {
     if (order == null || order.length == 0) {
       return false;
     }
     return position < order.length - 1;
+  }
+
+  boolean hasPrev() {
+    if (order == null || order.length == 0) {
+      return false;
+    }
+    return position > 0;
   }
 
   void clear() {

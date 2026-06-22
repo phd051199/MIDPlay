@@ -26,11 +26,6 @@ public class MenuManager {
   private final JsonRecordStore storage;
   private final Hashtable actions;
   private final Vector menuItems;
-  // Cached sorted views of menuItems. The menu config only changes through
-  // updateItemOrder/setItemEnabled (and initial load), so recomputing a Vector +
-  // sort + array copy on every menu render is wasted work.
-  private MenuItem[] sortedEnabledCache;
-  private MenuItem[] sortedAllCache;
 
   private MenuManager() {
     storage =
@@ -60,12 +55,8 @@ public class MenuManager {
       menuItems.addElement(menuItem);
     }
     ensureDefaultItemsPresent();
-    invalidateMenuCache();
   }
 
-  // Existing installs saved a menu before newer default items (e.g. MENU_RECENT)
-  // existed; append any missing default key so new entries appear without a
-  // fresh install. Mirrors how a schema bump would work, minus the version field.
   private void ensureDefaultItemsPresent() {
     JSONArray defaults = createDefaultMenuJSON();
     int maxOrder = 0;
@@ -96,11 +87,6 @@ public class MenuManager {
       }
     }
     return false;
-  }
-
-  private void invalidateMenuCache() {
-    sortedEnabledCache = null;
-    sortedAllCache = null;
   }
 
   private JSONArray createDefaultMenuJSON() {
@@ -163,7 +149,7 @@ public class MenuManager {
         items.addElement(item);
       }
     }
-    Utils.sortMenuItemsByOrder(items);
+    sortMenuItemsByOrder(items);
     MenuItem[] result = new MenuItem[items.size()];
     for (int i = 0; i < items.size(); i++) {
       result[i] = (MenuItem) items.elementAt(i);
@@ -172,10 +158,7 @@ public class MenuManager {
   }
 
   public MenuItem[] getSortedMenuItems() {
-    if (sortedEnabledCache == null) {
-      sortedEnabledCache = collectMenuItems(true);
-    }
-    return sortedEnabledCache;
+    return collectMenuItems(true);
   }
 
   public void updateItemOrder(String key, int newOrder) {
@@ -187,7 +170,6 @@ public class MenuManager {
       if (key.equals(item.key)) {
         item.order = newOrder;
         saveMenuConfig();
-        invalidateMenuCache();
         return;
       }
     }
@@ -202,17 +184,23 @@ public class MenuManager {
       if (key.equals(item.key)) {
         item.enabled = enabled;
         saveMenuConfig();
-        invalidateMenuCache();
         return;
       }
     }
   }
 
   public MenuItem[] getAllMenuItems() {
-    if (sortedAllCache == null) {
-      sortedAllCache = collectMenuItems(false);
-    }
-    return sortedAllCache;
+    return collectMenuItems(false);
+  }
+
+  private static void sortMenuItemsByOrder(Vector items) {
+    Utils.bubbleSort(
+        items,
+        new Utils.Comparator() {
+          public boolean shouldSwap(Object a, Object b) {
+            return ((MenuItem) a).order > ((MenuItem) b).order;
+          }
+        });
   }
 
   public void close() {

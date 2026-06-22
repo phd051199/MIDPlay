@@ -8,9 +8,6 @@ public class Commands {
   private static final Hashtable cache = new Hashtable();
 
   private static Command get(String key, int type, int priority) {
-    // Key by (label, type, priority): two commands sharing a label but
-    // differing in type/priority (e.g. cancel() CANCEL,1 vs formCancel() BACK,2)
-    // must be cached as distinct instances.
     String cacheKey = key + "|" + type + "|" + priority;
     if (cache.containsKey(cacheKey)) {
       return (Command) cache.get(cacheKey);

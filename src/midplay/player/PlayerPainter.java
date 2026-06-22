@@ -11,31 +11,20 @@ import midplay.util.Utils;
 
 public final class PlayerPainter {
 
-  // Landscape left-panel width as a percentage of screen width
-  // (shared across button / track-info / slider calculations)
   private static final int LANDSCAPE_LEFT_PANEL_PCT = 45;
 
-  // drawString / paintTimeText anchor combos, named so the bare ints (17/20/24)
-  // aren't scattered through the paint code.
   private static final int ANCHOR_HCENTER_TOP = Graphics.HCENTER | Graphics.TOP;
   private static final int ANCHOR_LEFT_TOP = Graphics.LEFT | Graphics.TOP;
   private static final int ANCHOR_RIGHT_TOP = Graphics.RIGHT | Graphics.TOP;
   private static final int ANCHOR_HCENTER_VCENTER = Graphics.HCENTER | Graphics.VCENTER;
 
-  // Small-screen album-art box; calculateSmallScreenArt (layout) and the paint
-  // path must use the same size/x or the art and its border misalign.
   private static final int SMALL_ALBUM_SIZE = 72;
   private static final int SMALL_ALBUM_X = 8;
-  // Small-screen spacing: gap from the art box to the track text, and the
-  // section gap reused between the artist/time and time/buttons rows.
   private static final int SMALL_TEXT_ART_GAP = 16;
   private static final int SMALL_SECTION_GAP = 24;
 
   private final PlayerScreen screen;
 
-  // Cached faded-artist color, invalidated automatically when the underlying
-  // theme colors change (recomputing the blend on every paint is pure CPU
-  // waste — theme colors change rarely).
   private int fadedArtistColor;
   private int fadedArtistFgKey = -1;
   private int fadedArtistBgKey = -1;
@@ -48,7 +37,6 @@ public final class PlayerPainter {
     return clipY <= y + h && clipY + clipHeight >= y;
   }
 
-  // Layout helper methods
   private static boolean isLargeScreen(int width, int height) {
     if (width <= 0 || height <= 0) {
       return false;
@@ -130,10 +118,6 @@ public final class PlayerPainter {
     }
   }
 
-  // The landscape right panel (track info / slider / buttons) is derived from
-  // the left-panel split. Computed once here instead of being re-derived in
-  // four places (button positions, track info, slider, text width) — diverging
-  // copies had shifted the bar relative to the thumb before.
   private static LandscapeRightPanel landscapeRightPanel(int leftPanelWidth, int displayWidth) {
     int rightPanelLeft = leftPanelWidth + (displayWidth / 40);
     int rightPanelWidth = displayWidth - rightPanelLeft - (displayWidth / 30);
@@ -209,11 +193,7 @@ public final class PlayerPainter {
     } else {
       initSmallScreenLayout(g);
     }
-    // Compute button hit-rects during layout so they are valid before the
-    // first paint and before any pointer event (handleButtonTouch).
     initButtonPositions();
-    // Layout is now consistent — the per-second repaint tick can target just
-    // the slider/time row instead of falling back to a full repaint.
     screen.layoutValid = true;
   }
 
@@ -362,10 +342,6 @@ public final class PlayerPainter {
   }
 
   private void paintBackground(Graphics g) {
-    // Fill only the dirty clip, not the whole canvas. The per-second slider
-    // tick repaints a ~20px row; clearing all 240x320 pixels each tick is pure
-    // memory-bandwidth waste on a slow device. Outside the clip the canvas
-    // retains its previous content, so this is also correct for full repaints.
     g.setColor(Theme.getBackgroundColor());
     g.fillRect(g.getClipX(), g.getClipY(), g.getClipWidth(), g.getClipHeight());
   }
@@ -382,9 +358,6 @@ public final class PlayerPainter {
   }
 
   private void paintAlbumArt(Graphics g, int clipY, int clipHeight) {
-    // The slider/time tick repaints a row well below the art; skip the (clipped-
-    // to-nothing) album-art draws so the per-second tick stays cheap. A load
-    // completion triggers a full repaint(), so the art is never starved.
     if (!intersects(clipY, clipHeight, screen.albumY, screen.albumSize)) {
       return;
     }
@@ -399,8 +372,6 @@ public final class PlayerPainter {
     drawAlbumArtBackground(g);
 
     if (screen.albumArtLoader.albumArt != null) {
-      // No-op once the load callback has pre-scaled; only resizes here on a
-      // size change (rare) so the common path stays allocation-free in paint.
       screen.albumArtLoader.prepareScaledAlbumArt();
       Image scaled = screen.albumArtLoader.scaledAlbumArt;
       if (scaled != null) {
@@ -444,10 +415,6 @@ public final class PlayerPainter {
   }
 
   private void paintTrackInfo(Graphics g, int clipY, int clipHeight) {
-    // Skip the (synchronized) track lookup entirely when the repaint clip is
-    // outside the track-info band. The per-second slider tick repaints only the
-    // time row, so this avoids acquiring the PlayerGUI monitor each tick for a
-    // track whose rows aren't even on screen.
     int bandTop = screen.titleY;
     int bandFontHeight = screen.isLargeScreen ? screen.artistFont.getHeight() : screen.textHeight;
     int bandHeight = (screen.artistY + bandFontHeight) - bandTop;
@@ -496,8 +463,6 @@ public final class PlayerPainter {
     if (intersects(clipY, clipHeight, yPosition, fontHeight)) {
       int maxWidth = calculateMaxTextWidth();
       if (!screen.trackTextRenderer.shouldRenderWithTakumi(textImageSlot, text)) {
-        // Latin text: stop any stale CJK load and drop a cached CJK image, but
-        // keep the truncate cache (drawn text is stable across paints).
         textImageSlot.clearImage();
         String textToDraw =
             screen.trackTextRenderer.truncateTextForWidth(textImageSlot, text, font, maxWidth);
@@ -615,10 +580,6 @@ public final class PlayerPainter {
   }
 
   private void paintTimeSlider(Graphics g, int clipY, int clipHeight) {
-    // Skip the (synchronized + native MMAPI) duration/current-time lookups
-    // entirely when the repaint clip is outside the slider+time band. The
-    // per-second tick repaints only this row; a status-bar-only or button-only
-    // repaint must not pay for getDuration()/getCurrentTime() each time.
     int bandTop = screen.sliderTop;
     int bandBottom = screen.timeY + screen.textHeight;
     if (bandBottom > bandTop && !intersects(clipY, clipHeight, bandTop, bandBottom - bandTop)) {
@@ -644,10 +605,6 @@ public final class PlayerPainter {
       Graphics g, int clipY, int clipHeight, String strCurrent, String strDuration) {
     int currentTimeX, durationTimeX;
 
-    // sliderLeft/sliderWidth are computed once during layout (see
-    // calculateLandscapeSlider / calculatePortraitPositions); paint must only
-    // read them — recomputing here diverged from the layout and shifted the
-    // bar relative to the thumb.
     currentTimeX = screen.sliderLeft;
     durationTimeX = screen.sliderLeft + screen.sliderWidth;
 
@@ -698,8 +655,6 @@ public final class PlayerPainter {
   }
 
   private void paintControlButtons(Graphics g, int clipY, int clipHeight) {
-    // Skip the control-button band on row repaints (time tick, status bar).
-    // All buttons share playTop; the tallest is the play button (playButtonHeight).
     if (screen.playTop > 0
         && !intersects(
             clipY,
@@ -716,23 +671,29 @@ public final class PlayerPainter {
   }
 
   private void paintPlayPauseButton(Graphics g) {
-    boolean isPlaying = screen.getPlayerGUI().isPlaying();
-    Image playPauseImg = isPlaying ? Configuration.pauseIcon : Configuration.playIcon;
+    boolean loading = screen.isLoading();
+    Image playPauseImg =
+        loading
+            ? Configuration.playDimIcon
+            : (screen.getPlayerGUI().isPlaying()
+                ? Configuration.pauseIcon
+                : Configuration.playIcon);
     if (playPauseImg != null) {
       g.drawImage(playPauseImg, screen.playX, screen.playY, ANCHOR_HCENTER_VCENTER);
     }
   }
 
   private void paintNavigationButtons(Graphics g) {
-    // Both prev/next share the same dim state, so sample the (synchronized)
-    // loading flag once instead of acquiring the monitor twice per paint.
     boolean loading = screen.isLoading();
-    Image prevImg = loading ? Configuration.prevDimIcon : Configuration.prevIcon;
+    PlayerGUI gui = screen.getPlayerGUI();
+    Image prevImg =
+        (loading || !gui.canSkipBackward()) ? Configuration.prevDimIcon : Configuration.prevIcon;
     if (prevImg != null) {
       g.drawImage(prevImg, screen.prevX, screen.prevY, ANCHOR_HCENTER_VCENTER);
     }
 
-    Image nextImg = loading ? Configuration.nextDimIcon : Configuration.nextIcon;
+    Image nextImg =
+        (loading || !gui.canSkipForward()) ? Configuration.nextDimIcon : Configuration.nextIcon;
     if (nextImg != null) {
       g.drawImage(nextImg, screen.nextX, screen.nextY, ANCHOR_HCENTER_VCENTER);
     }
@@ -868,9 +829,6 @@ public final class PlayerPainter {
       screen.sliderValue = 0;
       return;
     }
-    // Integer-only fixed ratio: avoids per-paint float boxing on low-end J2ME.
-    // current/duration is computed in 64-bit (current is long) then clamped so
-    // the fill never overshoots when current exceeds the metadata duration.
     long fill = (sliderWidth * current) / duration;
     if (fill > sliderWidth) {
       fill = sliderWidth;
@@ -888,9 +846,6 @@ public final class PlayerPainter {
     return screen.durationText;
   }
 
-  // Current-time label cached the same way duration is: reformatted only when
-  // the second changes, not on every paint. Otherwise the 5-way String concat
-  // in Utils.formatTime allocates a StringBuffer + new String each frame.
   private String getCurrentTimeText(long current) {
     if (screen.lastCurrent != current) {
       screen.lastCurrent = current;

@@ -8,10 +8,6 @@ import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.TextField;
 import midplay.util.Lang;
 
-// Builds the small "type a name" forms used for creating/renaming custom
-// playlists and for saving the queue as one. Centralises the Form + TextField +
-// ok/cancel scaffolding and the shared empty-name validation that
-// FavoritesScreen and QueueTrackListScreen used to copy verbatim.
 public final class FormHelpers {
   public interface NameSubmitHandler {
     void onSubmit(String name);

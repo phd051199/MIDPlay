@@ -18,8 +18,6 @@ public class FavoritesManager {
   public static final int ALREADY_EXISTS = 1;
   public static final int FAILED = 2;
 
-  // Defensive cap so a single custom playlist can't grow until loading it parses
-  // hundreds of tracks into memory (and until the tracks RMS record overflows).
   private static final int MAX_TRACKS_PER_PLAYLIST = 200;
 
   public static FavoritesManager getInstance() {
@@ -57,7 +55,22 @@ public class FavoritesManager {
   }
 
   public boolean removePlaylistAndTracks(Playlist playlist) {
-    return removePlaylistInternal(playlist, true);
+    if (playlist == null) {
+      return false;
+    }
+    int recordId = findPlaylistRecord(playlist);
+    if (recordId == -1) {
+      return false;
+    }
+    try {
+      storage.deleteRecord(recordId);
+      if (playlist.isCustom()) {
+        removeCustomPlaylistTracks(playlist.getKey());
+      }
+      return true;
+    } catch (RecordStoreException e) {
+      return false;
+    }
   }
 
   public boolean updatePlaylist(Playlist playlist) {
@@ -76,25 +89,6 @@ public class FavoritesManager {
     }
   }
 
-  private boolean removePlaylistInternal(Playlist playlist, boolean removeTracks) {
-    if (playlist == null) {
-      return false;
-    }
-    int recordId = findPlaylistRecord(playlist);
-    if (recordId == -1) {
-      return false;
-    }
-    try {
-      storage.deleteRecord(recordId);
-      if (removeTracks && playlist.isCustom()) {
-        removeCustomPlaylistTracks(playlist.getKey());
-      }
-      return true;
-    } catch (RecordStoreException e) {
-      return false;
-    }
-  }
-
   public Playlists getPlaylists() {
     final Vector playlistVector = new Vector();
     storage.forEachRecord(
@@ -107,8 +101,24 @@ public class FavoritesManager {
             return true;
           }
         });
-    Utils.sortPlaylistsById(playlistVector);
-    return vectorToPlaylists(playlistVector);
+    sortPlaylistsById(playlistVector);
+    Playlist[] playlistArray = new Playlist[playlistVector.size()];
+    for (int i = 0; i < playlistVector.size(); i++) {
+      playlistArray[i] = (Playlist) playlistVector.elementAt(i);
+    }
+    Playlists result = new Playlists();
+    result.setPlaylists(playlistArray);
+    return result;
+  }
+
+  private static void sortPlaylistsById(Vector vector) {
+    Utils.bubbleSort(
+        vector,
+        new Utils.Comparator() {
+          public boolean shouldSwap(Object a, Object b) {
+            return ((Playlist) a).getId() < ((Playlist) b).getId();
+          }
+        });
   }
 
   public void close() {
@@ -165,7 +175,14 @@ public class FavoritesManager {
     }
     try {
       Vector trackList = loadTracksRecord(playlist.getKey()).tracks;
-      return vectorToTracks(trackList);
+      Track[] trackArray = new Track[trackList.size()];
+      for (int i = 0; i < trackList.size(); i++) {
+        trackArray[i] = (Track) trackList.elementAt(i);
+      }
+      Tracks result = new Tracks();
+      result.setTracks(trackArray);
+      result.setHasMore(false);
+      return result;
     } catch (Exception e) {
       return new Tracks();
     }
@@ -178,17 +195,11 @@ public class FavoritesManager {
     return countTracks(playlist.getKey());
   }
 
-  // A loaded tracks record: the RMS record id (-1 if not yet stored) plus the
-  // parsed track list. Returning both from a single scan lets add/remove reuse
-  // the id when writing back, instead of a second full scan to find it.
   private static final class TracksRecord {
     int recordId = -1;
     final Vector tracks = new Vector();
   }
 
-  // A located tracks record: RMS record id + its parsed JSON. Returned by
-  // findTracksRecordByKey so load/count/find can each process the matched
-  // record without re-scanning the whole store.
   private static final class TracksRecordEntry {
     final int recordId;
     final JSONObject json;
@@ -199,15 +210,16 @@ public class FavoritesManager {
     }
   }
 
-  // First tracksStorage record matching playlistKey (id + parsed JSON), or null.
-  // Consolidates the find-by-playlistKey scan shared by load/count/find below:
-  // same forEachRecord iteration, same JSON parsing (and exception propagation),
-  // stop at first match.
   private TracksRecordEntry findTracksRecordByKey(final String playlistKey) {
     final TracksRecordEntry[] result = {null};
     tracksStorage.forEachRecord(
         new RecordStoreManager.RecordHandler() {
           public boolean handle(int recordId, String data) {
+            if (playlistKey != null
+                && playlistKey.length() > 0
+                && data.indexOf(playlistKey) == -1) {
+              return true;
+            }
             JSONObject json = JSON.getObject(data);
             if (playlistKey.equals(json.getString("playlistKey", ""))) {
               result[0] = new TracksRecordEntry(recordId, json);
@@ -235,9 +247,6 @@ public class FavoritesManager {
     return record;
   }
 
-  // Count-only path: reads the tracks array size without building Track objects,
-  // so opening a playlist detail screen doesn't materialize the whole list just
-  // to show a number.
   private int countTracks(final String playlistKey) {
     TracksRecordEntry entry = findTracksRecordByKey(playlistKey);
     return entry == null ? 0 : entry.json.getArray("tracks").size();
@@ -290,31 +299,5 @@ public class FavoritesManager {
           }
         });
     return found[0];
-  }
-
-  private Playlists vectorToPlaylists(Vector playlistVector) {
-    Playlists result = new Playlists();
-    Playlist[] playlistArray = new Playlist[playlistVector.size()];
-    for (int i = 0; i < playlistVector.size(); i++) {
-      playlistArray[i] = (Playlist) playlistVector.elementAt(i);
-    }
-    result.setPlaylists(playlistArray);
-    return result;
-  }
-
-  private Tracks vectorToTracks(Vector trackVector) {
-    Tracks result = new Tracks();
-    if (trackVector.isEmpty()) {
-      result.setTracks(new Track[0]);
-      result.setHasMore(false);
-      return result;
-    }
-    Track[] trackArray = new Track[trackVector.size()];
-    for (int i = 0; i < trackVector.size(); i++) {
-      trackArray[i] = (Track) trackVector.elementAt(i);
-    }
-    result.setTracks(trackArray);
-    result.setHasMore(false);
-    return result;
   }
 }

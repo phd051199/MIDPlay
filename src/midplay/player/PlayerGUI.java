@@ -9,11 +9,9 @@ import javax.microedition.media.MediaException;
 import javax.microedition.media.Player;
 import javax.microedition.media.PlayerListener;
 import javax.microedition.media.control.VolumeControl;
-import javax.microedition.rms.RecordStoreException;
-import midplay.model.JsonListResult;
 import midplay.model.Track;
 import midplay.model.Tracks;
-import midplay.net.JsonOperation;
+import midplay.net.MediaHttpClient;
 import midplay.store.Configuration;
 import midplay.store.SettingsManager;
 import midplay.util.Lang;
@@ -23,103 +21,61 @@ public class PlayerGUI implements PlayerListener {
   private static final int TIMER_INTERVAL = 1000;
   private static final int VOLUME_STEP = 10;
   private static final int MAX_PENDING_TRACK_STEPS = 20;
-  // Auto-queue ("infinite playlist"): prefetch this many tracks before the end
-  // so the similar-tracks fetch finishes before playback runs out.
-  private static final int AUTO_QUEUE_THRESHOLD = 2;
-  // ponytail: J2ME heap is tiny; cap queue growth. Raise if a device allows.
-  private static final int AUTO_QUEUE_MAX_SIZE = 120;
-  // ponytail: widened from 250ms to 1200ms so the 1s repaint tick usually
-  // extrapolates from the cached sample instead of native-sampling
-  // getMediaTime/getDuration every second. Ceiling: extrapolation drifts <1s
-  // between re-samples (invisible at tick resolution); a re-sample every ~2s
-  // still corrects it and the monotonic guard prevents backward jumps.
   private static final long MEDIA_SAMPLE_WINDOW_MS = 1200L;
 
   private final PlayerScreen parent;
   private final SettingsManager settingsManager;
-  final MediaResolver mediaResolver = new MediaResolver(this);
+  private final SettingsPersistence settingsPersistence;
+  private final MediaResolver mediaResolver = new MediaResolver(this);
   private final PlaybackRecovery recovery = new PlaybackRecovery(this);
   private final CommandWorker commandWorker = new CommandWorker(this);
-  Player player;
+  private Player player;
   private Tracks trackList;
   private int currentTrackIndex;
   int volumeLevel = Configuration.PLAYER_MAX_VOLUME;
-  private int repeatMode = Configuration.PLAYER_REPEAT_ALL;
-  private boolean isShuffleEnabled = false;
+  int repeatMode = Configuration.PLAYER_REPEAT_ALL;
+  boolean isShuffleEnabled = false;
   private final ShuffleController shuffle = new ShuffleController();
   private HttpConnection httpConnection;
   private InputStream inputStream;
-  // Resolved media URL + total content length of the currently attached playback,
-  // captured at attach time so seek() can reload an InputStream player from a byte
-  // offset (InputStream players can't setMediaTime). Null/-1 when not applicable
-  // (the pass_url method has no live HttpConnection, so it seeks natively instead).
   private String currentResolvedUrl;
   private long currentContentLength = -1;
-  // Resume position (micros) carried from a restored session: set before play()
-  // and applied as a seek once playback actually starts (onPlaybackStarted). -1
-  // when not resuming, so a normal play() doesn't seek. Seeking must wait until
-  // the player is loaded/started — calling seek() before that is a no-op.
   private long pendingResumeSeekMicros = -1;
+  private long deferredResumeSeekMicros = -1;
   private Timer mainTimer;
   private TimerTask displayTask;
-  // True while the player canvas is hidden (hideNotify). startTimer() refuses
-  // to schedule while suppressed so playback that starts in the background
-  // (onPlaybackStarted while hidden) doesn't repaint a non-visible canvas.
   private boolean repaintSuppressed = false;
 
-  // Background threads tracked so resetPlaybackStateLocked() can interrupt
-  // them promptly on track change / cleanup (CLDC interrupt unblocks the
-  // Thread.sleep waits used by the start watchdog and interruptibleSleep).
   private volatile Thread loadThread;
-  // One-shot task on the shared player timer that promotes a silently-started
-  // player or falls back to the alternate method if STARTED never fires. Held so
-  // resetPlaybackStateLocked can cancel a pending watchdog on track change
-  // instead of leaving it armed. Replaces a former per-start Thread+sleep.
-  TimerTask startWatchdogTask;
+  private TimerTask startWatchdogTask;
 
   private volatile boolean loading = false;
-  boolean destroyed = false;
-  int playbackSessionId = 0;
+  private boolean destroyed = false;
+  private int playbackSessionId = 0;
+  private int playlistGeneration = 0;
   private boolean handlingTrackEnd = false;
-  // Re-entry guard for the background similar-tracks fetch (auto-queue).
-  private boolean autoQueueInFlight = false;
-  // Auto-queue opts in per session: only single-track plays (search / recent /
-  // detail) extend the queue with similar tracks. Folder plays (album / playlist
-  // / favorites) keep their own list and never auto-queue. Reset to false on
-  // every setPlaylist, re-enabled by PlayerNavHelper.playSingleTrack.
-  private boolean autoQueueEnabled = false;
   private int pendingTrackDelta = 0;
-  PlaybackMethod pendingPlayerMethodOverride;
-  boolean sessionUsedInputStream = false;
-  boolean sessionStarted = false;
-  int sessionMethodSessionId = -1;
-  int startWatchdogSessionId = -1;
-  int lastFallbackSessionId = -1;
-  // Consecutive playback failures auto-advanced past. Once this hits the cap (or
-  // there is no next track) a terminal error surfaces instead of spinning the
-  // whole list. Reset to 0 on a successful start.
+  private PlaybackMethod pendingPlayerMethodOverride;
+  private boolean sessionUsedInputStream = false;
+  private boolean sessionStarted = false;
+  private int sessionMethodSessionId = -1;
+  private int startWatchdogSessionId = -1;
+  private int lastFallbackSessionId = -1;
   private int consecutivePlaybackErrors = 0;
   private static final int MAX_CONSECUTIVE_PLAYBACK_ERRORS = 3;
 
-  private final MediaTimeCache mediaTimeCache = new MediaTimeCache();
+  private long cachedMediaTimeMicros = 0L;
+  private long cachedDurationMicros = 0L;
+  private long cachedSampleTimeMs = 0L;
+  private int cachedSessionId = -1;
 
   public PlayerGUI(PlayerScreen parent) {
     this.parent = parent;
     this.settingsManager = SettingsManager.getInstance();
-    loadSettings();
+    this.settingsPersistence = new SettingsPersistence(settingsManager);
+    settingsPersistence.loadInto(this);
     commandWorker.start();
     setStatus("");
-  }
-
-  private void loadSettings() {
-    try {
-      this.volumeLevel = settingsManager.getCurrentVolumeLevel();
-      this.repeatMode = settingsManager.getCurrentRepeatMode();
-      this.isShuffleEnabled =
-          Configuration.PLAYER_SHUFFLE_ON == settingsManager.getCurrentShuffleMode();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
   }
 
   public synchronized boolean isLoading() {
@@ -143,7 +99,7 @@ public class PlayerGUI implements PlayerListener {
     synchronized (this) {
       commandWorker.start();
       resetCorePlaybackStateLocked();
-      this.autoQueueEnabled = false;
+      playlistGeneration++;
       this.trackList = tracks;
       this.currentTrackIndex = normalizedIndex;
       if (hasTracks && isShuffleEnabled) {
@@ -158,183 +114,72 @@ public class PlayerGUI implements PlayerListener {
     setStatusByKey(
         hasTracks ? Configuration.PLAYER_STATUS_READY : Configuration.PLAYER_STATUS_STOPPED);
     parent.updateDisplay();
-    maybeAutoQueue();
     return hasTracks;
   }
 
-  // Append tracks to the current queue without disturbing playback. The
-  // currently-playing track and index are untouched; shuffle order is rebuilt so
-  // the appended tracks participate (ponytail: rebuild re-randomizes the whole
-  // order — per-item append that preserves already-heard continuity isn't worth
-  // it until someone notices).
   public synchronized void addToQueue(Track[] toAdd) {
     if (toAdd == null || toAdd.length == 0) {
       return;
     }
     Track[] current = (trackList != null) ? trackList.getTracks() : null;
     int currentLen = (current != null) ? current.length : 0;
-    Track[] merged = new Track[currentLen + toAdd.length];
+    int max = Configuration.QUEUE_MAX_SIZE;
+    int kept = 0;
+    Track[] filtered = new Track[toAdd.length];
+    for (int i = 0; i < toAdd.length; i++) {
+      Track candidate = toAdd[i];
+      if (candidate == null
+          || isTrackPresent(current, candidate)
+          || isTrackPresent(filtered, candidate)) {
+        continue;
+      }
+      if (currentLen + kept >= max) {
+        break;
+      }
+      filtered[kept++] = candidate;
+    }
+    if (kept == 0) {
+      return;
+    }
+    Track[] merged = new Track[currentLen + kept];
     if (current != null) {
       System.arraycopy(current, 0, merged, 0, currentLen);
     }
-    System.arraycopy(toAdd, 0, merged, currentLen, toAdd.length);
+    System.arraycopy(filtered, 0, merged, currentLen, kept);
     if (trackList == null) {
       trackList = new Tracks();
     }
     trackList.setTracks(merged);
     if (isShuffleEnabled) {
-      createShuffle();
+      shuffle.append(merged.length);
     } else {
       shuffle.clear();
     }
   }
 
-  // Mark the current session as auto-queue eligible (a single-track play from
-  // search / recent / detail) and fire the first prefetch. setPlaylist ran
-  // synchronously inside playTrackFromList before this, so its own maybeAutoQueue
-  // saw the (reset) disabled flag and skipped — this re-fires it now enabled.
-  void enableAutoQueue() {
-    synchronized (this) {
-      if (destroyed) {
-        return;
-      }
-      autoQueueEnabled = true;
-    }
-    maybeAutoQueue();
-  }
-
-  // Auto-queue ("infinite playlist"): when the playing position is within
-  // AUTO_QUEUE_THRESHOLD of the queue end (and the feature is on, not in
-  // repeat-one), fetch tracks similar to the current one and append them so
-  // playback never stops. Runs the fetch on its own thread — NOT via
-  // MIDPlay.startOperation, which would cancel any in-flight UI operation.
-  private void maybeAutoQueue() {
-    Track seed;
-    int len;
-    synchronized (this) {
-      if (destroyed || autoQueueInFlight) {
-        return;
-      }
-      if (!autoQueueEnabled) {
-        return;
-      }
-      if (settingsManager.getCurrentAutoQueue() != Configuration.AUTO_QUEUE_ON) {
-        return;
-      }
-      if (RepeatMode.isOne(repeatMode)) {
-        return;
-      }
-      if (trackList == null) {
-        return;
-      }
-      Track[] tracks = trackList.getTracks();
-      len = tracks.length;
-      if (len >= AUTO_QUEUE_MAX_SIZE) {
-        return;
-      }
-      if (currentTrackIndex < len - AUTO_QUEUE_THRESHOLD) {
-        return;
-      }
-      seed = getCurrentTrackLocked();
-      if (seed == null || isEmptyText(seed.getArtist()) || isEmptyText(seed.getName())) {
-        return;
-      }
-      autoQueueInFlight = true;
-    }
-    final Track seedTrack = seed;
-    JsonOperation.getSimilar(
-            seedTrack.getArtist(),
-            seedTrack.getName(),
-            new JsonOperation.JsonListListener() {
-              public void onDataReceived(JsonListResult result) {
-                // Drop stale results: if the seed is no longer in the queue the
-                // user replaced the playlist, so don't pollute the new one.
-                if (seedStillInQueue(seedTrack)) {
-                  Track[] fresh = dedupAgainstQueue(((Tracks) result).getTracks());
-                  if (fresh.length > 0) {
-                    addToQueue(fresh);
-                  }
-                }
-                releaseAutoQueue();
-              }
-
-              public void onNoData() {
-                releaseAutoQueue();
-              }
-
-              public void onError(Exception e) {
-                releaseAutoQueue();
-              }
-            })
-        .start();
-  }
-
-  private void releaseAutoQueue() {
-    synchronized (this) {
-      autoQueueInFlight = false;
-    }
-    // Re-arm: if still near the end (and under the cap), top up again.
-    maybeAutoQueue();
-  }
-
-  // True if the seed track is still present in the current queue — guards
-  // against appending after the user swapped the playlist mid-fetch.
-  private synchronized boolean seedStillInQueue(Track seed) {
-    return trackList != null && containsTrack(trackList.getTracks(), seed);
-  }
-
-  // Filter out tracks already in the queue (and the seed). Compacts the freshly
-  // parsed array in place; the array is private to this fetch, so that's safe.
-  private synchronized Track[] dedupAgainstQueue(Track[] fetched) {
-    if (fetched == null || fetched.length == 0) {
-      return new Track[0];
-    }
-    Track[] current = (trackList != null) ? trackList.getTracks() : null;
-    int count = 0;
-    for (int i = 0; i < fetched.length; i++) {
-      Track t = fetched[i];
-      if (t == null || containsTrack(current, t)) {
-        continue;
-      }
-      fetched[count++] = t;
-    }
-    if (count == fetched.length) {
-      return fetched;
-    }
-    Track[] result = new Track[count];
-    System.arraycopy(fetched, 0, result, 0, count);
-    return result;
-  }
-
-  private static boolean containsTrack(Track[] haystack, Track needle) {
-    if (haystack == null) {
+  private boolean isTrackPresent(Track[] tracks, Track candidate) {
+    if (tracks == null || candidate == null) {
       return false;
     }
-    for (int i = 0; i < haystack.length; i++) {
-      if (haystack[i] != null && haystack[i].isSame(needle)) {
+    for (int i = 0; i < tracks.length; i++) {
+      if (tracks[i] != null && tracks[i].isSame(candidate)) {
         return true;
       }
     }
     return false;
   }
 
-  private static boolean isEmptyText(String s) {
-    return s == null || s.length() == 0;
-  }
-
-  // Adopt a reordered queue (manual sort). Playback keeps going on the same
-  // physical track: we re-resolve currentTrackIndex to wherever that track now
-  // lives in newOrder (by isSame), and rebuild shuffle if on.
   public synchronized void reorderQueue(Track[] newOrder) {
     if (trackList == null || newOrder == null || newOrder.length == 0) {
       return;
     }
+    Track[] unique = dedupFirstOccurrence(newOrder);
     Track current = getCurrentTrackLocked();
-    trackList.setTracks(newOrder);
+    trackList.setTracks(unique);
     currentTrackIndex = 0;
     if (current != null) {
-      for (int i = 0; i < newOrder.length; i++) {
-        if (newOrder[i] != null && current.isSame(newOrder[i])) {
+      for (int i = 0; i < unique.length; i++) {
+        if (unique[i] != null && current.isSame(unique[i])) {
           currentTrackIndex = i;
           break;
         }
@@ -345,6 +190,24 @@ public class PlayerGUI implements PlayerListener {
     } else {
       shuffle.clear();
     }
+  }
+
+  private Track[] dedupFirstOccurrence(Track[] in) {
+    int kept = 0;
+    Track[] out = new Track[in.length];
+    for (int i = 0; i < in.length; i++) {
+      Track candidate = in[i];
+      if (candidate == null || isTrackPresent(out, candidate)) {
+        continue;
+      }
+      out[kept++] = candidate;
+    }
+    if (kept == out.length) {
+      return out;
+    }
+    Track[] trimmed = new Track[kept];
+    System.arraycopy(out, 0, trimmed, 0, kept);
+    return trimmed;
   }
 
   void play() {
@@ -382,11 +245,19 @@ public class PlayerGUI implements PlayerListener {
       try {
         currentPlayer.stop();
       } catch (Exception e) {
-        // stop() on a non-realized player throws IllegalStateException; ignore.
       }
     }
     setStatusByKey(Configuration.PLAYER_STATUS_PAUSED);
     stopTimer();
+  }
+
+  public synchronized void deallocate() {
+    if (player != null) {
+      try {
+        player.deallocate();
+      } catch (Exception e) {
+      }
+    }
   }
 
   public void stop() {
@@ -420,7 +291,11 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void adjustVolume(boolean increase) {
-    VolumeControl vc = getVolumeControl();
+    Player currentPlayer;
+    synchronized (this) {
+      currentPlayer = player;
+    }
+    VolumeControl vc = getVolumeControl(currentPlayer);
     if (vc == null) {
       return;
     }
@@ -434,7 +309,11 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void setVolumeLevel(int level) {
-    VolumeControl vc = getVolumeControl();
+    Player currentPlayer;
+    synchronized (this) {
+      currentPlayer = player;
+    }
+    VolumeControl vc = getVolumeControl(currentPlayer);
     if (vc == null) {
       return;
     }
@@ -447,8 +326,9 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void toggleRepeat() {
-    repeatMode = RepeatMode.next(repeatMode);
+    repeatMode = nextRepeatMode(repeatMode);
     saveRepeatMode();
+    parent.updateDisplayAsync();
   }
 
   public void toggleShuffle() {
@@ -461,10 +341,9 @@ public class PlayerGUI implements PlayerListener {
       }
     }
     saveShuffleMode();
+    parent.updateDisplayAsync();
   }
 
-  // Stash a position to seek to once playback starts (resume). Harmless to call
-  // with 0/-1: a non-positive value just clears any pending resume seek.
   void setPendingResumeSeek(long micros) {
     synchronized (this) {
       pendingResumeSeekMicros = micros;
@@ -475,33 +354,29 @@ public class PlayerGUI implements PlayerListener {
     if (time < 0) {
       return;
     }
+    long durationMicros = getDuration();
+    if (durationMicros > 0 && time > durationMicros) {
+      time = durationMicros;
+    }
     Player currentPlayer;
     synchronized (this) {
       if (destroyed) {
         return;
       }
-      // An InputStream seek reloads the media (no native setMediaTime). If a reload
-      // is already in flight, drop this seek instead of reseeding the display to a
-      // target that won't load — otherwise holding/dragging to seek desyncs the
-      // slider from the audio until the in-flight reload lands.
-      if (sessionUsedInputStream && loading) {
+      if (loading) {
         return;
       }
       currentPlayer = player;
-      // Jump the display to the target immediately; the audio catches up below.
-      mediaTimeCache.cachedMediaTimeMicros = time;
-      mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
-      mediaTimeCache.cachedSessionId = playbackSessionId;
+      cachedMediaTimeMicros = time;
+      cachedSampleTimeMs = System.currentTimeMillis();
+      cachedSessionId = playbackSessionId;
     }
     parent.updateDisplayAsync();
     if (currentPlayer == null) {
       return;
     }
 
-    // InputStream-based players can't setMediaTime (it's a silent no-op): reload
-    // the media from the seek byte offset (HTTP Range) on a worker thread so it
-    // actually plays from the seek point. The pass_url method seeks natively.
-    if (sessionUsedInputStream && currentResolvedUrl != null && currentContentLength > 0) {
+    if (currentResolvedUrl != null && currentContentLength > 0) {
       startSeekReload(time);
       return;
     }
@@ -509,14 +384,9 @@ public class PlayerGUI implements PlayerListener {
       currentPlayer.setMediaTime(time);
       parent.updateDisplayAsync();
     } catch (Exception e) {
-      // setMediaTime() on a non-prefetched/unsupported player may throw; ignore.
     }
   }
 
-  // Lightweight scrub preview: jumps the displayed playhead to `time` WITHOUT
-  // touching the player (no setMediaTime, no InputStream reload), so dragging the
-  // slider or holding a seek key tracks smoothly instead of lagging on a reload
-  // per move. The real seek runs once via seek() when the interaction ends.
   public void seekPreview(long time) {
     if (time < 0) {
       time = 0;
@@ -525,18 +395,13 @@ public class PlayerGUI implements PlayerListener {
       if (destroyed) {
         return;
       }
-      mediaTimeCache.cachedMediaTimeMicros = time;
-      mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
-      mediaTimeCache.cachedSessionId = playbackSessionId;
+      cachedMediaTimeMicros = time;
+      cachedSampleTimeMs = System.currentTimeMillis();
+      cachedSessionId = playbackSessionId;
     }
     parent.updateDisplayAsync();
   }
 
-  // Reload the current InputStream player from the byte offset for seekTimeMicros
-  // so it actually plays from the seek point (setMediaTime is a silent no-op on
-  // those players). Runs on a worker thread; createPlayer + prefetch block on the
-  // network. byte = length * time / duration assumes CBR (off by ~1 MP3 frame;
-  // the decoder resyncs to the next frame).
   private void startSeekReload(final long seekTimeMicros) {
     final int sessionId;
     final String url;
@@ -558,12 +423,6 @@ public class PlayerGUI implements PlayerListener {
       url = currentResolvedUrl;
       startByte = computed;
       loading = true;
-      // The rebuilt player only starts once the network reload lands, so stop the
-      // old audio now — otherwise the pre-seek position keeps playing (and overlaps
-      // the seek point) for the whole reload window on release. Not closed here:
-      // attachPendingPlayback closes it on swap, and on reload failure it just stays
-      // paused. A stopped player also freezes getCurrentTime() at the seek target, so
-      // the slider holds instead of drifting during the reload.
       if (player != null) {
         try {
           int state = player.getState();
@@ -571,7 +430,6 @@ public class PlayerGUI implements PlayerListener {
             player.stop();
           }
         } catch (Exception e) {
-          // stop() on an unsupported state throws IllegalStateException; ignore.
         }
       }
     }
@@ -589,15 +447,12 @@ public class PlayerGUI implements PlayerListener {
 
   private void loadSeekSession(
       int sessionId, String resolvedUrl, long startByte, long seekTimeMicros) {
-    MediaResolver.PendingPlayback pending = null;
+    PendingPlayback pending = null;
     boolean attached = false;
     try {
       if (!isSessionActive(sessionId)) {
         return;
       }
-      // Build the new partial-stream player FIRST while the old one keeps playing
-      // (and the album art stays loaded), so the slider/art don't blank during the
-      // reload. attachPendingPlayback closes the old player atomically at the swap.
       pending = mediaResolver.createSeekPlayback(resolvedUrl, startByte, sessionId);
       if (pending == null || pending.pendingPlayer == null || !isSessionActive(sessionId)) {
         return;
@@ -609,23 +464,23 @@ public class PlayerGUI implements PlayerListener {
       attachPendingPlayback(pending, sessionId);
       pending = null;
       attached = true;
-      // Anchor the display at the seek target; the rebuilt player starts there.
       synchronized (this) {
-        mediaTimeCache.cachedMediaTimeMicros = seekTimeMicros;
-        mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
-        mediaTimeCache.cachedSessionId = playbackSessionId;
+        cachedMediaTimeMicros = seekTimeMicros;
+        cachedSampleTimeMs = System.currentTimeMillis();
+        cachedSessionId = playbackSessionId;
       }
-      // Repaint only — no full relayout (setupDisplay would reset layout + reload
-      // album art, causing the seek glitch).
       parent.updateDisplayAsync();
       startPlayback();
     } catch (Exception e) {
-      // If we already swapped to the new player, surface the error; otherwise the
-      // old player is untouched, so abort the seek quietly and keep playing.
       if (attached && isSessionActive(sessionId)) {
         handleError(e);
       }
     } finally {
+      if (!attached) {
+        synchronized (this) {
+          closePlayerLocked();
+        }
+      }
       mediaResolver.closePendingPlayback(pending);
       finishLoadSession(sessionId);
     }
@@ -659,9 +514,6 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
-  // True when a Player instance is loaded (realized/prefetched/started). Used by
-  // PlayerScreen to distinguish paused (player present, not playing) from
-  // stopped (no player). player is nulled only by stop()/reset/cleanup.
   public synchronized boolean hasPlayer() {
     return player != null;
   }
@@ -684,11 +536,11 @@ public class PlayerGUI implements PlayerListener {
     synchronized (this) {
       currentPlayer = player;
       sessionId = playbackSessionId;
-      if (currentPlayer != null && mediaTimeCache.cachedSessionId == playbackSessionId) {
+      if (currentPlayer != null && cachedSessionId == playbackSessionId) {
         mayEstimateFromCache = true;
-        cachedTime = mediaTimeCache.cachedMediaTimeMicros;
-        cachedDuration = mediaTimeCache.cachedDurationMicros;
-        cachedAt = mediaTimeCache.cachedSampleTimeMs;
+        cachedTime = cachedMediaTimeMicros;
+        cachedDuration = cachedDurationMicros;
+        cachedAt = cachedSampleTimeMs;
       }
     }
     if (currentPlayer == null) {
@@ -697,11 +549,6 @@ public class PlayerGUI implements PlayerListener {
 
     long now = System.currentTimeMillis();
     boolean started = isPlayerStarted(currentPlayer);
-    // A paused player (stopped but not nulled) has a frozen position, so the
-    // cached sample stays exact indefinitely — trust it and never re-sample.
-    // Re-sampling a stopped player is unsafe: some devices (KEmulator) return
-    // getMediaTime()==0 once stopped, which collapses the progress fill to the
-    // start. While playing, trust the cache only briefly and extrapolate.
     if (mayEstimateFromCache
         && cachedAt > 0L
         && (!started || now - cachedAt < MEDIA_SAMPLE_WINDOW_MS)) {
@@ -715,13 +562,6 @@ public class PlayerGUI implements PlayerListener {
     long sampledTime = getMediaTimeSafe(currentPlayer);
     long sampledDuration = getDurationSafe(currentPlayer);
 
-    // Monotonic guard for the displayed time. getMediaTime() on HTTP/streaming
-    // players can return coarse, stale, or momentarily-regressing values, which
-    // would yank the slider and current-time label backward each 1s tick (the
-    // visible "glitch"). While playing, never report less than the smooth
-    // wall-clock extrapolation of the last trusted sample — the running time may
-    // only advance. A deliberate seek reseeds the cache to its target, so this
-    // floor follows seeks (forward and backward) instead of fighting them.
     if (started && mayEstimateFromCache && cachedAt > 0L) {
       long extrapolated = extrapolate(cachedTime, cachedAt, now, cachedDuration, started);
       if (sampledTime < extrapolated) {
@@ -731,26 +571,20 @@ public class PlayerGUI implements PlayerListener {
 
     synchronized (this) {
       if (sessionId == playbackSessionId) {
-        mediaTimeCache.cachedMediaTimeMicros = sampledTime;
-        mediaTimeCache.cachedDurationMicros = sampledDuration;
-        mediaTimeCache.cachedSampleTimeMs = now;
-        mediaTimeCache.cachedSessionId = playbackSessionId;
+        cachedMediaTimeMicros = sampledTime;
+        cachedDurationMicros = sampledDuration;
+        cachedSampleTimeMs = now;
+        cachedSessionId = playbackSessionId;
       }
     }
     return sampledTime;
   }
 
-  // Wall-clock extrapolation of a cached sample: cached value plus elapsed
-  // time while playing, clamped to the known duration. Shared by the
-  // cache-hit fast path and the streaming monotonic floor in getCurrentTime.
   private long extrapolate(
       long cachedTime, long cachedAt, long now, long cachedDuration, boolean started) {
     long estimated = cachedTime;
     if (started) {
       estimated += (now - cachedAt) * 1000L;
-    }
-    if (cachedDuration > 0L && estimated > cachedDuration) {
-      estimated = cachedDuration;
     }
     return estimated;
   }
@@ -771,9 +605,8 @@ public class PlayerGUI implements PlayerListener {
     synchronized (this) {
       currentPlayer = player;
       sessionId = playbackSessionId;
-      if (mediaTimeCache.cachedSessionId == playbackSessionId
-          && mediaTimeCache.cachedDurationMicros > 0L) {
-        return mediaTimeCache.cachedDurationMicros;
+      if (cachedSessionId == playbackSessionId && cachedDurationMicros > 0L) {
+        return cachedDurationMicros;
       }
     }
     if (currentPlayer == null) {
@@ -783,8 +616,8 @@ public class PlayerGUI implements PlayerListener {
     long sampledDuration = getDurationSafe(currentPlayer);
     synchronized (this) {
       if (sampledDuration > 0L && sessionId == playbackSessionId) {
-        mediaTimeCache.cachedDurationMicros = sampledDuration;
-        mediaTimeCache.cachedSessionId = playbackSessionId;
+        cachedDurationMicros = sampledDuration;
+        cachedSessionId = playbackSessionId;
       }
     }
     return sampledDuration;
@@ -802,6 +635,64 @@ public class PlayerGUI implements PlayerListener {
     return currentTrackIndex;
   }
 
+  synchronized boolean isDestroyed() {
+    return destroyed;
+  }
+
+  synchronized boolean isSessionStarted() {
+    return sessionStarted;
+  }
+
+  synchronized boolean sessionUsedInputStream() {
+    return sessionUsedInputStream;
+  }
+
+  synchronized int sessionMethodSessionId() {
+    return sessionMethodSessionId;
+  }
+
+  synchronized int currentSessionId() {
+    return playbackSessionId;
+  }
+
+  public synchronized int playlistGeneration() {
+    return playlistGeneration;
+  }
+
+  synchronized Player currentPlayerLocked() {
+    return player;
+  }
+
+  synchronized boolean claimStartWatchdog(int sessionId) {
+    if (sessionId != playbackSessionId || startWatchdogSessionId == sessionId) {
+      return false;
+    }
+    startWatchdogSessionId = sessionId;
+    return true;
+  }
+
+  synchronized void releaseStartWatchdog(int sessionId) {
+    if (startWatchdogSessionId == sessionId) {
+      startWatchdogSessionId = -1;
+    }
+  }
+
+  synchronized boolean isLastFallbackFor(int sessionId) {
+    return lastFallbackSessionId == sessionId;
+  }
+
+  synchronized void markLastFallback(int sessionId) {
+    lastFallbackSessionId = sessionId;
+  }
+
+  synchronized void setPendingPlayerMethodOverride(PlaybackMethod method) {
+    pendingPlayerMethodOverride = method;
+  }
+
+  boolean hasPreferredInputStreamContentType() {
+    return mediaResolver.getPreferredInputStreamContentType() != null;
+  }
+
   public void playerUpdate(Player p, String event, Object eventData) {
     if (!isCurrentPlayer(p)) {
       return;
@@ -816,8 +707,6 @@ public class PlayerGUI implements PlayerListener {
         if (recovery.handlePlayerError(eventData)) {
           return;
         }
-        // ponytail: recovery exhausted — keep the queue flowing by advancing
-        // past the dead track instead of stalling silently.
         terminalPlaybackError(
             "player error: " + (eventData == null ? "unknown" : String.valueOf(eventData)));
       } else if (PlayerListener.STOPPED.equals(event) || PlayerListener.CLOSED.equals(event)) {
@@ -841,21 +730,36 @@ public class PlayerGUI implements PlayerListener {
       sessionMethodSessionId = playbackSessionId;
       startWatchdogSessionId = -1;
       consecutivePlaybackErrors = 0;
-      mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
-      mediaTimeCache.cachedSessionId = playbackSessionId;
+      cachedSampleTimeMs = System.currentTimeMillis();
+      cachedSessionId = playbackSessionId;
       sessionId = playbackSessionId;
       resumeSeek = pendingResumeSeekMicros;
       pendingResumeSeekMicros = -1;
+      if (resumeSeek > 0) {
+        deferredResumeSeekMicros = resumeSeek;
+      }
     }
     startTimer();
     setStatusByKey(Configuration.PLAYER_STATUS_PLAYING);
     commandWorker.enqueue(CommandWorker.APPLY_PENDING, sessionId);
 
-    // Resume: seek to the saved in-track position once playback is live (the
-    // player, resolved URL, content length, and duration are all populated by
-    // now, so seek() works for both the pass_url and InputStream methods).
     if (resumeSeek > 0) {
-      seek(resumeSeek);
+      commandWorker.enqueue(CommandWorker.RESUME_SEEK, sessionId);
+    }
+  }
+
+  void applyResumeSeek(int sessionId) {
+    long target;
+    synchronized (this) {
+      if (!isSessionActiveLocked(sessionId)) {
+        deferredResumeSeekMicros = -1;
+        return;
+      }
+      target = deferredResumeSeekMicros;
+      deferredResumeSeekMicros = -1;
+    }
+    if (target > 0) {
+      seek(target);
     }
   }
 
@@ -891,7 +795,7 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private void loadAndPlaySession(int sessionId, PlaybackMethod playerMethod) {
-    MediaResolver.PendingPlayback pending = null;
+    PendingPlayback pending = null;
 
     try {
       Track track = getTrackForSession(sessionId);
@@ -899,13 +803,8 @@ public class PlayerGUI implements PlayerListener {
         return;
       }
 
-      parent.setAlbumArtUrl(track.getImageUrl());
+      parent.albumArtLoader.setAlbumArtUrl(track.getImageUrl());
 
-      // The inputstream method buffers the whole media file into the Java heap
-      // during realize()/prefetch(). On low-heap devices the previous Player's
-      // media plus decoded album art can exhaust memory before the new file is
-      // fully read. Release them first; the pass_url path streams natively and
-      // keeps the old Player alive, so it is left untouched.
       if (playerMethod.isInputStream()) {
         freeHeapForInputStreamPlayback();
       }
@@ -939,9 +838,6 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
-  // Common recovery path for the load thread's catch arms: if the session is
-  // still current, try one auto-recovery; otherwise surface the error. Each arm
-  // only differs in the diagnostic label passed to the recovery logger.
   private void handleLoadFailure(Exception e, String label, int sessionId) {
     if (!isSessionActive(sessionId)) {
       return;
@@ -957,12 +853,11 @@ public class PlayerGUI implements PlayerListener {
       closePlayerLocked();
       closeResourcesLocked();
     }
-    parent.freeImageHeap();
+    parent.albumArtLoader.freeImageHeap();
     System.gc();
   }
 
-  private synchronized void attachPendingPlayback(
-      MediaResolver.PendingPlayback pending, int sessionId) {
+  private synchronized void attachPendingPlayback(PendingPlayback pending, int sessionId) {
     if (pending == null || pending.pendingPlayer == null || !isSessionActiveLocked(sessionId)) {
       return;
     }
@@ -978,20 +873,22 @@ public class PlayerGUI implements PlayerListener {
     sessionMethodSessionId = sessionId;
     startWatchdogSessionId = -1;
 
-    // Capture the resolved URL + total size for seek-by-reload (InputStream method).
-    currentResolvedUrl = null;
-    currentContentLength = -1;
-    if (httpConnection != null) {
+    currentResolvedUrl = pending.pendingResolvedUrl;
+    if (currentResolvedUrl == null && httpConnection != null) {
       try {
         currentResolvedUrl = httpConnection.getURL();
       } catch (Exception e) {
       }
-      try {
-        currentContentLength = httpConnection.getLength();
-      } catch (Exception e) {
-      }
     }
+    currentContentLength =
+        httpConnection != null
+            ? MediaHttpClient.totalContentLength(httpConnection)
+            : pending.pendingContentLength;
 
+    if (pending.connectionWatchdog != null) {
+      pending.connectionWatchdog.cancel();
+      pending.connectionWatchdog = null;
+    }
     pending.pendingPlayer = null;
     pending.pendingConnection = null;
     pending.pendingInputStream = null;
@@ -1070,7 +967,10 @@ public class PlayerGUI implements PlayerListener {
       if (isShuffleEnabled) {
         int next =
             shuffle.advance(
-                forward, RepeatMode.isOff(repeatMode), tracks.length, currentTrackIndex);
+                forward,
+                repeatMode == Configuration.PLAYER_REPEAT_OFF,
+                tracks.length,
+                currentTrackIndex);
         if (next >= 0) {
           currentTrackIndex = next;
           trackChanged = true;
@@ -1088,7 +988,6 @@ public class PlayerGUI implements PlayerListener {
       resetDisplay();
       play();
     }
-    maybeAutoQueue();
   }
 
   private boolean changeTrackNormalLocked(boolean forward) {
@@ -1100,7 +999,7 @@ public class PlayerGUI implements PlayerListener {
     if (forward) {
       currentTrackIndex++;
       if (currentTrackIndex >= tracks.length) {
-        if (RepeatMode.isOff(repeatMode)) {
+        if (repeatMode == Configuration.PLAYER_REPEAT_OFF) {
           currentTrackIndex = tracks.length - 1;
           return false;
         }
@@ -1109,7 +1008,7 @@ public class PlayerGUI implements PlayerListener {
     } else {
       currentTrackIndex--;
       if (currentTrackIndex < 0) {
-        if (RepeatMode.isOff(repeatMode)) {
+        if (repeatMode == Configuration.PLAYER_REPEAT_OFF) {
           currentTrackIndex = 0;
           return false;
         }
@@ -1159,8 +1058,10 @@ public class PlayerGUI implements PlayerListener {
 
         Track[] tracks = trackList != null ? trackList.getTracks() : null;
         shouldRepeatCurrent =
-            RepeatMode.isOne(repeatMode)
-                || (RepeatMode.isAll(repeatMode) && tracks != null && tracks.length == 1);
+            repeatMode == Configuration.PLAYER_REPEAT_ONE
+                || (repeatMode == Configuration.PLAYER_REPEAT_ALL
+                    && tracks != null
+                    && tracks.length == 1);
 
         shouldGoNext = !shouldRepeatCurrent && hasNextTrackLocked();
       }
@@ -1185,14 +1086,12 @@ public class PlayerGUI implements PlayerListener {
       if (loading || destroyed) {
         return;
       }
-      // Repeat-one: rewind the already-loaded player instead of tearing it
-      // down and re-downloading — a big win on slow links.
       if (player != null) {
         try {
           player.setMediaTime(0L);
-          mediaTimeCache.cachedMediaTimeMicros = 0L;
-          mediaTimeCache.cachedSampleTimeMs = System.currentTimeMillis();
-          mediaTimeCache.cachedSessionId = playbackSessionId;
+          cachedMediaTimeMicros = 0L;
+          cachedSampleTimeMs = System.currentTimeMillis();
+          cachedSessionId = playbackSessionId;
           if (player.getState() < Player.STARTED) {
             player.start();
           }
@@ -1216,6 +1115,40 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
+  public synchronized boolean canSkipForward() {
+    if (trackList == null) {
+      return false;
+    }
+    Track[] tracks = trackList.getTracks();
+    if (tracks == null || tracks.length <= 1) {
+      return false;
+    }
+    if (isShuffleEnabled) {
+      return repeatMode != Configuration.PLAYER_REPEAT_OFF || shuffle.hasNext();
+    }
+    if (repeatMode != Configuration.PLAYER_REPEAT_OFF) {
+      return true;
+    }
+    return currentTrackIndex < tracks.length - 1;
+  }
+
+  public synchronized boolean canSkipBackward() {
+    if (trackList == null) {
+      return false;
+    }
+    Track[] tracks = trackList.getTracks();
+    if (tracks == null || tracks.length <= 1) {
+      return false;
+    }
+    if (isShuffleEnabled) {
+      return repeatMode != Configuration.PLAYER_REPEAT_OFF || shuffle.hasPrev();
+    }
+    if (repeatMode != Configuration.PLAYER_REPEAT_OFF) {
+      return true;
+    }
+    return currentTrackIndex > 0;
+  }
+
   private synchronized boolean hasNextTrackLocked() {
     if (trackList == null || trackList.getTracks() == null) {
       return false;
@@ -1226,7 +1159,7 @@ public class PlayerGUI implements PlayerListener {
       return false;
     }
 
-    if (RepeatMode.isAll(repeatMode)) {
+    if (repeatMode == Configuration.PLAYER_REPEAT_ALL) {
       return true;
     }
 
@@ -1248,14 +1181,6 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
-  private VolumeControl getVolumeControl() {
-    Player currentPlayer;
-    synchronized (this) {
-      currentPlayer = player;
-    }
-    return getVolumeControl(currentPlayer);
-  }
-
   private void startTimer() {
     synchronized (this) {
       if (repaintSuppressed) {
@@ -1266,8 +1191,6 @@ public class PlayerGUI implements PlayerListener {
         displayTask =
             new TimerTask() {
               public void run() {
-                // Guard the shared timer thread: an uncaught throw would kill it
-                // and silently stop the per-second repaint (and any watchdog).
                 try {
                   parent.onRepaintTick();
                 } catch (Throwable t) {
@@ -1286,9 +1209,6 @@ public class PlayerGUI implements PlayerListener {
     parent.updateDisplayAsync();
   }
 
-  // Pause/resume ONLY the 1s repaint timer, independent of audio playback.
-  // Used by PlayerScreen.hideNotify/showNotify so a hidden canvas stops
-  // repainting (saving CPU/battery) while audio keeps playing (Decision A).
   public void pauseRepaintTimer() {
     synchronized (this) {
       repaintSuppressed = true;
@@ -1308,9 +1228,6 @@ public class PlayerGUI implements PlayerListener {
 
   private void ensureTimerLocked() {
     if (mainTimer == null) {
-      // MIDP's Timer only exposes the no-arg ctor (no daemon threads in CLDC),
-      // so it's finally cancelled by shutdownTimer() on app destroy. Kept alive
-      // across track changes so we don't spawn a fresh thread on every next/prev.
       mainTimer = new Timer();
     }
   }
@@ -1322,16 +1239,11 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
-  // Cancel scheduled tasks (repaint + start watchdog) but keep the shared daemon
-  // timer alive so the next track doesn't pay for a new thread. The timer itself
-  // is finally cancelled only by shutdownTimer() on app destroy.
   private void stopScheduledTasksLocked() {
     stopTimerLocked();
     cancelStartWatchdogLocked();
   }
 
-  // Cancel a pending start-watchdog task (track change / cleanup). Replaces the
-  // former thread.interrupt() on a dedicated watchdog thread.
   private void cancelStartWatchdogLocked() {
     if (startWatchdogTask != null) {
       startWatchdogTask.cancel();
@@ -1339,8 +1251,6 @@ public class PlayerGUI implements PlayerListener {
     }
   }
 
-  // Schedule a one-shot start-watchdog on the shared player timer, superseding
-  // any pending one. Replaces a former dedicated Thread per playback start.
   void scheduleStartWatchdogTask(TimerTask task, long delayMs) {
     synchronized (this) {
       cancelStartWatchdogLocked();
@@ -1373,33 +1283,36 @@ public class PlayerGUI implements PlayerListener {
     sessionStarted = false;
     sessionMethodSessionId = -1;
     startWatchdogSessionId = -1;
+    pendingResumeSeekMicros = -1;
+    deferredResumeSeekMicros = -1;
     resetMediaCacheLocked();
     closePlayerLocked();
     closeResourcesLocked();
     stopScheduledTasksLocked();
   }
 
-  // Shared teardown of in-flight playback state for setPlaylist/stop/cleanup:
-  // session + player/resources, the pending track-change queue, and the pending
-  // method override. Each caller sets its own flags (destroyed/loading/shuffle)
-  // around it.
   private synchronized void resetCorePlaybackStateLocked() {
     resetPlaybackStateLocked();
-    clearPendingTrackChangesLocked();
-    commandWorker.clearQueue();
-    clearPendingPlayerMethodOverrideLocked();
-  }
-
-  private synchronized void clearPendingTrackChangesLocked() {
     pendingTrackDelta = 0;
-  }
-
-  private synchronized void clearPendingPlayerMethodOverrideLocked() {
+    commandWorker.clearQueue();
     pendingPlayerMethodOverride = null;
   }
 
   private void resetMediaCacheLocked() {
-    mediaTimeCache.reset(playbackSessionId);
+    cachedMediaTimeMicros = 0L;
+    cachedDurationMicros = 0L;
+    cachedSampleTimeMs = 0L;
+    cachedSessionId = playbackSessionId;
+  }
+
+  private static int nextRepeatMode(int mode) {
+    if (mode == Configuration.PLAYER_REPEAT_OFF) {
+      return Configuration.PLAYER_REPEAT_ONE;
+    }
+    if (mode == Configuration.PLAYER_REPEAT_ONE) {
+      return Configuration.PLAYER_REPEAT_ALL;
+    }
+    return Configuration.PLAYER_REPEAT_OFF;
   }
 
   private void enqueuePendingTrackChangeLocked(int delta) {
@@ -1438,13 +1351,9 @@ public class PlayerGUI implements PlayerListener {
     changeTrack(direction > 0, false);
   }
 
-  synchronized boolean isCurrentSession(int sessionId) {
-    return sessionId == playbackSessionId;
-  }
-
   private void closePlayerLocked() {
     if (player != null) {
-      closePlayerQuietly(player);
+      Utils.closePlayerQuietly(player, this);
       player = null;
     }
   }
@@ -1454,35 +1363,6 @@ public class PlayerGUI implements PlayerListener {
     inputStream = null;
     Utils.closeQuietly(httpConnection);
     httpConnection = null;
-  }
-
-  void closePlayerQuietly(Player targetPlayer) {
-    if (targetPlayer == null) {
-      return;
-    }
-
-    try {
-      targetPlayer.removePlayerListener(this);
-    } catch (Exception e) {
-    }
-
-    try {
-      int state = targetPlayer.getState();
-      if (state != Player.CLOSED && state >= Player.REALIZED) {
-        targetPlayer.stop();
-      }
-    } catch (Exception e) {
-    }
-
-    try {
-      targetPlayer.close();
-    } catch (Exception e) {
-    }
-  }
-
-  void closeHttpResources(InputStream stream, HttpConnection connection) {
-    Utils.closeQuietly(stream);
-    Utils.closeQuietly(connection);
   }
 
   private synchronized void invalidateSessionLocked() {
@@ -1508,7 +1388,7 @@ public class PlayerGUI implements PlayerListener {
     return getCurrentTrackLocked();
   }
 
-  private Track getCurrentTrackLocked() {
+  Track getCurrentTrackLocked() {
     if (trackList == null || trackList.getTracks() == null) {
       return null;
     }
@@ -1566,22 +1446,14 @@ public class PlayerGUI implements PlayerListener {
 
   private void resetDisplay() {
     parent.resetTruncatedText();
-    parent.resetDurationText();
-    parent.resetImage();
+    parent.painter.resetDurationText();
+    parent.albumArtLoader.resetImage();
   }
 
   private void handleError(Exception e) {
     terminalPlaybackError(e == null ? "error" : e.toString());
   }
 
-  // Last-resort fallback for a track that exhausted every in-track recovery
-  // (resolution/inputstream retries + inputstream<->url method swap): keep
-  // playback flowing by advancing to the next track instead of dead-stopping the
-  // queue. After MAX_CONSECUTIVE_PLAYBACK_ERRORS in a row, or when there is no
-  // next track, give up and surface the error. changeTrack(true, true) advances
-  // immediately when idle, or queues the skip onto the pending-delta path while a
-  // load is still unwinding, so this is safe from the load thread, the start
-  // path, and the PlayerListener callback thread alike.
   private void terminalPlaybackError(String reason) {
     boolean advanced = false;
     synchronized (this) {
@@ -1598,7 +1470,10 @@ public class PlayerGUI implements PlayerListener {
       return;
     }
 
-    consecutivePlaybackErrors = 0;
+    synchronized (this) {
+      consecutivePlaybackErrors = 0;
+      resetPlaybackStateLocked();
+    }
     stopTimer();
     setStatus(Lang.tr("status.error"));
     parent.showError(reason);
@@ -1613,29 +1488,15 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void saveVolumeLevel() {
-    try {
-      settingsManager.saveVolumeLevel(volumeLevel);
-    } catch (RecordStoreException e) {
-      e.printStackTrace();
-    }
+    settingsPersistence.saveVolume(volumeLevel);
   }
 
   private void saveRepeatMode() {
-    try {
-      settingsManager.saveRepeatMode(repeatMode);
-    } catch (RecordStoreException e) {
-      e.printStackTrace();
-    }
+    settingsPersistence.saveRepeat(repeatMode);
   }
 
   private void saveShuffleMode() {
-    try {
-      int mode =
-          isShuffleEnabled ? Configuration.PLAYER_SHUFFLE_ON : Configuration.PLAYER_SHUFFLE_OFF;
-      settingsManager.saveShuffleMode(mode);
-    } catch (RecordStoreException e) {
-      e.printStackTrace();
-    }
+    settingsPersistence.saveShuffle(isShuffleEnabled);
   }
 
   private PlaybackMethod getConfiguredPlayerHttpMethod() {
@@ -1645,7 +1506,7 @@ public class PlayerGUI implements PlayerListener {
       return PlaybackMethod.fromCode(configuredMethod);
     }
 
-    return PlaybackMethod.fromCode(Utils.getPlayerHttpMethod());
+    return PlaybackMethod.fromCode(settingsManager.getDefaultPlayerMethod());
   }
 
   private synchronized PlaybackMethod getNextPlayerHttpMethodLocked() {

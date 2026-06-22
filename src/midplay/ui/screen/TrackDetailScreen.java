@@ -5,14 +5,12 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.StringItem;
 import javax.microedition.lcdui.TextField;
 import midplay.model.Track;
-import midplay.player.PlayerNavHelper;
 import midplay.ui.BaseForm;
 import midplay.ui.Commands;
 import midplay.ui.Navigator;
+import midplay.ui.PlayerNavHelper;
 import midplay.util.Lang;
 
-// Track detail screen: shows name/artist/duration/url and lets the user play the
-// track or add it to a custom playlist.
 public final class TrackDetailScreen extends BaseForm {
   private final Track track;
 

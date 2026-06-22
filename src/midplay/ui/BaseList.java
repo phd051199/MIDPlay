@@ -5,7 +5,6 @@ import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.List;
-import midplay.player.PlayerNavHelper;
 import midplay.util.Utils;
 
 public abstract class BaseList extends List implements CommandListener {
@@ -40,6 +39,10 @@ public abstract class BaseList extends List implements CommandListener {
   }
 
   protected abstract void populateItems();
+
+  protected static boolean isValidSelection(int index, int size) {
+    return index >= 0 && index < size;
+  }
 
   protected void refresh() {
     int index = getSelectedIndex();

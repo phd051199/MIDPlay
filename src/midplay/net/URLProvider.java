@@ -10,15 +10,9 @@ public class URLProvider {
   private static final SettingsManager settingsManager = SettingsManager.getInstance();
 
   public static String checkForUpdate() {
-    StringBuffer urlBuffer =
-        new StringBuffer(SERVICE_URL)
-            .append("/update")
-            .append("?version=")
-            .append(MIDPlay.APP_VERSION);
-    return urlBuffer.toString();
+    return SERVICE_URL + "/update?version=" + MIDPlay.APP_VERSION;
   }
 
-  // Appends the locale + service pair shared by every music-content endpoint.
   private static void appendCommonParams(StringBuffer urlBuffer) {
     urlBuffer
         .append("&lang=")
@@ -64,21 +58,6 @@ public class URLProvider {
     return urlBuffer.toString();
   }
 
-  // Similar tracks to the given artist/track, used by the player's auto-queue
-  // ("infinite playlist"). Same {Items, GetMore} shape as /tracks/search, so the
-  // client parses it through the existing Tracks path.
-  public static String getSimilar(String artist, String track) {
-    StringBuffer urlBuffer =
-        new StringBuffer(SERVICE_URL)
-            .append("/getSimilar")
-            .append("?artist=")
-            .append(Utils.urlEncode(artist))
-            .append("&track=")
-            .append(Utils.urlEncode(track));
-    appendCommonParams(urlBuffer);
-    return urlBuffer.toString();
-  }
-
   public static String getTracks(String listKey) {
     StringBuffer urlBuffer =
         new StringBuffer(SERVICE_URL)
@@ -92,8 +71,8 @@ public class URLProvider {
   }
 
   public static String getSizedImage(String imageUrl, int size) {
-    StringBuffer wsrvBuffer =
-        new StringBuffer("https://wsrv.nl/?url=")
+    StringBuffer urlBuffer =
+        new StringBuffer("http://wsrv.nl/?url=")
             .append(Utils.urlEncode(imageUrl))
             .append("&output=jpg")
             .append("&w=")
@@ -101,17 +80,11 @@ public class URLProvider {
             .append("&h=")
             .append(size)
             .append("&fit=cover");
-    StringBuffer urlBuffer =
-        new StringBuffer(SERVICE_URL)
-            .append("/proxy?url=")
-            .append(Utils.urlEncode(wsrvBuffer.toString()));
     return urlBuffer.toString();
   }
 
   public static String getThemeColor(String hex) {
-    StringBuffer urlBuffer =
-        new StringBuffer(SERVICE_URL).append("/theme?color=").append(Utils.urlEncode(hex));
-    return urlBuffer.toString();
+    return SERVICE_URL + "/theme?color=" + Utils.urlEncode(hex);
   }
 
   public static String getTakumiTextImage(

@@ -18,11 +18,6 @@ import midplay.ui.Navigator;
 import midplay.util.Lang;
 import midplay.util.Utils;
 
-// The "now playing" queue view: a TrackListScreen over PlayerGUI's current
-// tracks, plus queue-only actions — manual Sort (mirrors the main-menu two-tap
-// reorder mode) and Save-as-Playlist (persist the current queue as a custom
-// favorite). Sort swaps both the visible rows and a track buffer so Save can
-// reorder the live queue without a fragile display-string reverse lookup.
 public final class QueueTrackListScreen extends TrackListScreen {
   private static final String SORT_MARKER = Configuration.SORT_ICON;
 
@@ -37,7 +32,6 @@ public final class QueueTrackListScreen extends TrackListScreen {
   }
 
   protected void showNotify() {
-    // Don't let the now-playing marker refresh clobber in-progress sort edits.
     if (!isSortMode) {
       super.showNotify();
     }
@@ -68,8 +62,6 @@ public final class QueueTrackListScreen extends TrackListScreen {
       super.handleCommand(c, d);
     }
   }
-
-  // --- Sort mode (mirrors MainMenuScreen two-tap swap) ----------------------
 
   private void startSort() {
     isSortMode = true;
@@ -130,8 +122,6 @@ public final class QueueTrackListScreen extends TrackListScreen {
     switchToNormalCommands();
   }
 
-  // The base refresh() only repopulates custom playlists; the queue view (no
-  // playlist) must rebuild rows itself from the live PlayerGUI tracks.
   private void repopulateFromQueue() {
     PlayerGUI gui = currentGUI();
     Tracks live = gui != null ? gui.getCurrentTracks() : null;
@@ -169,8 +159,6 @@ public final class QueueTrackListScreen extends TrackListScreen {
     addCommand(Commands.playerNowPlaying());
   }
 
-  // --- Save current queue as a custom favorite ------------------------------
-
   private void showSaveAsPlaylistForm() {
     FormHelpers.promptName(
         navigator,
@@ -194,8 +182,6 @@ public final class QueueTrackListScreen extends TrackListScreen {
       navigator.showAlert(Lang.tr("playlist.error.create_failed"), AlertType.ERROR);
       return;
     }
-    // ponytail: loops the existing single-track add (local RMS, fast). A bulk
-    // method is overkill until a queue routinely exceeds the 200-track cap.
     FavoritesManager fm = FavoritesManager.getInstance();
     for (int i = 0; i < queue.length; i++) {
       if (queue[i] != null) {

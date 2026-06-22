@@ -21,8 +21,14 @@ public class Track extends Base {
   }
 
   public boolean isSame(Track track) {
-    return track != null
-        && equalsNullable(this.getName(), track.getName())
+    if (track == null) {
+      return false;
+    }
+    String thisKey = this.getKey();
+    if (thisKey != null && thisKey.length() > 0 && thisKey.equals(track.getKey())) {
+      return true;
+    }
+    return equalsNullable(this.getName(), track.getName())
         && equalsNullable(this.getArtist(), track.getArtist())
         && this.getDuration() == track.getDuration();
   }
@@ -44,10 +50,6 @@ public class Track extends Base {
         json.getString("Image", ""));
   }
 
-  public void setUrl(String url) {
-    this.url = url;
-  }
-
   public String getUrl() {
     return url;
   }
@@ -56,16 +58,8 @@ public class Track extends Base {
     return duration;
   }
 
-  public void setDuration(int duration) {
-    this.duration = duration;
-  }
-
   public String getArtist() {
     return artist;
-  }
-
-  public void setArtist(String artist) {
-    this.artist = artist;
   }
 
   public String getDisplayTitle(String unknownArtistLabel) {
@@ -78,10 +72,6 @@ public class Track extends Base {
 
   public String getImageUrl() {
     return imageUrl;
-  }
-
-  public void setImageUrl(String imageUrl) {
-    this.imageUrl = imageUrl;
   }
 
   public JSONObject toJSON() {

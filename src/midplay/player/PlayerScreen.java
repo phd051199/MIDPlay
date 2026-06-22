@@ -14,21 +14,17 @@ import midplay.ui.Commands;
 import midplay.ui.Navigator;
 import midplay.ui.screen.PlaylistPickerScreen;
 import midplay.ui.screen.QueueTrackListScreen;
-import midplay.ui.screen.SleepTimerForm;
+import midplay.ui.screen.SleepTimerScreen;
 import midplay.util.Lang;
 import midplay.util.Utils;
 
 public final class PlayerScreen extends Canvas
     implements CommandListener, SleepTimerManager.SleepTimerCallback {
 
-  // Nokia media key codes
   private static final int KEY_MEDIA_PLAY = -20;
   private static final int KEY_MEDIA_PREVIOUS = -21;
   private static final int KEY_MEDIA_NEXT = -22;
 
-  // Volume-alert geometry lives in volumeAlertLayout() below so the painter and
-  // the touch handler always agree (they used to recompute it independently and
-  // could drift).
   static final int VOLUME_ALERT_MARGIN = 20;
   static final int VOLUME_ALERT_HEIGHT = 100;
   static final int VOLUME_BAR_INSET = 20;
@@ -59,8 +55,6 @@ public final class PlayerScreen extends Canvas
     }
   }
 
-  // Single source of truth for the volume-alert box + bar rectangles, shared by
-  // paintVolumeAlert (PlayerPainter) and handleVolumeAlertTouch.
   VolumeAlertLayout volumeAlertLayout() {
     int alertWidth = displayWidth - 2 * VOLUME_ALERT_MARGIN;
     int alertHeight = VOLUME_ALERT_HEIGHT;
@@ -74,7 +68,6 @@ public final class PlayerScreen extends Canvas
         alertX, alertY, alertWidth, alertHeight, barX, barY, barWidth, barHeight);
   }
 
-  // UI Utility methods
   private static boolean isPointInBounds(
       int x, int y, int boundsX, int boundsY, int width, int height) {
     return x >= boundsX && x <= boundsX + width && y >= boundsY && y <= boundsY + height;
@@ -90,28 +83,16 @@ public final class PlayerScreen extends Canvas
 
   private final SleepTimerManager sleepTimerManager = new SleepTimerManager();
   private final boolean touchSupported;
-  // True while a press that began on the progress slider is being dragged, so
-  // pointerDragged keeps scrubbing by x even as the finger drifts off the bar.
   private boolean seeking;
-  // True while a press that began on the volume-alert bar is being dragged, so
-  // pointerDragged keeps adjusting the volume even as the finger drifts off the bar.
   private boolean volumeDragging;
 
-  // Hold-to-seek on keypad LEFT/RIGHT: a quick tap = prev/next track (acted on
-  // release), a held key = seek once auto-repeat kicks in. heldKey tracks the
-  // deferred LEFT/RIGHT keyCode; heldRepeatCount classifies tap vs hold.
-  private static final int SEEK_REPEAT_THRESHOLD = 2; // 2nd event (1st repeat) starts seeking
-  private static final long SEEK_STEP_MICROS = 2000000L; // 2s per repeat
+  private static final int SEEK_REPEAT_THRESHOLD = 2;
+  private static final long SEEK_STEP_MICROS = 2000000L;
   private int heldKey;
   private int heldAction;
   private int heldRepeatCount;
-  // Pending scrub target accumulated during a drag/hold (preview only); the real
-  // seek commits this value when the finger/key is released. -1 when idle.
   private long pendingSeekMicros = -1;
 
-  // Read by the repaint Timer thread in onRepaintTick but written by the UI/
-  // paint thread (sizeChanged / initDisplayMetrics); volatile guarantees the
-  // timer sees the latest layout instead of a stale value after a resize/rotate.
   volatile int displayWidth = -1, displayHeight = -1;
   volatile int textHeight = 10;
   boolean isLandscape, isLargeScreen;
@@ -132,28 +113,16 @@ public final class PlayerScreen extends Canvas
 
   long lastDuration = -1;
   String durationText = "";
-  // Cached formatted current-time label. Reparsed only when the second changes
-  // instead of every paint (the per-second slider tick repaints this row).
   long lastCurrent = -1;
   String currentText = "";
 
-  // True once initDisplayMetrics has produced a valid layout, false after a
-  // sizeChanged until the next paint re-layouts. Lets the per-second repaint
-  // tick target the slider/time row immediately instead of falling back to a
-  // full repaint during the post-resize window.
   volatile boolean layoutValid = false;
 
-  // Slider fill width in pixels (precomputed with integer math in the painter
-  // — float boxing per paint is expensive on low-end J2ME devices).
   int sliderValue;
 
   private String title;
   private volatile PlayerGUI gui;
   Navigator navigator;
-
-  public PlayerScreen(String title, Tracks tracks, int index, Navigator navigator) {
-    this(title, tracks, index, 0L, navigator);
-  }
 
   public PlayerScreen(
       String title, Tracks tracks, int index, long positionMicros, Navigator navigator) {
@@ -172,8 +141,6 @@ public final class PlayerScreen extends Canvas
     Command[] commands = {
       Commands.back(),
       Commands.playerPlay(),
-      Commands.playerNext(),
-      Commands.playerPrevious(),
       Commands.playerStop(),
       Commands.playerVolume(),
       Commands.playerAddToPlaylist(),
@@ -192,8 +159,15 @@ public final class PlayerScreen extends Canvas
 
     if (add) {
       updateSleepTimerCommands();
+      navNextAdded = false;
+      navPrevAdded = false;
+      updateNavCommands();
     } else {
       removeSleepTimerCommand();
+      removeCommand(Commands.playerNext());
+      removeCommand(Commands.playerPrevious());
+      navNextAdded = false;
+      navPrevAdded = false;
     }
   }
 
@@ -221,10 +195,6 @@ public final class PlayerScreen extends Canvas
   public void hideNotify() {
     getPlayerGUI().pauseRepaintTimer();
     albumArtLoader.cancelImageLoads();
-  }
-
-  public void change(String title, Tracks tracks, int index, Navigator navigator) {
-    change(title, tracks, index, 0L, navigator);
   }
 
   public void change(
@@ -276,27 +246,16 @@ public final class PlayerScreen extends Canvas
     serviceRepaints();
   }
 
-  // Non-blocking refresh for callers that may run off the event/UI thread
-  // (Timer thread, MMAPI playerUpdate callback, image-load worker). Plain
-  // repaint() is safe from any thread; serviceRepaints() is not.
   public void updateDisplayAsync() {
     repaint();
   }
 
-  // Called every ~1s by the repaint timer during playback. Only the slider
-  // thumb and current-time label move, so repaint just that row instead of the
-  // whole canvas — the biggest smoothness win on weak devices. The paint
-  // pipeline honours the clip (intersects() checks) so album art / buttons /
-  // track text are skipped outside the row.
   void onRepaintTick() {
+    updateNavCommands();
     if (displayWidth <= 0 || displayHeight <= 0 || !layoutValid) {
       updateDisplayAsync();
       return;
     }
-    // Repaint the full union of the slider bar and the time-text row. On small
-    // screens the slider is vertically centred inside the text row, so sliderTop
-    // sits a few px BELOW timeY — starting the clip at sliderTop left the top of
-    // the time digits uncleared each tick, smearing the time as it advanced.
     int rowTop = Math.min(sliderTop, timeY);
     int rowBottom = Math.max(sliderTop + sliderHeight, timeY + textHeight);
     if (rowBottom <= rowTop) {
@@ -333,20 +292,12 @@ public final class PlayerScreen extends Canvas
     return gui;
   }
 
-  public void setAlbumArtUrl(String url) {
-    albumArtLoader.setAlbumArtUrl(url);
-  }
-
   protected void keyPressed(int keycode) {
     try {
       int action = getGameAction(keycode);
 
-      // Keypad LEFT/RIGHT in normal player mode are deferred so a quick tap skips
-      // a track (on release) while a held key seeks. Volume mode keeps its
-      // existing immediate LEFT/RIGHT handling.
       if (!volumeAlertShowing && (action == Canvas.LEFT || action == Canvas.RIGHT)) {
         if (heldKey == keycode) {
-          // Some platforms repeat by firing keyPressed again instead of keyRepeated.
           onSeekRepeat();
         } else {
           heldKey = keycode;
@@ -390,8 +341,6 @@ public final class PlayerScreen extends Canvas
       heldRepeatCount = 0;
       long pending = pendingSeekMicros;
       pendingSeekMicros = -1;
-      // A short press with no auto-repeat: prev/next track. A held key previewed
-      // a scrub — commit the real seek once now.
       if (wasTap) {
         if (action == Canvas.LEFT) {
           previous();
@@ -406,9 +355,6 @@ public final class PlayerScreen extends Canvas
     }
   }
 
-  // Each auto-repeat event while LEFT/RIGHT is held advances the scrub preview by
-  // one 2s step in that direction (no reload per step). seek() commits the
-  // accumulated target once on key release.
   private void onSeekRepeat() {
     heldRepeatCount++;
     if (heldRepeatCount < SEEK_REPEAT_THRESHOLD || heldAction == 0) {
@@ -429,9 +375,6 @@ public final class PlayerScreen extends Canvas
     previewClamped(target, duration);
   }
 
-  // Clamp a scrub target into [0, duration], stage it as the pending seek and
-  // push a live preview. Shared by the keypad auto-repeat and the touch slider
-  // seek paths.
   private void previewClamped(long target, long duration) {
     if (target < 0) {
       target = 0;
@@ -481,8 +424,6 @@ public final class PlayerScreen extends Canvas
     }
     try {
       if (volumeAlertShowing) {
-        // While the volume alert is up, dragging adjusts the volume (if the press
-        // began on the bar); seek is irrelevant here.
         if (volumeDragging) {
           setVolumeFromBarX(x);
         }
@@ -497,8 +438,6 @@ public final class PlayerScreen extends Canvas
   }
 
   protected void pointerReleased(int x, int y) {
-    // Commit the slider scrub: the preview tracked the finger during the drag,
-    // now run the real seek once.
     if (seeking) {
       seeking = false;
       if (pendingSeekMicros >= 0) {
@@ -552,7 +491,6 @@ public final class PlayerScreen extends Canvas
   public void onTimerUpdate(String remainingTime) {
     if (sleepTimerManager.isActive()) {
       setTimerOverride(Lang.tr("timer.sleep_timer") + ": " + remainingTime);
-      // Only the status-bar text changes each tick; repaint just that rect.
       if (displayWidth > 0 && statusBarHeight > 0) {
         repaint(0, 0, displayWidth, statusBarHeight);
       } else {
@@ -585,17 +523,6 @@ public final class PlayerScreen extends Canvas
     }
   }
 
-  public void resetImage() {
-    albumArtLoader.resetImage();
-  }
-
-  // Drop decoded album-art bitmaps so the heap is free before a memory-heavy
-  // operation (creating a new media Player on low-heap devices). Keeps the URL
-  // and load state, so images are re-decoded lazily on the next paint.
-  public void freeImageHeap() {
-    albumArtLoader.freeImageHeap();
-  }
-
   boolean isLoading() {
     return getPlayerGUI().isLoading();
   }
@@ -614,19 +541,12 @@ public final class PlayerScreen extends Canvas
     }
   }
 
-  // Touch target for the progress slider: full slider width, but a taller band
-  // than the ~4-6px bar so a finger tap registers reliably.
   private boolean isPointOnSlider(int x, int y) {
     int touchHeight = Math.max(sliderHeight + 18, 24);
     int top = sliderTop + (sliderHeight >> 1) - (touchHeight >> 1);
     return x >= sliderLeft && x <= sliderLeft + sliderWidth && y >= top && y <= top + touchHeight;
   }
 
-  // Seek the progress bar to a tap/drag x. No-op when the duration is unknown
-  // (streaming/indeterminate) — the slider can't map a ratio without it. seek()
-  // reseeds the time cache and triggers a repaint, so the bar + label jump.
-  // Slider press/drag: preview the position smoothly (no reload per move); the
-  // real seek commits on pointerReleased via the pending target.
   private void handleSliderSeek(int x) {
     int left = sliderLeft;
     int width = sliderWidth;
@@ -651,7 +571,6 @@ public final class PlayerScreen extends Canvas
     if (isPointInBounds(
         x, y, layout.alertX, layout.alertY, layout.alertWidth, layout.alertHeight)) {
       if (isPointInBounds(x, y, layout.barX, layout.barY, layout.barWidth, layout.barHeight)) {
-        // Begin a drag so pointerDragged keeps tracking the finger along the bar.
         volumeDragging = true;
         setVolumeFromBarX(x);
       }
@@ -660,9 +579,6 @@ public final class PlayerScreen extends Canvas
     }
   }
 
-  // Map a screen x to a volume level, clamping to the bar so a finger dragged
-  // past either end pins at min/max instead of running off the bar. Shared by the
-  // press (tap) and the drag so both use the same mapping.
   private void setVolumeFromBarX(int x) {
     VolumeAlertLayout layout = volumeAlertLayout();
     if (x < layout.barX) {
@@ -796,8 +712,36 @@ public final class PlayerScreen extends Canvas
   }
 
   private void showSleepTimerDialog() {
-    SleepTimerForm form = new SleepTimerForm(navigator, new SleepTimerCallback());
+    SleepTimerScreen form = new SleepTimerScreen(navigator, new SleepTimerCallback());
     navigator.forward(form);
+  }
+
+  private boolean navNextAdded;
+  private boolean navPrevAdded;
+
+  private void updateNavCommands() {
+    PlayerGUI gui = getPlayerGUI();
+    if (gui == null) {
+      return;
+    }
+    boolean wantNext = gui.canSkipForward();
+    boolean wantPrev = gui.canSkipBackward();
+    if (wantNext != navNextAdded) {
+      if (wantNext) {
+        addCommand(Commands.playerNext());
+      } else {
+        removeCommand(Commands.playerNext());
+      }
+      navNextAdded = wantNext;
+    }
+    if (wantPrev != navPrevAdded) {
+      if (wantPrev) {
+        addCommand(Commands.playerPrevious());
+      } else {
+        removeCommand(Commands.playerPrevious());
+      }
+      navPrevAdded = wantPrev;
+    }
   }
 
   private void updateSleepTimerCommands() {
@@ -819,10 +763,10 @@ public final class PlayerScreen extends Canvas
   }
 
   private void handleTimerAction(int action) {
-    if (action == SleepTimerForm.ACTION_STOP_PLAYBACK) {
+    if (action == SleepTimerScreen.ACTION_STOP_PLAYBACK) {
       stop();
       navigator.showAlert(Lang.tr("timer.status.expired"), AlertType.INFO);
-    } else if (action == SleepTimerForm.ACTION_EXIT_APP) {
+    } else if (action == SleepTimerScreen.ACTION_EXIT_APP) {
       navigator.showAlert(Lang.tr("timer.status.expired"), AlertType.INFO);
     }
   }
@@ -835,11 +779,7 @@ public final class PlayerScreen extends Canvas
     statusBar.clearTimerOverride();
   }
 
-  public void resetDurationText() {
-    painter.resetDurationText();
-  }
-
-  private class SleepTimerCallback implements SleepTimerForm.SleepTimerCallback {
+  private class SleepTimerCallback implements SleepTimerScreen.SleepTimerCallback {
     public void onTimerSet(int durationMinutes, int action) {
       sleepTimerManager.setCallback(PlayerScreen.this);
       sleepTimerManager.startCountdownTimer(durationMinutes, action);

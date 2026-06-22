@@ -88,8 +88,6 @@ public class Navigator {
     beforeAlert = null;
   }
 
-  // Run a runnable on the LCDUI event thread. Used to marshal off-thread
-  // image-load callbacks before they touch Canvas fields or repaint.
   public void callSerially(Runnable r) {
     if (r == null) {
       return;
@@ -121,9 +119,6 @@ public class Navigator {
             });
   }
 
-  // Convenience for the common ok/cancel confirm: the cancel branch always
-  // dismisses the alert, only the ok action differs. Absorbs the repeated
-  // CommandListener boilerplate (ok -> onOk.run(), cancel -> dismissAlert).
   public void showConfirmationAlert(String message, Runnable onOk) {
     showConfirmationAlert(message, onOk, AlertType.INFO);
   }

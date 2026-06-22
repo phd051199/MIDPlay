@@ -14,9 +14,6 @@ public final class AlbumArtLoader {
   String albumArtUrl;
   boolean loadingAlbumArt, albumArtLoaded;
   BinaryImageLoadOperation currentImageLoadOperation;
-  // Monotonic token bumped whenever an album-art load is superseded or
-  // cancelled; in-flight callbacks compare their captured token to detect
-  // staleness (mirrors TextImageSlot.requestKey for the text-image path).
   int artLoadKey = 0;
 
   AlbumArtLoader(PlayerScreen screen) {
@@ -75,21 +72,11 @@ public final class AlbumArtLoader {
     albumArtUrl = null;
   }
 
-  // Drop decoded album-art bitmaps so the heap is free before a memory-heavy
-  // operation (creating a new media Player on low-heap devices). Keeps the URL
-  // and load state, so images are re-decoded lazily on the next paint.
   void freeImageHeap() {
     stopCurrentImageLoad();
     clearImageData();
   }
 
-  // Scale the full-size album art down to the large-screen art box. Resize
-  // allocates several hundred KB of int[] + a second RGB image transiently;
-  // doing that inside paint() the first time art appears causes a mid-frame GC
-  // pause (or OOM on the weakest devices). Preparing it here — called from the
-  // image-load callback (a separate serial event, between paints) — keeps the
-  // allocation off the synchronous paint path. No-op once prepared for the
-  // current size, so it is cheap to call from paint as a size-change fallback.
   void prepareScaledAlbumArt() {
     if (albumArt == null || !screen.isLargeScreen || screen.displayWidth <= 0) {
       return;
@@ -123,9 +110,6 @@ public final class AlbumArtLoader {
     artLoadKey++;
   }
 
-  // Cancel in-flight album-art + text-image network loads without clearing
-  // already-decoded images. Used by hideNotify so a hidden canvas stops
-  // spending CPU/network; loads re-trigger on the next paint after showNotify.
   void cancelImageLoads() {
     stopCurrentImageLoad();
     loadingAlbumArt = false;
@@ -160,18 +144,15 @@ public final class AlbumArtLoader {
       currentImageLoadOperation = null;
     }
 
-    // These fire on the image-load worker thread; marshal field mutation +
-    // repaint onto the event thread (LCDUI is single-threaded).
     public void onImageLoaded(final Image image) {
       screen.navigator.callSerially(
           new Runnable() {
             public void run() {
               if (key != artLoadKey) {
-                return; // stale: a newer load started or art was reset
+                return;
               }
               albumArt = normalizeSmallScreenArt(image);
               finishImageLoad();
-              // Pre-scale off the synchronous paint path (see prepareScaledAlbumArt).
               prepareScaledAlbumArt();
               if (albumArt != null) {
                 screen.updateDisplayAsync();
@@ -185,7 +166,7 @@ public final class AlbumArtLoader {
           new Runnable() {
             public void run() {
               if (key != artLoadKey) {
-                return; // stale
+                return;
               }
               albumArt = null;
               finishImageLoad();

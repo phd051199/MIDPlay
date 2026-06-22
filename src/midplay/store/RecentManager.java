@@ -8,10 +8,6 @@ import midplay.model.Playlist;
 import midplay.model.RecentItem;
 import midplay.model.Track;
 
-// Most-recent-first history of played/opened items (tracks and folders), as one
-// JSON array document in RMS. Deduped by (type + identity), capped to MAX_ITEMS.
-// Recording rule: folders when opened, tracks only when played standalone — so
-// the list is a clean "recently opened" without auto-next noise or duplicates.
 public class RecentManager {
   private static final int MAX_ITEMS = 30;
   private static RecentManager instance;
@@ -45,13 +41,30 @@ public class RecentManager {
     if (track == null) {
       return;
     }
-    // Tracks from search may carry no Key; fall back to name|artist|duration so
-    // two distinct tracks without keys don't collapse into one entry.
-    String key = track.getKey();
-    if (key == null || key.length() == 0) {
-      key = track.getName() + "|" + track.getArtist() + "|" + track.getDuration();
+    JSONArray arr = items();
+    JSONArray next = new JSONArray();
+    JSONObject entry = new JSONObject();
+    entry.put("type", RecentItem.TRACK);
+    entry.put("data", track.toJSON());
+    next.add(entry);
+    int carried = 0;
+    for (int i = 0; i < arr.size() && carried < MAX_ITEMS - 1; i++) {
+      JSONObject existing = arr.getObject(i);
+      boolean dup = false;
+      try {
+        if (existing.getInt("type", -1) == RecentItem.TRACK) {
+          Track existingTrack = Track.fromJSON(existing.getObject("data"));
+          dup = existingTrack != null && track.isSame(existingTrack);
+        }
+      } catch (Exception e) {
+      }
+      if (dup) {
+        continue;
+      }
+      next.add(existing);
+      carried++;
     }
-    record(RecentItem.TRACK, key, track.toJSON());
+    save(next);
   }
 
   public void recordFolder(Playlist folder) {
@@ -61,7 +74,6 @@ public class RecentManager {
     record(RecentItem.FOLDER, folder.getKey(), folder.toJSON());
   }
 
-  // Insert at front, drop any older entry with the same identity, cap the list.
   private void record(int type, String key, JSONObject data) {
     String dedup = type + ":" + (key == null ? "" : key);
     JSONArray arr = items();
@@ -103,7 +115,7 @@ public class RecentManager {
           }
         }
       } catch (Exception e) {
-        // Skip a malformed entry rather than failing the whole list.
+        e.printStackTrace();
       }
     }
     if (n != result.length) {

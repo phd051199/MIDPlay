@@ -12,15 +12,7 @@ import midplay.store.Configuration;
 import midplay.util.Lang;
 import midplay.util.Utils;
 
-// The root menu screen, split out of the MIDlet (MIDPlay). Owns the whole menu
-// feature: the List itself, its command dispatch, and the sort/visibility
-// edit-mode controller (which manipulates the List directly, so it lives with
-// the view). Menu-item navigation is decoupled via MenuManager.executeAction
-// (the host registers the goTo* runnables); only the toolbar commands that need
-// the MIDlet/other screens (exit, check-for-update, open now-playing) go back
-// through the MenuHost callback.
 public final class MainMenuScreen extends List implements CommandListener {
-  /** Callbacks the menu needs from its host (the MIDlet). */
   public interface MenuHost {
     void exitApp();
 
@@ -82,8 +74,6 @@ public final class MainMenuScreen extends List implements CommandListener {
     }
   }
 
-  // Rebuild the list contents after a language or menu-config change, keeping
-  // the selection where possible.
   public void refreshMenu() {
     int index = getSelectedIndex();
     deleteAll();
@@ -149,8 +139,6 @@ public final class MainMenuScreen extends List implements CommandListener {
   }
 
   private void executeMenuAction(int selectedIndex) {
-    // populateMenu appends getSortedMenuItems() in order, so the selected row
-    // index maps directly to that array — no display-string reverse lookup.
     MenuItem[] items = menuManager.getSortedMenuItems();
     if (selectedIndex >= 0 && selectedIndex < items.length) {
       menuManager.executeAction(items[selectedIndex].key);
@@ -261,8 +249,6 @@ public final class MainMenuScreen extends List implements CommandListener {
   }
 
   private void updateVisibilityChange(int selectedIndex, boolean enabled) {
-    // populateVisibilityMenu appends getAllMenuItems() in order, so the row
-    // index maps directly to that array — no display-string reverse lookup.
     MenuItem[] allItems = menuManager.getAllMenuItems();
     if (selectedIndex >= 0 && selectedIndex < allItems.length) {
       visibilityChanges.put(allItems[selectedIndex].key, enabled ? Boolean.TRUE : Boolean.FALSE);

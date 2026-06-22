@@ -1,51 +1,44 @@
 package midplay.ui.screen;
 
+import java.util.Timer;
+import java.util.TimerTask;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Displayable;
+import midplay.MIDPlay;
 import midplay.model.Playlist;
 import midplay.model.Track;
 import midplay.model.Tracks;
-import midplay.player.NowPlaying;
-import midplay.player.PlayerNavHelper;
+import midplay.player.PlayerScreen;
 import midplay.store.Configuration;
 import midplay.store.FavoritesManager;
 import midplay.ui.BaseList;
 import midplay.ui.Commands;
 import midplay.ui.Navigator;
+import midplay.ui.PlayerNavHelper;
 import midplay.util.Lang;
 import midplay.util.Utils;
 
 public class TrackListScreen extends BaseList {
-  // ASCII marker (font-glyph safe on every J2ME handset) prefixing the row that
-  // matches the player's current track.
-  private static final String NOW_PLAYING_MARKER = "> ";
+  private static final String NOW_PLAYING_MARKER = "[*] ";
 
-  // Package-private so the QueueTrackListScreen subclass (sort / save-as-playlist)
-  // can reorder tracks and read the backing list without re-exposing them publicly.
   Tracks items;
   final String title;
   final Playlist playlist;
   Track[] tracks;
   String[] rowTexts;
   private int nowPlayingIndex = -1;
-  private final boolean playSingleTrack;
+  private Timer markerTimer;
 
   public TrackListScreen(String title, Tracks items, Navigator navigator) {
-    this(title, items, navigator, null, false);
+    this(title, items, navigator, null);
   }
 
   public TrackListScreen(String title, Tracks items, Navigator navigator, Playlist playlist) {
-    this(title, items, navigator, playlist, false);
-  }
-
-  public TrackListScreen(
-      String title, Tracks items, Navigator navigator, Playlist playlist, boolean playSingleTrack) {
     super(title, navigator);
     this.items = items;
     this.title = title;
     this.playlist = playlist;
-    this.playSingleTrack = playSingleTrack;
     addCommand(Commands.addToQueue());
     addCommand(Commands.playerAddToPlaylist());
     addCommand(Commands.details());
@@ -72,32 +65,49 @@ public class TrackListScreen extends BaseList {
     if (items == null) {
       items = new Tracks();
     }
-    super.refresh(); // deleteAll + populateItems (rebuilds tracks/rowTexts)
+    super.refresh();
   }
 
-  // The now-playing track may have changed since this list was built, so
-  // recompute markers on every show — but only touch rows when something
-  // actually changed, to avoid a per-show O(n) set() loop on slow devices.
   protected void showNotify() {
     refreshView();
+    startMarkerRefresh();
   }
 
-  private boolean isValidSelection(int index) {
-    return index >= 0 && index < tracks.length;
+  protected void hideNotify() {
+    stopMarkerRefresh();
+  }
+
+  private void startMarkerRefresh() {
+    stopMarkerRefresh();
+    markerTimer = new Timer();
+    markerTimer.schedule(
+        new TimerTask() {
+          public void run() {
+            navigator.callSerially(
+                new Runnable() {
+                  public void run() {
+                    refreshView();
+                  }
+                });
+          }
+        },
+        1500L,
+        1500L);
+  }
+
+  private void stopMarkerRefresh() {
+    if (markerTimer != null) {
+      markerTimer.cancel();
+      markerTimer = null;
+    }
   }
 
   protected void handleSelection() {
     int index = getSelectedIndex();
-    if (!isValidSelection(index)) {
+    if (!isValidSelection(index, tracks.length)) {
       return;
     }
-    // playSingleTrack (search results): play only the tapped track so the search
-    // list does not become the queue. Records it as a recent standalone play.
-    if (playSingleTrack) {
-      PlayerNavHelper.playSingleTrack(title, tracks[index], navigator);
-    } else {
-      PlayerNavHelper.playTrackFromList(title, items, index, 0L, navigator);
-    }
+    PlayerNavHelper.playTrackFromList(title, items, index, 0L, navigator);
   }
 
   protected void handleCommand(Command c, Displayable d) {
@@ -114,7 +124,7 @@ public class TrackListScreen extends BaseList {
 
   private void addToQueueSelected() {
     int selectedIndex = getSelectedIndex();
-    if (!isValidSelection(selectedIndex)) {
+    if (!isValidSelection(selectedIndex, tracks.length)) {
       return;
     }
     Track selectedTrack = tracks[selectedIndex];
@@ -123,7 +133,7 @@ public class TrackListScreen extends BaseList {
 
   private void addToPlaylist() {
     int selectedIndex = getSelectedIndex();
-    if (!isValidSelection(selectedIndex)) {
+    if (!isValidSelection(selectedIndex, tracks.length)) {
       return;
     }
     Track selectedTrack = tracks[selectedIndex];
@@ -136,7 +146,7 @@ public class TrackListScreen extends BaseList {
       return;
     }
     int selectedIndex = getSelectedIndex();
-    if (!isValidSelection(selectedIndex)) {
+    if (!isValidSelection(selectedIndex, tracks.length)) {
       return;
     }
     Track selectedTrack = tracks[selectedIndex];
@@ -151,15 +161,13 @@ public class TrackListScreen extends BaseList {
 
   private void showTrackDetails() {
     int selectedIndex = getSelectedIndex();
-    if (!isValidSelection(selectedIndex)) {
+    if (!isValidSelection(selectedIndex, tracks.length)) {
       return;
     }
     Track selectedTrack = tracks[selectedIndex];
     TrackDetailScreen detailScreen = new TrackDetailScreen(selectedTrack, navigator);
     navigator.forward(detailScreen);
   }
-
-  // --- View refresh: now-playing markers -----------------------------------
 
   private void refreshView() {
     int newIndex = findNowPlayingIndex();
@@ -171,7 +179,14 @@ public class TrackListScreen extends BaseList {
   }
 
   private int findNowPlayingIndex() {
-    Track current = NowPlaying.currentTrack();
+    Track current = null;
+    PlayerScreen playerScreen = MIDPlay.getPlayerScreen();
+    if (playerScreen != null) {
+      try {
+        current = playerScreen.getPlayerGUI().getCurrentTrack();
+      } catch (Exception e) {
+      }
+    }
     if (current == null || tracks == null) {
       return -1;
     }
@@ -204,7 +219,6 @@ public class TrackListScreen extends BaseList {
     return base;
   }
 
-  // Re-applies row text while preserving the row's icon.
   private void applyAllRowTexts() {
     if (rowTexts == null) {
       return;

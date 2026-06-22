@@ -2,16 +2,9 @@ package midplay.ui;
 
 import cc.nnproject.json.JSONObject;
 
-// Theme colors, exposed via static accessors (Theme.getXxxColor()). Internally
-// grouped into a single Palette value object; the light/dark palettes are each
-// defined once as a constant.
 public class Theme {
-  // Field order: primary, onPrimary, background, onBackground, surface,
-  // onSurface, surfaceVariant, onSurfaceVariant, outline, outlineVariant,
-  // secondaryContainer, onSecondaryContainer.
   private static final class Palette {
     final int primary;
-    final int onPrimary;
     final int background;
     final int onBackground;
     final int surface;
@@ -25,7 +18,6 @@ public class Theme {
 
     Palette(
         int primary,
-        int onPrimary,
         int background,
         int onBackground,
         int surface,
@@ -37,7 +29,6 @@ public class Theme {
         int secondaryContainer,
         int onSecondaryContainer) {
       this.primary = primary;
-      this.onPrimary = onPrimary;
       this.background = background;
       this.onBackground = onBackground;
       this.surface = surface;
@@ -53,7 +44,6 @@ public class Theme {
     Palette override(JSONObject colors) {
       return new Palette(
           colors.getInt("primary", primary),
-          colors.getInt("onPrimary", onPrimary),
           colors.getInt("background", background),
           colors.getInt("onBackground", onBackground),
           colors.getInt("surface", surface),
@@ -69,16 +59,14 @@ public class Theme {
 
   private static final Palette LIGHT =
       new Palette(
-          0x65558F, 0xFFFFFF, 0xFDF7FF, 0x1D1B20, 0xFDF7FF, 0x1D1B20, 0xE7E0EB, 0x49454E, 0x7A757F,
-          0xCAC4CF, 0xE8DEF8, 0x4A4458);
+          0x65558F, 0xFDF7FF, 0x1D1B20, 0xFDF7FF, 0x1D1B20, 0xE7E0EB, 0x49454E, 0x7A757F, 0xCAC4CF,
+          0xE8DEF8, 0x4A4458);
   private static final Palette DARK =
       new Palette(
-          0xCFBDFE, 0x36275D, 0x141218, 0xE6E0E9, 0x141218, 0xE6E0E9, 0x49454E, 0xCAC4CF, 0x948F99,
-          0x49454E, 0x4A4458, 0xE8DEF8);
+          0xCFBDFE, 0x141218, 0xE6E0E9, 0x141218, 0xE6E0E9, 0x49454E, 0xCAC4CF, 0x948F99, 0x49454E,
+          0x4A4458, 0xE8DEF8);
 
   private static Palette current = LIGHT;
-  // Note: applyDefaults(boolean) sets colors from its parameter but, by design,
-  // does NOT update this flag — only setDark() does. Preserved as-is.
   private static boolean isDark = false;
 
   public static boolean isDark() {
@@ -102,10 +90,6 @@ public class Theme {
 
   public static int getPrimaryColor() {
     return current.primary;
-  }
-
-  public static int getOnPrimaryColor() {
-    return current.onPrimary;
   }
 
   public static int getBackgroundColor() {

@@ -2,9 +2,6 @@ package midplay.model;
 
 import midplay.util.Lang;
 
-// A recent-played entry: either a single track or a folder (album/playlist).
-// Held in memory by RecentListScreen and serialized by RecentManager as a typed
-// JSON entry so both kinds share one list.
 public class RecentItem {
   public static final int TRACK = 0;
   public static final int FOLDER = 1;

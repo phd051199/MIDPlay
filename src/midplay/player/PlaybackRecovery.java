@@ -2,12 +2,8 @@ package midplay.player;
 
 import java.util.TimerTask;
 import midplay.store.Configuration;
+import midplay.util.Utils;
 
-// Playback failure recovery: handles PlayerListener.ERROR, the start watchdog
-// (promotes a started-but-unreported player or falls back to the alternate
-// method on timeout), and the inputstream/url method fallback. Synchronizes on
-// the PlayerGUI instance (passed as `gui`); the "*Locked" methods assume the
-// caller already holds the gui lock.
 public class PlaybackRecovery {
   private static final long START_WATCHDOG_TIMEOUT_MS = 2500L;
 
@@ -18,21 +14,14 @@ public class PlaybackRecovery {
   }
 
   boolean handlePlayerError(Object eventData) {
-    String errorText = eventData == null ? "unknown" : String.valueOf(eventData);
-    return recoverFromFailure("player error: " + errorText);
+    return recoverFromFailure(eventData == null ? "unknown" : String.valueOf(eventData));
   }
 
   void scheduleStartWatchdog(final int sessionId) {
-    synchronized (gui) {
-      if (sessionId != gui.playbackSessionId || gui.startWatchdogSessionId == sessionId) {
-        return;
-      }
-      gui.startWatchdogSessionId = sessionId;
+    if (!gui.claimStartWatchdog(sessionId)) {
+      return;
     }
 
-    // Scheduled as a one-shot on the shared player timer instead of a dedicated
-    // Thread per playback start. The body is guarded so a throw can't kill the
-    // shared timer thread (which would also silently stop the per-second repaint).
     TimerTask watchdog =
         new TimerTask() {
           public void run() {
@@ -40,24 +29,22 @@ public class PlaybackRecovery {
               boolean shouldPromoteStarted = false;
               boolean recovered = false;
               synchronized (gui) {
-                if (sessionId == gui.playbackSessionId) {
-                  if (!gui.sessionStarted && gui.isPlayerStarted(gui.player)) {
+                if (sessionId == gui.currentSessionId()) {
+                  if (!gui.isSessionStarted() && gui.isPlayerStarted(gui.currentPlayerLocked())) {
                     shouldPromoteStarted = true;
-                  } else if (!gui.sessionStarted) {
+                  } else if (!gui.isSessionStarted()) {
                     recovered = tryRecoverMethodFailureLocked("start watchdog timeout", true);
                   }
                 }
-                if (gui.startWatchdogSessionId == sessionId) {
-                  gui.startWatchdogSessionId = -1;
-                }
+                gui.releaseStartWatchdog(sessionId);
               }
 
-              if (shouldPromoteStarted && gui.isCurrentSession(sessionId)) {
+              if (shouldPromoteStarted && gui.isSessionActive(sessionId)) {
                 gui.onPlaybackStarted();
                 return;
               }
 
-              if (recovered && gui.isCurrentSession(sessionId)) {
+              if (recovered && gui.isSessionActive(sessionId)) {
                 restartAfterRecovery();
               }
             } catch (Throwable t) {
@@ -70,7 +57,9 @@ public class PlaybackRecovery {
   boolean recoverFromFailure(String reason) {
     boolean recovered;
     synchronized (gui) {
-      recovered = tryRecoverPlayerMethodFailureLocked(reason);
+      recovered =
+          tryRecoverMethodFailureLocked(reason, true)
+              || tryRecoverMethodFailureLocked(reason, false);
     }
 
     if (recovered) {
@@ -87,51 +76,39 @@ public class PlaybackRecovery {
     gui.play();
   }
 
-  private boolean tryRecoverPlayerMethodFailureLocked(String reason) {
-    if (tryRecoverMethodFailureLocked(reason, true)) {
-      return true;
-    }
-    return tryRecoverMethodFailureLocked(reason, false);
-  }
-
-  // Recover a failed playback by falling back to the *other* player method:
-  // when usedInputStream is true (inputstream failed) fall back to pass_url;
-  // when false (url failed with an unknown content type) fall back to pass_inputstream.
-  // Guard conditions mirror the former tryRecoverInputStreamFailureLocked /
-  // tryRecoverUrlContentTypeFailureLocked exactly.
   private boolean tryRecoverMethodFailureLocked(String reason, boolean usedInputStream) {
-    int sessionId = gui.playbackSessionId;
-    if (gui.destroyed || sessionId <= 0) {
+    int sessionId = gui.currentSessionId();
+    if (gui.isDestroyed() || sessionId <= 0) {
       return false;
     }
 
-    if (gui.sessionMethodSessionId != sessionId
-        || gui.sessionUsedInputStream != usedInputStream
-        || gui.sessionStarted) {
+    if (gui.sessionMethodSessionId() != sessionId
+        || gui.sessionUsedInputStream() != usedInputStream
+        || gui.isSessionStarted()) {
       return false;
     }
 
     if (usedInputStream) {
-      if (gui.lastFallbackSessionId == sessionId) {
+      if (gui.isLastFallbackFor(sessionId)) {
         return false;
       }
-      gui.lastFallbackSessionId = sessionId;
+      gui.markLastFallback(sessionId);
       gui.resetPlaybackStateLocked();
-      gui.pendingPlayerMethodOverride = PlaybackMethod.URL;
+      gui.setPendingPlayerMethodOverride(PlaybackMethod.URL);
       return true;
     }
 
-    if (gui.mediaResolver.getPreferredInputStreamContentType() == null) {
+    if (!gui.hasPreferredInputStreamContentType()) {
       return false;
     }
 
-    if (!isUnknownContentTypeFailure(reason) || gui.lastFallbackSessionId == sessionId) {
+    if (!isUnknownContentTypeFailure(reason) || gui.isLastFallbackFor(sessionId)) {
       return false;
     }
 
-    gui.lastFallbackSessionId = sessionId;
+    gui.markLastFallback(sessionId);
     gui.resetPlaybackStateLocked();
-    gui.pendingPlayerMethodOverride = PlaybackMethod.INPUT_STREAM;
+    gui.setPendingPlayerMethodOverride(PlaybackMethod.INPUT_STREAM);
     return true;
   }
 
@@ -139,12 +116,10 @@ public class PlaybackRecovery {
     if (reason == null) {
       return false;
     }
-
-    String normalized = reason.toLowerCase();
-    return normalized.indexOf("unknown content type") != -1
-        || normalized.indexOf("unsupported content type") != -1
-        || (normalized.indexOf("unknown") != -1
-            && (normalized.indexOf("content type") != -1
-                || normalized.indexOf("content-type") != -1));
+    return Utils.indexOfIgnoreCase(reason, "unknown content type") != -1
+        || Utils.indexOfIgnoreCase(reason, "unsupported content type") != -1
+        || (Utils.indexOfIgnoreCase(reason, "unknown") != -1
+            && (Utils.indexOfIgnoreCase(reason, "content type") != -1
+                || Utils.indexOfIgnoreCase(reason, "content-type") != -1));
   }
 }

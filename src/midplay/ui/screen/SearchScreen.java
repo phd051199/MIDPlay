@@ -82,8 +82,7 @@ public final class SearchScreen extends BaseForm {
     if (searchType.equals(Configuration.SEARCH_TRACK)) {
       MIDPlay.startOperation(
           JsonOperation.searchTracks(
-              keyword,
-              new TracksListForwarder(navigator, title, "search.status.no_results", true)));
+              keyword, new TracksListForwarder(navigator, title, "search.status.no_results")));
     } else {
       MIDPlay.startOperation(
           JsonOperation.searchPlaylists(

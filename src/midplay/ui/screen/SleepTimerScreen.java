@@ -10,14 +10,14 @@ import midplay.ui.Commands;
 import midplay.ui.Navigator;
 import midplay.util.Lang;
 
-public class SleepTimerForm extends BaseForm {
+public final class SleepTimerScreen extends BaseForm {
   public static final int ACTION_STOP_PLAYBACK = 0;
   public static final int ACTION_EXIT_APP = 1;
   private final ChoiceGroup timerActionChoice;
   private final TextField countdownMinutesField;
   private final SleepTimerCallback callback;
 
-  public SleepTimerForm(Navigator navigator, SleepTimerCallback callback) {
+  public SleepTimerScreen(Navigator navigator, SleepTimerCallback callback) {
     super(Lang.tr("timer.sleep_timer"), navigator);
     this.callback = callback;
     String[] timerActions = {
@@ -61,10 +61,6 @@ public class SleepTimerForm extends BaseForm {
 
   private void handleTimerSet(int action) {
     String minutesStr = countdownMinutesField.getString();
-    if (!isValidInput(minutesStr)) {
-      navigator.showAlert(Lang.tr("time.error.invalid_format"), AlertType.ERROR);
-      return;
-    }
     try {
       int minutes = Integer.parseInt(minutesStr.trim());
       if (minutes < 1 || minutes > 999) {
@@ -87,23 +83,6 @@ public class SleepTimerForm extends BaseForm {
             handleTimerSet(action);
           }
         });
-  }
-
-  private boolean isValidInput(String input) {
-    if (input == null || input.trim().length() == 0) {
-      return false;
-    }
-    String trimmed = input.trim();
-    if (trimmed.length() > 3) {
-      return false;
-    }
-    for (int i = 0; i < trimmed.length(); i++) {
-      char c = trimmed.charAt(i);
-      if (c < '0' || c > '9') {
-        return false;
-      }
-    }
-    return true;
   }
 
   public interface SleepTimerCallback {

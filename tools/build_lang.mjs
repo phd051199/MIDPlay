@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import { execFileSync } from "child_process";
 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -12,6 +13,20 @@ const OUTPUT = path.join(__dirname, "..", "src", "midplay", "util", "Lang.java")
 
 function escapeJava(str) {
   return JSON.stringify(str);
+}
+
+// ponytail: pipe through google-java-format so the generated file matches
+// the rest of the codebase; falls back to raw output if gjf isn't installed.
+function tryFormat(javaCode) {
+  try {
+    return execFileSync("google-java-format", ["-"], {
+      input: javaCode,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "ignore"],
+    });
+  } catch {
+    return javaCode;
+  }
 }
 
 function flattenObject(obj, prefix = "") {
@@ -33,7 +48,6 @@ function flattenObject(obj, prefix = "") {
   return flattened;
 }
 
-// Hyper-optimized version with static arrays
 function generateHyperOptimized(langs, langCodes, allKeys) {
   const b = [];
 
@@ -47,7 +61,6 @@ function generateHyperOptimized(langs, langCodes, allKeys) {
   b.push("  private static Hashtable d;");
   b.push("  private static boolean i = false;");
 
-  // Pre-calculate all translations as static arrays
   b.push("");
   b.push("  private static final String[] KEYS = {");
   const keyChunks = [];
@@ -61,7 +74,6 @@ function generateHyperOptimized(langs, langCodes, allKeys) {
   b.push(keyChunks.join("\n"));
   b.push("  };");
 
-  // Generate compact translation arrays for each language
   for (const code of langCodes) {
     const map = langs[code];
     const varName = code.toUpperCase() + "_VALS";
@@ -86,7 +98,6 @@ function generateHyperOptimized(langs, langCodes, allKeys) {
     b.push("  };");
   }
 
-  // Ultra-compact load method
   b.push("");
   b.push("  private static void l(String code) {");
   b.push("    if (d == null) {");
@@ -109,7 +120,6 @@ function generateHyperOptimized(langs, langCodes, allKeys) {
   b.push("    }");
   b.push("  }");
 
-  // Same public interface
   b.push("");
   b.push("  public static void setLang(String code) {");
   b.push("    if (!code.equals(c)) {");
@@ -144,12 +154,6 @@ function generateHyperOptimized(langs, langCodes, allKeys) {
   b.push("  }");
 
   b.push("");
-  b.push("  public static String tr(String k, String a, String b) {");
-  b.push("    String t = tr(k);");
-  b.push('    return Utils.replace(Utils.replace(t, "{0}", a), "{1}", b);');
-  b.push("  }");
-
-  b.push("");
   b.push("  private Lang() {}");
   b.push("}");
 
@@ -180,7 +184,7 @@ async function main() {
 
   const allKeys = Object.keys(langs.en);
 
-  const javaCode = generateHyperOptimized(langs, langCodes, allKeys);
+  const javaCode = tryFormat(generateHyperOptimized(langs, langCodes, allKeys));
 
   await fs.writeFile(OUTPUT, javaCode, "utf-8");
 

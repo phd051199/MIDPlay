@@ -55,8 +55,6 @@ public class Base {
     return left.equals(right);
   }
 
-  // Parses a JSON object string, returning null for null/blank input so that the
-  // typed fromJSON(JSONObject) overloads can short-circuit uniformly.
   protected static JSONObject parseObject(String jsonString) {
     if (jsonString == null || jsonString.trim().length() == 0) {
       return null;

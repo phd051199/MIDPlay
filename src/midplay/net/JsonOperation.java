@@ -4,12 +4,6 @@ import midplay.model.JsonListResult;
 import midplay.model.Playlists;
 import midplay.model.Tracks;
 
-/**
- * Fetches a URL on a worker thread, parses the JSON response into a JsonListResult, and dispatches
- * the typed result to a listener. The result is parsed into a prototype supplied by the static
- * factory (a Tracks or Playlists), so one listener and dispatch path serve both; callers cast to
- * the concrete type they requested.
- */
 public class JsonOperation extends NetworkOperation {
 
   private final String url;
@@ -22,7 +16,6 @@ public class JsonOperation extends NetworkOperation {
     this.listener = listener;
   }
 
-  // --- Tracks ---
   public static JsonOperation searchTracks(String keyword, int page, JsonListListener listener) {
     return new JsonOperation(URLProvider.searchTracks(keyword, page), new Tracks(), listener);
   }
@@ -35,12 +28,6 @@ public class JsonOperation extends NetworkOperation {
     return new JsonOperation(URLProvider.getTracks(listKey), new Tracks(), listener);
   }
 
-  // Similar tracks for the player's auto-queue. Parsed as a Tracks list.
-  public static JsonOperation getSimilar(String artist, String track, JsonListListener listener) {
-    return new JsonOperation(URLProvider.getSimilar(artist, track), new Tracks(), listener);
-  }
-
-  // --- Playlists ---
   public static JsonOperation searchPlaylists(
       String keyword, String type, int page, JsonListListener listener) {
     return new JsonOperation(

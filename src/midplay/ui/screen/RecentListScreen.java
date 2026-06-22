@@ -3,25 +3,19 @@ package midplay.ui.screen;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Displayable;
-import midplay.MIDPlay;
 import midplay.model.Playlist;
 import midplay.model.RecentItem;
 import midplay.model.Track;
 import midplay.model.Tracks;
-import midplay.net.JsonOperation;
-import midplay.player.PlayerNavHelper;
 import midplay.store.Configuration;
 import midplay.store.FavoritesManager;
 import midplay.store.RecentManager;
 import midplay.ui.BaseList;
 import midplay.ui.Commands;
 import midplay.ui.Navigator;
-import midplay.ui.TracksListForwarder;
+import midplay.ui.PlayerNavHelper;
 import midplay.util.Lang;
 
-// "Recent Played": a mixed list of recently opened folders and recently played
-// standalone tracks (most-recent-first). Selecting an item re-opens it and
-// bumps it back to the top of the list.
 public final class RecentListScreen extends BaseList {
   private RecentItem[] recentItems;
 
@@ -43,7 +37,7 @@ public final class RecentListScreen extends BaseList {
 
   protected void handleSelection() {
     int index = getSelectedIndex();
-    if (index < 0 || index >= recentItems.length) {
+    if (!isValidSelection(index, recentItems.length)) {
       return;
     }
     RecentItem item = recentItems[index];
@@ -67,7 +61,7 @@ public final class RecentListScreen extends BaseList {
     if (folder == null) {
       return;
     }
-    RecentManager.getInstance().recordFolder(folder); // bump to top
+    RecentManager.getInstance().recordFolder(folder);
     if (folder.isCustom()) {
       Tracks tracks = FavoritesManager.getInstance().getCustomPlaylistTracks(folder);
       if (Tracks.isEmpty(tracks)) {
@@ -77,10 +71,7 @@ public final class RecentListScreen extends BaseList {
       navigator.forward(new TrackListScreen(folder.getName(), tracks, navigator, folder));
     } else {
       navigator.showLoadingAlert(Lang.tr("status.loading"));
-      MIDPlay.startOperation(
-          JsonOperation.getTracks(
-              folder.getKey(),
-              new TracksListForwarder(navigator, folder.getName(), "status.no_data")));
+      PlayerNavHelper.loadRemotePlaylistTracks(navigator, folder.getKey(), folder.getName());
     }
   }
 

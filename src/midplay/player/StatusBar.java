@@ -3,15 +3,13 @@ package midplay.player;
 import midplay.store.Configuration;
 import midplay.util.Lang;
 
-// The player status bar's state, extracted from PlayerScreen: the current
-// status key, the displayed text (which may be a sleep-timer override), the
-// real underlying status, and the timer-override flag. A sleep-timer override
-// shows until a critical status (loading/error) arrives, which preempts it.
 final class StatusBar {
   private String currentStatusKey = Configuration.PLAYER_STATUS_STOPPED;
   private String statusCurrent = "";
   private String realPlayerStatus = "";
   private boolean timerOverrideActive = false;
+  private String loadingText;
+  private String errorText;
 
   String getStatusCurrent() {
     return statusCurrent;
@@ -50,8 +48,13 @@ final class StatusBar {
   }
 
   private boolean isCriticalStatus(String status) {
-    return status != null
-        && (status.indexOf(Lang.tr("status.loading")) != -1
-            || status.indexOf(Lang.tr("status.error")) != -1);
+    if (status == null) {
+      return false;
+    }
+    if (loadingText == null) {
+      loadingText = Lang.tr("status.loading");
+      errorText = Lang.tr("status.error");
+    }
+    return status.indexOf(loadingText) != -1 || status.indexOf(errorText) != -1;
   }
 }

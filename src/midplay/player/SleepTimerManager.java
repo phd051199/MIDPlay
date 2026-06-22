@@ -3,12 +3,10 @@ package midplay.player;
 import java.util.Timer;
 import java.util.TimerTask;
 import midplay.MIDPlay;
-import midplay.ui.screen.SleepTimerForm;
+import midplay.ui.screen.SleepTimerScreen;
+import midplay.util.Utils;
 
 public class SleepTimerManager {
-  // Lazy daemon timer reused across countdowns and the exit one-shot, so we
-  // don't spawn (and tear down) a fresh timer thread each time the sleep timer
-  // is set. It idles at ~zero cost and dies with the VM.
   private Timer timer;
   private TimerTask sleepTimerTask;
   private SleepTimerCallback callback;
@@ -36,18 +34,7 @@ public class SleepTimerManager {
       return "00:00";
     }
     long remainingSeconds = remainingMillis / 1000;
-    long hours = remainingSeconds / 3600;
-    long minutes = (remainingSeconds % 3600) / 60;
-    long seconds = remainingSeconds % 60;
-    if (hours > 0) {
-      return formatTime(hours) + ":" + formatTime(minutes) + ":" + formatTime(seconds);
-    } else {
-      return formatTime(minutes) + ":" + formatTime(seconds);
-    }
-  }
-
-  private String formatTime(long value) {
-    return value < 10 ? "0" + value : String.valueOf(value);
+    return Utils.formatClock(remainingSeconds, remainingSeconds >= 3600);
   }
 
   public void startCountdownTimer(int durationMinutes, int action) {
@@ -70,8 +57,6 @@ public class SleepTimerManager {
     sleepTimerTask =
         new TimerTask() {
           public void run() {
-            // Guard the shared timer thread: an uncaught throw would kill it and
-            // silently stop the countdown.
             try {
               long currentTime = System.currentTimeMillis();
               long remainingMillis = targetTimeMillis - currentTime;
@@ -99,7 +84,7 @@ public class SleepTimerManager {
     if (callback != null) {
       callback.onTimerExpired(action);
     }
-    if (action == SleepTimerForm.ACTION_EXIT_APP) {
+    if (action == SleepTimerScreen.ACTION_EXIT_APP) {
       timer()
           .schedule(
               new TimerTask() {
@@ -125,8 +110,6 @@ public class SleepTimerManager {
       sleepTimerTask.cancel();
       sleepTimerTask = null;
     }
-    // Keep the daemon timer alive for reuse (next countdown / exit one-shot);
-    // it idles at ~zero cost and dies with the VM.
     if (notifyCancelled && wasActive && callback != null) {
       callback.onTimerCancelled();
     }

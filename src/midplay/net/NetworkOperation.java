@@ -1,5 +1,7 @@
 package midplay.net;
 
+import midplay.util.Utils;
+
 public abstract class NetworkOperation {
   protected Thread thread;
   protected Network network;
@@ -32,22 +34,15 @@ public abstract class NetworkOperation {
 
   protected abstract void execute();
 
-  // Fetches a text response on this operation's worker thread and routes it
-  // through the standard onResponse/onError flow. Text operations call this
-  // from execute(); binary operations use fetchBytes.
   protected void fetchText(String url) {
     network = new Network();
     try {
-      onResponse(network.sendHttpGet(url));
+      onResponse(Utils.bytesToUtf8(network.sendHttpGetBytes(url)));
     } catch (NetworkError e) {
       onError(e);
     }
   }
 
-  // Fetches a binary response on this operation's worker thread, routing network
-  // failures through onError and returning null. Binary operations (e.g. image
-  // loads) call this from execute() instead of re-implementing the
-  // Network + try/catch that fetchText already centralizes for the text path.
   protected byte[] fetchBytes(String url) {
     network = new Network();
     try {
@@ -58,8 +53,6 @@ public abstract class NetworkOperation {
     }
   }
 
-  // No-op defaults so binary operations (which never receive text) need not
-  // stub these out. Text operations override them.
   protected void processResponse(String response) {}
 
   protected void handleNoData() {}

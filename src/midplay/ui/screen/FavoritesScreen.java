@@ -3,12 +3,9 @@ package midplay.ui.screen;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Displayable;
-import midplay.MIDPlay;
 import midplay.model.Playlist;
 import midplay.model.Playlists;
 import midplay.model.Tracks;
-import midplay.net.JsonOperation;
-import midplay.player.PlayerNavHelper;
 import midplay.store.Configuration;
 import midplay.store.FavoritesManager;
 import midplay.store.RecentManager;
@@ -16,8 +13,7 @@ import midplay.ui.BaseList;
 import midplay.ui.Commands;
 import midplay.ui.FormHelpers;
 import midplay.ui.Navigator;
-import midplay.ui.QueueAppender;
-import midplay.ui.TracksListForwarder;
+import midplay.ui.PlayerNavHelper;
 import midplay.util.Lang;
 
 public final class FavoritesScreen extends BaseList {
@@ -54,7 +50,7 @@ public final class FavoritesScreen extends BaseList {
     if (selected.isCustom()) {
       loadCustomPlaylistTracks(selected);
     } else {
-      loadRemotePlaylistTracks(selected);
+      PlayerNavHelper.loadRemotePlaylistTracks(navigator, selected.getKey(), selected.getName());
     }
   }
 
@@ -67,13 +63,6 @@ public final class FavoritesScreen extends BaseList {
           new TrackListScreen(playlist.getName(), tracks, navigator, playlist);
       navigator.forward(trackListScreen);
     }
-  }
-
-  private void loadRemotePlaylistTracks(final Playlist playlist) {
-    MIDPlay.startOperation(
-        JsonOperation.getTracks(
-            playlist.getKey(),
-            new TracksListForwarder(navigator, playlist.getName(), "status.no_data")));
   }
 
   protected void handleCommand(Command c, Displayable d) {
@@ -102,9 +91,7 @@ public final class FavoritesScreen extends BaseList {
       PlayerNavHelper.addToQueue(tracks.getTracks(), selected.getName(), navigator);
     } else {
       navigator.showLoadingAlert(Lang.tr("status.loading"));
-      MIDPlay.startOperation(
-          JsonOperation.getTracks(
-              selected.getKey(), new QueueAppender(navigator, selected.getName())));
+      PlayerNavHelper.loadRemotePlaylistToQueue(navigator, selected.getKey(), selected.getName());
     }
   }
 

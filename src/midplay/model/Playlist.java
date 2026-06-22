@@ -24,16 +24,8 @@ public class Playlist extends Base {
     return imageUrl;
   }
 
-  public void setImageUrl(String imageUrl) {
-    this.imageUrl = imageUrl;
-  }
-
   public String getArtist() {
     return artist;
-  }
-
-  public void setArtist(String artist) {
-    this.artist = artist;
   }
 
   public String getDisplayTitle() {

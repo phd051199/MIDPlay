@@ -16,8 +16,6 @@ import midplay.ui.FavoritesActions;
 import midplay.ui.Navigator;
 import midplay.util.Lang;
 
-// Playlist detail screen: shows name/type/track count; count comes from RMS for
-// custom playlists or a network fetch otherwise.
 public final class PlaylistDetailScreen extends BaseForm {
   private final Playlist playlist;
   private Tracks tracks;

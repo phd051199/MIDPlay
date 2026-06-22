@@ -2,13 +2,10 @@ package midplay.player;
 
 import java.util.Vector;
 
-// Runs track-end and pending-change handling on a dedicated worker thread so the
-// PlayerListener callback thread is never blocked. Owns its command queue and
-// monitor, independent of the PlayerGUI playback lock. Each command is tagged
-// with the playback session id it was issued under and dropped if stale.
 final class CommandWorker {
   static final int TRACK_END = 1;
   static final int APPLY_PENDING = 2;
+  static final int RESUME_SEEK = 3;
 
   private final PlayerGUI gui;
   private final Vector queue = new Vector();
@@ -85,16 +82,13 @@ final class CommandWorker {
       Task command = poll();
       if (command == null) {
         synchronized (queue) {
-          if (stopRequested) {
-            stopRequested = false;
-            thread = null;
-            return;
-          }
+          stopRequested = false;
+          thread = null;
         }
-        continue;
+        return;
       }
 
-      if (!gui.isCurrentSession(command.sessionId)) {
+      if (!gui.isSessionActive(command.sessionId)) {
         if (command.type == TRACK_END) {
           gui.clearHandlingTrackEndFlag();
         }
@@ -105,6 +99,8 @@ final class CommandWorker {
         gui.processTrackEnd();
       } else if (command.type == APPLY_PENDING) {
         gui.applyPendingTrackChange();
+      } else if (command.type == RESUME_SEEK) {
+        gui.applyResumeSeek(command.sessionId);
       }
     }
   }

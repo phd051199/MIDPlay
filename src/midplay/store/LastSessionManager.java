@@ -7,14 +7,8 @@ import javax.microedition.rms.RecordStoreException;
 import midplay.model.Track;
 import midplay.model.Tracks;
 
-// Persists the last playback session (playlist title, track list, current index,
-// and in-track position) so the app can offer to resume it on next launch. One
-// JSON document in RMS, mirroring SettingsManager. Tracks are stored
-// Items-wrapped so they round-trip through the existing Tracks.fromJSON parse
-// path. Position is in microseconds and is applied as a seek after the resumed
-// track starts (seek handles both the pass_url native setMediaTime path and the
-// InputStream byte-offset reload).
 public class LastSessionManager {
+  private static final int MAX_SESSION_TRACKS = 100;
   private static LastSessionManager instance;
 
   public static LastSessionManager getInstance() {
@@ -48,19 +42,38 @@ public class LastSessionManager {
     }
     try {
       Track[] arr = tracks.getTracks();
-      JSONArray items = new JSONArray();
-      for (int i = 0; i < arr.length; i++) {
-        if (arr[i] != null) {
-          items.add(arr[i].toJSON());
+      int len = arr.length;
+      int cap = len < MAX_SESSION_TRACKS ? len : MAX_SESSION_TRACKS;
+      int start = 0;
+      if (len > cap) {
+        int half = cap / 2;
+        start = index - half;
+        if (start < 0) {
+          start = 0;
         }
+        if (start > len - cap) {
+          start = len - cap;
+        }
+      }
+      JSONArray items = new JSONArray();
+      for (int i = 0; i < cap; i++) {
+        Track t = arr[start + i];
+        if (t != null) {
+          items.add(t.toJSON());
+        }
+      }
+      int clampedIndex = index - start;
+      if (clampedIndex < 0) {
+        clampedIndex = 0;
+      }
+      if (clampedIndex >= cap) {
+        clampedIndex = cap - 1;
       }
       JSONObject tracksObj = new JSONObject();
       tracksObj.put("Items", items);
       JSONObject root = new JSONObject();
       root.put("title", title == null ? "" : title);
-      root.put("index", index);
-      // ponytail: store position as a JSON number (micros). Long fits JS numbers
-      // fine for media durations (<2^53); no string parse round-trip needed.
+      root.put("index", clampedIndex);
       root.put("position", positionMicros < 0 ? 0L : positionMicros);
       root.put("tracks", tracksObj);
       cached = root;
@@ -89,15 +102,15 @@ public class LastSessionManager {
     return session().getInt("index", 0);
   }
 
-  // Microseconds into the resumed track to seek to. 0 (or absent on older
-  // saves) means start from the beginning — the pre-position-save behavior.
   public long getPosition() {
     return session().getLong("position", 0L);
   }
 
   public Tracks getTracks() {
     try {
-      return new Tracks().fromJSON(session().getObject("tracks").toString());
+      Tracks result = new Tracks();
+      result.parse(session().getObject("tracks").toString());
+      return result;
     } catch (Exception e) {
       return null;
     }

@@ -13,7 +13,6 @@ import midplay.ui.BaseList;
 import midplay.ui.Navigator;
 import midplay.util.Lang;
 
-// Modal "pick a custom playlist to add this track to" screen.
 public final class PlaylistPickerScreen extends BaseList {
   private final FavoritesManager favoritesManager;
   private final Track trackToAdd;
@@ -51,7 +50,7 @@ public final class PlaylistPickerScreen extends BaseList {
 
   protected void handleSelection() {
     int selectedIndex = getSelectedIndex();
-    if (selectedIndex < 0 || selectedIndex >= customPlaylists.length) {
+    if (!isValidSelection(selectedIndex, customPlaylists.length)) {
       return;
     }
     Playlist selectedPlaylist = customPlaylists[selectedIndex];
@@ -67,7 +66,5 @@ public final class PlaylistPickerScreen extends BaseList {
     }
   }
 
-  // No screen-specific commands; only the inherited back / now-playing actions,
-  // which BaseList handles itself.
   protected void handleCommand(Command c, Displayable d) {}
 }

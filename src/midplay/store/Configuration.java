@@ -60,10 +60,8 @@ public class Configuration {
   public static final int AUTO_UPDATE_DISABLED = 0;
   public static final int AUTO_UPDATE_ENABLED = 1;
 
-  // Auto-queue ("infinite playlist"): append similar tracks as the queue nears
-  // its end so playback never stops.
-  public static final int AUTO_QUEUE_OFF = 0;
-  public static final int AUTO_QUEUE_ON = 1;
+  public static final int SAVE_LAST_SESSION_OFF = 0;
+  public static final int SAVE_LAST_SESSION_ON = 1;
 
   public static final String PLAYER_METHOD_PASS_INPUTSTREAM = "pass_inputstream";
   public static final String PLAYER_METHOD_PASS_URL = "pass_url";
@@ -77,13 +75,12 @@ public class Configuration {
   public static final int PLAYER_REPEAT_ALL = 2;
   public static final int PLAYER_SHUFFLE_OFF = 0;
   public static final int PLAYER_SHUFFLE_ON = 1;
+  public static final int QUEUE_MAX_SIZE = 120;
 
   public static final String PLAYER_STATUS_STOPPED = "player.status.stopped";
   public static final String PLAYER_STATUS_PLAYING = "player.status.playing";
   public static final String PLAYER_STATUS_PAUSED = "player.status.paused";
   public static final String PLAYER_STATUS_LOADING = "player.status.loading";
-  public static final String PLAYER_STATUS_STARTING = "player.status.starting";
-  public static final String PLAYER_STATUS_STOPPING = "player.status.stopping";
   public static final String PLAYER_STATUS_FINISHED = "player.status.finished";
   public static final String PLAYER_STATUS_READY = "player.status.ready";
 
@@ -101,6 +98,7 @@ public class Configuration {
 
   public static Image playIcon;
   public static Image pauseIcon;
+  public static Image playDimIcon;
   public static Image nextIcon;
   public static Image prevIcon;
   public static Image repeatIcon;
@@ -138,6 +136,7 @@ public class Configuration {
 
     repeatOffIcon = Utils.applyColor(repeatIcon, inactiveIconColor);
     shuffleOffIcon = Utils.applyColor(shuffleIcon, inactiveIconColor);
+    playDimIcon = Utils.applyColor(playIcon, inactiveIconColor);
     nextDimIcon = Utils.applyColor(nextIcon, inactiveIconColor);
     prevDimIcon = Utils.applyColor(prevIcon, inactiveIconColor);
   }
