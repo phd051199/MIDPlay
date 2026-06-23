@@ -173,6 +173,7 @@ public class MediaResolver implements MediaHttpClient.ResolveContext {
     if (vc != null) {
       vc.setLevel(gui.getVolumeLevel());
     }
+    EqualizerEngine.applyFromSettings();
   }
 
   void closePendingPlayback(PendingPlayback pending) {

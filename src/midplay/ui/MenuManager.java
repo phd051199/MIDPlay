@@ -95,8 +95,9 @@ public class MenuManager {
     defaultConfig.add(createMenuItem(Configuration.MENU_FAVORITES, 2, true));
     defaultConfig.add(createMenuItem(Configuration.MENU_DISCOVER_PLAYLISTS, 3, true));
     defaultConfig.add(createMenuItem(Configuration.MENU_RECENT, 4, true));
-    defaultConfig.add(createMenuItem(Configuration.MENU_SETTINGS, 5, true));
-    defaultConfig.add(createMenuItem(Configuration.MENU_ABOUT, 6, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_EQUALIZER, 5, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_SETTINGS, 6, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_ABOUT, 7, true));
     return defaultConfig;
   }
 

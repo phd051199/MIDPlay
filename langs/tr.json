@@ -10,7 +10,8 @@
     "name": "MIDPlay"
   },
   "confirm": {
-    "exit": "Çıkmak istediğinizden emin misiniz?"
+    "exit": "Çıkmak istediğinizden emin misiniz?",
+    "discard_changes": "Kaydedilmemiş değişiklikler silinsin mi?"
   },
   "favorites": {
     "add": "Favorilere Ekle",
@@ -46,7 +47,8 @@
     "search": "Arama",
     "settings": "Ayarlar",
     "about": "Hakkında",
-    "visibility": "Menü Görünürlüğü"
+    "visibility": "Menü Görünürlüğü",
+    "equalizer": "Ekolayzer"
   },
   "player": {
     "next": "Sonraki",
@@ -149,6 +151,7 @@
     "theme_mode": "Tema Modu",
     "theme_color": "Tema Rengi",
     "use_wifi": "Use Wi-Fi",
+    "load_thumbnails": "Küçük Resimleri Yükle",
     "theme_mode_options": {
       "light": "Açık",
       "dark": "Koyu"

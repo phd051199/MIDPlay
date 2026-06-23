@@ -34,6 +34,7 @@ public final class SettingsScreen extends BaseForm {
   private int autoUpdateIndex;
   private int saveLastSessionIndex;
   private int blackberryWifiIndex = -1;
+  private int thumbnailsIndex;
 
   private String currentLanguage;
   private String currentThemeMode;
@@ -42,6 +43,7 @@ public final class SettingsScreen extends BaseForm {
   private int currentAutoUpdate;
   private int currentBlackberryWifi;
   private int currentSaveLastSession;
+  private int currentThumbnails;
   private String currentPlayerMethod;
   private int currentColorIndex;
 
@@ -58,6 +60,68 @@ public final class SettingsScreen extends BaseForm {
     if (c == Commands.formSave()) {
       saveSettings();
     }
+  }
+
+  protected boolean onBackPressed() {
+    if (!isDirty()) {
+      return false;
+    }
+    navigator.showConfirmationAlert(
+        Lang.tr("confirm.discard_changes"),
+        new Runnable() {
+          public void run() {
+            navigator.back();
+          }
+        },
+        AlertType.WARNING);
+    return true;
+  }
+
+  // Settings are applied only on Save (never live), so discarding is just "don't save".
+  private boolean isDirty() {
+    if (!currentLanguage.equals(getSelected(languageGroup, availableLanguages, "en"))) {
+      return true;
+    }
+    if (!currentThemeMode.equals(
+        getSelected(themeModeGroup, Configuration.ALL_THEME_MODES, Configuration.THEME_LIGHT))) {
+      return true;
+    }
+    if (currentColorIndex != themeColorGroup.getSelectedIndex()) {
+      return true;
+    }
+    if (!currentService.equals(
+        getSelected(serviceGroup, Configuration.ALL_SERVICES, Configuration.SERVICE_NCT))) {
+      return true;
+    }
+    if (!currentQuality.equals(
+        getSelected(qualityGroup, Configuration.ALL_QUALITIES, Configuration.QUALITY_128))) {
+      return true;
+    }
+    if (!currentPlayerMethod.equals(
+        getSelected(
+            playerMethodGroup,
+            Configuration.ALL_PLAYER_METHODS,
+            settingsManager.getDefaultPlayerMethod()))) {
+      return true;
+    }
+    if ((currentAutoUpdate == Configuration.AUTO_UPDATE_ENABLED)
+        != togglesGroup.isSelected(autoUpdateIndex)) {
+      return true;
+    }
+    if ((currentSaveLastSession == Configuration.SAVE_LAST_SESSION_ON)
+        != togglesGroup.isSelected(saveLastSessionIndex)) {
+      return true;
+    }
+    if ((currentThumbnails == Configuration.THUMBNAILS_ON)
+        != togglesGroup.isSelected(thumbnailsIndex)) {
+      return true;
+    }
+    if (blackberryWifiIndex >= 0
+        && (currentBlackberryWifi == Configuration.BLACKBERRY_WIFI_ON)
+            != togglesGroup.isSelected(blackberryWifiIndex)) {
+      return true;
+    }
+    return false;
   }
 
   private static Image[] getThemeColorSwatches() {
@@ -86,6 +150,7 @@ public final class SettingsScreen extends BaseForm {
     togglesGroup = new ChoiceGroup(Lang.tr("settings.options"), ChoiceGroup.MULTIPLE);
     autoUpdateIndex = togglesGroup.append(Lang.tr("settings.check_update"), null);
     saveLastSessionIndex = togglesGroup.append(Lang.tr("settings.save_last_session"), null);
+    thumbnailsIndex = togglesGroup.append(Lang.tr("settings.load_thumbnails"), null);
     if (Utils.isBlackberry) {
       blackberryWifiIndex = togglesGroup.append(Lang.tr("settings.use_wifi"), null);
     }
@@ -124,6 +189,7 @@ public final class SettingsScreen extends BaseForm {
     currentAutoUpdate = settingsManager.getCurrentAutoUpdate();
     currentBlackberryWifi = settingsManager.getCurrentBlackberryWifi();
     currentSaveLastSession = settingsManager.getCurrentSaveLastSession();
+    currentThumbnails = settingsManager.getCurrentThumbnails();
     currentPlayerMethod = settingsManager.getCurrentPlayerMethod();
     currentColorIndex = settingsManager.getSavedColorIndex();
     selectChoice(languageGroup, availableLanguages, currentLanguage);
@@ -139,6 +205,8 @@ public final class SettingsScreen extends BaseForm {
         autoUpdateIndex, currentAutoUpdate == Configuration.AUTO_UPDATE_ENABLED);
     togglesGroup.setSelectedIndex(
         saveLastSessionIndex, currentSaveLastSession == Configuration.SAVE_LAST_SESSION_ON);
+    togglesGroup.setSelectedIndex(
+        thumbnailsIndex, currentThumbnails == Configuration.THUMBNAILS_ON);
     if (blackberryWifiIndex >= 0) {
       togglesGroup.setSelectedIndex(
           blackberryWifiIndex, currentBlackberryWifi == Configuration.BLACKBERRY_WIFI_ON);
@@ -176,6 +244,10 @@ public final class SettingsScreen extends BaseForm {
           togglesGroup.isSelected(saveLastSessionIndex)
               ? Configuration.SAVE_LAST_SESSION_ON
               : Configuration.SAVE_LAST_SESSION_OFF;
+      int selectedThumbnails =
+          togglesGroup.isSelected(thumbnailsIndex)
+              ? Configuration.THUMBNAILS_ON
+              : Configuration.THUMBNAILS_OFF;
       int selectedBlackberryWifi =
           blackberryWifiIndex >= 0 && togglesGroup.isSelected(blackberryWifiIndex)
               ? Configuration.BLACKBERRY_WIFI_ON
@@ -204,6 +276,10 @@ public final class SettingsScreen extends BaseForm {
       if (currentSaveLastSession != selectedSaveLastSession) {
         hasChanges = true;
         settingsManager.saveSaveLastSession(selectedSaveLastSession);
+      }
+      if (currentThumbnails != selectedThumbnails) {
+        hasChanges = true;
+        settingsManager.saveThumbnails(selectedThumbnails);
       }
       if (currentBlackberryWifi != selectedBlackberryWifi) {
         hasChanges = true;

@@ -2,6 +2,7 @@ package midplay.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Vector;
 import javax.microedition.io.HttpConnection;
@@ -265,6 +266,42 @@ public class Utils {
     return Image.createRGBImage(dst, targetWidth, targetHeight, true);
   }
 
+  public static Image stampBadge(Image base, Image badge) {
+    int baseW = base.getWidth();
+    int baseH = base.getHeight();
+    int badgeW = badge.getWidth();
+    int badgeH = badge.getHeight();
+    int inset = badgeW / 3; // slide the badge inward, away from the corner
+    int lip = (badgeW / 2) - inset; // how far it still peeks past the corner
+    int w = baseW + lip;
+    int h = baseH + lip;
+
+    int[] out = new int[w * h]; // 0 == transparent, so the lip shows clean
+    base.getRGB(out, 0, w, 0, 0, baseW, baseH); // art is opaque -> fills top-left
+
+    int bx0 = baseW - (badgeW / 2) - inset;
+    int by0 = baseH - (badgeH / 2) - inset;
+    int[] row = new int[badgeW];
+    for (int by = 0; by < badgeH; by++) {
+      badge.getRGB(row, 0, badgeW, 0, by, badgeW, 1);
+      int ty = by0 + by;
+      if (ty < 0 || ty >= h) {
+        continue;
+      }
+      for (int bx = 0; bx < badgeW; bx++) {
+        if ((row[bx] & 0xFF000000) == 0) {
+          continue;
+        }
+        int tx = bx0 + bx;
+        if (tx < 0 || tx >= w) {
+          continue;
+        }
+        out[ty * w + tx] = 0xFF000000 | (row[bx] & 0x00FFFFFF);
+      }
+    }
+    return Image.createRGBImage(out, w, h, true);
+  }
+
   public static String formatTime(long microseconds) {
     return formatClock(microseconds / 1000000L, false);
   }
@@ -292,6 +329,13 @@ public class Utils {
     sb.append(value);
   }
 
+  public static String withArtType(String url, int type) {
+    if (url == null || url.length() == 0) {
+      return url;
+    }
+    return url + (url.indexOf('?') >= 0 ? "&type=" : "?type=") + type;
+  }
+
   public static void clampAndSelect(List list, int index) {
     int size = list.size();
     if (size <= 0) {
@@ -309,6 +353,15 @@ public class Utils {
     if (in != null) {
       try {
         in.close();
+      } catch (IOException e) {
+      }
+    }
+  }
+
+  public static void closeQuietly(OutputStream os) {
+    if (os != null) {
+      try {
+        os.close();
       } catch (IOException e) {
       }
     }

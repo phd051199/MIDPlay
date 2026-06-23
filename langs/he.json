@@ -10,7 +10,8 @@
     "name": "MIDPlay"
   },
   "confirm": {
-    "exit": "אתה בטוח שאתה רוצה לצאת?"
+    "exit": "אתה בטוח שאתה רוצה לצאת?",
+    "discard_changes": "לבטל שינויים שלא נשמרו?"
   },
   "favorites": {
     "add": "הוסף למועדפים",
@@ -46,7 +47,8 @@
     "search": "חיפוש",
     "settings": "הגדרות",
     "about": "אודות",
-    "visibility": "נראות התפריט"
+    "visibility": "נראות התפריט",
+    "equalizer": "אקולייזר"
   },
   "player": {
     "next": "הבא",
@@ -149,6 +151,7 @@
     "theme_mode": "ערכת נושא",
     "theme_color": "צבע ערכת הנושא",
     "use_wifi": "Use Wi-Fi",
+    "load_thumbnails": "טען תמונות ממוזערות",
     "theme_mode_options": {
       "light": "בהיר",
       "dark": "כהה"

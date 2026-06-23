@@ -10,7 +10,8 @@
     "name": "MIDPlay"
   },
   "confirm": {
-    "exit": "Bạn có chắc muốn thoát?"
+    "exit": "Bạn có chắc muốn thoát?",
+    "discard_changes": "Hủy bỏ các thay đổi chưa lưu?"
   },
   "favorites": {
     "add": "Thêm vào yêu thích",
@@ -46,7 +47,8 @@
     "search": "Tìm kiếm",
     "settings": "Cài đặt",
     "about": "Giới thiệu",
-    "visibility": "Hiển thị menu"
+    "visibility": "Hiển thị menu",
+    "equalizer": "Bộ chỉnh âm"
   },
   "player": {
     "next": "Tiếp theo",
@@ -149,6 +151,7 @@
     "theme_mode": "Giao diện",
     "theme_color": "Màu chủ đề",
     "use_wifi": "Use Wi-Fi",
+    "load_thumbnails": "Tải ảnh thu nhỏ",
     "theme_mode_options": {
       "light": "Sáng",
       "dark": "Tối"
@@ -210,5 +213,12 @@
       "expired": "Hẹn giờ tắt đã hết thời gian",
       "set": "Đã kích hoạt hẹn giờ tắt"
     }
+  },
+  "eq": {
+    "enable": "Bật",
+    "presets": "Cài sẵn",
+    "manual": "Tự chỉnh",
+    "band": "Dải tần",
+    "not_supported": "Thiết bị không hỗ trợ bộ chỉnh âm"
   }
 }

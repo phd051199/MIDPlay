@@ -24,6 +24,7 @@ public class Configuration {
   public static final String MENU_SETTINGS = "menu.settings";
   public static final String MENU_ABOUT = "menu.about";
   public static final String MENU_RECENT = "menu.recent";
+  public static final String MENU_EQUALIZER = "menu.equalizer";
 
   public static final String SERVICE_NCT = "NCT";
   public static final String SERVICE_SOUNDCLOUD = "SoundCloud";
@@ -87,6 +88,9 @@ public class Configuration {
   public static final int BLACKBERRY_WIFI_OFF = 0;
   public static final int BLACKBERRY_WIFI_ON = 1;
 
+  public static final int THUMBNAILS_OFF = 0;
+  public static final int THUMBNAILS_ON = 1;
+
   public static Image folderIcon;
   public static Image musicIcon;
   public static Image searchIcon;
@@ -95,6 +99,9 @@ public class Configuration {
   public static Image settingsIcon;
   public static Image infoIcon;
   public static Image recentIcon;
+  public static Image equalizerIcon;
+  public static Image folderBadgeIcon;
+  public static Image musicBadgeIcon;
 
   public static Image playIcon;
   public static Image pauseIcon;
@@ -109,30 +116,41 @@ public class Configuration {
   public static Image nextDimIcon;
   public static Image prevDimIcon;
 
+  private static final int ICON_CELL = 42; // largest icon dim; every icon <= 42x42
+  private static final int ICON_COLS = 4;
+  private static final int BADGE_SIZE = 24;
+  private static Image iconSheet;
+
   public static void loadIcons() throws IOException {
-    folderIcon = loadIcon("/FolderSound.png");
-    musicIcon = loadIcon("/MusicDoubleNote.png");
-    searchIcon = loadIcon("/Magnifier.png");
-    favoriteIcon = loadIcon("/Heart.png");
-    playlistIcon = loadIcon("/Album.png");
-    settingsIcon = loadIcon("/Setting.png");
-    infoIcon = loadIcon("/Information.png");
-    recentIcon = loadIcon("/Recent.png");
+    iconSheet = Image.createImage("/icons.png");
+
+    folderIcon = region(0, 42, 40);
+    musicIcon = region(1, 36, 36);
+    searchIcon = region(2, 36, 33);
+    favoriteIcon = region(3, 36, 36);
+    playlistIcon = region(4, 36, 36);
+    settingsIcon = region(5, 36, 36);
+    infoIcon = region(6, 36, 36);
+    recentIcon = region(7, 36, 36);
+    equalizerIcon = region(8, 36, 36);
+
+    folderBadgeIcon = Utils.resizeImageToFit(folderIcon, BADGE_SIZE, BADGE_SIZE);
+    musicBadgeIcon = Utils.resizeImageToFit(musicIcon, BADGE_SIZE, BADGE_SIZE);
 
     loadPlayerIcons();
   }
 
-  public static void loadPlayerIcons() throws IOException {
+  public static void loadPlayerIcons() {
     int activeIconColor = Theme.getPrimaryColor();
     int inactiveIconColor = Theme.getOutlineColor();
 
-    playIcon = loadIcon("/Play.png", activeIconColor);
-    pauseIcon = loadIcon("/Pause.png", activeIconColor);
-    nextIcon = loadIcon("/Next.png", activeIconColor);
-    prevIcon = loadIcon("/Previous.png", activeIconColor);
-    repeatIcon = loadIcon("/Repeat.png", activeIconColor);
-    repeatOneIcon = loadIcon("/RepeatOne.png", activeIconColor);
-    shuffleIcon = loadIcon("/Shuffle.png", activeIconColor);
+    playIcon = tintedRegion(9, 32, 32, activeIconColor);
+    pauseIcon = tintedRegion(10, 32, 32, activeIconColor);
+    nextIcon = tintedRegion(11, 32, 32, activeIconColor);
+    prevIcon = tintedRegion(12, 32, 32, activeIconColor);
+    repeatIcon = tintedRegion(13, 20, 20, activeIconColor);
+    repeatOneIcon = tintedRegion(14, 20, 20, activeIconColor);
+    shuffleIcon = tintedRegion(15, 20, 20, activeIconColor);
 
     repeatOffIcon = Utils.applyColor(repeatIcon, inactiveIconColor);
     shuffleOffIcon = Utils.applyColor(shuffleIcon, inactiveIconColor);
@@ -141,12 +159,14 @@ public class Configuration {
     prevDimIcon = Utils.applyColor(prevIcon, inactiveIconColor);
   }
 
-  private static Image loadIcon(String path) throws IOException {
-    return Image.createImage(path);
+  private static Image region(int index, int w, int h) {
+    int x = (index % ICON_COLS) * ICON_CELL;
+    int y = (index / ICON_COLS) * ICON_CELL;
+    return Image.createImage(iconSheet, x, y, w, h, 0);
   }
 
-  private static Image loadIcon(String path, int color) throws IOException {
-    return Utils.applyColor(loadIcon(path), color);
+  private static Image tintedRegion(int index, int w, int h, int color) {
+    return Utils.applyColor(region(index, w, h), color);
   }
 
   private Configuration() {}

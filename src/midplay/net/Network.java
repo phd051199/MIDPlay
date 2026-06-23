@@ -3,6 +3,7 @@ package midplay.net;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 import javax.microedition.io.Connector;
@@ -24,6 +25,10 @@ public class Network {
   public Network() {}
 
   public static HttpConnection openConnection(String url) throws IOException {
+    return openConnection(url, Connector.READ);
+  }
+
+  public static HttpConnection openConnection(String url, int mode) throws IOException {
     if (Utils.isBlackberry) {
       int blackberryWifi = SettingsManager.getInstance().getCurrentBlackberryWifi();
 
@@ -31,7 +36,7 @@ public class Network {
         url += ";deviceside=true;interface=wifi";
       }
     }
-    return (HttpConnection) Connector.open(url, Connector.READ, true);
+    return (HttpConnection) Connector.open(url, mode, true);
   }
 
   private String getUserAgent() {
@@ -62,6 +67,89 @@ public class Network {
         throw e;
       }
       return sendHttpGetBytesOnce(url);
+    }
+  }
+
+  byte[] sendHttpPostBytes(String url, String body) throws NetworkError {
+    try {
+      return sendHttpPostBytesOnce(url, body);
+    } catch (NetworkError e) {
+      if (cancelled) {
+        throw e;
+      }
+      try {
+        Thread.sleep(300);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        throw e;
+      }
+      if (cancelled) {
+        throw e;
+      }
+      return sendHttpPostBytesOnce(url, body);
+    }
+  }
+
+  private byte[] sendHttpPostBytesOnce(String url, String body) throws NetworkError {
+    HttpConnection hcon = null;
+    OutputStream os = null;
+    DataInputStream dis = null;
+    ByteArrayOutputStream response = null;
+    TimerTask watchdog = null;
+    try {
+      if (cancelled) {
+        throw new NetworkError("Operation cancelled");
+      }
+      hcon = openConnection(url, Connector.READ_WRITE);
+      if (hcon == null) {
+        throw new NetworkError("Failed to open connection");
+      }
+      hcon.setRequestProperty("User-Agent", getUserAgent());
+      hcon.setRequestMethod(HttpConnection.POST);
+      hcon.setRequestProperty("Content-Type", "application/json");
+      byte[] bodyBytes = body.getBytes("UTF-8");
+      hcon.setRequestProperty("Content-Length", Integer.toString(bodyBytes.length));
+      os = hcon.openOutputStream();
+      os.write(bodyBytes);
+      os.flush();
+      os.close();
+      os = null;
+      watchdog = armWatchdog(hcon);
+      int responseCode = hcon.getResponseCode();
+      if (responseCode != HttpConnection.HTTP_OK) {
+        throw new NetworkError("HTTP Error: " + responseCode);
+      }
+      long declaredLen = -1;
+      try {
+        declaredLen = hcon.getLength();
+      } catch (Exception e) {
+      }
+      if (declaredLen > 0 && declaredLen < 524288) {
+        response = new ByteArrayOutputStream((int) declaredLen);
+      } else {
+        response = new ByteArrayOutputStream();
+      }
+      dis = new DataInputStream(hcon.openInputStream());
+      byte[] buffer = new byte[BUFFER_SIZE];
+      int bytesRead;
+      while ((bytesRead = dis.read(buffer)) != -1) {
+        if (cancelled) {
+          throw new NetworkError("Operation cancelled");
+        }
+        response.write(buffer, 0, bytesRead);
+      }
+      return response.toByteArray();
+    } catch (IOException e) {
+      if (cancelled) {
+        throw new NetworkError("Operation cancelled");
+      }
+      throw new NetworkError("Network error: " + e.getMessage());
+    } finally {
+      if (watchdog != null) {
+        watchdog.cancel();
+      }
+      Utils.closeQuietly(os);
+      closeResources(dis, hcon);
     }
   }
 

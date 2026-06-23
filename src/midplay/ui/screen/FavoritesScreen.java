@@ -15,6 +15,7 @@ import midplay.ui.FormHelpers;
 import midplay.ui.Navigator;
 import midplay.ui.PlayerNavHelper;
 import midplay.util.Lang;
+import midplay.util.Utils;
 
 public final class FavoritesScreen extends BaseList {
   private final FavoritesManager favoritesManager;
@@ -37,7 +38,16 @@ public final class FavoritesScreen extends BaseList {
       for (int i = 0; i < playlists.length; i++) {
         this.append(playlists[i].getDisplayTitle(), Configuration.folderIcon);
       }
+      String[] artUrls = new String[playlists.length];
+      for (int i = 0; i < playlists.length; i++) {
+        artUrls[i] = Utils.withArtType(playlists[i].getImageUrl(), 0);
+      }
+      loadArt(artUrls);
     }
+  }
+
+  protected int badgeAt(int row) {
+    return BADGE_FOLDER;
   }
 
   protected void handleSelection() {

@@ -29,6 +29,7 @@ import midplay.ui.MenuManager;
 import midplay.ui.Navigator;
 import midplay.ui.PlayerNavHelper;
 import midplay.ui.PlaylistsListForwarder;
+import midplay.ui.screen.EqualizerScreen;
 import midplay.ui.screen.FavoritesScreen;
 import midplay.ui.screen.RecentListScreen;
 import midplay.ui.screen.SearchScreen;
@@ -123,6 +124,13 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
         new Runnable() {
           public void run() {
             goToAboutScreen();
+          }
+        });
+    menuManager.registerAction(
+        Configuration.MENU_EQUALIZER,
+        new Runnable() {
+          public void run() {
+            goToEqualizerScreen();
           }
         });
   }
@@ -334,6 +342,10 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
               }
             });
     navigator.forward(settingsScreen);
+  }
+
+  private void goToEqualizerScreen() {
+    navigator.forward(new EqualizerScreen(navigator));
   }
 
   private void goToFavoritesScreen() {

@@ -55,6 +55,15 @@ public class TrackListScreen extends BaseList {
     for (int i = 0; i < tracks.length; i++) {
       this.append(rowTexts[i], Configuration.musicIcon);
     }
+    String[] artUrls = new String[tracks.length];
+    for (int i = 0; i < tracks.length; i++) {
+      artUrls[i] = Utils.withArtType(tracks[i].getImageUrl(), 1);
+    }
+    loadArt(artUrls);
+  }
+
+  protected int badgeAt(int row) {
+    return BADGE_MUSIC;
   }
 
   protected void refresh() {
@@ -69,11 +78,13 @@ public class TrackListScreen extends BaseList {
   }
 
   protected void showNotify() {
+    super.showNotify();
     refreshView();
     startMarkerRefresh();
   }
 
   protected void hideNotify() {
+    super.hideNotify();
     stopMarkerRefresh();
   }
 

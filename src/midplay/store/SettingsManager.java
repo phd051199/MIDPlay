@@ -25,6 +25,10 @@ public class SettingsManager {
   private static String currentThemeMode;
   private static int currentBlackberryWifi;
   private static int currentSaveLastSession;
+  private static int currentThumbnails;
+  private static boolean currentEqEnabled;
+  private static int currentEqPreset; // -1 = manual/custom levels
+  private static int[] currentEqLevels;
 
   public static SettingsManager getInstance() {
     if (instance == null) {
@@ -114,6 +118,10 @@ public class SettingsManager {
     currentBlackberryWifi = settings.getInt("blackberryWifi", Configuration.BLACKBERRY_WIFI_ON);
     currentSaveLastSession =
         settings.getInt("saveLastSession", Configuration.SAVE_LAST_SESSION_OFF);
+    currentThumbnails = settings.getInt("thumbnails", Configuration.THUMBNAILS_ON);
+    currentEqEnabled = settings.getBoolean("eqEnabled", false);
+    currentEqPreset = settings.getInt("eqPreset", -1);
+    currentEqLevels = parseLevelsCsv(settings.getString("eqLevels", ""));
   }
 
   private JSONObject getSettingsJSON() {
@@ -138,6 +146,10 @@ public class SettingsManager {
     settings.put("themeMode", Configuration.THEME_LIGHT);
     settings.put("blackberryWifi", Configuration.BLACKBERRY_WIFI_ON);
     settings.put("saveLastSession", Configuration.SAVE_LAST_SESSION_OFF);
+    settings.put("thumbnails", Configuration.THUMBNAILS_ON);
+    settings.put("eqEnabled", false);
+    settings.put("eqPreset", -1);
+    settings.put("eqLevels", "");
     return settings;
   }
 
@@ -230,6 +242,11 @@ public class SettingsManager {
   public void saveBlackberryWifi(int blackberryWifi) throws RecordStoreException {
     saveSetting("blackberryWifi", blackberryWifi);
     currentBlackberryWifi = blackberryWifi;
+  }
+
+  public void saveThumbnails(int thumbnails) throws RecordStoreException {
+    saveSetting("thumbnails", thumbnails);
+    currentThumbnails = thumbnails;
   }
 
   public void saveThemeColors(JSONObject lightColors, JSONObject darkColors, int selected)
@@ -327,6 +344,86 @@ public class SettingsManager {
 
   public int getCurrentBlackberryWifi() {
     return currentBlackberryWifi;
+  }
+
+  public int getCurrentThumbnails() {
+    return currentThumbnails;
+  }
+
+  public void setEqEnabledLive(boolean enabled) {
+    currentEqEnabled = enabled;
+  }
+
+  public void setEqPresetLive(int preset) {
+    currentEqPreset = preset;
+  }
+
+  public void setEqLevelsLive(int[] levels) {
+    currentEqLevels = levels;
+  }
+
+  public boolean isEqEnabled() {
+    return currentEqEnabled;
+  }
+
+  public int getEqPreset() {
+    return currentEqPreset;
+  }
+
+  public int[] getEqLevels() {
+    return currentEqLevels;
+  }
+
+  public void saveEqualizer(boolean enabled, int preset, int[] levels) throws RecordStoreException {
+    JSONObject settings = settings();
+    settings.put("eqEnabled", enabled);
+    settings.put("eqPreset", preset);
+    settings.put("eqLevels", toLevelsCsv(levels));
+    saveJSON(settings);
+    currentEqEnabled = enabled;
+    currentEqPreset = preset;
+    currentEqLevels = levels;
+  }
+
+  private static String toLevelsCsv(int[] levels) {
+    if (levels == null || levels.length == 0) {
+      return "";
+    }
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < levels.length; i++) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      sb.append(levels[i]);
+    }
+    return sb.toString();
+  }
+
+  private static int[] parseLevelsCsv(String csv) {
+    if (csv == null || csv.length() == 0) {
+      return null;
+    }
+    int count = 1;
+    for (int i = 0; i < csv.length(); i++) {
+      if (csv.charAt(i) == ',') {
+        count++;
+      }
+    }
+    int[] result = new int[count];
+    int idx = 0;
+    int start = 0;
+    for (int i = 0; i <= csv.length(); i++) {
+      if (i == csv.length() || csv.charAt(i) == ',') {
+        try {
+          result[idx] = Integer.parseInt(csv.substring(start, i).trim());
+        } catch (NumberFormatException e) {
+          result[idx] = 0;
+        }
+        idx++;
+        start = i + 1;
+      }
+    }
+    return result;
   }
 
   public void cleanup() {

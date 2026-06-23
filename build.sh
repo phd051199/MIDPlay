@@ -32,7 +32,7 @@ VERSION="1.6.3"
 # ProGuard (and only ProGuard) runs on any modern JDK.
 RUN_JAVA="${RUN_JAVA:-$(command -v java)}"
 PROGUARD_JAR="lib/proguard-ant.jar"
-BOOTCP="lib/cldc_1.1.jar:lib/midp_2.0.jar"   # the J2ME core APIs
+BOOTCP="lib/cldc_1.1.jar:lib/midp_2.0.jar:lib/jsr234_1.0.jar"   # J2ME core APIs + JSR-234 (AMMS, compile-time only)
 
 # ---------------------------------------------------------------------------
 # Locate JDK 8.

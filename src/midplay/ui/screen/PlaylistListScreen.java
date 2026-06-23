@@ -46,10 +46,25 @@ public final class PlaylistListScreen extends BaseList {
 
   protected void populateItems() {
     loadMoreIndex = -1;
-    for (int i = 0; i < items.getPlaylists().length; i++) {
-      this.append(items.getPlaylists()[i].getDisplayTitle(), Configuration.folderIcon);
+    Playlist[] playlists = items.getPlaylists();
+    for (int i = 0; i < playlists.length; i++) {
+      this.append(playlists[i].getDisplayTitle(), Configuration.folderIcon);
     }
     addLoadMoreIfNeeded();
+    loadPlaylistArt();
+  }
+
+  protected int badgeAt(int row) {
+    return BADGE_FOLDER;
+  }
+
+  private void loadPlaylistArt() {
+    Playlist[] playlists = items.getPlaylists();
+    String[] artUrls = new String[playlists.length];
+    for (int i = 0; i < playlists.length; i++) {
+      artUrls[i] = Utils.withArtType(playlists[i].getImageUrl(), 0);
+    }
+    loadArt(artUrls);
   }
 
   protected void handleSelection() {
@@ -130,9 +145,16 @@ public final class PlaylistListScreen extends BaseList {
   }
 
   private void onLoadMoreSuccess(Playlists newItems) {
+    int offset = items.getPlaylists().length; // before add: row index of new batch
     items.add(newItems);
-    addNewItems(newItems.getPlaylists());
+    Playlist[] newPlaylists = newItems.getPlaylists();
+    addNewItems(newPlaylists);
     addLoadMoreIfNeeded();
+    String[] newUrls = new String[newPlaylists.length];
+    for (int i = 0; i < newPlaylists.length; i++) {
+      newUrls[i] = Utils.withArtType(newPlaylists[i].getImageUrl(), 0);
+    }
+    loadArtMore(offset, newUrls);
   }
 
   private void restoreLoadMoreItem(boolean shouldRestore) {

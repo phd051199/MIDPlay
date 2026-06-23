@@ -53,6 +53,16 @@ public abstract class NetworkOperation {
     }
   }
 
+  protected byte[] fetchPostBytes(String url, String body) {
+    network = new Network();
+    try {
+      return network.sendHttpPostBytes(url, body);
+    } catch (NetworkError e) {
+      onError(e);
+      return null;
+    }
+  }
+
   protected void processResponse(String response) {}
 
   protected void handleNoData() {}

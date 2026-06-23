@@ -72,15 +72,18 @@ public class URLProvider {
 
   public static String getSizedImage(String imageUrl, int size) {
     StringBuffer urlBuffer =
-        new StringBuffer("http://wsrv.nl/?url=")
+        new StringBuffer(SERVICE_URL)
+            .append("/convert?url=")
             .append(Utils.urlEncode(imageUrl))
-            .append("&output=jpg")
             .append("&w=")
             .append(size)
             .append("&h=")
-            .append(size)
-            .append("&fit=cover");
+            .append(size);
     return urlBuffer.toString();
+  }
+
+  public static String getSpriteSheetUrl() {
+    return SERVICE_URL + "/sprite";
   }
 
   public static String getThemeColor(String hex) {

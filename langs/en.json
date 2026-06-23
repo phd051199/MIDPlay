@@ -10,7 +10,8 @@
     "name": "MIDPlay"
   },
   "confirm": {
-    "exit": "Are you sure you want to exit?"
+    "exit": "Are you sure you want to exit?",
+    "discard_changes": "Discard unsaved changes?"
   },
   "favorites": {
     "add": "Add to Favorites",
@@ -46,7 +47,8 @@
     "search": "Search",
     "settings": "Settings",
     "about": "About",
-    "visibility": "Menu Visibility"
+    "visibility": "Menu Visibility",
+    "equalizer": "Equalizer"
   },
   "player": {
     "next": "Next",
@@ -149,6 +151,7 @@
     "theme_mode": "Appearance",
     "theme_color": "Theme Color",
     "use_wifi": "Use Wi-Fi",
+    "load_thumbnails": "Load Thumbnails",
     "theme_mode_options": {
       "dark": "Dark",
       "light": "Light"
@@ -210,5 +213,12 @@
       "expired": "Sleep timer expired",
       "set": "Sleep timer activated"
     }
+  },
+  "eq": {
+    "enable": "Enable",
+    "presets": "Presets",
+    "manual": "Manual",
+    "band": "Band",
+    "not_supported": "Equalizer is not supported on this device"
   }
 }

@@ -15,6 +15,7 @@ import midplay.ui.Commands;
 import midplay.ui.Navigator;
 import midplay.ui.PlayerNavHelper;
 import midplay.util.Lang;
+import midplay.util.Utils;
 
 public final class RecentListScreen extends BaseList {
   private RecentItem[] recentItems;
@@ -33,6 +34,25 @@ public final class RecentListScreen extends BaseList {
           item.getName(),
           item.getType() == RecentItem.TRACK ? Configuration.musicIcon : Configuration.folderIcon);
     }
+    String[] artUrls = new String[recentItems.length];
+    for (int i = 0; i < recentItems.length; i++) {
+      RecentItem item = recentItems[i];
+      if (item.getType() == RecentItem.TRACK) {
+        Track track = item.getTrack();
+        artUrls[i] = Utils.withArtType(track != null ? track.getImageUrl() : null, 1);
+      } else {
+        Playlist folder = item.getFolder();
+        artUrls[i] = Utils.withArtType(folder != null ? folder.getImageUrl() : null, 0);
+      }
+    }
+    loadArt(artUrls);
+  }
+
+  protected int badgeAt(int row) {
+    if (row < 0 || row >= recentItems.length) {
+      return BADGE_NONE;
+    }
+    return recentItems[row].getType() == RecentItem.TRACK ? BADGE_MUSIC : BADGE_FOLDER;
   }
 
   protected void handleSelection() {
