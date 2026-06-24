@@ -200,7 +200,6 @@ public abstract class BaseList extends List implements CommandListener {
     }
   }
 
-  /** Type of corner badge to stamp on a row's art; BADGE_NONE = leave art as-is. */
   protected int badgeAt(int row) {
     return BADGE_NONE;
   }
@@ -224,7 +223,6 @@ public abstract class BaseList extends List implements CommandListener {
     artKey++;
   }
 
-  // Recover art only if a load was cancelled by hideNotify before it finished.
   protected void showNotify() {
     if (artUrls != null && !artDone && !artInFlight) {
       loadArt(artUrls);

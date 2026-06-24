@@ -10,19 +10,19 @@
     "name": "MIDPlay"
   },
   "confirm": {
-    "exit": "Bạn có chắc muốn thoát?",
-    "discard_changes": "Hủy bỏ các thay đổi chưa lưu?"
+    "exit": "Bạn có chắc chắn muốn thoát?",
+    "discard_changes": "Hủy các thay đổi chưa lưu?"
   },
   "favorites": {
     "add": "Thêm vào yêu thích",
     "error": {
-      "remove_failed": "Lỗi xóa yêu thích",
-      "save_failed": "Lỗi lưu yêu thích"
+      "remove_failed": "Không thể xóa khỏi mục yêu thích",
+      "save_failed": "Không thể lưu vào mục yêu thích"
     },
     "remove": "Xóa khỏi yêu thích",
     "status": {
       "added": "Đã thêm vào yêu thích",
-      "already_exists": "Đã có trong yêu thích",
+      "already_exists": "Bài hát đã có trong mục yêu thích",
       "removed": "Đã xóa khỏi yêu thích"
     }
   },
@@ -47,24 +47,24 @@
     "search": "Tìm kiếm",
     "settings": "Cài đặt",
     "about": "Giới thiệu",
-    "visibility": "Hiển thị menu",
+    "visibility": "Ẩn/hiện menu",
     "equalizer": "Bộ chỉnh âm"
   },
   "player": {
-    "next": "Tiếp theo",
+    "next": "Bài tiếp theo",
     "play": "Phát",
-    "previous": "Trước đó",
+    "previous": "Bài trước",
     "repeat": "Lặp lại",
-    "show_playlist": "Hiện playlist",
+    "show_playlist": "Xem playlist",
     "shuffle": "Phát ngẫu nhiên",
     "status": {
       "loading": "Đang tải...",
       "paused": "Đã tạm dừng",
       "playing": "Đang phát...",
-      "starting": "Đang khởi động...",
+      "starting": "Đang chuẩn bị...",
       "stopped": "Đã dừng",
       "stopping": "Đang dừng...",
-      "finished": "Đã hoàn thành",
+      "finished": "Đã phát xong",
       "ready": "Sẵn sàng"
     },
     "stop": "Dừng",
@@ -76,36 +76,36 @@
     "type": "Loại",
     "custom": "Tùy chỉnh",
     "system": "Hệ thống",
-    "track_count": "Số bài hát",
+    "track_count": "Số lượng bài hát",
     "artist": "Nghệ sĩ",
     "duration": "Thời lượng",
-    "url": "Đường dẫn",
-    "unknown_artist": "Nghệ sĩ không xác định",
-    "unknown_duration": "Thời lượng không xác định",
-    "no_url": "Không có đường dẫn"
+    "url": "Liên kết",
+    "unknown_artist": "Không rõ nghệ sĩ",
+    "unknown_duration": "Không rõ thời lượng",
+    "no_url": "Không có liên kết"
   },
   "playlist": {
     "add_track": "Thêm vào playlist",
     "create": "Tạo playlist",
     "confirm": {
-      "delete_with_tracks": "Playlist này có chứa bài hát. Xóa tất cả?"
+      "delete_with_tracks": "Playlist này có chứa bài hát. Bạn vẫn muốn xóa?"
     },
-    "view_tracks": "Xem danh sách bài hát",
+    "view_tracks": "Xem các bài hát",
     "error": {
-      "add_track_failed": "Lỗi thêm bài hát vào playlist",
+      "add_track_failed": "Không thể thêm bài hát vào playlist",
       "track_already_exists": "Bài hát đã có trong playlist",
       "cannot_rename_system": "Không thể đổi tên playlist hệ thống",
-      "create_failed": "Lỗi tạo playlist",
+      "create_failed": "Không thể tạo playlist",
       "empty_name": "Tên playlist không được để trống",
-      "remove_track_failed": "Lỗi xóa bài hát khỏi playlist",
-      "rename_failed": "Lỗi đổi tên playlist"
+      "remove_track_failed": "Không thể xóa bài hát khỏi playlist",
+      "rename_failed": "Không thể đổi tên playlist"
     },
     "name": "Tên playlist",
     "rename": "Đổi tên playlist",
     "select": "Chọn playlist",
     "status": {
       "created": "Tạo playlist thành công",
-      "no_custom": "Không có playlist tùy chỉnh",
+      "no_custom": "Chưa có playlist tự tạo",
       "renamed": "Đổi tên playlist thành công",
       "track_added": "Đã thêm bài hát vào playlist",
       "track_removed": "Đã xóa bài hát khỏi playlist"
@@ -116,42 +116,42 @@
     "add_all_to_queue": "Thêm tất cả vào hàng đợi",
     "added": "Đã thêm vào hàng đợi",
     "sort": "Sắp xếp hàng đợi",
-    "save_as_playlist": "Lưu thành danh sách"
+    "save_as_playlist": "Lưu thành playlist"
   },
   "recent": {
-    "clear": "Xóa lịch sử",
+    "clear": "Xóa danh sách gần đây",
     "confirm": {
       "clear": "Xóa toàn bộ mục gần đây?"
     },
     "status": {
-      "cleared": "Đã xóa lịch sử"
+      "cleared": "Đã xóa danh sách gần đây"
     }
   },
   "search": {
     "error": {
-      "empty_keyword": "Vui lòng nhập từ khóa"
+      "empty_keyword": "Vui lòng nhập từ khóa tìm kiếm"
     },
-    "placeholder": "Nhập từ khóa để tìm kiếm...",
+    "placeholder": "Tìm kiếm bài hát, nghệ sĩ, playlist...",
     "results": "Kết quả tìm kiếm",
     "status": {
       "no_results": "Không tìm thấy kết quả",
-      "searching": "Đang tìm: {0}"
+      "searching": "Đang tìm kiếm: {0}"
     },
-    "type": "Loại tìm kiếm"
+    "type": "Bộ lọc tìm kiếm"
   },
   "session": {
-    "resume_prompt": "Tiếp tục phiên nghe gần nhất?"
+    "resume_prompt": "Tiếp tục phát phiên gần nhất?"
   },
   "settings": {
     "audio_quality": "Chất lượng âm thanh",
     "auto_update": "Tự động cập nhật",
     "check_update": "Kiểm tra cập nhật",
-    "save_last_session": "Lưu phiên gần nhất",
+    "save_last_session": "Lưu phiên nghe cuối cùng",
     "options": "Tùy chọn",
-    "theme_mode": "Giao diện",
+    "theme_mode": "Chế độ giao diện",
     "theme_color": "Màu chủ đề",
-    "use_wifi": "Use Wi-Fi",
-    "load_thumbnails": "Tải ảnh thu nhỏ",
+    "use_wifi": "Dùng Wi-Fi (Blackberry)",
+    "load_thumbnails": "Hiển thị ảnh thu nhỏ",
     "theme_mode_options": {
       "light": "Sáng",
       "dark": "Tối"
@@ -162,14 +162,14 @@
       "pass_url": "Truyền URL"
     },
     "error": {
-      "save_failed": "Lỗi lưu cài đặt",
-      "save_theme": "Lỗi lưu chủ đề: {0}",
-      "load_theme": "Lỗi tải chủ đề: {0}",
-      "color_update_failed": "Cập nhật màu chủ đề thất bại. Đã lưu chế độ giao diện."
+      "save_failed": "Không thể lưu cài đặt",
+      "save_theme": "Lỗi lưu giao diện: {0}",
+      "load_theme": "Lỗi tải giao diện: {0}",
+      "color_update_failed": "Không thể cập nhật màu nền. Đã lưu chế độ giao diện."
     },
     "language": "Ngôn ngữ",
     "reorder": {
-      "instructions": "Chọn mục để di chuyển, sau đó chọn vị trí đích",
+      "instructions": "Chọn mục để di chuyển, sau đó chọn vị trí mới",
       "saved": "Đã lưu thứ tự"
     },
     "service": "Dịch vụ",
@@ -177,7 +177,7 @@
       "saved": "Lưu cài đặt thành công"
     },
     "visibility": {
-      "instructions": "Chọn mục để ẩn/hiện. [x] = hiện, [] = ẩn",
+      "instructions": "Chọn mục để ẩn hoặc hiện. [x] = Hiện, [] = Ẩn",
       "saved": "Đã lưu cài đặt hiển thị"
     }
   },
@@ -185,39 +185,39 @@
     "error": "Đã xảy ra lỗi",
     "loading": "Đang tải...",
     "load_more": "Tải thêm...",
-    "no_data": "Không có dữ liệu!",
-    "no_updates": "Không có cập nhật. Bạn đang dùng phiên bản mới nhất",
+    "no_data": "Không có dữ liệu",
+    "no_updates": "Bạn đang sử dụng phiên bản mới nhất",
     "update_available": "Có phiên bản mới. Cập nhật ngay?"
   },
   "time": {
     "error": {
-      "invalid_duration": "Thời lượng phải từ 1-999 phút",
+      "invalid_duration": "Thời lượng phải từ 1 đến 999 phút",
       "invalid_format": "Định dạng thời gian không hợp lệ"
     },
     "minutes": "Phút"
   },
   "timer": {
-    "action": "Hành động khi hết giờ",
+    "action": "Khi hết thời gian",
     "actions": {
       "exit_app": "Thoát ứng dụng",
       "stop_playback": "Dừng phát nhạc"
     },
     "cancel": "Hủy hẹn giờ",
     "confirm": {
-      "exit": "Hẹn giờ sẽ thoát ứng dụng khi hết thời gian. Tiếp tục?"
+      "exit": "Ứng dụng sẽ tự động thoát khi hết giờ. Tiếp tục?"
     },
     "set": "Đặt hẹn giờ",
     "sleep_timer": "Hẹn giờ tắt",
     "status": {
       "cancelled": "Đã hủy hẹn giờ tắt",
-      "expired": "Hẹn giờ tắt đã hết thời gian",
-      "set": "Đã kích hoạt hẹn giờ tắt"
+      "expired": "Đã hết thời gian hẹn giờ tắt",
+      "set": "Đã đặt hẹn giờ tắt"
     }
   },
   "eq": {
     "enable": "Bật",
-    "presets": "Cài sẵn",
-    "manual": "Tự chỉnh",
+    "presets": "Cài đặt sẵn",
+    "manual": "Tùy chỉnh",
     "band": "Dải tần",
     "not_supported": "Thiết bị không hỗ trợ bộ chỉnh âm"
   }

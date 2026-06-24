@@ -145,7 +145,7 @@ public final class PlaylistListScreen extends BaseList {
   }
 
   private void onLoadMoreSuccess(Playlists newItems) {
-    int offset = items.getPlaylists().length; // before add: row index of new batch
+    int offset = items.getPlaylists().length;
     items.add(newItems);
     Playlist[] newPlaylists = newItems.getPlaylists();
     addNewItems(newPlaylists);

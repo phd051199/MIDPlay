@@ -27,8 +27,6 @@ public final class EqualizerScreen extends BaseForm implements ItemStateListener
   private int bandCount;
   private boolean updating;
 
-  // ponytail: snapshot of the persisted config at open time, used to detect dirty state and to
-  // revert the live EQ when the user backs out without saving.
   private boolean originalEnabled;
   private int originalPreset;
   private int[] originalLevels;
@@ -129,8 +127,18 @@ public final class EqualizerScreen extends BaseForm implements ItemStateListener
     }
     updating = true;
     try {
+      int[] levels = new int[bandGauges.length];
+      boolean flat = true;
       for (int i = 0; i < bandGauges.length; i++) {
-        bandGauges[i].setValue(levelToGauge(EqualizerEngine.getBandLevel(i)));
+        levels[i] = EqualizerEngine.getBandLevel(i);
+        if (levels[i] != levels[0]) {
+          flat = false;
+        }
+      }
+      if (!flat) {
+        for (int i = 0; i < bandGauges.length; i++) {
+          bandGauges[i].setValue(levelToGauge(levels[i]));
+        }
       }
     } catch (Throwable t) {
     }
@@ -241,7 +249,6 @@ public final class EqualizerScreen extends BaseForm implements ItemStateListener
     return !levelsEqual(readLevels(), originalLevels);
   }
 
-  // Restore the live EQ (applied to the device) back to the persisted config captured at open.
   private void revertEq() {
     if (bandGauges == null) {
       return;

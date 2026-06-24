@@ -22,7 +22,7 @@ public class SpriteSheetOperation extends NetworkOperation {
     String body = buildBody(urls, cellW, cellH, cols);
     byte[] data = fetchPostBytes(URLProvider.getSpriteSheetUrl(), body);
     if (data == null) {
-      return; // handleError already routed to listener.onError
+      return;
     }
     try {
       Image sheet = Image.createImage(data, 0, data.length);
@@ -38,7 +38,7 @@ public class SpriteSheetOperation extends NetworkOperation {
       int x = (i % cols) * cellW;
       int y = (i / cols) * cellH;
       try {
-        out[i] = Image.createImage(sheet, x, y, cellW, cellH, 0); // 0 == Sprite.TRANS_NONE
+        out[i] = Image.createImage(sheet, x, y, cellW, cellH, 0);
       } catch (Exception e) {
         out[i] = null;
       }

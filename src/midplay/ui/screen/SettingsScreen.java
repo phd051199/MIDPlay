@@ -77,7 +77,6 @@ public final class SettingsScreen extends BaseForm {
     return true;
   }
 
-  // Settings are applied only on Save (never live), so discarding is just "don't save".
   private boolean isDirty() {
     if (!currentLanguage.equals(getSelected(languageGroup, availableLanguages, "en"))) {
       return true;

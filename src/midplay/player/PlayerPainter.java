@@ -171,7 +171,6 @@ public final class PlayerPainter {
         paintVolumeAlert(g);
       }
     } catch (Throwable e) {
-      e.printStackTrace();
     }
   }
 
@@ -726,7 +725,7 @@ public final class PlayerPainter {
   }
 
   private void initButtonPositions() {
-    if (screen.playX != 0) {
+    if (screen.buttonPositionsInitialized) {
       return;
     }
 
@@ -744,6 +743,7 @@ public final class PlayerPainter {
     screen.repeatY = screen.playTop;
     screen.shuffleX = positions.shuffle;
     screen.shuffleY = screen.playTop;
+    screen.buttonPositionsInitialized = true;
   }
 
   private void paintVolumeAlert(Graphics g) {
@@ -821,7 +821,7 @@ public final class PlayerPainter {
   }
 
   void resetButtonPositions() {
-    screen.playX = 0;
+    screen.buttonPositionsInitialized = false;
   }
 
   private void calculateSliderValue(long duration, long current, int sliderWidth) {

@@ -177,8 +177,14 @@ public class SettingsManager {
 
   private void saveSetting(String key, JSONObject value) throws RecordStoreException {
     JSONObject settings = settings();
-    if (settings.has(key) && value == settings.getObject(key)) {
-      return;
+    if (settings.has(key) && value != null) {
+      try {
+        JSONObject existing = settings.getObject(key);
+        if (existing != null && value.build().equals(existing.build())) {
+          return;
+        }
+      } catch (Exception e) {
+      }
     }
     settings.put(key, value);
     saveJSON(settings);

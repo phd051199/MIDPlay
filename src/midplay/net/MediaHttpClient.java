@@ -231,6 +231,7 @@ public final class MediaHttpClient {
       try {
         Thread.sleep(sleepTime);
       } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
       remaining -= sleepTime;
     }

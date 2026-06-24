@@ -9,6 +9,7 @@ import midplay.util.Utils;
 public class SleepTimerManager {
   private Timer timer;
   private TimerTask sleepTimerTask;
+  private TimerTask pendingExitTask;
   private SleepTimerCallback callback;
   private boolean isActive = false;
   private long targetTimeMillis;
@@ -39,7 +40,7 @@ public class SleepTimerManager {
 
   public void startCountdownTimer(int durationMinutes, int action) {
     cancelTimer();
-    long durationMillis = durationMinutes * 60 * 1000L;
+    long durationMillis = durationMinutes * 60L * 1000L;
     targetTimeMillis = System.currentTimeMillis() + durationMillis;
     timerAction = action;
     startTimer();
@@ -85,22 +86,29 @@ public class SleepTimerManager {
       callback.onTimerExpired(action);
     }
     if (action == SleepTimerScreen.ACTION_EXIT_APP) {
-      timer()
-          .schedule(
-              new TimerTask() {
-                public void run() {
-                  try {
-                    MIDPlay.getInstance().notifyDestroyed();
-                  } catch (Throwable t) {
-                  }
-                }
-              },
-              1000);
+      pendingExitTask =
+          new TimerTask() {
+            public void run() {
+              try {
+                MIDPlay.getInstance().notifyDestroyed();
+              } catch (Throwable t) {
+              }
+            }
+          };
+      timer().schedule(pendingExitTask, 1000);
     }
   }
 
   public void cancelTimer() {
     clearTimer(true);
+  }
+
+  public void shutdown() {
+    clearTimer(false);
+    if (timer != null) {
+      timer.cancel();
+      timer = null;
+    }
   }
 
   private void clearTimer(boolean notifyCancelled) {
@@ -109,6 +117,10 @@ public class SleepTimerManager {
     if (sleepTimerTask != null) {
       sleepTimerTask.cancel();
       sleepTimerTask = null;
+    }
+    if (pendingExitTask != null) {
+      pendingExitTask.cancel();
+      pendingExitTask = null;
     }
     if (notifyCancelled && wasActive && callback != null) {
       callback.onTimerCancelled();

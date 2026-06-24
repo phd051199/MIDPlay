@@ -117,6 +117,7 @@ public final class PlayerScreen extends Canvas
   String currentText = "";
 
   volatile boolean layoutValid = false;
+  boolean buttonPositionsInitialized = false;
 
   int sliderValue;
 
@@ -283,6 +284,7 @@ public final class PlayerScreen extends Canvas
     albumArtLoader.resetImage();
     trackTextRenderer.resetTrackTextImages();
     sleepTimerManager.setCallback(null);
+    sleepTimerManager.shutdown();
   }
 
   public synchronized PlayerGUI getPlayerGUI() {
@@ -313,7 +315,6 @@ public final class PlayerScreen extends Canvas
         handleMusicKey(keycode);
       }
     } catch (Throwable e) {
-      e.printStackTrace();
     }
   }
 
@@ -325,7 +326,6 @@ public final class PlayerScreen extends Canvas
         onSeekRepeat();
       }
     } catch (Throwable e) {
-      e.printStackTrace();
     }
   }
 
@@ -351,7 +351,6 @@ public final class PlayerScreen extends Canvas
         getPlayerGUI().seek(pending);
       }
     } catch (Throwable e) {
-      e.printStackTrace();
     }
   }
 
@@ -414,7 +413,6 @@ public final class PlayerScreen extends Canvas
         handleButtonTouch(x, y);
       }
     } catch (Throwable e) {
-      e.printStackTrace();
     }
   }
 
@@ -433,20 +431,22 @@ public final class PlayerScreen extends Canvas
         handleSliderSeek(x);
       }
     } catch (Throwable e) {
-      e.printStackTrace();
     }
   }
 
   protected void pointerReleased(int x, int y) {
-    if (seeking) {
-      seeking = false;
-      if (pendingSeekMicros >= 0) {
-        long pending = pendingSeekMicros;
-        pendingSeekMicros = -1;
-        getPlayerGUI().seek(pending);
+    try {
+      if (seeking) {
+        seeking = false;
+        if (pendingSeekMicros >= 0) {
+          long pending = pendingSeekMicros;
+          pendingSeekMicros = -1;
+          getPlayerGUI().seek(pending);
+        }
       }
+      volumeDragging = false;
+    } catch (Throwable e) {
     }
-    volumeDragging = false;
   }
 
   public void paint(Graphics g) {
@@ -605,7 +605,6 @@ public final class PlayerScreen extends Canvas
         handlePlayerAction(action);
       }
     } catch (Throwable e) {
-      e.printStackTrace();
     }
   }
 

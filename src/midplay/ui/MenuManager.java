@@ -118,7 +118,6 @@ public class MenuManager {
       }
       storage.save(config.toString());
     } catch (RecordStoreException e) {
-      e.printStackTrace();
     }
   }
 
@@ -137,7 +136,6 @@ public class MenuManager {
       try {
         action.run();
       } catch (Exception e) {
-        e.printStackTrace();
       }
     }
   }

@@ -27,7 +27,6 @@ public class RecordStoreManager {
       try {
         recordStore.closeRecordStore();
       } catch (RecordStoreException e) {
-        e.printStackTrace();
       } finally {
         recordStore = null;
       }
@@ -88,14 +87,12 @@ public class RecordStoreManager {
               break;
             }
           } catch (Exception e) {
-            e.printStackTrace();
           }
         }
       } finally {
         enumeration.destroy();
       }
     } catch (RecordStoreException e) {
-      e.printStackTrace();
     }
   }
 

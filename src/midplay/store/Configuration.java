@@ -116,7 +116,7 @@ public class Configuration {
   public static Image nextDimIcon;
   public static Image prevDimIcon;
 
-  private static final int ICON_CELL = 42; // largest icon dim; every icon <= 42x42
+  private static final int ICON_CELL = 42;
   private static final int ICON_COLS = 4;
   private static final int BADGE_SIZE = 24;
   private static Image iconSheet;

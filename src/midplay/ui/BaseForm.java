@@ -34,10 +34,6 @@ public abstract class BaseForm extends Form implements CommandListener {
     }
   }
 
-  /**
-   * Hook for screens that need to intercept Back (e.g. to confirm unsaved changes). Return true to
-   * consume the Back press; return false (default) for normal back navigation.
-   */
   protected boolean onBackPressed() {
     return false;
   }

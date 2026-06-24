@@ -171,7 +171,7 @@ public class FavoritesManager {
 
   public Tracks getCustomPlaylistTracks(Playlist playlist) {
     if (playlist == null || !playlist.isCustom()) {
-      return null;
+      return new Tracks();
     }
     try {
       Vector trackList = loadTracksRecord(playlist.getKey()).tracks;

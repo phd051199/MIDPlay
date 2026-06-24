@@ -367,9 +367,6 @@ public class PlayerGUI implements PlayerListener {
         return;
       }
       currentPlayer = player;
-      cachedMediaTimeMicros = time;
-      cachedSampleTimeMs = System.currentTimeMillis();
-      cachedSessionId = playbackSessionId;
     }
     parent.updateDisplayAsync();
     if (currentPlayer == null) {
@@ -382,6 +379,11 @@ public class PlayerGUI implements PlayerListener {
     }
     try {
       currentPlayer.setMediaTime(time);
+      synchronized (this) {
+        cachedMediaTimeMicros = time;
+        cachedSampleTimeMs = System.currentTimeMillis();
+        cachedSessionId = playbackSessionId;
+      }
       parent.updateDisplayAsync();
     } catch (Exception e) {
     }
@@ -1183,7 +1185,7 @@ public class PlayerGUI implements PlayerListener {
 
   private void startTimer() {
     synchronized (this) {
-      if (repaintSuppressed) {
+      if (destroyed || repaintSuppressed) {
         return;
       }
       ensureTimerLocked();

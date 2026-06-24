@@ -115,7 +115,6 @@ public class RecentManager {
           }
         }
       } catch (Exception e) {
-        e.printStackTrace();
       }
     }
     if (n != result.length) {

@@ -75,7 +75,6 @@ public final class SearchScreen extends BaseForm {
     try {
       settingsManager.saveSearchType(this.searchType);
     } catch (RecordStoreException e) {
-      e.printStackTrace();
     }
     navigator.showLoadingAlert(Lang.tr("search.status.searching", keyword));
     final String title = Lang.tr("search.results") + ": " + keyword;
