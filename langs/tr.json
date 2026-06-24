@@ -48,7 +48,7 @@
     "settings": "Ayarlar",
     "about": "Hakkında",
     "visibility": "Menü Görünürlüğü",
-    "equalizer": "Ekolayzer"
+    "equalizer": "Ekolayzır"
   },
   "player": {
     "next": "Sonraki",
@@ -146,11 +146,11 @@
     "audio_quality": "Ses Kalitesi",
     "auto_update": "Otomatik Güncellemeler",
     "check_update": "Güncellemeleri Kontrol Et",
-    "save_last_session": "Son oturumu kaydet",
+    "save_last_session": "Son Oturumu Kaydet",
     "options": "Seçenekler",
     "theme_mode": "Tema Modu",
     "theme_color": "Tema Rengi",
-    "use_wifi": "Use Wi-Fi",
+    "use_wifi": "Wi-Fi kullan",
     "load_thumbnails": "Küçük Resimleri Yükle",
     "theme_mode_options": {
       "light": "Açık",
@@ -177,7 +177,7 @@
       "saved": "Ayarlar başarıyla kaydedildi"
     },
     "visibility": {
-      "instructions": "Gizle/göster öğeleri seçin. [x] = göster, [] = gizle",
+      "instructions": "Gizlenecek/gösterilecek öğeleri seçin. [x] = göster, [] = gizle",
       "saved": "Görünürlük ayarları kaydedildi"
     }
   },
@@ -213,5 +213,12 @@
       "expired": "Uyku zamanlayıcısı süresi doldu",
       "set": "Uyku zamanlayıcısı etkinleştirildi"
     }
+  },
+    "eq": {
+    "enable": "Aktif",
+    "presets": "Öntanımlı ayarlar",
+    "manual": "Manuel",
+    "band": "Band",
+    "not_supported": "Ekolayzır bu cihazda desteklenmiyor"
   }
 }
