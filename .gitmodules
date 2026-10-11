@@ -1,3 +1,3 @@
 [submodule "third_party/mpgram"]
 	path = third_party/mpgram
-	url = https://github.com/shinovon/mpgram-client.git
+	url = https://github.com/mrlima4095/mpgram-client.git

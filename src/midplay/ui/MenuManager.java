@@ -56,6 +56,7 @@ public class MenuManager {
     }
     removeMenuItem(Configuration.MENU_OPEN_URI);
     removeMenuItem(Configuration.MENU_NOW_PLAYING);
+    removeMenuItem("menu.opentty");
     ensureDefaultItemsPresent();
   }
 

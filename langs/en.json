@@ -67,10 +67,15 @@
     "mpgram": "MPGram",
     "open_uri": "Open..."
   },
+  "mpgram": {
+    "send_note": "Send note"
+  },
   "note": {
     "title": "Notepad",
     "clear": "Clear",
     "saved": "Note saved",
+    "save_from_mpgram": "Save note",
+    "save_failed": "Failed to save note",
     "export": "Save to device",
     "import": "Import file",
     "exported": "Saved to {0}",
@@ -82,7 +87,20 @@
     "edit": "Edit",
     "empty": "No notes",
     "save_changes": "Save changes?",
-    "discard": "Discard"
+    "discard": "Discard",
+    "search": "Search notes",
+    "clear_search": "Clear search",
+    "no_search_results": "No matching notes",
+    "custom_title": "Set custom title",
+    "custom_title_field": "Title",
+    "toggle_pin": "Pin/unpin note",
+    "export_select": "Select notes to export",
+    "export_selected": "Export selected",
+    "select_all": "Select all",
+    "deselect_all": "Deselect all",
+    "select_at_least_one": "Select at least one note",
+    "export_filename": "Export file name",
+    "file_name": "File name"
   },
   "open_uri": {
     "title": "Open...",

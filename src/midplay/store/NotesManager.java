@@ -17,11 +17,15 @@ public final class NotesManager {
     public final int id;
     public final String title;
     public final String text;
+    public final boolean pinned;
+    public final String customTitle;
 
-    Note(int id, String title, String text) {
+    Note(int id, String title, String text, boolean pinned, String customTitle) {
       this.id = id;
       this.title = title;
       this.text = text;
+      this.pinned = pinned;
+      this.customTitle = customTitle;
     }
   }
 
@@ -45,9 +49,17 @@ public final class NotesManager {
     for (int i = 0; i < result.length; i++) {
       JSONObject item = data.getObject(i);
       String text = item.getString("text", "");
-      result[i] = new Note(item.getInt("id", i + 1), titleFromText(text), text);
+      result[i] = noteFromJSON(item, i + 1);
     }
-    return result;
+    Note[] ordered = new Note[result.length];
+    int index = 0;
+    for (int i = 0; i < result.length; i++) {
+      if (result[i].pinned) ordered[index++] = result[i];
+    }
+    for (int i = 0; i < result.length; i++) {
+      if (!result[i].pinned) ordered[index++] = result[i];
+    }
+    return ordered;
   }
 
   public Note getNote(int id) {
@@ -55,17 +67,16 @@ public final class NotesManager {
     if (item == null) {
       return null;
     }
-    String text = item.getString("text", "");
-    return new Note(id, titleFromText(text), text);
+    return noteFromJSON(item, id);
   }
 
   public Note create(String text) throws RecordStoreException {
     JSONArray data = notes();
     int id = nextId(data);
-    JSONObject item = noteObject(id, "", text == null ? "" : text);
+    JSONObject item = noteObject(id, "", text == null ? "" : text, false);
     data.add(item);
     save(data);
-    return new Note(id, titleFromText(text), text == null ? "" : text);
+    return noteFromJSON(item, id);
   }
 
   public void update(int id, String text) throws RecordStoreException {
@@ -75,17 +86,23 @@ public final class NotesManager {
       JSONObject item = data.getObject(i);
       int itemId = item.getInt("id", i + 1);
       String itemText = itemId == id ? (text == null ? "" : text) : item.getString("text", "");
-      updated.add(noteObject(itemId, item.getString("title", "Note"), itemText));
+      String customTitle = customTitle(item);
+      updated.add(noteObject(itemId, customTitle, itemText, item.getBoolean("pinned", false)));
     }
     save(updated);
   }
 
   public void rename(int id, String title) throws RecordStoreException {
+    updateCustomTitle(id, title);
+  }
+
+  public void updateCustomTitle(int id, String title) throws RecordStoreException {
+    rewriteNote(id, title == null ? "" : title.trim(), null, null);
+  }
+
+  public void togglePinned(int id) throws RecordStoreException {
     JSONObject item = find(notes(), id);
-    if (item != null) {
-      item.put("title", cleanTitle(title));
-      save(notes());
-    }
+    if (item != null) rewriteNote(id, null, null, new Boolean(!item.getBoolean("pinned", false)));
   }
 
   public void remove(int id) throws RecordStoreException {
@@ -100,8 +117,17 @@ public final class NotesManager {
     save(remaining);
   }
 
-  public String exportToDevice(String directory) throws IOException {
-    return writeFile(directory.endsWith("/") ? directory + EXPORT_FILE_NAME : directory + "/" + EXPORT_FILE_NAME, exportData());
+  public String exportToDevice(String directory, Note[] selected, String fileName) throws IOException {
+    String name = fileName == null ? "" : fileName.trim();
+    while (name.indexOf('/') != -1 || name.indexOf('\\') != -1) {
+      int slash = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
+      name = name.substring(slash + 1);
+    }
+    if (name.length() == 0) name = EXPORT_FILE_NAME;
+    if (!endsWithIgnoreCase(name, ".vnt")) name += ".vnt";
+    String path = directory.endsWith("/") ? directory + name : directory + "/" + name;
+    writeFile(path, exportData(selected));
+    return path;
   }
 
   public int importFromDevice(String path) throws Exception {
@@ -111,7 +137,7 @@ public final class NotesManager {
     int count = 0;
     for (int i = 0; i < imported.size(); i++) {
       JSONObject source = imported.getObject(i);
-      JSONObject item = noteObject(nextId(data), source.getString("title", "Note"), source.getString("text", ""));
+      JSONObject item = noteObject(nextId(data), "", source.getString("text", ""), false);
       data.add(item);
       count++;
     }
@@ -133,7 +159,7 @@ public final class NotesManager {
     }
     entries = new JSONArray();
     if (raw != null && raw.length() > 0) {
-      entries.add(noteObject(1, "Note 1", raw));
+       entries.add(noteObject(1, "", raw, false));
       try {
         save(entries);
       } catch (Exception e) {
@@ -159,12 +185,12 @@ public final class NotesManager {
       } catch (Exception e) {
       }
     }
-    result.add(noteObject(0, titleFromPath(path), text));
+    result.add(noteObject(0, "", text, false));
     return result;
   }
 
-  private String exportData() {
-    Note[] all = getNotes();
+  private String exportData(Note[] all) {
+    if (all == null) all = new Note[0];
     StringBuffer output = new StringBuffer();
     for (int i = 0; i < all.length; i++) {
       output.append("BEGIN:VNOTE\nVERSION:1.1\nBODY;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:");
@@ -196,7 +222,7 @@ public final class NotesManager {
               block.indexOf("ENCODING=QUOTED-PRINTABLE", body) >= 0
                   ? decodeQuotedPrintable(value)
                   : unescapeVNote(value);
-          result.add(noteObject(0, "Note", noteText));
+          result.add(noteObject(0, "", noteText, false));
         }
       }
       position = end + 9;
@@ -261,19 +287,47 @@ public final class NotesManager {
     return output.toString();
   }
 
-  private static JSONObject noteObject(int id, String title, String text) {
+  private static JSONObject noteObject(int id, String title, String text, boolean pinned) {
     JSONObject item = new JSONObject();
     item.put("id", id);
-    item.put("title", cleanTitle(title));
+    item.put("customTitle", title == null ? "" : title);
     item.put("text", text == null ? "" : text);
+    item.put("pinned", pinned);
     return item;
   }
 
-  private static String cleanTitle(String title) {
-    if (title == null || title.trim().length() == 0) {
-      return "Note";
+  private static Note noteFromJSON(JSONObject item, int fallbackId) {
+    String text = item.getString("text", "");
+    String customTitle = customTitle(item);
+    String title = customTitle.length() > 0 ? customTitle : titleFromText(text);
+    return new Note(item.getInt("id", fallbackId), title, text, item.getBoolean("pinned", false), customTitle);
+  }
+
+  private static String customTitle(JSONObject item) {
+    String title = item.getString("customTitle", "");
+    if (title.length() > 0) return title;
+    title = item.getString("title", "");
+    if ("Note".equals(title) || "Note 1".equals(title)) return "";
+    return title;
+  }
+
+  private void rewriteNote(int id, String customTitle, String text, Boolean pinned) throws RecordStoreException {
+    JSONArray old = notes();
+    JSONArray updated = new JSONArray();
+    for (int i = 0; i < old.size(); i++) {
+      JSONObject item = old.getObject(i);
+      int currentId = item.getInt("id", i + 1);
+      String currentTitle = customTitle(item);
+      String currentText = item.getString("text", "");
+      boolean currentPinned = item.getBoolean("pinned", false);
+      if (currentId == id) {
+        if (customTitle != null) currentTitle = customTitle;
+        if (text != null) currentText = text;
+        if (pinned != null) currentPinned = pinned.booleanValue();
+      }
+      updated.add(noteObject(currentId, currentTitle, currentText, currentPinned));
     }
-    return title.trim();
+    save(updated);
   }
 
   private static String titleFromText(String text) {

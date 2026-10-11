@@ -10,6 +10,7 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.ImageItem;
+import javax.microedition.lcdui.List;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
 import midplay.model.Tracks;
@@ -22,6 +23,7 @@ import midplay.store.Configuration;
 import midplay.store.DownloadManager;
 import midplay.store.FavoritesManager;
 import midplay.store.LastSessionManager;
+import midplay.store.NotesManager;
 import midplay.store.RecentManager;
 import midplay.store.SettingsManager;
 import midplay.ui.Commands;
@@ -43,7 +45,7 @@ import midplay.util.Lang;
 import midplay.util.Utils;
 import mpgram.MP;
 
-public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
+public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost, MP.Host {
   private static NetworkOperation operation;
   public static String APP_VERSION = "1.0";
   private static PlayerScreen playerScreen;
@@ -80,6 +82,10 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
   private final Navigator navigator;
   private final MenuManager menuManager;
   private MainMenuScreen mainMenu;
+  private boolean initialized;
+  private Displayable displayBeforePause;
+  private boolean resumePlaybackAfterPause;
+  private long interruptedPlaybackPosition;
 
   public MIDPlay() {
     instance = this;
@@ -173,6 +179,19 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
     navigator.forward(new OpenUriScreen(navigator));
   }
 
+  public void openNotePickerForMPGram(String peerId, String topMessageId) {
+    Display.getDisplay(this).setCurrent(new MPGramNotePicker(peerId, topMessageId));
+  }
+
+  public boolean saveMPGramMessageAsNote(String text) {
+    try {
+      NotesManager.getInstance().create(text == null ? "" : text);
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
   public void openExternalUri(String uri) throws ConnectionNotFoundException {
     platformRequest(uri);
   }
@@ -196,6 +215,29 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
   }
 
   protected void startApp() throws MIDletStateChangeException {
+    if (initialized) {
+      final Displayable restore = displayBeforePause;
+      final boolean resumePlayback = resumePlaybackAfterPause;
+      final long position = interruptedPlaybackPosition;
+      displayBeforePause = null;
+      resumePlaybackAfterPause = false;
+      interruptedPlaybackPosition = 0L;
+      Display.getDisplay(this).callSerially(
+          new Runnable() {
+            public void run() {
+              if (restore != null) {
+                Display.getDisplay(MIDPlay.this).setCurrent(restore);
+              }
+              if (resumePlayback && playerScreen != null) {
+                PlayerGUI gui = playerScreen.getPlayerGUI();
+                if (gui != null) {
+                  gui.resumeAfterInterruption(position);
+                }
+              }
+            }
+          });
+      return;
+    }
     APP_VERSION = getAppProperty("MIDlet-Version");
     settingsManager.loadSettings();
     loadIcons();
@@ -212,6 +254,7 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
           });
     }
     autoCheckForUpdate();
+    initialized = true;
   }
 
   private void maybeOfferResume() {
@@ -238,11 +281,12 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost {
 
   public void pauseApp() {
     try {
+      displayBeforePause = Display.getDisplay(this).getCurrent();
       if (playerScreen != null) {
         PlayerGUI gui = playerScreen.getPlayerGUI();
         if (gui != null) {
-          gui.pause();
-          gui.deallocate();
+          interruptedPlaybackPosition = gui.pauseForInterruption();
+          resumePlaybackAfterPause = interruptedPlaybackPosition >= 0L;
         }
       }
     } catch (Exception e) {

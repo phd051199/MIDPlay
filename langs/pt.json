@@ -67,10 +67,15 @@
     "mpgram": "MPGram",
     "open_uri": "Abrir..."
   },
+  "mpgram": {
+    "send_note": "Enviar nota"
+  },
   "note": {
     "title": "Bloco de notas",
     "clear": "Limpar",
     "saved": "Nota salva",
+    "save_from_mpgram": "Salvar nota",
+    "save_failed": "Falha ao salvar a nota",
     "export": "Salvar no dispositivo",
     "import": "Importar arquivo",
     "exported": "Salvo em {0}",
@@ -82,7 +87,20 @@
     "edit": "Editar",
     "empty": "Nenhuma nota",
     "save_changes": "Salvar alterações?",
-    "discard": "Descartar"
+    "discard": "Descartar",
+    "search": "Buscar notas",
+    "clear_search": "Limpar busca",
+    "no_search_results": "Nenhuma nota encontrada",
+    "custom_title": "Definir título personalizado",
+    "custom_title_field": "Título",
+    "toggle_pin": "Fixar/desafixar nota",
+    "export_select": "Selecionar notas para exportar",
+    "export_selected": "Exportar selecionadas",
+    "select_all": "Selecionar tudo",
+    "deselect_all": "Desselecionar tudo",
+    "select_at_least_one": "Selecione pelo menos uma nota",
+    "export_filename": "Nome do arquivo exportado",
+    "file_name": "Nome do arquivo"
   },
   "open_uri": {
     "title": "Abrir...",

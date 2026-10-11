@@ -172,28 +172,54 @@ public class Configuration {
   private static Image createNotesIcon() {
     Image image = Image.createImage(36, 36);
     Graphics graphics = image.getGraphics();
-    graphics.setColor(0x3F51B5);
-    graphics.fillRoundRect(6, 3, 24, 30, 3, 3);
-    graphics.setColor(0xFFFFFF);
-    graphics.fillRect(9, 6, 18, 24);
-    graphics.setColor(0x3F51B5);
-    graphics.drawLine(12, 12, 24, 12);
-    graphics.drawLine(12, 17, 24, 17);
-    graphics.drawLine(12, 22, 21, 22);
+    // Paper shadow and page silhouette.
+    graphics.setColor(0x243447);
+    graphics.fillRoundRect(7, 5, 23, 29, 3, 3);
+    graphics.setColor(0xF4F7FB);
+    graphics.fillRoundRect(5, 3, 23, 29, 3, 3);
+    graphics.setColor(0x52708F);
+    graphics.drawRoundRect(5, 3, 23, 29, 3, 3);
+    // Folded corner.
+    graphics.setColor(0xDCE6F0);
+    graphics.fillTriangle(20, 4, 27, 11, 20, 11);
+    graphics.setColor(0x52708F);
+    graphics.drawLine(20, 4, 20, 11);
+    graphics.drawLine(20, 11, 27, 11);
+    // Text lines and writing pencil.
+    graphics.setColor(0x4B83B5);
+    graphics.fillRect(9, 14, 14, 2);
+    graphics.fillRect(9, 19, 12, 2);
+    graphics.fillRect(9, 24, 9, 2);
+    graphics.setColor(0xF0A83A);
+    graphics.drawLine(19, 29, 29, 19);
+    graphics.drawLine(20, 30, 30, 20);
+    graphics.setColor(0xD37C35);
+    graphics.drawLine(29, 19, 30, 20);
     return image;
   }
 
   private static Image createFileExplorerIcon() {
     Image image = Image.createImage(36, 36);
     Graphics graphics = image.getGraphics();
-    graphics.setColor(0xF9A825);
-    graphics.fillRoundRect(4, 10, 28, 20, 3, 3);
-    graphics.fillRoundRect(6, 6, 13, 8, 2, 2);
-    graphics.setColor(0xFFF59D);
-    graphics.fillRect(7, 14, 22, 13);
-    graphics.setColor(0x546E7A);
-    graphics.drawLine(10, 18, 25, 18);
-    graphics.drawLine(10, 22, 22, 22);
+    // Distinct folder silhouette with a visible tab and blue front panel.
+    graphics.setColor(0xB97920);
+    graphics.fillRoundRect(3, 11, 30, 21, 4, 4);
+    graphics.setColor(0xE7A832);
+    graphics.fillRoundRect(4, 8, 15, 8, 3, 3);
+    graphics.setColor(0xF4C65E);
+    graphics.fillRoundRect(3, 12, 30, 18, 4, 4);
+    graphics.setColor(0x397DB5);
+    graphics.fillRoundRect(7, 16, 22, 12, 2, 2);
+    graphics.setColor(0xDCEEFF);
+    graphics.fillRect(10, 19, 10, 2);
+    graphics.fillRect(10, 23, 7, 2);
+    // Small magnifier indicates browsing/searching files.
+    graphics.setColor(0xFFFFFF);
+    graphics.drawArc(20, 3, 10, 10, 0, 360);
+    graphics.drawLine(28, 12, 33, 17);
+    graphics.setColor(0x376B93);
+    graphics.drawArc(21, 4, 8, 8, 0, 360);
+    graphics.drawLine(28, 11, 32, 15);
     return image;
   }
 
