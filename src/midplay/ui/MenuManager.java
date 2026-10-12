@@ -117,7 +117,8 @@ public class MenuManager {
     defaultConfig.add(createMenuItem(Configuration.MENU_MPGRAM, 8, true));
     defaultConfig.add(createMenuItem(Configuration.MENU_NOTES, 9, true));
     defaultConfig.add(createMenuItem(Configuration.MENU_SETTINGS, 10, true));
-    defaultConfig.add(createMenuItem(Configuration.MENU_ABOUT, 11, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_GITHUB, 11, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_ABOUT, 12, true));
     return defaultConfig;
   }
 

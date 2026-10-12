@@ -11,6 +11,7 @@ import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.TextBox;
 import javax.microedition.lcdui.TextField;
 import midplay.model.Track;
 import midplay.model.Tracks;
@@ -33,6 +34,7 @@ public final class FileBrowserScreen extends BaseList {
   }
 
   private static final String ROOT_PATH = "file:///";
+  private static String lastSessionPath;
   private static final int KIND_UP = 0;
   private static final int KIND_DIR = 1;
   private static final int KIND_AUDIO = 2;
@@ -52,6 +54,7 @@ public final class FileBrowserScreen extends BaseList {
 
   private String currentPath;
   private String currentTitle;
+  private String searchQuery = "";
   private String[] rowPaths = new String[0];
   private int[] rowKinds = new int[0];
   private Vector audioPaths = new Vector();
@@ -61,9 +64,11 @@ public final class FileBrowserScreen extends BaseList {
   private final Command selectDirectoryCommand;
   private final Command renameCommand;
   private final Command deleteCommand;
+  private final Command searchCommand;
+  private final Command clearSearchCommand;
 
   public FileBrowserScreen(Navigator navigator) {
-    this(navigator, SettingsManager.getInstance().getCurrentDownloadPath(), null, null);
+    this(navigator, sessionStartPath(), null, null);
   }
 
   public FileBrowserScreen(Navigator navigator, String path) {
@@ -71,11 +76,11 @@ public final class FileBrowserScreen extends BaseList {
   }
 
   public FileBrowserScreen(Navigator navigator, FileSelectionListener listener) {
-    this(navigator, SettingsManager.getInstance().getCurrentDownloadPath(), listener, null);
+    this(navigator, sessionStartPath(), listener, null);
   }
 
   public FileBrowserScreen(Navigator navigator, DirectorySelectionListener listener) {
-    this(navigator, SettingsManager.getInstance().getCurrentDownloadPath(), null, listener);
+    this(navigator, sessionStartPath(), null, listener);
   }
 
   private FileBrowserScreen(
@@ -90,12 +95,17 @@ public final class FileBrowserScreen extends BaseList {
         directoryListener == null ? null : new Command(Lang.tr("note.save_here"), Command.OK, 0);
     renameCommand = new Command(Lang.tr("files.rename"), Command.SCREEN, 6);
     deleteCommand = new Command(Lang.tr("files.delete"), Command.SCREEN, 7);
+    searchCommand = new Command(Lang.tr("files.search"), Command.SCREEN, 5);
+    clearSearchCommand = new Command(Lang.tr("files.clear_search"), Command.SCREEN, 8);
     this.currentPath = normalizePath(path);
+    lastSessionPath = this.currentPath;
     this.currentTitle = Lang.tr("menu.files");
     addCommand(Commands.filesRoot());
     addCommand(Commands.addToQueue());
     addCommand(Commands.addAllToQueue());
     addCommand(Commands.playerAddToPlaylist());
+    addCommand(searchCommand);
+    addCommand(clearSearchCommand);
     addCommand(renameCommand);
     addCommand(deleteCommand);
     if (selectDirectoryCommand != null) {
@@ -120,6 +130,7 @@ public final class FileBrowserScreen extends BaseList {
   private void startLoad(final int restoreIndex) {
     final int key = ++loadKey;
     final String path = currentPath;
+    final String filter = searchQuery;
     this.deleteAll();
     this.append(Lang.tr("status.loading"), null);
     new Thread(
@@ -152,7 +163,7 @@ public final class FileBrowserScreen extends BaseList {
                     }
                     if (name.endsWith("/") || name.endsWith(":")) {
                       dirs.addElement(name);
-                    } else {
+                    } else if (filter.length() == 0 || Utils.indexOfIgnoreCase(name, filter) >= 0) {
                       files.addElement(name);
                     }
                   }
@@ -209,6 +220,7 @@ public final class FileBrowserScreen extends BaseList {
     }
 
     currentPath = path;
+    lastSessionPath = path;
     currentTitle = dirTitle(path);
     rowPaths = paths;
     rowKinds = kinds;
@@ -265,6 +277,11 @@ public final class FileBrowserScreen extends BaseList {
       queueAll();
     } else if (c == Commands.playerAddToPlaylist()) {
       addSelectedToPlaylist();
+    } else if (c == searchCommand) {
+      promptSearch();
+    } else if (c == clearSearchCommand) {
+      searchQuery = "";
+      startLoad(0);
     } else if (c == renameCommand) {
       promptRename();
     } else if (c == deleteCommand) {
@@ -274,7 +291,34 @@ public final class FileBrowserScreen extends BaseList {
 
   private void navigateTo(String path) {
     currentPath = normalizePath(path);
+    lastSessionPath = currentPath;
+    searchQuery = "";
     startLoad(0);
+  }
+
+  private void promptSearch() {
+    final TextBox box = new TextBox(Lang.tr("files.search"), searchQuery, 100, TextField.ANY);
+    box.addCommand(Commands.ok());
+    box.addCommand(Commands.cancel());
+    box.setCommandListener(
+        new CommandListener() {
+          public void commandAction(Command command, Displayable displayable) {
+            if (command == Commands.ok()) {
+              searchQuery = box.getString().trim();
+              navigator.back();
+              startLoad(0);
+            } else if (command == Commands.cancel()) {
+              navigator.back();
+            }
+          }
+        });
+    navigator.forward(box);
+  }
+
+  private static String sessionStartPath() {
+    return lastSessionPath != null
+        ? lastSessionPath
+        : SettingsManager.getInstance().getCurrentDownloadPath();
   }
 
   private boolean isSelectedFile() {

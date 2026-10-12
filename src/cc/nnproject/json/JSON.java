@@ -62,7 +62,7 @@ public class JSON {
     return (JSONArray) parseJSON(text.trim());
   }
 
-  static Object parseJSON(String str) throws JSONException {
+  public static Object parseJSON(String str) throws JSONException {
     char first = str.charAt(0);
     int length;
     char last = str.charAt(length = str.length() - 1);

@@ -29,7 +29,9 @@
   "files": {
     "empty": "Brak plików w tym folderze",
     "not_audio": "Nie jest plikiem audio",
-    "root": "Przejdź do katalogu głównego"
+    "root": "Przejdź do katalogu głównego",
+    "search": "Szukaj plików",
+    "clear_search": "Wyczyść wyszukiwanie plików"
   },
   "language": {
     "en": "English",

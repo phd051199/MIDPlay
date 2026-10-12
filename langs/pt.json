@@ -31,6 +31,8 @@
     "not_audio": "Não é um arquivo de áudio",
     "root": "Ir para a raiz",
     "rename": "Renomear arquivo",
+    "search": "Buscar arquivos",
+    "clear_search": "Limpar busca de arquivos",
     "delete": "Excluir arquivo",
     "name": "Nome do arquivo",
     "confirm": {
@@ -65,10 +67,23 @@
     "equalizer": "Equalizador",
     "notes": "Bloco de notas",
     "mpgram": "MPGram",
+    "github": "GitHub",
     "open_uri": "Abrir..."
   },
   "mpgram": {
-    "send_note": "Enviar nota"
+    "send_note": "Enviar nota",
+    "import_session_note": "Importar sessão de uma nota",
+    "session_code_note_title": "Código de sessão do MPGram"
+  },
+  "github": {
+    "import_token_file": "Importar token de arquivo",
+    "import_token_note": "Importar token de nota do MIDPlay",
+    "token_empty": "O arquivo ou a nota não contém um token"
+  },
+  "github": {
+    "import_token_file": "Importar token de arquivo",
+    "import_token_note": "Importar token de nota do MIDPlay",
+    "token_empty": "O arquivo ou a nota não contém um token"
   },
   "note": {
     "title": "Bloco de notas",

@@ -44,8 +44,9 @@ import midplay.ui.screen.NotesScreen;
 import midplay.util.Lang;
 import midplay.util.Utils;
 import mpgram.MP;
+import githubj2me.GH;
 
-public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost, MP.Host {
+public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost, MP.Host, GH.Host {
   private static NetworkOperation operation;
   public static String APP_VERSION = "1.0";
   private static PlayerScreen playerScreen;
@@ -167,6 +168,13 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost, MP.Host 
           }
         });
     menuManager.registerAction(
+        Configuration.MENU_GITHUB,
+        new Runnable() {
+          public void run() {
+            openGitHubJ2ME();
+          }
+        });
+    menuManager.registerAction(
         Configuration.MENU_NOTES,
         new Runnable() {
           public void run() {
@@ -183,6 +191,10 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost, MP.Host 
     Display.getDisplay(this).setCurrent(new MPGramNotePicker(peerId, topMessageId));
   }
 
+  public void openSessionNotePickerForMPGram() {
+    Display.getDisplay(this).setCurrent(new MPGramSessionNotePicker());
+  }
+
   public boolean saveMPGramMessageAsNote(String text) {
     try {
       NotesManager.getInstance().create(text == null ? "" : text);
@@ -192,12 +204,40 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost, MP.Host 
     }
   }
 
+  public boolean saveMPGramSessionCodeAsNote(String text) {
+    try {
+      NotesManager.Note note = NotesManager.getInstance().create(text == null ? "" : text);
+      NotesManager.getInstance().updateCustomTitle(note.id, Lang.tr("mpgram.session_code_note_title"));
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  public void openTokenNotePicker(int apiMode) {
+    Display.getDisplay(this).setCurrent(new GitHubTokenNotePicker(apiMode));
+  }
+
+  public String getHostLanguage() {
+    return Lang.getCurrentLang();
+  }
+
   public void openExternalUri(String uri) throws ConnectionNotFoundException {
     platformRequest(uri);
   }
 
   private void openMPGram() {
     MP.open(
+        this,
+        new Runnable() {
+          public void run() {
+            Display.getDisplay(MIDPlay.this).setCurrent(mainMenu);
+          }
+        });
+  }
+
+  private void openGitHubJ2ME() {
+    GH.open(
         this,
         new Runnable() {
           public void run() {

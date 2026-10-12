@@ -43,6 +43,7 @@ public class Configuration {
   public static final String MENU_DOWNLOADS = "menu.downloads";
   public static final String MENU_FILES = "menu.files";
   public static final String MENU_MPGRAM = "menu.mpgram";
+  public static final String MENU_GITHUB = "menu.github";
   public static final String MENU_OPEN_URI = "menu.open_uri";
   public static final String MENU_NOTES = "menu.notes";
   public static final String MENU_NOW_PLAYING = "menu.now_playing";
@@ -124,6 +125,7 @@ public class Configuration {
   public static Image recentIcon;
   public static Image equalizerIcon;
   public static Image mpgramIcon;
+  public static Image githubIcon;
   public static Image notesIcon;
   public static Image fileExplorerIcon;
   public static Image folderBadgeIcon;
@@ -160,6 +162,7 @@ public class Configuration {
     recentIcon = region(7, 36, 36);
     equalizerIcon = region(8, 36, 36);
     mpgramIcon = Utils.resizeImageToFit(Image.createImage("/m.png"), 36, 36);
+    githubIcon = Utils.resizeImageToFit(Image.createImage("/g.png"), 36, 36);
     notesIcon = createNotesIcon();
     fileExplorerIcon = createFileExplorerIcon();
 

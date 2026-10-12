@@ -31,6 +31,8 @@
     "not_audio": "Not an audio file",
     "root": "Go to root",
     "rename": "Rename file",
+    "search": "Search files",
+    "clear_search": "Clear file search",
     "delete": "Delete file",
     "name": "File name",
     "confirm": {
@@ -65,10 +67,23 @@
     "equalizer": "Equalizer",
     "notes": "Notepad",
     "mpgram": "MPGram",
+    "github": "GitHub",
     "open_uri": "Open..."
   },
   "mpgram": {
-    "send_note": "Send note"
+    "send_note": "Send note",
+    "import_session_note": "Import session from note",
+    "session_code_note_title": "MPGram session code"
+  },
+  "github": {
+    "import_token_file": "Import token from file",
+    "import_token_note": "Import token from MIDPlay note",
+    "token_empty": "The file or note does not contain a token"
+  },
+  "github": {
+    "import_token_file": "Import token from file",
+    "import_token_note": "Import token from MIDPlay note",
+    "token_empty": "The token file/note is empty"
   },
   "note": {
     "title": "Notepad",

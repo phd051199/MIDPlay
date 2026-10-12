@@ -30,7 +30,11 @@ public class JSONArray extends AbstractJSON {
     elements = new Object[10];
   }
 
-  Object get(int index) throws JSONException {
+  public JSONArray(int capacity) {
+    elements = new Object[capacity < 1 ? 1 : capacity];
+  }
+
+  public Object get(int index) throws JSONException {
     if (index < 0 || index >= count) {
       throw new JSONException("Index out of bounds: " + index);
     }
@@ -56,11 +60,65 @@ public class JSONArray extends AbstractJSON {
     }
   }
 
+  public String getString(int index) throws JSONException {
+    Object value = get(index);
+    return value == null || value instanceof String ? (String) value : String.valueOf(value);
+  }
+
+  public JSONArray getArray(int index) throws JSONException {
+    try {
+      return (JSONArray) get(index);
+    } catch (ClassCastException e) {
+      throw new JSONException("Not array at " + index);
+    }
+  }
+
+  public void put(int index, Object value) {
+    if (index < 0 || index >= count) {
+      throw new JSONException("Index out of bounds: " + index);
+    }
+    elements[index] = value == null ? JSON.json_null : value;
+  }
+
+  public void remove(int index) {
+    if (index < 0 || index >= count) {
+      throw new JSONException("Index out of bounds: " + index);
+    }
+    count--;
+    System.arraycopy(elements, index + 1, elements, index, count - index);
+    elements[count] = null;
+  }
+
+  public static JSONArray parseArray(String text) {
+    return JSON.getArray(text);
+  }
+
   public void add(AbstractJSON json) {
     if (json == this) {
       throw new JSONException();
     }
     addElement(json);
+  }
+
+  public void add(Object value) {
+    if (value == this) {
+      throw new JSONException();
+    }
+    addElement(value == null ? JSON.json_null : value);
+  }
+
+  public boolean has(Object value) {
+    for (int i = 0; i < count; i++) {
+      Object item = elements[i];
+      if (item == value || (item != null && item.equals(value))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public String format(int indent) {
+    return build();
   }
 
   public int size() {

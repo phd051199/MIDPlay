@@ -29,7 +29,9 @@
   "files": {
     "empty": "Bu klasörde dosya yok",
     "not_audio": "Ses dosyası değil",
-    "root": "Köke git"
+    "root": "Köke git",
+    "search": "Dosyaları ara",
+    "clear_search": "Dosya aramasını temizle"
   },
   "language": {
     "en": "English",

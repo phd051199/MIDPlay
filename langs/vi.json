@@ -29,7 +29,9 @@
   "files": {
     "empty": "Không có tệp nào trong thư mục này",
     "not_audio": "Không phải tệp âm thanh",
-    "root": "Đi đến thư mục gốc"
+    "root": "Đi đến thư mục gốc",
+    "search": "Tìm tệp",
+    "clear_search": "Xóa tìm kiếm tệp"
   },
   "language": {
     "en": "English",

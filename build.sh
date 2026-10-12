@@ -29,6 +29,8 @@ COMPILED_DIR="$BUILD_DIR/compiled"
 MPGRAM_DIR="$BUILD_DIR/mpgram"
 MPGRAM_SOURCE_DIR="${MPGRAM_SOURCE_DIR:-third_party/mpgram}"
 MPGRAM_RES_DIR="$BUILD_DIR/mpgram-res"
+GITHUB_SOURCE_DIR="third_party/github-j2me"
+GITHUB_PREP_DIR="$BUILD_DIR/github-j2me"
 JSR135_STUB_DIR="tools/jsr135-api"
 JSR135_STUB_JAR="$BUILD_DIR/jsr135-api.jar"
 DIST_DIR="dist"
@@ -121,6 +123,12 @@ rm -rf "$BUILD_DIR"; mkdir -p "$COMPILED_DIR" "$DIST_DIR"
 echo "• Prepare embedded MPGram (generic edition)"
 python3 tools/prepare_mpgram.py "$MPGRAM_SOURCE_DIR" "$MPGRAM_DIR"
 
+echo "• Prepare embedded GitHub-j2me"
+python3 tools/prepare_github_j2me.py "$GITHUB_SOURCE_DIR" "$GITHUB_PREP_DIR"
+cp -r "$GITHUB_PREP_DIR/gh2me" "$MPGRAM_RES_DIR/"
+cp "$GITHUB_PREP_DIR/g.png" "$GITHUB_PREP_DIR/g.svg" \
+  "$GITHUB_PREP_DIR/gh2me-file.png" "$GITHUB_PREP_DIR/gh2me-folder.png" "$MPGRAM_RES_DIR/"
+
 echo "• Prepare JSR-135 recording API"
 mkdir -p "$BUILD_DIR/jsr135-api"
 "$JAVAC" -source 1.3 -target 1.3 -g:none -bootclasspath "$BOOTCP" \
@@ -130,7 +138,7 @@ mkdir -p "$BUILD_DIR/jsr135-api"
 BOOTCP="$BOOTCP:$JSR135_STUB_JAR"
 
 echo "• Collect sources"
-find src "$MPGRAM_DIR" -name '*.java' > "$BUILD_DIR/sources.txt"
+find src "$MPGRAM_DIR" "$GITHUB_PREP_DIR" -name '*.java' > "$BUILD_DIR/sources.txt"
 echo "    $(wc -l < "$BUILD_DIR/sources.txt" | tr -d ' ') files"
 
 echo "• Compile (JDK 8, -source/-target 1.3, CLDC bootclasspath)"

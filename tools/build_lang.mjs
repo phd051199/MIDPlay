@@ -76,10 +76,11 @@ function generateHyperOptimized(langs, langCodes, allKeys) {
 
   for (const code of langCodes) {
     const map = langs[code];
-    const varName = code.toUpperCase() + "_VALS";
+    const className = code.toUpperCase();
 
     b.push("");
-    b.push(`  private static final String[] ${varName} = {`);
+    b.push(`  private static class ${className} {`);
+    b.push("    static final String[] VALUES = {");
 
     const valueChunks = [];
     for (let i = 0; i < allKeys.length; i += 5) {
@@ -92,10 +93,11 @@ function generateHyperOptimized(langs, langCodes, allKeys) {
           return escapeJava(finalVal);
         })
         .join(", ");
-      valueChunks.push("    " + chunk + (i + 5 < allKeys.length ? "," : ""));
+      valueChunks.push("      " + chunk + (i + 5 < allKeys.length ? "," : ""));
     }
     b.push(valueChunks.join("\n"));
-    b.push("  };");
+    b.push("    };");
+    b.push("  }");
   }
 
   b.push("");
@@ -105,15 +107,16 @@ function generateHyperOptimized(langs, langCodes, allKeys) {
   b.push("    } else {");
   b.push("      d.clear();");
   b.push("    }");
-  b.push("    String[] vals = EN_VALS;"); // default
-
-  for (const code of langCodes) {
-    if (code !== "en") {
-      b.push(`    if ("${code}".equals(code)) {`);
-      b.push(`      vals = ${code.toUpperCase()}_VALS;`);
-      b.push("    }");
-    }
-  }
+  b.push("    String[] vals;");
+  const selectableLangs = langCodes.filter((code) => code !== "en");
+  selectableLangs.forEach((code, index) => {
+    b.push(`    ${index === 0 ? "if" : "else if"} ("${code}".equals(code)) {`);
+    b.push(`      vals = ${code.toUpperCase()}.VALUES;`);
+    b.push("    }");
+  });
+  b.push(`    ${selectableLangs.length ? "else" : ""} {`);
+  b.push("      vals = EN.VALUES;");
+  b.push("    }");
 
   b.push("    for (int j = 0; j < KEYS.length; j++) {");
   b.push("      d.put(KEYS[j], vals[j]);");
