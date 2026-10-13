@@ -18,6 +18,10 @@ public final class DownloadsScreen extends BaseList {
   private final DownloadManager downloadManager = DownloadManager.getInstance();
   private Track[] tracks = new Track[0];
   private int loadKey = 0;
+  private final Command selectMultipleCommand =
+      new Command(Lang.tr("action.select"), Command.SCREEN, 1);
+  private final Command inProgressCommand =
+      new Command(Lang.tr("download.queue"), Command.SCREEN, 7);
 
   public DownloadsScreen(Navigator navigator) {
     super(Lang.tr("menu.downloads"), navigator);
@@ -26,6 +30,8 @@ public final class DownloadsScreen extends BaseList {
     addCommand(Commands.downloadDeleteAll());
     addCommand(Commands.downloadRefresh());
     addCommand(Commands.downloadLink());
+    addCommand(selectMultipleCommand);
+    addCommand(inProgressCommand);
     populateItems();
   }
 
@@ -108,6 +114,13 @@ public final class DownloadsScreen extends BaseList {
       refresh();
     } else if (c == Commands.downloadLink()) {
       navigator.forward(new LocalFileLinkScreen(navigator));
+    } else if (c == selectMultipleCommand) {
+      navigator.forward(
+          new MultiTrackSelectScreen(
+              navigator, Lang.tr("menu.downloads"), tracks,
+              MultiTrackSelectScreen.SOURCE_DOWNLOADS, null, this));
+    } else if (c == inProgressCommand) {
+      navigator.forward(new DownloadQueueScreen(navigator));
     }
   }
 

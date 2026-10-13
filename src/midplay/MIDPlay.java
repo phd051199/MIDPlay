@@ -218,6 +218,36 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost, MP.Host,
     Display.getDisplay(this).setCurrent(new GitHubTokenNotePicker(apiMode));
   }
 
+  public void openMIDPlayNowPlayingFromMPGram() {
+    openNowPlaying();
+  }
+
+  public void openMIDPlayNowPlayingFromGH() {
+    openNowPlaying();
+  }
+
+  public void openGitHubLinkFromMPGram(final String url) {
+    GH.open(
+        this,
+        new Runnable() {
+          public void run() {
+            MP.returnToCurrentChat();
+          }
+        });
+    GH.openExternalUrl(url);
+  }
+
+  public void openTelegramLink(String url) {
+    MP.openLinkFromHost(
+        this,
+        url,
+        new Runnable() {
+          public void run() {
+            GH.returnToCurrent();
+          }
+        });
+  }
+
   public String getHostLanguage() {
     return Lang.getCurrentLang();
   }

@@ -77,7 +77,7 @@ def language_constants(mpgram, destination, resources):
     constants.append("}")
     (destination / "LangConstants.java").write_text("\n".join(constants) + "\n", encoding="utf-8")
     locale_dir = resources / "l"
-    locale_dir.mkdir(parents=True)
+    locale_dir.mkdir(parents=True, exist_ok=True)
     for locale_file in (mpgram / "langs").glob("*.jsonc"):
         if os.environ.get("MPGRAM_FORCE_ENGLISH") == "1" and locale_file.stem != "en":
             continue

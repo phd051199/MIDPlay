@@ -3,6 +3,7 @@ package midplay.ui;
 import javax.microedition.lcdui.AlertType;
 import midplay.model.Track;
 import midplay.store.DownloadManager;
+import midplay.store.DownloadQueueManager;
 import midplay.util.Lang;
 
 public final class DownloadActions {
@@ -51,6 +52,14 @@ public final class DownloadActions {
                 });
           }
         });
+  }
+
+  public static void downloadTracks(final Navigator navigator, final Track[] tracks) {
+    if (tracks == null || tracks.length == 0) {
+      navigator.showAlert(Lang.tr("bulk.select_empty"), AlertType.INFO);
+      return;
+    }
+    DownloadQueueManager.getInstance().enqueue(navigator, tracks);
   }
 
   private DownloadActions() {}

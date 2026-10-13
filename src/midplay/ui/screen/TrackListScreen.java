@@ -32,6 +32,7 @@ public class TrackListScreen extends BaseList {
   private int nowPlayingIndex = -1;
   private Timer markerTimer;
   private final Command reorderTracksCommand;
+  private final Command selectMultipleCommand;
   private boolean reorderMode;
   private int reorderPick = -1;
   private Track[] reorderTracks;
@@ -46,6 +47,7 @@ public class TrackListScreen extends BaseList {
     this.title = title;
     this.playlist = playlist;
     reorderTracksCommand = new Command(Lang.tr("playlist.reorder_tracks"), Command.SCREEN, 5);
+    selectMultipleCommand = new Command(Lang.tr("action.select"), Command.SCREEN, 9);
     addCommand(Commands.addToQueue());
     addCommand(Commands.playerAddToPlaylist());
     addCommand(Commands.download());
@@ -54,6 +56,7 @@ public class TrackListScreen extends BaseList {
       addCommand(Commands.playlistRemove());
       addCommand(reorderTracksCommand);
     }
+    addCommand(selectMultipleCommand);
     populateItems();
   }
 
@@ -154,6 +157,10 @@ public class TrackListScreen extends BaseList {
       downloadSelected();
     } else if (c == reorderTracksCommand) {
       startReorder();
+    } else if (c == selectMultipleCommand) {
+      int source = playlist != null && playlist.isCustom()
+          ? MultiTrackSelectScreen.SOURCE_PLAYLIST : MultiTrackSelectScreen.SOURCE_TRACKS;
+      navigator.forward(new MultiTrackSelectScreen(navigator, title, tracks, source, playlist, this));
     }
   }
 
@@ -171,6 +178,7 @@ public class TrackListScreen extends BaseList {
     removeCommand(Commands.playerAddToPlaylist());
     removeCommand(Commands.download());
     removeCommand(Commands.details());
+    removeCommand(selectMultipleCommand);
     addCommand(Commands.formSave());
     addCommand(Commands.formCancel());
     navigator.showAlert(Lang.tr("settings.reorder.instructions"), AlertType.INFO);
@@ -221,6 +229,7 @@ public class TrackListScreen extends BaseList {
     addCommand(Commands.playerAddToPlaylist());
     addCommand(Commands.download());
     addCommand(Commands.details());
+    addCommand(selectMultipleCommand);
     if (playlist != null && playlist.isCustom()) {
       addCommand(Commands.playlistRemove());
       addCommand(reorderTracksCommand);

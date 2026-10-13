@@ -54,6 +54,7 @@ find_jdk8() {
   fi
   local cand
   for cand in \
+      /usr/lib/jvm/temurin-8* \
       /Library/Java/JavaVirtualMachines/*/Contents/Home \
       /opt/homebrew/opt/openjdk@8/libexec/openjdk.jdk/Contents/Home \
       /opt/homebrew/Cellar/temurin@8/*/libexec/openjdk.jdk/Contents/Home \

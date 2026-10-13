@@ -28,7 +28,11 @@ public abstract class BaseList extends List implements CommandListener {
   private String[] artUrls;
 
   public BaseList(String title, Navigator navigator) {
-    super(title, List.IMPLICIT);
+    this(title, navigator, List.IMPLICIT);
+  }
+
+  protected BaseList(String title, Navigator navigator, int listType) {
+    super(title, listType);
     this.navigator = navigator;
     setupCommands();
     setCommandListener(this);

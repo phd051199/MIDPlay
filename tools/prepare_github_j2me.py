@@ -2,6 +2,7 @@
 """Package GH2ME source and locale assets in MIDPlay-private namespaces."""
 
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -43,6 +44,14 @@ def main():
             text = text.replace("JSONObject.FALSE", "JSON.FALSE")
             target = output / "JSONStream.java"
         else:
+            if java_file.name != "CanvasForm.java":
+                text = re.sub(
+                    r"^(\s*)(\w+)\.setDefaultCommand\((.+)\);$",
+                    r"\1CanvasForm.bindDefaultCommand(\2, \3);",
+                    text,
+                    flags=re.MULTILINE,
+                )
+                text = text.replace("new ChoiceGroup(", "CanvasForm.choiceGroup(")
             text = text.replace("/file.png", "/gh2me-file.png")
             text = text.replace("/folder.png", "/gh2me-folder.png")
             text = text.replace('getResourceAsStream("/l/"', 'getResourceAsStream("/gh2me/l/"')
@@ -58,7 +67,7 @@ def main():
     output.joinpath("LangConstants.java").write_text("\n".join(constants) + "\n", encoding="utf-8")
 
     locale_dir = output / "gh2me" / "l"
-    locale_dir.mkdir(parents=True)
+    locale_dir.mkdir(parents=True, exist_ok=True)
     for locale_file in (root / "langs").glob("*.jsonc"):
         locale = load_jsonc(locale_file)
         values = [escape_locale(locale.get(key, value)) for key, value in messages.items()]

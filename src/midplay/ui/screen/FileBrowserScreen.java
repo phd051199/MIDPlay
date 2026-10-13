@@ -66,6 +66,7 @@ public final class FileBrowserScreen extends BaseList {
   private final Command deleteCommand;
   private final Command searchCommand;
   private final Command clearSearchCommand;
+  private final Command selectMultipleCommand;
 
   public FileBrowserScreen(Navigator navigator) {
     this(navigator, sessionStartPath(), null, null);
@@ -97,6 +98,7 @@ public final class FileBrowserScreen extends BaseList {
     deleteCommand = new Command(Lang.tr("files.delete"), Command.SCREEN, 7);
     searchCommand = new Command(Lang.tr("files.search"), Command.SCREEN, 5);
     clearSearchCommand = new Command(Lang.tr("files.clear_search"), Command.SCREEN, 8);
+    selectMultipleCommand = new Command(Lang.tr("files.select_multiple"), Command.SCREEN, 9);
     this.currentPath = normalizePath(path);
     lastSessionPath = this.currentPath;
     this.currentTitle = Lang.tr("menu.files");
@@ -110,6 +112,8 @@ public final class FileBrowserScreen extends BaseList {
     addCommand(deleteCommand);
     if (selectDirectoryCommand != null) {
       addCommand(selectDirectoryCommand);
+    } else if (fileSelectionListener == null && directorySelectionListener == null) {
+      addCommand(selectMultipleCommand);
     }
     populateItems();
   }
@@ -282,6 +286,8 @@ public final class FileBrowserScreen extends BaseList {
     } else if (c == clearSearchCommand) {
       searchQuery = "";
       startLoad(0);
+    } else if (c == selectMultipleCommand) {
+      openMultiSelect();
     } else if (c == renameCommand) {
       promptRename();
     } else if (c == deleteCommand) {
@@ -313,6 +319,28 @@ public final class FileBrowserScreen extends BaseList {
           }
         });
     navigator.forward(box);
+  }
+
+  private void openMultiSelect() {
+    Vector paths = new Vector();
+    Vector audio = new Vector();
+    for (int i = 0; i < rowPaths.length; i++) {
+      if (rowKinds[i] == KIND_AUDIO || rowKinds[i] == KIND_FILE) {
+        paths.addElement(rowPaths[i]);
+        audio.addElement(rowKinds[i] == KIND_AUDIO ? Boolean.TRUE : Boolean.FALSE);
+      }
+    }
+    String[] selectedPaths = new String[paths.size()];
+    boolean[] selectedAudio = new boolean[paths.size()];
+    for (int i = 0; i < selectedPaths.length; i++) {
+      selectedPaths[i] = (String) paths.elementAt(i);
+      selectedAudio[i] = ((Boolean) audio.elementAt(i)).booleanValue();
+    }
+    if (selectedPaths.length == 0) {
+      navigator.showAlert(Lang.tr("bulk.select_empty"), AlertType.INFO);
+      return;
+    }
+    navigator.forward(new MultiFileSelectScreen(navigator, currentTitle, selectedPaths, selectedAudio, this));
   }
 
   private static String sessionStartPath() {

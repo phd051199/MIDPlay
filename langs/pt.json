@@ -4,7 +4,8 @@
     "cancel": "Cancelar",
     "exit": "Sair",
     "ok": "OK",
-    "save": "Salvar"
+    "save": "Salvar",
+    "select": "Selecionar"
   },
   "app": {
     "name": "MIDPlay"
@@ -33,11 +34,23 @@
     "rename": "Renomear arquivo",
     "search": "Buscar arquivos",
     "clear_search": "Limpar busca de arquivos",
+    "select_multiple": "Selecionar arquivos",
     "delete": "Excluir arquivo",
     "name": "Nome do arquivo",
     "confirm": {
-      "delete": "Excluir este arquivo?"
+      "delete": "Excluir este arquivo?",
+      "delete_selected": "Excluir os arquivos selecionados?"
     }
+  },
+  "bulk": {
+    "select_empty": "Selecione pelo menos um item",
+    "playlist_added": "{0} faixas adicionadas à playlist",
+    "playlist_result": "Adicionadas / já existentes / falhas: {0}",
+    "tracks_deleted": "{0} downloads excluídos",
+    "files_deleted": "{0} arquivos excluídos",
+    "tracks_removed": "{0} faixas removidas da playlist",
+    "download_summary": "Resultado dos downloads: {0}",
+    "download_none": "Não há novas faixas para baixar"
   },
   "language": {
     "en": "English",
@@ -173,6 +186,14 @@
     "play": "Tocar",
     "delete": "Excluir",
     "delete_all": "Excluir Tudo",
+    "queue": "Em andamento",
+    "queue_empty": "Nenhum download em andamento ou aguardando",
+    "queue_active": "Baixando: {0}",
+    "queue_pending": "Aguardando: {0}",
+    "queue_remaining": "{0} na fila",
+    "queue_waiting": "Iniciando {0} downloads selecionados",
+    "queue_finished": "Downloads concluídos (sucesso / falha): {0}",
+    "minimize": "Minimizar",
     "refresh": "Atualizar",
     "link": "Vincular local",
     "link_url": "URL da música",
@@ -211,8 +232,10 @@
     "create": "Criar Playlist",
     "confirm": {
       "delete_with_tracks": "Esta playlist não está vazia. Excluir tudo?",
-      "delete_all": "Excluir todas as playlists e suas músicas?"
+      "delete_all": "Excluir todas as playlists e suas músicas?",
+      "remove_selected": "Remover as faixas selecionadas desta playlist?"
     },
+    "remove_selected": "Remover faixas selecionadas",
     "view_tracks": "Ver Lista de Músicas",
     "delete_all": "Excluir todas as playlists",
     "reorder_tracks": "Reordenar músicas",

@@ -4,7 +4,8 @@
     "cancel": "Cancel",
     "exit": "Exit",
     "ok": "OK",
-    "save": "Save"
+    "save": "Save",
+    "select": "Select"
   },
   "app": {
     "name": "MIDPlay"
@@ -33,11 +34,23 @@
     "rename": "Rename file",
     "search": "Search files",
     "clear_search": "Clear file search",
+    "select_multiple": "Select files",
     "delete": "Delete file",
     "name": "File name",
     "confirm": {
-      "delete": "Delete this file?"
+      "delete": "Delete this file?",
+      "delete_selected": "Delete the selected files?"
     }
+  },
+  "bulk": {
+    "select_empty": "Select at least one item",
+    "playlist_added": "Added {0} tracks to the playlist",
+    "playlist_result": "Added / already present / failed: {0}",
+    "tracks_deleted": "Deleted {0} downloads",
+    "files_deleted": "Deleted {0} files",
+    "tracks_removed": "Removed {0} tracks from the playlist",
+    "download_summary": "Download result: {0}",
+    "download_none": "No new tracks to download"
   },
   "language": {
     "en": "English",
@@ -173,6 +186,14 @@
     "play": "Play",
     "delete": "Delete",
     "delete_all": "Delete All",
+    "queue": "In progress",
+    "queue_empty": "No downloads in progress or waiting",
+    "queue_active": "Downloading: {0}",
+    "queue_pending": "Waiting: {0}",
+    "queue_remaining": "{0} waiting",
+    "queue_waiting": "Starting {0} selected downloads",
+    "queue_finished": "Downloads finished (completed / failed): {0}",
+    "minimize": "Minimize",
     "refresh": "Refresh",
     "link": "Link Local File",
     "link_url": "Track URL",
@@ -211,8 +232,10 @@
     "create": "Create Playlist",
     "confirm": {
       "delete_with_tracks": "This playlist is not empty. Delete all?",
-      "delete_all": "Delete all playlists and their tracks?"
+      "delete_all": "Delete all playlists and their tracks?",
+      "remove_selected": "Remove the selected tracks from this playlist?"
     },
+    "remove_selected": "Remove selected tracks",
     "view_tracks": "View Track List",
     "delete_all": "Delete All Playlists",
     "reorder_tracks": "Reorder Tracks",
