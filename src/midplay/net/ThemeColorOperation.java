@@ -13,8 +13,7 @@ public class ThemeColorOperation extends NetworkOperation {
   }
 
   protected void execute() {
-    // ponytail: mock mode — derive accent palette locally, no server.
-    onResponse(MockData.themeColors(colorHex));
+    fetchText(URLProvider.getThemeColor(colorHex));
   }
 
   protected void processResponse(String response) {

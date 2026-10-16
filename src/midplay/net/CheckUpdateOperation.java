@@ -8,8 +8,7 @@ public class CheckUpdateOperation extends NetworkOperation {
   }
 
   protected void execute() {
-    // ponytail: mock mode — no update server; report no update.
-    onResponse("");
+    fetchText(URLProvider.checkForUpdate());
   }
 
   protected void processResponse(String response) {

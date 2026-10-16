@@ -7,6 +7,7 @@ import javax.microedition.lcdui.TextField;
 import midplay.model.Track;
 import midplay.ui.BaseForm;
 import midplay.ui.Commands;
+import midplay.ui.DownloadActions;
 import midplay.ui.Navigator;
 import midplay.ui.PlayerNavHelper;
 import midplay.util.Lang;
@@ -25,6 +26,7 @@ public final class TrackDetailScreen extends BaseForm {
 
     addCommand(Commands.playerPlay());
     addCommand(Commands.playerAddToPlaylist());
+    addCommand(Commands.download());
 
     initializeItems();
   }
@@ -69,6 +71,8 @@ public final class TrackDetailScreen extends BaseForm {
       playTrack();
     } else if (c == Commands.playerAddToPlaylist()) {
       addTrackToPlaylist();
+    } else if (c == Commands.download()) {
+      DownloadActions.downloadTrack(navigator, track);
     }
   }
 

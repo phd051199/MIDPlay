@@ -88,6 +88,7 @@ public final class PlayerScreen extends Canvas
 
   private static final int SEEK_REPEAT_THRESHOLD = 2;
   private static final long SEEK_STEP_MICROS = 2000000L;
+  private static final long NUMERIC_SEEK_STEP_MICROS = 10000000L;
   private int heldKey;
   private int heldAction;
   private int heldRepeatCount;
@@ -296,6 +297,14 @@ public final class PlayerScreen extends Canvas
 
   protected void keyPressed(int keycode) {
     try {
+      if (keycode == KEY_NUM1) {
+        skipBy(-NUMERIC_SEEK_STEP_MICROS);
+        return;
+      }
+      if (keycode == KEY_NUM3) {
+        skipBy(NUMERIC_SEEK_STEP_MICROS);
+        return;
+      }
       int action = getGameAction(keycode);
 
       if (!volumeAlertShowing && (action == Canvas.LEFT || action == Canvas.RIGHT)) {
@@ -395,6 +404,26 @@ public final class PlayerScreen extends Canvas
       case KEY_MEDIA_NEXT:
         next();
         break;
+    }
+  }
+
+  private void skipBy(long delta) {
+    PlayerGUI gui = getPlayerGUI();
+    long target = gui.getCurrentTime() + delta;
+    if (target < 0) {
+      target = 0;
+    }
+    long duration = gui.getDuration();
+    if (duration > 0 && target > duration) {
+      target = duration;
+    }
+    boolean wasPlaying = gui.isPlaying();
+    if (wasPlaying) {
+      gui.pause();
+    }
+    gui.seek(target);
+    if (wasPlaying) {
+      gui.play();
     }
   }
 
@@ -664,11 +693,25 @@ public final class PlayerScreen extends Canvas
   private void toggleRepeat() {
     getPlayerGUI().toggleRepeat();
     updateDisplay();
+    int repeatMode = getPlayerGUI().getRepeatMode();
+    String statusKey = "player.status.repeat_off";
+    if (repeatMode == Configuration.PLAYER_REPEAT_ALL) {
+      statusKey = "player.status.repeat_all";
+    } else if (repeatMode == Configuration.PLAYER_REPEAT_ONE) {
+      statusKey = "player.status.repeat_one";
+    }
+    navigator.showAlert(Lang.tr(statusKey), AlertType.CONFIRMATION);
   }
 
   private void toggleShuffle() {
     getPlayerGUI().toggleShuffle();
     updateDisplay();
+    navigator.showAlert(
+        Lang.tr(
+            getPlayerGUI().isShuffleEnabled()
+                ? "player.status.shuffle_on"
+                : "player.status.shuffle_off"),
+        AlertType.CONFIRMATION);
   }
 
   private void stop() {

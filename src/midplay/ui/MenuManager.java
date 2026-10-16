@@ -54,7 +54,23 @@ public class MenuManager {
               item.getString("key"), item.getInt("order"), item.getBoolean("enabled", true));
       menuItems.addElement(menuItem);
     }
+    removeMenuItem(Configuration.MENU_OPEN_URI);
+    removeMenuItem(Configuration.MENU_NOW_PLAYING);
+    removeMenuItem("menu.opentty");
     ensureDefaultItemsPresent();
+  }
+
+  private void removeMenuItem(String key) {
+    boolean removed = false;
+    for (int i = menuItems.size() - 1; i >= 0; i--) {
+      if (key.equals(((MenuItem) menuItems.elementAt(i)).key)) {
+        menuItems.removeElementAt(i);
+        removed = true;
+      }
+    }
+    if (removed) {
+      saveMenuConfig();
+    }
   }
 
   private void ensureDefaultItemsPresent() {
@@ -95,9 +111,14 @@ public class MenuManager {
     defaultConfig.add(createMenuItem(Configuration.MENU_FAVORITES, 2, true));
     defaultConfig.add(createMenuItem(Configuration.MENU_DISCOVER_PLAYLISTS, 3, true));
     defaultConfig.add(createMenuItem(Configuration.MENU_RECENT, 4, true));
-    defaultConfig.add(createMenuItem(Configuration.MENU_EQUALIZER, 5, true));
-    defaultConfig.add(createMenuItem(Configuration.MENU_SETTINGS, 6, true));
-    defaultConfig.add(createMenuItem(Configuration.MENU_ABOUT, 7, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_DOWNLOADS, 5, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_FILES, 6, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_EQUALIZER, 7, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_MPGRAM, 8, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_NOTES, 9, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_SETTINGS, 10, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_GITHUB, 11, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_ABOUT, 12, true));
     return defaultConfig;
   }
 
@@ -133,10 +154,7 @@ public class MenuManager {
     }
     Runnable action = (Runnable) actions.get(key);
     if (action != null) {
-      try {
-        action.run();
-      } catch (Exception e) {
-      }
+      action.run();
     }
   }
 
@@ -187,6 +205,7 @@ public class MenuManager {
       }
     }
   }
+
 
   public MenuItem[] getAllMenuItems() {
     return collectMenuItems(false);

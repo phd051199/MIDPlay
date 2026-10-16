@@ -26,12 +26,20 @@
       "removed": "Đã xóa khỏi yêu thích"
     }
   },
+  "files": {
+    "empty": "Không có tệp nào trong thư mục này",
+    "not_audio": "Không phải tệp âm thanh",
+    "root": "Đi đến thư mục gốc",
+    "search": "Tìm tệp",
+    "clear_search": "Xóa tìm kiếm tệp"
+  },
   "language": {
     "en": "English",
     "tr": "Türkçe",
     "vi": "Tiếng Việt",
     "he": "עברית",
-    "pl": "Polski"
+    "pl": "Polski",
+    "pt": "Português (Brasil)"
   },
   "media": {
     "album": "Album",
@@ -43,6 +51,8 @@
     "favorites": "Yêu thích",
     "now_playing": "Đang phát",
     "recent": "Gần đây",
+    "downloads": "Đã tải xuống",
+    "files": "Trình duyệt tệp",
     "reorder": "Sắp xếp menu",
     "search": "Tìm kiếm",
     "settings": "Cài đặt",
@@ -65,7 +75,12 @@
       "stopped": "Đã dừng",
       "stopping": "Đang dừng...",
       "finished": "Đã phát xong",
-      "ready": "Sẵn sàng"
+      "ready": "Sẵn sàng",
+      "repeat_all": "Đã bật lặp lại danh sách phát",
+      "repeat_one": "Đã bật lặp lại bài hát",
+      "repeat_off": "Đã tắt lặp lại",
+      "shuffle_on": "Đã bật phát ngẫu nhiên danh sách phát",
+      "shuffle_off": "Đã tắt phát ngẫu nhiên danh sách phát"
     },
     "stop": "Dừng",
     "volume": "Âm lượng"
@@ -83,6 +98,37 @@
     "unknown_artist": "Không rõ nghệ sĩ",
     "unknown_duration": "Không rõ thời lượng",
     "no_url": "Không có liên kết"
+  },
+  "download": {
+    "action": "Tải xuống",
+    "downloading": "Đang tải xuống...",
+    "completed": "Tải xuống hoàn tất",
+    "already_downloaded": "Bài hát đã được tải xuống",
+    "in_progress": "Đang tải xuống rồi",
+    "error": "Tải xuống thất bại: {0}",
+    "play": "Phát",
+    "delete": "Xóa",
+    "delete_all": "Xóa tất cả",
+    "refresh": "Làm mới",
+    "link": "Liên kết tệp cục bộ",
+    "link_url": "URL bài hát",
+    "link_thumb": "URL hình thu nhỏ",
+    "link_name": "Tên bài hát",
+    "link_artist": "Nghệ sĩ",
+    "link_no_files": "Không tìm thấy tệp cục bộ trong thư mục tải xuống",
+    "link_error_url": "Vui lòng nhập URL bài hát",
+    "link_error": "Không thể liên kết tệp này",
+    "link_status": "Liên kết tệp thành công",
+    "link_manual": "Nhập URL thủ công",
+    "status": {
+      "deleted": "Đã xóa bản tải xuống",
+      "cleared": "Đã xóa toàn bộ bản tải xuống"
+    },
+    "confirm": {
+      "delete": "Xóa bài hát đã tải xuống này?",
+      "delete_selected": "Xóa các bài hát đã tải xuống đã chọn?",
+      "clear": "Xóa tất cả bài hát đã tải xuống?"
+    }
   },
   "playlist": {
     "add_track": "Thêm vào playlist",
@@ -161,6 +207,7 @@
       "pass_inputstream": "Truyền InputStream",
       "pass_url": "Truyền URL"
     },
+    "download_path": "Đường dẫn tải xuống",
     "error": {
       "save_failed": "Không thể lưu cài đặt",
       "save_theme": "Lỗi lưu giao diện: {0}",
@@ -220,5 +267,13 @@
     "manual": "Tùy chỉnh",
     "band": "Dải tần",
     "not_supported": "Thiết bị không hỗ trợ bộ chỉnh âm"
+  },
+  "note": {
+    "select_multiple": "Chọn ghi chú",
+    "delete_selected": "Xóa ghi chú đã chọn",
+    "delete_selected_confirm": "Xóa các ghi chú đã chọn?"
+  },
+  "bulk": {
+    "notes_deleted": "Đã xóa {0} ghi chú"
   }
 }

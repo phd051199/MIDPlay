@@ -1,0 +1,377 @@
+{
+  "action": {
+    "back": "Voltar",
+    "cancel": "Cancelar",
+    "exit": "Sair",
+    "ok": "OK",
+    "save": "Salvar",
+    "select": "Selecionar"
+  },
+  "app": {
+    "name": "MIDPlay"
+  },
+  "confirm": {
+    "exit": "Tem certeza que deseja sair?",
+    "discard_changes": "Descartar alterações não salvas?"
+  },
+  "favorites": {
+    "add": "Adicionar aos Favoritos",
+    "error": {
+      "remove_failed": "Falha ao remover dos favoritos",
+      "save_failed": "Falha ao salvar nos favoritos"
+    },
+    "remove": "Remover dos Favoritos",
+    "status": {
+      "added": "Adicionado aos favoritos",
+      "already_exists": "Já está nos favoritos",
+      "removed": "Removido dos favoritos"
+    }
+  },
+  "files": {
+    "empty": "Nenhum arquivo nesta pasta",
+    "not_audio": "Não é um arquivo de áudio",
+    "root": "Ir para a raiz",
+    "rename": "Renomear arquivo",
+    "search": "Buscar arquivos",
+    "clear_search": "Limpar busca de arquivos",
+    "select_multiple": "Selecionar arquivos",
+    "delete": "Excluir arquivo",
+    "name": "Nome do arquivo",
+    "confirm": {
+      "delete": "Excluir este arquivo?",
+      "delete_selected": "Excluir os arquivos selecionados?"
+    }
+  },
+  "bulk": {
+    "select_empty": "Selecione pelo menos um item",
+    "playlist_added": "{0} faixas adicionadas à playlist",
+    "playlist_result": "Adicionadas / já existentes / falhas: {0}",
+    "tracks_deleted": "{0} downloads excluídos",
+    "files_deleted": "{0} arquivos excluídos",
+    "tracks_removed": "{0} faixas removidas da playlist",
+    "download_summary": "Resultado dos downloads: {0}",
+    "download_none": "Não há novas faixas para baixar",
+    "notes_deleted": "Notas excluídas: {0}"
+  },
+  "language": {
+    "en": "English",
+    "tr": "Türkçe",
+    "vi": "Tiếng Việt",
+    "he": "עברית",
+    "pl": "Polski",
+    "pt": "Português (Brasil)"
+  },
+  "media": {
+    "album": "Álbum",
+    "playlist": "Playlist",
+    "track": "Música"
+  },
+  "menu": {
+    "discover_playlists": "Descobrir Playlists",
+    "favorites": "Favoritos",
+    "now_playing": "Tocando Agora",
+    "recent": "Recentes",
+    "downloads": "Downloads",
+    "files": "Explorador de Arquivos",
+    "reorder": "Reordenar Menu",
+    "search": "Pesquisar",
+    "settings": "Configurações",
+    "about": "Sobre",
+    "visibility": "Visibilidade do Menu",
+    "equalizer": "Equalizador",
+    "notes": "Bloco de notas",
+    "mpgram": "MPGram",
+    "github": "GitHub",
+    "open_uri": "Abrir..."
+  },
+  "mpgram": {
+    "send_note": "Enviar nota",
+    "import_session_note": "Importar sessão de uma nota",
+    "session_code_note_title": "Código de sessão do MPGram"
+  },
+  "github": {
+    "import_token_file": "Importar token de arquivo",
+    "import_token_note": "Importar token de nota do MIDPlay",
+    "token_empty": "O arquivo ou a nota não contém um token"
+  },
+  "note": {
+    "title": "Bloco de notas",
+    "clear": "Limpar",
+    "saved": "Nota salva",
+    "save_from_mpgram": "Salvar nota",
+    "save_failed": "Falha ao salvar a nota",
+    "export": "Salvar no dispositivo",
+    "import": "Importar arquivo",
+    "exported": "Salvo em {0}",
+    "imported": "Notas importadas",
+    "save_here": "Salvar aqui",
+    "new": "Nova nota",
+    "rename": "Renomear",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "empty": "Nenhuma nota",
+    "save_changes": "Salvar alterações?",
+    "discard": "Descartar",
+    "search": "Buscar notas",
+    "clear_search": "Limpar busca",
+    "no_search_results": "Nenhuma nota encontrada",
+    "custom_title": "Definir título personalizado",
+    "custom_title_field": "Título",
+    "toggle_pin": "Fixar/desafixar nota",
+    "export_select": "Selecionar notas para exportar",
+    "export_selected": "Exportar selecionadas",
+    "select_all": "Selecionar tudo",
+    "deselect_all": "Desselecionar tudo",
+    "select_at_least_one": "Selecione pelo menos uma nota",
+    "export_filename": "Nome do arquivo exportado",
+    "file_name": "Nome do arquivo",
+    "select_multiple": "Selecionar notas",
+    "delete_selected": "Excluir notas selecionadas",
+    "delete_selected_confirm": "Excluir as notas selecionadas?",
+    "delete_confirm": "Excluir {0}?"
+  },
+  "open_uri": {
+    "title": "Abrir...",
+    "history": "Histórico",
+    "use": "Usar",
+    "clear": "Limpar histórico",
+    "empty": "Informe uma URI."
+  },
+  "player": {
+    "next": "Próxima",
+    "play": "Tocar",
+    "previous": "Anterior",
+    "repeat": "Repetir",
+    "show_playlist": "Mostrar Playlist",
+    "shuffle": "Embaralhar",
+    "status": {
+      "loading": "Carregando...",
+      "paused": "Pausado",
+      "playing": "Tocando...",
+      "starting": "Iniciando...",
+      "stopped": "Parado",
+      "stopping": "Parando...",
+      "finished": "Finalizado",
+      "ready": "Pronto",
+      "repeat_all": "Repetir playlist ativado",
+      "repeat_one": "Repetir faixa ativado",
+      "repeat_off": "Repetir desativado",
+      "shuffle_on": "Embaralhar playlist ativado",
+      "shuffle_off": "Embaralhar playlist desativado"
+    },
+    "stop": "Parar",
+    "volume": "Volume"
+  },
+  "details": {
+    "title": "Detalhes",
+    "name": "Nome",
+    "type": "Tipo",
+    "custom": "Personalizado",
+    "system": "Sistema",
+    "track_count": "Número de Músicas",
+    "artist": "Artista",
+    "duration": "Duração",
+    "url": "URL",
+    "unknown_artist": "Artista Desconhecido",
+    "unknown_duration": "Duração Desconhecida",
+    "no_url": "Sem URL"
+  },
+  "download": {
+    "action": "Baixar",
+    "downloading": "Baixando...",
+    "completed": "Download concluído",
+    "already_downloaded": "Música já baixada",
+    "in_progress": "Download já em andamento",
+    "error": "Falha no download: {0}",
+    "play": "Tocar",
+    "delete": "Excluir",
+    "delete_all": "Excluir Tudo",
+    "queue": "Em andamento",
+    "queue_empty": "Nenhum download em andamento ou aguardando",
+    "queue_active": "Baixando: {0}",
+    "queue_pending": "Aguardando: {0}",
+    "queue_remaining": "{0} na fila",
+    "queue_waiting": "Iniciando {0} downloads selecionados",
+    "queue_finished": "Downloads concluídos (sucesso / falha): {0}",
+    "minimize": "Minimizar",
+    "refresh": "Atualizar",
+    "link": "Vincular local",
+    "link_url": "URL da música",
+    "link_thumb": "URL da capa",
+    "link_name": "Nome da música",
+    "link_artist": "Artista",
+    "link_no_files": "Nenhum arquivo local encontrado na pasta de downloads",
+    "link_error_url": "Informe a URL da música",
+    "link_error": "Não foi possível vincular o arquivo",
+    "link_status": "Arquivo vinculado com sucesso",
+    "link_manual": "Digitar URL manualmente",
+    "status": {
+      "deleted": "Download excluído",
+      "cleared": "Todos os downloads foram excluídos"
+    },
+    "confirm": {
+      "delete": "Excluir esta música baixada?",
+      "delete_selected": "Excluir as músicas baixadas selecionadas?",
+      "clear": "Excluir todas as músicas baixadas?"
+    }
+  },
+  "cache": {
+    "listen": "Ouvir",
+    "delete": "Excluir",
+    "delete_all": "Excluir tudo",
+    "title": "Músicas em cache",
+    "unknown": "Música desconhecida",
+    "status": {
+      "removed": "Música removida do cache",
+      "cleared": "Cache limpo"
+    },
+    "confirm": {
+      "delete_all": "Excluir todas as músicas em cache?"
+    }
+  },
+  "playlist": {
+    "add_track": "Adicionar à Playlist",
+    "create": "Criar Playlist",
+    "confirm": {
+      "delete_with_tracks": "Esta playlist não está vazia. Excluir tudo?",
+      "delete_all": "Excluir todas as playlists e suas músicas?",
+      "remove_selected": "Remover as faixas selecionadas desta playlist?"
+    },
+    "remove_selected": "Remover faixas selecionadas",
+    "view_tracks": "Ver Lista de Músicas",
+    "delete_all": "Excluir todas as playlists",
+    "reorder_tracks": "Reordenar músicas",
+    "error": {
+      "add_track_failed": "Falha ao adicionar música à playlist",
+      "track_already_exists": "A música já existe na playlist",
+      "cannot_rename_system": "Não é possível renomear playlists do sistema",
+      "create_failed": "Falha ao criar playlist",
+      "empty_name": "O nome da playlist não pode ficar vazio",
+      "remove_track_failed": "Falha ao remover música da playlist",
+      "rename_failed": "Falha ao renomear playlist",
+      "reorder_failed": "Falha ao salvar a ordem das músicas"
+    },
+    "name": "Nome da Playlist",
+    "rename": "Renomear Playlist",
+    "select": "Selecionar Playlist",
+    "status": {
+      "created": "Playlist criada com sucesso",
+      "no_custom": "Nenhuma playlist personalizada disponível",
+      "renamed": "Playlist renomeada com sucesso",
+      "track_added": "Música adicionada à playlist com sucesso",
+      "track_removed": "Música removida da playlist com sucesso"
+    }
+  },
+  "queue": {
+    "add_to_queue": "Adicionar à Fila",
+    "add_all_to_queue": "Adicionar Tudo à Fila",
+    "added": "Adicionado à fila",
+    "sort": "Ordenar Fila",
+    "save_as_playlist": "Salvar como Playlist"
+  },
+  "recent": {
+    "clear": "Limpar Histórico",
+    "confirm": {
+      "clear": "Limpar todos os itens recentes?"
+    },
+    "status": {
+      "cleared": "Histórico limpo"
+    }
+  },
+  "search": {
+    "error": {
+      "empty_keyword": "Digite uma palavra-chave para pesquisar"
+    },
+    "placeholder": "Digite as palavras-chave para pesquisar...",
+    "results": "Resultados da Pesquisa",
+    "status": {
+      "no_results": "Nenhum resultado encontrado",
+      "searching": "Pesquisando por: {0}"
+    },
+    "type": "Tipo de Pesquisa"
+  },
+  "session": {
+    "resume_prompt": "Retomar sua última sessão?"
+  },
+  "settings": {
+    "audio_quality": "Qualidade de Áudio",
+    "auto_update": "Atualizações Automáticas",
+    "check_update": "Verificar Atualizações",
+    "save_last_session": "Salvar Última Sessão",
+    "mpgram_auto_login": "Preparar MPGram automaticamente",
+    "options": "Opções",
+    "theme_mode": "Aparência",
+    "theme_color": "Cor do Tema",
+    "use_wifi": "Usar Wi-Fi (Blackberry)",
+    "load_thumbnails": "Carregar Miniaturas",
+    "theme_mode_options": {
+      "dark": "Escuro",
+      "light": "Claro"
+    },
+    "player_method": "Método do Player",
+    "player_method_options": {
+      "pass_inputstream": "Passar InputStream",
+      "pass_url": "Passar URL"
+    },
+    "download_path": "Caminho de Download",
+    "error": {
+      "save_failed": "Falha ao salvar configurações",
+      "save_theme": "Erro ao salvar tema: {0}",
+      "load_theme": "Erro ao carregar tema: {0}",
+      "color_update_failed": "Falha na atualização da cor do tema. O modo do tema foi salvo."
+    },
+    "language": "Idioma",
+    "reorder": {
+      "instructions": "Selecione um item para mover e depois a posição de destino",
+      "saved": "Ordem salva"
+    },
+    "service": "Serviço",
+    "status": {
+      "saved": "Configurações salvas com sucesso"
+    },
+    "visibility": {
+      "instructions": "Selecione itens para ocultar/mostrar. [x] = mostrar, [] = ocultar",
+      "saved": "Configurações de visibilidade salvas"
+    }
+  },
+  "status": {
+    "error": "Ocorreu um erro",
+    "loading": "Carregando...",
+    "load_more": "Carregar mais...",
+    "no_data": "Nenhum dado disponível!",
+    "no_updates": "Nenhuma atualização disponível. Você está com a versão mais recente",
+    "update_available": "Nova versão disponível. Atualizar agora?"
+  },
+  "time": {
+    "error": {
+      "invalid_duration": "A duração deve ser de 1 a 999 minutos",
+      "invalid_format": "Formato de hora inválido"
+    },
+    "minutes": "Minutos"
+  },
+  "timer": {
+    "action": "Ação do Temporizador",
+    "actions": {
+      "exit_app": "Sair do Aplicativo",
+      "stop_playback": "Parar Reprodução"
+    },
+    "cancel": "Cancelar Temporizador",
+    "confirm": {
+      "exit": "O temporizador fechará o aplicativo quando expirar. Continuar?"
+    },
+    "set": "Definir Temporizador",
+    "sleep_timer": "Temporizador de Suspensão",
+    "status": {
+      "cancelled": "Temporizador de suspensão cancelado",
+      "expired": "Temporizador de suspensão expirou",
+      "set": "Temporizador de suspensão ativado"
+    }
+  },
+  "eq": {
+    "enable": "Ativar",
+    "presets": "Predefinições",
+    "manual": "Manual",
+    "band": "Banda",
+    "not_supported": "O equalizador não é suportado neste dispositivo"
+  }
+}

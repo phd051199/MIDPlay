@@ -4,6 +4,7 @@ import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 import midplay.net.BinaryImageLoadOperation;
+import midplay.net.URLProvider;
 
 public final class TrackTextRenderer {
 
@@ -178,8 +179,53 @@ public final class TrackTextRenderer {
 
   private void startTrackTextImageLoad(
       final TextImageSlot slot, String text, int width, int fontSize, int color, String align) {
-    // ponytail: mock mode — no remote CJK text renderer; degrade to native/none.
-    slot.failed = true;
+    String imageUrl = URLProvider.getTakumiTextImage(text, width, fontSize, color, align);
+    if (imageUrl == null || imageUrl.length() == 0) {
+      slot.failed = true;
+      return;
+    }
+
+    slot.loading = true;
+    slot.failed = false;
+    final String expectedKey = slot.requestKey;
+    slot.operation =
+        new BinaryImageLoadOperation(
+            imageUrl,
+            new BinaryImageLoadOperation.Listener() {
+              public void onImageLoaded(final Image image) {
+                screen.navigator.callSerially(
+                    new Runnable() {
+                      public void run() {
+                        if (!isTrackTextRequestCurrent(slot, expectedKey)) {
+                          return;
+                        }
+                        slot.operation = null;
+                        slot.loading = false;
+                        slot.image = image;
+                        slot.failed = image == null;
+                        if (slot.image != null) {
+                          screen.updateDisplayAsync();
+                        }
+                      }
+                    });
+              }
+
+              public void onImageLoadError(final Exception e) {
+                screen.navigator.callSerially(
+                    new Runnable() {
+                      public void run() {
+                        if (!isTrackTextRequestCurrent(slot, expectedKey)) {
+                          return;
+                        }
+                        slot.operation = null;
+                        slot.loading = false;
+                        slot.image = null;
+                        slot.failed = true;
+                      }
+                    });
+              }
+            });
+    slot.operation.start();
   }
 
   boolean isTrackTextRequestCurrent(TextImageSlot slot, String expectedKey) {

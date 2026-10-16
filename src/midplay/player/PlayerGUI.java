@@ -51,6 +51,7 @@ public class PlayerGUI implements PlayerListener {
 
   private volatile boolean loading = false;
   private boolean destroyed = false;
+  private boolean playbackRequested = false;
   private int playbackSessionId = 0;
   private int playlistGeneration = 0;
   private boolean handlingTrackEnd = false;
@@ -65,6 +66,7 @@ public class PlayerGUI implements PlayerListener {
   private static final int MAX_CONSECUTIVE_PLAYBACK_ERRORS = 3;
 
   private long cachedMediaTimeMicros = 0L;
+  private long lastKnownMediaTimeMicros = 0L;
   private long cachedDurationMicros = 0L;
   private long cachedSampleTimeMs = 0L;
   private int cachedSessionId = -1;
@@ -219,6 +221,7 @@ public class PlayerGUI implements PlayerListener {
     Player currentPlayer;
     synchronized (this) {
       destroyed = false;
+      playbackRequested = true;
       currentPlayer = player;
       if (loading) {
         return;
@@ -234,8 +237,45 @@ public class PlayerGUI implements PlayerListener {
   }
 
   public void pause() {
+    pause(false);
+  }
+
+  public long pauseForInterruption() {
+    boolean shouldResume;
+    synchronized (this) {
+      shouldResume = playbackRequested;
+    }
+    long position = -1L;
+    if (shouldResume) {
+      position = getCurrentTime();
+      synchronized (this) {
+        if (lastKnownMediaTimeMicros > position) {
+          position = lastKnownMediaTimeMicros;
+        }
+      }
+    }
+    pause(shouldResume);
+    deallocate();
+    return position;
+  }
+
+  public void resumeAfterInterruption(long positionMicros) {
+    synchronized (this) {
+      if (destroyed || getCurrentTrackLocked() == null) {
+        return;
+      }
+      pendingResumeSeekMicros = Math.max(0L, positionMicros);
+      playbackRequested = true;
+    }
+    play();
+  }
+
+  private void pause(boolean preservePlaybackRequest) {
     Player currentPlayer;
     synchronized (this) {
+      if (!preservePlaybackRequest) {
+        playbackRequested = false;
+      }
       if (loading) {
         return;
       }
@@ -263,6 +303,7 @@ public class PlayerGUI implements PlayerListener {
   public void stop() {
     synchronized (this) {
       destroyed = false;
+      playbackRequested = false;
       resetCorePlaybackStateLocked();
       loading = false;
     }
@@ -367,6 +408,7 @@ public class PlayerGUI implements PlayerListener {
         return;
       }
       currentPlayer = player;
+      lastKnownMediaTimeMicros = time;
     }
     parent.updateDisplayAsync();
     if (currentPlayer == null) {
@@ -468,6 +510,7 @@ public class PlayerGUI implements PlayerListener {
       attached = true;
       synchronized (this) {
         cachedMediaTimeMicros = seekTimeMicros;
+        lastKnownMediaTimeMicros = seekTimeMicros;
         cachedSampleTimeMs = System.currentTimeMillis();
         cachedSessionId = playbackSessionId;
       }
@@ -558,6 +601,7 @@ public class PlayerGUI implements PlayerListener {
       if (estimated < 0L) {
         estimated = 0L;
       }
+      rememberMediaTime(estimated);
       return estimated;
     }
 
@@ -574,12 +618,25 @@ public class PlayerGUI implements PlayerListener {
     synchronized (this) {
       if (sessionId == playbackSessionId) {
         cachedMediaTimeMicros = sampledTime;
+        if (sampledTime > lastKnownMediaTimeMicros) {
+          lastKnownMediaTimeMicros = sampledTime;
+        }
         cachedDurationMicros = sampledDuration;
         cachedSampleTimeMs = now;
         cachedSessionId = playbackSessionId;
       }
     }
     return sampledTime;
+  }
+
+  private synchronized void rememberMediaTime(long time) {
+    if (time > lastKnownMediaTimeMicros) {
+      lastKnownMediaTimeMicros = time;
+    }
+  }
+
+  public synchronized long getLastKnownMediaTime() {
+    return lastKnownMediaTimeMicros;
   }
 
   private long extrapolate(
@@ -761,8 +818,56 @@ public class PlayerGUI implements PlayerListener {
       deferredResumeSeekMicros = -1;
     }
     if (target > 0) {
-      seek(target);
+      if (getDuration() > 0L) {
+        seek(target);
+      } else {
+        waitForResumeDuration(sessionId, target);
+      }
     }
+  }
+
+  private void waitForResumeDuration(final int sessionId, final long target) {
+    Thread resumeThread =
+        new Thread(
+            new Runnable() {
+              public void run() {
+                for (int attempt = 0; attempt < 40; attempt++) {
+                  if (!isSessionActive(sessionId)) {
+                    return;
+                  }
+                  if (getDuration() > 0L) {
+                    seek(target);
+                    return;
+                  }
+                  try {
+                    Thread.sleep(250L);
+                  } catch (InterruptedException e) {
+                    return;
+                  }
+                }
+                Player currentPlayer;
+                synchronized (PlayerGUI.this) {
+                  if (!isSessionActiveLocked(sessionId)) {
+                    return;
+                  }
+                  currentPlayer = player;
+                }
+                if (currentPlayer != null) {
+                  try {
+                    currentPlayer.setMediaTime(target);
+                    synchronized (PlayerGUI.this) {
+                      cachedMediaTimeMicros = target;
+                      lastKnownMediaTimeMicros = target;
+                      cachedSampleTimeMs = System.currentTimeMillis();
+                      cachedSessionId = playbackSessionId;
+                    }
+                    parent.updateDisplayAsync();
+                  } catch (Exception e) {
+                  }
+                }
+              }
+            });
+    resumeThread.start();
   }
 
   private void startLoadThread() {
@@ -805,11 +910,11 @@ public class PlayerGUI implements PlayerListener {
         return;
       }
 
-      parent.albumArtLoader.setAlbumArtUrl(track.getImageUrl());
-
       if (playerMethod.isInputStream()) {
         freeHeapForInputStreamPlayback();
       }
+
+      parent.albumArtLoader.setAlbumArtUrl(track.getImageUrl());
 
       pending = mediaResolver.createPendingPlayback(track, sessionId, playerMethod);
 
@@ -929,6 +1034,29 @@ public class PlayerGUI implements PlayerListener {
 
       if (duration > 0 && currentTime >= duration) {
         currentPlayer.setMediaTime(0L);
+      }
+
+      long resumePosition;
+      synchronized (this) {
+        resumePosition = pendingResumeSeekMicros;
+      }
+      if (resumePosition > 0L) {
+        try {
+          currentPlayer.setMediaTime(resumePosition);
+          synchronized (this) {
+            if (pendingResumeSeekMicros == resumePosition) {
+              pendingResumeSeekMicros = -1L;
+            }
+            cachedMediaTimeMicros = resumePosition;
+            lastKnownMediaTimeMicros = resumePosition;
+            cachedDurationMicros = duration;
+            cachedSampleTimeMs = System.currentTimeMillis();
+            cachedSessionId = playbackSessionId;
+          }
+        } catch (Exception seekBeforeStartFailed) {
+          // Some MMAPI implementations permit seeking only after start; the STARTED
+          // callback will apply the still-pending resume position as a fallback.
+        }
       }
 
       if (currentPlayer.getState() < Player.STARTED) {
@@ -1073,6 +1201,7 @@ public class PlayerGUI implements PlayerListener {
       } else if (shouldGoNext) {
         changeTrack(true, false);
       } else {
+        playbackRequested = false;
         setStatusByKey(Configuration.PLAYER_STATUS_FINISHED);
       }
     } finally {
@@ -1294,6 +1423,7 @@ public class PlayerGUI implements PlayerListener {
   }
 
   private synchronized void resetCorePlaybackStateLocked() {
+    playbackRequested = false;
     resetPlaybackStateLocked();
     pendingTrackDelta = 0;
     commandWorker.clearQueue();
@@ -1302,6 +1432,7 @@ public class PlayerGUI implements PlayerListener {
 
   private void resetMediaCacheLocked() {
     cachedMediaTimeMicros = 0L;
+    lastKnownMediaTimeMicros = 0L;
     cachedDurationMicros = 0L;
     cachedSampleTimeMs = 0L;
     cachedSessionId = playbackSessionId;
@@ -1474,6 +1605,7 @@ public class PlayerGUI implements PlayerListener {
 
     synchronized (this) {
       consecutivePlaybackErrors = 0;
+      playbackRequested = false;
       resetPlaybackStateLocked();
     }
     stopTimer();

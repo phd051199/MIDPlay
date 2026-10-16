@@ -42,12 +42,28 @@ public class RecordStoreManager {
     return recordStore.addRecord(bytes, 0, bytes.length);
   }
 
+  public synchronized int addRecordBytes(byte[] data) throws RecordStoreException {
+    if (data == null) {
+      throw new IllegalArgumentException("Data cannot be null");
+    }
+    openRecordStore();
+    return recordStore.addRecord(data, 0, data.length);
+  }
+
   public synchronized String getRecordAsString(int recordId) throws RecordStoreException {
     if (recordId <= 0) {
       throw new IllegalArgumentException("Record ID must be positive");
     }
     openRecordStore();
     return Utils.bytesToUtf8(recordStore.getRecord(recordId));
+  }
+
+  public synchronized byte[] getRecordBytes(int recordId) throws RecordStoreException {
+    if (recordId <= 0) {
+      throw new IllegalArgumentException("Record ID must be positive");
+    }
+    openRecordStore();
+    return recordStore.getRecord(recordId);
   }
 
   public synchronized void setRecord(int recordId, String data) throws RecordStoreException {
@@ -60,6 +76,17 @@ public class RecordStoreManager {
     byte[] bytes = Utils.utf8ToBytes(data);
     openRecordStore();
     recordStore.setRecord(recordId, bytes, 0, bytes.length);
+  }
+
+  public synchronized void setRecordBytes(int recordId, byte[] data) throws RecordStoreException {
+    if (data == null) {
+      throw new IllegalArgumentException("Data cannot be null");
+    }
+    if (recordId <= 0) {
+      throw new IllegalArgumentException("Record ID must be positive");
+    }
+    openRecordStore();
+    recordStore.setRecord(recordId, data, 0, data.length);
   }
 
   public synchronized void deleteRecord(int recordId) throws RecordStoreException {

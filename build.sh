@@ -26,13 +26,20 @@ cd "$SCRIPT_DIR"
 
 BUILD_DIR="build/standalone"
 COMPILED_DIR="$BUILD_DIR/compiled"
+MPGRAM_DIR="$BUILD_DIR/mpgram"
+MPGRAM_SOURCE_DIR="${MPGRAM_SOURCE_DIR:-third_party/mpgram}"
+MPGRAM_RES_DIR="$BUILD_DIR/mpgram-res"
+GITHUB_SOURCE_DIR="third_party/github-j2me"
+GITHUB_PREP_DIR="$BUILD_DIR/github-j2me"
+JSR135_STUB_DIR="tools/jsr135-api"
+JSR135_STUB_JAR="$BUILD_DIR/jsr135-api.jar"
 DIST_DIR="dist"
-VERSION="1.7.1"
+VERSION="26.10"
 
 # ProGuard (and only ProGuard) runs on any modern JDK.
 RUN_JAVA="${RUN_JAVA:-$(command -v java)}"
 PROGUARD_JAR="lib/proguard-ant.jar"
-BOOTCP="lib/cldc_1.1.jar:lib/midp_2.0.jar:lib/jsr234_1.0.jar"   # J2ME core APIs + JSR-234 (AMMS, compile-time only)
+BOOTCP="lib/cldc_1.1.jar:lib/midp_2.0.jar:lib/jsr234_1.0.jar:lib/jsr75_1.0.jar"   # J2ME core APIs + JSR-234 (AMMS) + JSR-75 (FileConnection)
 
 # ---------------------------------------------------------------------------
 # Locate JDK 8.
@@ -47,6 +54,7 @@ find_jdk8() {
   fi
   local cand
   for cand in \
+      /usr/lib/jvm/temurin-8* \
       /Library/Java/JavaVirtualMachines/*/Contents/Home \
       /opt/homebrew/opt/openjdk@8/libexec/openjdk.jdk/Contents/Home \
       /opt/homebrew/Cellar/temurin@8/*/libexec/openjdk.jdk/Contents/Home \
@@ -85,6 +93,10 @@ if [ ! -f "$PROGUARD_JAR" ]; then
   echo "✗ ProGuard not found at $PROGUARD_JAR" >&2; exit 1
 fi
 
+if [ ! -f "lib/jsr75_1.0.jar" ]; then
+  echo "✗ JSR-75 API jar not found at lib/jsr75_1.0.jar" >&2; exit 1
+fi
+
 # ---------------------------------------------------------------------------
 # Shared MIDlet descriptor attributes (go into both the jar manifest and the
 # .jad). Values mirror nbproject/project.properties (manifest.midlets/others).
@@ -96,7 +108,7 @@ MIDlet-Version: $VERSION
 MIDlet-1: MIDPlay, /Icon.png, midplay.MIDPlay
 MicroEdition-Profile: MIDP-2.0
 MicroEdition-Configuration: CLDC-1.1
-MIDlet-Permissions: javax.microedition.io.Connector.http
+MIDlet-Permissions: javax.microedition.io.Connector.http, javax.microedition.io.Connector.file.read, javax.microedition.io.Connector.file.write, javax.microedition.io.Connector.file.delete
 Nokia-UI-Enhancement: IgnoreProfilesBasedSoundMuting,MusicKeysSupported
 progressive_download: enabled
 Nokia-MIDlet-S60-Selection-Key-Compatibility: true
@@ -109,8 +121,25 @@ EOF
 echo "• Clean"
 rm -rf "$BUILD_DIR"; mkdir -p "$COMPILED_DIR" "$DIST_DIR"
 
+echo "• Prepare embedded MPGram (generic edition)"
+python3 tools/prepare_mpgram.py "$MPGRAM_SOURCE_DIR" "$MPGRAM_DIR"
+
+echo "• Prepare embedded GitHub-j2me"
+python3 tools/prepare_github_j2me.py "$GITHUB_SOURCE_DIR" "$GITHUB_PREP_DIR"
+cp -r "$GITHUB_PREP_DIR/gh2me" "$MPGRAM_RES_DIR/"
+cp "$GITHUB_PREP_DIR/g.png" "$GITHUB_PREP_DIR/g.svg" \
+  "$GITHUB_PREP_DIR/gh2me-file.png" "$GITHUB_PREP_DIR/gh2me-folder.png" "$MPGRAM_RES_DIR/"
+
+echo "• Prepare JSR-135 recording API"
+mkdir -p "$BUILD_DIR/jsr135-api"
+"$JAVAC" -source 1.3 -target 1.3 -g:none -bootclasspath "$BOOTCP" \
+  -d "$BUILD_DIR/jsr135-api" \
+  "$JSR135_STUB_DIR/javax/microedition/media/control/RecordControl.java"
+"$JAR_TOOL" cf "$JSR135_STUB_JAR" -C "$BUILD_DIR/jsr135-api" .
+BOOTCP="$BOOTCP:$JSR135_STUB_JAR"
+
 echo "• Collect sources"
-find src -name '*.java' > "$BUILD_DIR/sources.txt"
+find src "$MPGRAM_DIR" "$GITHUB_PREP_DIR" -name '*.java' > "$BUILD_DIR/sources.txt"
 echo "    $(wc -l < "$BUILD_DIR/sources.txt" | tr -d ' ') files"
 
 echo "• Compile (JDK 8, -source/-target 1.3, CLDC bootclasspath)"
@@ -121,7 +150,7 @@ echo "• Compile (JDK 8, -source/-target 1.3, CLDC bootclasspath)"
 echo "• Package dist/MIDPlay_midlet.jar (classes + res/)"
 manifest_body > "$BUILD_DIR/MANIFEST.MF"
 "$JAR_TOOL" cfm "$DIST_DIR/MIDPlay_midlet.jar" "$BUILD_DIR/MANIFEST.MF" \
-  -C "$COMPILED_DIR" . -C res .
+  -C "$COMPILED_DIR" . -C res . -C "$MPGRAM_RES_DIR" .
 
 echo "• ProGuard (shrink + obfuscate + -microedition preverify) → dist/MIDPlay.jar"
 "$RUN_JAVA" -cp "$PROGUARD_JAR" proguard.ProGuard @midlets.pro

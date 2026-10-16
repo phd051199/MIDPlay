@@ -6,28 +6,18 @@ import midplay.model.Tracks;
 
 public class JsonOperation extends NetworkOperation {
 
-  private static final int KIND_HOT_PLAYLISTS = 0;
-  private static final int KIND_SEARCH_PLAYLISTS = 1;
-  private static final int KIND_SEARCH_TRACKS = 2;
-  private static final int KIND_GET_TRACKS = 3;
-
-  private final int kind;
-  private final String param;
-  private final int page;
+  private final String url;
   private final JsonListResult result;
   private final JsonListListener listener;
 
-  private JsonOperation(
-      int kind, String param, int page, JsonListResult result, JsonListListener listener) {
-    this.kind = kind;
-    this.param = param;
-    this.page = page;
+  private JsonOperation(String url, JsonListResult result, JsonListListener listener) {
+    this.url = url;
     this.result = result;
     this.listener = listener;
   }
 
   public static JsonOperation searchTracks(String keyword, int page, JsonListListener listener) {
-    return new JsonOperation(KIND_SEARCH_TRACKS, keyword, page, new Tracks(), listener);
+    return new JsonOperation(URLProvider.searchTracks(keyword, page), new Tracks(), listener);
   }
 
   public static JsonOperation searchTracks(String keyword, JsonListListener listener) {
@@ -35,12 +25,13 @@ public class JsonOperation extends NetworkOperation {
   }
 
   public static JsonOperation getTracks(String listKey, JsonListListener listener) {
-    return new JsonOperation(KIND_GET_TRACKS, listKey, 1, new Tracks(), listener);
+    return new JsonOperation(URLProvider.getTracks(listKey), new Tracks(), listener);
   }
 
   public static JsonOperation searchPlaylists(
       String keyword, String type, int page, JsonListListener listener) {
-    return new JsonOperation(KIND_SEARCH_PLAYLISTS, keyword, page, new Playlists(), listener);
+    return new JsonOperation(
+        URLProvider.searchPlaylists(keyword, type, page), new Playlists(), listener);
   }
 
   public static JsonOperation searchPlaylists(
@@ -49,7 +40,7 @@ public class JsonOperation extends NetworkOperation {
   }
 
   public static JsonOperation getHotPlaylists(int page, JsonListListener listener) {
-    return new JsonOperation(KIND_HOT_PLAYLISTS, null, page, new Playlists(), listener);
+    return new JsonOperation(URLProvider.getHotPlaylists(page), new Playlists(), listener);
   }
 
   public static JsonOperation getHotPlaylists(JsonListListener listener) {
@@ -57,22 +48,7 @@ public class JsonOperation extends NetworkOperation {
   }
 
   protected void execute() {
-    String json;
-    switch (kind) {
-      case KIND_HOT_PLAYLISTS:
-        json = MockData.hotPlaylists(page);
-        break;
-      case KIND_SEARCH_PLAYLISTS:
-        json = MockData.searchPlaylists(param, page);
-        break;
-      case KIND_SEARCH_TRACKS:
-        json = MockData.searchTracks(param, page);
-        break;
-      default:
-        json = MockData.getTracks(param);
-        break;
-    }
-    onResponse(json);
+    fetchText(this.url);
   }
 
   protected void processResponse(String response) {

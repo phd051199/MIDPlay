@@ -26,12 +26,20 @@
       "removed": "Usunięto z ulubionych"
     }
   },
+  "files": {
+    "empty": "Brak plików w tym folderze",
+    "not_audio": "Nie jest plikiem audio",
+    "root": "Przejdź do katalogu głównego",
+    "search": "Szukaj plików",
+    "clear_search": "Wyczyść wyszukiwanie plików"
+  },
   "language": {
     "en": "English",
     "tr": "Türkçe",
     "vi": "Tiếng Việt",
     "he": "עברית",
-    "pl": "Polski"
+    "pl": "Polski",
+    "pt": "Português (Brasil)"
   },
   "media": {
     "album": "Album",
@@ -43,6 +51,8 @@
     "favorites": "Ulubione",
     "now_playing": "Teraz odtwarzane",
     "recent": "Ostatnie",
+    "downloads": "Pobrane",
+    "files": "Przeglądarka plików",
     "reorder": "Przestaw menu",
     "search": "Wyszukaj",
     "settings": "Ustawienia",
@@ -65,7 +75,12 @@
       "stopped": "Zatrzymano",
       "stopping": "Zatrzymuję...",
       "finished": "Zakończono",
-      "ready": "Gotowy"
+      "ready": "Gotowy",
+      "repeat_all": "Powtarzanie playlisty włączone",
+      "repeat_one": "Powtarzanie utworu włączone",
+      "repeat_off": "Powtarzanie wyłączone",
+      "shuffle_on": "Losowe odtwarzanie playlisty włączone",
+      "shuffle_off": "Losowe odtwarzanie playlisty wyłączone"
     },
     "stop": "Zatrzymaj",
     "volume": "Głośność"
@@ -83,6 +98,37 @@
     "unknown_artist": "Nieznany wykonawca",
     "unknown_duration": "Nieznany czas",
     "no_url": "Brak URL"
+  },
+  "download": {
+    "action": "Pobierz",
+    "downloading": "Pobieranie...",
+    "completed": "Pobieranie zakończone",
+    "already_downloaded": "Utwór został już pobrany",
+    "in_progress": "Pobieranie już trwa",
+    "error": "Nie udało się pobrać: {0}",
+    "play": "Odtwórz",
+    "delete": "Usuń",
+    "delete_all": "Usuń wszystkie",
+    "refresh": "Odśwież",
+    "link": "Powiąż plik lokalny",
+    "link_url": "URL utworu",
+    "link_thumb": "URL miniatury",
+    "link_name": "Nazwa utworu",
+    "link_artist": "Wykonawca",
+    "link_no_files": "Nie znaleziono plików lokalnych w folderze pobierania",
+    "link_error_url": "Podaj URL utworu",
+    "link_error": "Nie udało się powiązać tego pliku",
+    "link_status": "Plik powiązano pomyślnie",
+    "link_manual": "Wpisz URL ręcznie",
+    "status": {
+      "deleted": "Usunięto pobrany plik",
+      "cleared": "Usunięto wszystkie pobrane pliki"
+    },
+    "confirm": {
+      "delete": "Usunąć ten pobrany utwór?",
+      "delete_selected": "Usunąć wybrane pobrane utwory?",
+      "clear": "Usunąć wszystkie pobrane utwory?"
+    }
   },
   "playlist": {
     "add_track": "Dodaj do playlisty",
@@ -160,6 +206,7 @@
       "pass_inputstream": "Przekaż strumień wejściowy",
       "pass_url": "Przekaż URL"
     },
+    "download_path": "Ścieżka pobierania",
     "error": {
       "save_failed": "Nie udało się załadować ustawień",
       "save_theme": "Błąd zapisywania motywu: {0}",
@@ -212,5 +259,13 @@
       "expired": "Koniec odliczania",
       "set": "Aktywowano odliczanie"
     }
+  },
+  "note": {
+    "select_multiple": "Wybierz notatki",
+    "delete_selected": "Usuń wybrane notatki",
+    "delete_selected_confirm": "Usunąć wybrane notatki?"
+  },
+  "bulk": {
+    "notes_deleted": "Usunięto {0} notatek"
   }
 }

@@ -11,6 +11,7 @@ import midplay.model.Track;
 import midplay.net.MediaHttpClient;
 import midplay.net.Network;
 import midplay.store.Configuration;
+import midplay.store.DownloadManager;
 import midplay.util.BufferedInputStream;
 import midplay.util.HttpCodes;
 import midplay.util.Lang;
@@ -65,6 +66,40 @@ public class MediaResolver implements MediaHttpClient.ResolveContext {
   PendingPlayback createPendingPlayback(Track track, int sessionId, PlaybackMethod playerMethod)
       throws IOException, MediaException {
     String trackUrl = track.getUrl();
+
+    if (trackUrl != null && trackUrl.startsWith("file://")) {
+      PendingPlayback local = new PendingPlayback();
+      boolean keepLocal = false;
+      try {
+        local.usedInputStream = false;
+        local.pendingResolvedUrl = trackUrl;
+        local.pendingPlayer = Manager.createPlayer(trackUrl);
+        keepLocal = true;
+        return local;
+      } finally {
+        if (!keepLocal) {
+          closePendingPlayback(local);
+        }
+      }
+    }
+
+    String localPath = DownloadManager.getInstance().getDownloadedFilePath(track);
+    if (localPath != null) {
+      PendingPlayback local = new PendingPlayback();
+      boolean keepLocal = false;
+      try {
+        local.usedInputStream = false;
+        local.pendingResolvedUrl = localPath;
+        local.pendingPlayer = Manager.createPlayer(localPath);
+        keepLocal = true;
+        return local;
+      } finally {
+        if (!keepLocal) {
+          closePendingPlayback(local);
+        }
+      }
+    }
+
     if (trackUrl == null || trackUrl.length() == 0) {
       throw new IOException("No track URL");
     }

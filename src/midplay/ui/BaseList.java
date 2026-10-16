@@ -28,7 +28,11 @@ public abstract class BaseList extends List implements CommandListener {
   private String[] artUrls;
 
   public BaseList(String title, Navigator navigator) {
-    super(title, List.IMPLICIT);
+    this(title, navigator, List.IMPLICIT);
+  }
+
+  protected BaseList(String title, Navigator navigator, int listType) {
+    super(title, listType);
     this.navigator = navigator;
     setupCommands();
     setCommandListener(this);
@@ -147,6 +151,7 @@ public abstract class BaseList extends List implements CommandListener {
             ART_COLS,
             new SpriteSheetOperation.Listener() {
               public void onSheet(final Image[] cells) {
+                stampCells(indices, cells);
                 navigator.callSerially(
                     new Runnable() {
                       public void run() {
@@ -180,6 +185,26 @@ public abstract class BaseList extends List implements CommandListener {
     artOp.start();
   }
 
+  private void stampCells(int[] indices, Image[] cells) {
+    if (cells == null) {
+      return;
+    }
+    int n = Math.min(indices.length, cells.length);
+    for (int k = 0; k < n; k++) {
+      Image img = cells[k];
+      if (img == null) {
+        continue;
+      }
+      Image badge = badgeImage(badgeAt(indices[k]));
+      if (badge != null) {
+        try {
+          cells[k] = Utils.stampBadge(img, badge);
+        } catch (Throwable t) {
+        }
+      }
+    }
+  }
+
   private void applyArt(int[] indices, Image[] cells) {
     int n = Math.min(indices.length, cells == null ? 0 : cells.length);
     int size = size();
@@ -191,10 +216,6 @@ public abstract class BaseList extends List implements CommandListener {
       Image img = cells[k];
       if (img == null) {
         continue;
-      }
-      Image badge = badgeImage(badgeAt(row));
-      if (badge != null) {
-        img = Utils.stampBadge(img, badge);
       }
       set(row, getString(row), img);
     }

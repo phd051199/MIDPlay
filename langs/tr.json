@@ -26,12 +26,20 @@
       "removed": "Favorilerden çıkarıldı"
     }
   },
+  "files": {
+    "empty": "Bu klasörde dosya yok",
+    "not_audio": "Ses dosyası değil",
+    "root": "Köke git",
+    "search": "Dosyaları ara",
+    "clear_search": "Dosya aramasını temizle"
+  },
   "language": {
     "en": "English",
     "tr": "Türkçe",
     "vi": "Tiếng Việt",
     "he": "עברית",
-    "pl": "Polski"
+    "pl": "Polski",
+    "pt": "Português (Brasil)"
   },
   "media": {
     "album": "Albüm",
@@ -43,6 +51,8 @@
     "favorites": "Favoriler",
     "now_playing": "Şimdi Çalıyor",
     "recent": "Son çalınanlar",
+    "downloads": "İndirilenler",
+    "files": "Dosya Gezgini",
     "reorder": "Menüyü Yeniden Sırala",
     "search": "Arama",
     "settings": "Ayarlar",
@@ -65,7 +75,12 @@
       "stopped": "Durduruldu",
       "stopping": "Durduruluyor...",
       "finished": "Tamamlandı",
-      "ready": "Hazır"
+      "ready": "Hazır",
+      "repeat_all": "Oynatma listesi tekrarı açık",
+      "repeat_one": "Parça tekrarı açık",
+      "repeat_off": "Tekrar kapalı",
+      "shuffle_on": "Oynatma listesi karıştırma açık",
+      "shuffle_off": "Oynatma listesi karıştırma kapalı"
     },
     "stop": "Durdur",
     "volume": "Ses"
@@ -83,6 +98,37 @@
     "unknown_artist": "Bilinmeyen Sanatçı",
     "unknown_duration": "Bilinmeyen Süre",
     "no_url": "URL yok"
+  },
+  "download": {
+    "action": "İndir",
+    "downloading": "İndiriliyor...",
+    "completed": "İndirme tamamlandı",
+    "already_downloaded": "Şarkı zaten indirildi",
+    "in_progress": "İndirme zaten devam ediyor",
+    "error": "İndirme başarısız: {0}",
+    "play": "Çal",
+    "delete": "Sil",
+    "delete_all": "Tümünü Sil",
+    "refresh": "Yenile",
+    "link": "Yerel Dosyayı Bağla",
+    "link_url": "Şarkı URL",
+    "link_thumb": "Küçük resim URL",
+    "link_name": "Şarkı Adı",
+    "link_artist": "Sanatçı",
+    "link_no_files": "İndirme klasöründe yerel dosya bulunamadı",
+    "link_error_url": "Lütfen şarkı URL girin",
+    "link_error": "Bu dosya bağlanamadı",
+    "link_status": "Dosya başarıyla bağlandı",
+    "link_manual": "URL'yi elle gir",
+    "status": {
+      "deleted": "İndirme silindi",
+      "cleared": "Tüm indirmeler silindi"
+    },
+    "confirm": {
+      "delete": "İndirilen bu şarkı silinsin mi?",
+      "delete_selected": "Seçilen indirilen şarkılar silinsin mi?",
+      "clear": "İndirilen tüm şarkılar silinsin mi?"
+    }
   },
   "playlist": {
     "add_track": "Çalma Listesine Ekle",
@@ -161,6 +207,7 @@
       "pass_inputstream": "InputStream Geçir",
       "pass_url": "URL Geçir"
     },
+    "download_path": "İndirme Yolu",
     "error": {
       "save_failed": "Ayarlar kaydedilemedi",
       "save_theme": "Tema kaydedilirken hata: {0}",
@@ -214,11 +261,19 @@
       "set": "Uyku zamanlayıcısı etkinleştirildi"
     }
   },
-    "eq": {
+  "eq": {
     "enable": "Aktif",
     "presets": "Öntanımlı ayarlar",
     "manual": "Manuel",
     "band": "Band",
     "not_supported": "Ekolayzır bu cihazda desteklenmiyor"
+  },
+  "note": {
+    "select_multiple": "Notları seç",
+    "delete_selected": "Seçili notları sil",
+    "delete_selected_confirm": "Seçili notlar silinsin mi?"
+  },
+  "bulk": {
+    "notes_deleted": "{0} not silindi"
   }
 }

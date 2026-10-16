@@ -2,19 +2,32 @@
 
 ![AppIcon](/res/Icon.png)
 
-A demo music player for J2ME (Java ME) mobile devices — CLDC 1.1 / MIDP 2.0. Ships with mock sample data; no live streaming.
+An online music player for J2ME (Java ME) mobile devices — CLDC 1.1 / MIDP 2.0.
 
 ## Features
 
-- **Mock/demo playback** — bundled sample data, no live streaming
+- **Multi-source streaming**
 - **Discovery** — browse by category and playlist, search songs / artists / albums
 - **Playback** — seek, resume position, sleep timer
 - **Library** — favorites, playlists, recent history
-- **Localization** — English, Vietnamese, Turkish, Polish, Hebrew
+- **Localization** — English, Brazilian Portuguese, Vietnamese, Turkish, Polish, Hebrew
+- **MPGram** — embedded Telegram client that returns to MIDPlay without stopping playback
+
+## Fork Features
+
+This fork adds features on top of the original MIDPlay project:
+
+- **Download music** to the device for offline access.
+- **File explorer** to browse local storage, view text files and images, play local audio, and add local tracks to playlists.
+- **Notepad** with multiple notes and VNOTE import/export.
+- **Open external links** using the device's supported link handlers.
+- **Embedded MPGram integration** for devices that cannot conveniently switch between apps. MPGram is integrated into MIDPlay, and returning to the player keeps music playback running. See the [MPGram client](https://github.com/shinovon/mpgram-client).
+- **Reorder tracks** in custom playlists.
 
 ## Requirements
 
 - J2ME device supporting MIDP 2.0 / CLDC 1.1
+- Network connectivity for streaming
 
 ## Install
 
@@ -24,16 +37,17 @@ A demo music player for J2ME (Java ME) mobile devices — CLDC 1.1 / MIDP 2.0. S
 ## Build
 
 ```bash
+git submodule update --init --recursive
 ./build.sh
 ```
 
-Requires **JDK 8** (the last toolchain emitting CLDC-compatible bytecode). Output: `dist/MIDPlay.jar` + `dist/MIDPlay.jad`. See `build.sh` for the full pipeline (compile → package → ProGuard → JAD).
+Requires **JDK 8** (the last toolchain emitting CLDC-compatible bytecode) and Python 3 to prepare the embedded generic MPGram sources. Output: `dist/MIDPlay.jar` + `dist/MIDPlay.jad`. See `build.sh` for the full pipeline (compile → package → ProGuard → JAD).
 
 ## Tech Stack
 
 - Java ME (J2ME), MIDP 2.0 / CLDC 1.1
 - Record Management System (RMS) for local storage
-- Mock data layer (no external services)
+- REST APIs for streaming and metadata
 
 ## Contributing
 

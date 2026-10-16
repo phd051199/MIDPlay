@@ -14,8 +14,10 @@ import midplay.store.Configuration;
 import midplay.store.FavoritesManager;
 import midplay.ui.BaseList;
 import midplay.ui.Commands;
+import midplay.ui.DownloadActions;
 import midplay.ui.Navigator;
 import midplay.ui.PlayerNavHelper;
+import midplay.ui.ListReorder;
 import midplay.util.Lang;
 import midplay.util.Utils;
 
@@ -29,6 +31,11 @@ public class TrackListScreen extends BaseList {
   String[] rowTexts;
   private int nowPlayingIndex = -1;
   private Timer markerTimer;
+  private final Command reorderTracksCommand;
+  private final Command selectMultipleCommand;
+  private boolean reorderMode;
+  private int reorderPick = -1;
+  private Track[] reorderTracks;
 
   public TrackListScreen(String title, Tracks items, Navigator navigator) {
     this(title, items, navigator, null);
@@ -39,12 +46,17 @@ public class TrackListScreen extends BaseList {
     this.items = items;
     this.title = title;
     this.playlist = playlist;
+    reorderTracksCommand = new Command(Lang.tr("playlist.reorder_tracks"), Command.SCREEN, 5);
+    selectMultipleCommand = new Command(Lang.tr("action.select"), Command.SCREEN, 9);
     addCommand(Commands.addToQueue());
     addCommand(Commands.playerAddToPlaylist());
+    addCommand(Commands.download());
     addCommand(Commands.details());
     if (playlist != null && playlist.isCustom()) {
       addCommand(Commands.playlistRemove());
+      addCommand(reorderTracksCommand);
     }
+    addCommand(selectMultipleCommand);
     populateItems();
   }
 
@@ -79,8 +91,10 @@ public class TrackListScreen extends BaseList {
 
   protected void showNotify() {
     super.showNotify();
-    refreshView();
-    startMarkerRefresh();
+    if (!reorderMode) {
+      refreshView();
+      startMarkerRefresh();
+    }
   }
 
   protected void hideNotify() {
@@ -114,6 +128,10 @@ public class TrackListScreen extends BaseList {
   }
 
   protected void handleSelection() {
+    if (reorderMode) {
+      reorderSelection(getSelectedIndex());
+      return;
+    }
     int index = getSelectedIndex();
     if (!isValidSelection(index, tracks.length)) {
       return;
@@ -122,6 +140,11 @@ public class TrackListScreen extends BaseList {
   }
 
   protected void handleCommand(Command c, Displayable d) {
+    if (reorderMode) {
+      if (c == Commands.formSave()) saveReorder();
+      else if (c == Commands.formCancel()) cancelReorder();
+      return;
+    }
     if (c == Commands.addToQueue()) {
       addToQueueSelected();
     } else if (c == Commands.playerAddToPlaylist()) {
@@ -130,7 +153,95 @@ public class TrackListScreen extends BaseList {
       removeFromPlaylist();
     } else if (c == Commands.details()) {
       showTrackDetails();
+    } else if (c == Commands.download()) {
+      downloadSelected();
+    } else if (c == reorderTracksCommand) {
+      startReorder();
+    } else if (c == selectMultipleCommand) {
+      int source = playlist != null && playlist.isCustom()
+          ? MultiTrackSelectScreen.SOURCE_PLAYLIST : MultiTrackSelectScreen.SOURCE_TRACKS;
+      navigator.forward(new MultiTrackSelectScreen(navigator, title, tracks, source, playlist, this));
     }
+  }
+
+  private void startReorder() {
+    if (playlist == null || !playlist.isCustom() || tracks == null) return;
+    reorderMode = true;
+    reorderPick = -1;
+    reorderTracks = new Track[tracks.length];
+    System.arraycopy(tracks, 0, reorderTracks, 0, tracks.length);
+    removeCommand(reorderTracksCommand);
+    removeCommand(Commands.playlistRemove());
+    removeCommand(Commands.back());
+    removeCommand(Commands.playerNowPlaying());
+    removeCommand(Commands.addToQueue());
+    removeCommand(Commands.playerAddToPlaylist());
+    removeCommand(Commands.download());
+    removeCommand(Commands.details());
+    removeCommand(selectMultipleCommand);
+    addCommand(Commands.formSave());
+    addCommand(Commands.formCancel());
+    navigator.showAlert(Lang.tr("settings.reorder.instructions"), AlertType.INFO);
+  }
+
+  private void reorderSelection(int index) {
+    if (reorderTracks == null || index < 0 || index >= reorderTracks.length) return;
+    if (reorderPick < 0) {
+      reorderPick = index;
+      ListReorder.toggleMarker(this, index, Configuration.SORT_ICON, true);
+    } else {
+      if (reorderPick != index) {
+        ListReorder.swapRows(this, reorderPick, index, Configuration.SORT_ICON);
+        Track temp = reorderTracks[reorderPick];
+        reorderTracks[reorderPick] = reorderTracks[index];
+        reorderTracks[index] = temp;
+      } else {
+        ListReorder.toggleMarker(this, index, Configuration.SORT_ICON, false);
+      }
+      reorderPick = -1;
+    }
+  }
+
+  private void saveReorder() {
+    if (FavoritesManager.getInstance().reorderCustomPlaylistTracks(playlist, reorderTracks)) {
+      endReorder();
+      refresh();
+      navigator.showAlert(Lang.tr("settings.reorder.saved"), AlertType.CONFIRMATION);
+    } else {
+      navigator.showAlert(Lang.tr("playlist.error.reorder_failed"), AlertType.ERROR);
+    }
+  }
+
+  private void cancelReorder() {
+    endReorder();
+    refresh();
+  }
+
+  private void endReorder() {
+    reorderMode = false;
+    reorderPick = -1;
+    reorderTracks = null;
+    removeCommand(Commands.formSave());
+    removeCommand(Commands.formCancel());
+    addCommand(Commands.back());
+    addCommand(Commands.playerNowPlaying());
+    addCommand(Commands.addToQueue());
+    addCommand(Commands.playerAddToPlaylist());
+    addCommand(Commands.download());
+    addCommand(Commands.details());
+    addCommand(selectMultipleCommand);
+    if (playlist != null && playlist.isCustom()) {
+      addCommand(Commands.playlistRemove());
+      addCommand(reorderTracksCommand);
+    }
+  }
+
+  private void downloadSelected() {
+    int selectedIndex = getSelectedIndex();
+    if (!isValidSelection(selectedIndex, tracks.length)) {
+      return;
+    }
+    DownloadActions.downloadTrack(navigator, tracks[selectedIndex]);
   }
 
   private void addToQueueSelected() {

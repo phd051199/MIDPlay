@@ -1,0 +1,6 @@
+[submodule "third_party/mpgram"]
+	path = third_party/mpgram
+	url = https://github.com/mrlima4095/mpgram-client.git
+[submodule "third_party/github-j2me"]
+	path = third_party/github-j2me
+	url = https://github.com/mrlima4095/GitHub-j2me.git

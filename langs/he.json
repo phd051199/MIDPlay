@@ -26,12 +26,20 @@
       "removed": "נמחק מהמועדפים"
     }
   },
+  "files": {
+    "empty": "אין קבצים בתיקייה זו",
+    "not_audio": "לא קובץ שמע",
+    "root": "עבור לתיקיית הבסיס",
+    "search": "חיפוש קבצים",
+    "clear_search": "נקה חיפוש קבצים"
+  },
   "language": {
     "en": "English",
     "tr": "Türkçe",
     "vi": "Tiếng Việt",
     "he": "עברית",
-    "pl": "Polski"
+    "pl": "Polski",
+    "pt": "Português (Brasil)"
   },
   "media": {
     "album": "אלבום",
@@ -43,6 +51,8 @@
     "favorites": "מועדפים",
     "now_playing": "מושמע כעת",
     "recent": "אחרונים",
+    "downloads": "הורדות",
+    "files": "סייר קבצים",
     "reorder": "סדר תפריט",
     "search": "חיפוש",
     "settings": "הגדרות",
@@ -65,7 +75,12 @@
       "stopped": "מופסק",
       "stopping": "עוצר...",
       "finished": "סיים",
-      "ready": "מוכן"
+      "ready": "מוכן",
+      "repeat_all": "חזרה על רשימת ההשמעה הופעלה",
+      "repeat_one": "חזרה על השיר הופעלה",
+      "repeat_off": "החזרה כבויה",
+      "shuffle_on": "ערבוב רשימת ההשמעה הופעל",
+      "shuffle_off": "ערבוב רשימת ההשמעה כובה"
     },
     "stop": "עצור",
     "volume": "עוצמת שמע"
@@ -83,6 +98,37 @@
     "unknown_artist": "אמן לא ידוע",
     "unknown_duration": "משך זמן לא ידוע",
     "no_url": "אין כתובת URL"
+  },
+  "download": {
+    "action": "הורדה",
+    "downloading": "מוריד...",
+    "completed": "ההורדה הושלמה",
+    "already_downloaded": "השיר כבר הורד",
+    "in_progress": "ההורדה כבר מתבצעת",
+    "error": "ההורדה נכשלה: {0}",
+    "play": "נגן",
+    "delete": "מחק",
+    "delete_all": "מחק הכל",
+    "refresh": "Refresh",
+    "link": "קשור קובץ מקומי",
+    "link_url": "כתובת URL של הרצועה",
+    "link_thumb": "כתובת URL של התמונה הממוזערת",
+    "link_name": "שם הרצועה",
+    "link_artist": "אמן",
+    "link_no_files": "לא נמצאו קבצים מקומיים בתיקיית ההורדות",
+    "link_error_url": "נא להזין את כתובת ה-URL של הרצועה",
+    "link_error": "לא ניתן היה לקשר קובץ זה",
+    "link_status": "הקובץ קושר בהצלחה",
+    "link_manual": "הזן כתובת URL ידנית",
+    "status": {
+      "deleted": "ההורדה נמחקה",
+      "cleared": "כל ההורדות נמחקו"
+    },
+    "confirm": {
+      "delete": "למחוק את השיר שהורד הזה?",
+      "delete_selected": "למחוק את השירים שהורדו שנבחרו?",
+      "clear": "למחוק את כל השירים שהורדו?"
+    }
   },
   "playlist": {
     "add_track": "הוסף לרשימת השמעה",
@@ -160,6 +206,7 @@
       "pass_inputstream": "העבר InputStream",
       "pass_url": "העבר URL"
     },
+    "download_path": "נתיב הורדה",
     "error": {
       "save_failed": "שמירת ההגדרות נכשלה",
       "save_theme": "שגיאה בשמירת ערכת הנושא: {0}",
@@ -212,5 +259,13 @@
       "expired": "קוצב זמן לשינה סיים",
       "set": "קוצב זמן לשינה הופעל"
     }
+  },
+  "note": {
+    "select_multiple": "בחר הערות",
+    "delete_selected": "מחק הערות נבחרות",
+    "delete_selected_confirm": "למחוק את ההערות הנבחרות?"
+  },
+  "bulk": {
+    "notes_deleted": "נמחקו {0} הערות"
   }
 }

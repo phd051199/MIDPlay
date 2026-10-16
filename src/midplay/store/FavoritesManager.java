@@ -73,6 +73,20 @@ public class FavoritesManager {
     }
   }
 
+  public int removeAllPlaylists() {
+    Playlist[] playlists = getPlaylists().getPlaylists();
+    int removed = 0;
+    if (playlists == null) {
+      return removed;
+    }
+    for (int i = 0; i < playlists.length; i++) {
+      if (removePlaylistAndTracks(playlists[i])) {
+        removed++;
+      }
+    }
+    return removed;
+  }
+
   public boolean updatePlaylist(Playlist playlist) {
     if (playlist == null) {
       return false;
@@ -185,6 +199,24 @@ public class FavoritesManager {
       return result;
     } catch (Exception e) {
       return new Tracks();
+    }
+  }
+
+  public boolean reorderCustomPlaylistTracks(Playlist playlist, Track[] reordered) {
+    if (playlist == null || !playlist.isCustom() || reordered == null) {
+      return false;
+    }
+    try {
+      TracksRecord record = loadTracksRecord(playlist.getKey());
+      Vector tracks = new Vector();
+      for (int i = 0; i < reordered.length; i++) {
+        if (reordered[i] != null) {
+          tracks.addElement(reordered[i]);
+        }
+      }
+      return savePlaylistTracks(playlist.getKey(), tracks, record.recordId);
+    } catch (Exception e) {
+      return false;
     }
   }
 

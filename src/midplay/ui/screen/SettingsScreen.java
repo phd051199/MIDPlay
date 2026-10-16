@@ -6,6 +6,7 @@ import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.TextField;
 import javax.microedition.rms.RecordStoreException;
 import midplay.MIDPlay;
 import midplay.net.ThemeColorOperation;
@@ -27,22 +28,28 @@ public final class SettingsScreen extends BaseForm {
   private ChoiceGroup languageGroup;
   private ChoiceGroup themeModeGroup;
   private ChoiceGroup themeColorGroup;
+  private ChoiceGroup serviceGroup;
   private ChoiceGroup qualityGroup;
   private ChoiceGroup togglesGroup;
   private ChoiceGroup playerMethodGroup;
+  private TextField downloadPathField;
   private int autoUpdateIndex;
   private int saveLastSessionIndex;
+  private int mpgramAutoLoginIndex;
   private int blackberryWifiIndex = -1;
   private int thumbnailsIndex;
 
   private String currentLanguage;
   private String currentThemeMode;
+  private String currentService;
   private String currentQuality;
   private int currentAutoUpdate;
   private int currentBlackberryWifi;
   private int currentSaveLastSession;
+  private int currentMpgramAutoLogin;
   private int currentThumbnails;
   private String currentPlayerMethod;
+  private String currentDownloadPath;
   private int currentColorIndex;
 
   public SettingsScreen(Navigator navigator, Listener listener) {
@@ -86,6 +93,10 @@ public final class SettingsScreen extends BaseForm {
     if (currentColorIndex != themeColorGroup.getSelectedIndex()) {
       return true;
     }
+    if (!currentService.equals(
+        getSelected(serviceGroup, Configuration.ALL_SERVICES, Configuration.SERVICE_NCT))) {
+      return true;
+    }
     if (!currentQuality.equals(
         getSelected(qualityGroup, Configuration.ALL_QUALITIES, Configuration.QUALITY_128))) {
       return true;
@@ -97,12 +108,20 @@ public final class SettingsScreen extends BaseForm {
             settingsManager.getDefaultPlayerMethod()))) {
       return true;
     }
+    String pathValue = downloadPathField.getString().trim();
+    if (!currentDownloadPath.equals(pathValue)) {
+      return true;
+    }
     if ((currentAutoUpdate == Configuration.AUTO_UPDATE_ENABLED)
         != togglesGroup.isSelected(autoUpdateIndex)) {
       return true;
     }
     if ((currentSaveLastSession == Configuration.SAVE_LAST_SESSION_ON)
         != togglesGroup.isSelected(saveLastSessionIndex)) {
+      return true;
+    }
+    if ((currentMpgramAutoLogin == Configuration.MPGRAM_AUTO_LOGIN_ON)
+        != togglesGroup.isSelected(mpgramAutoLoginIndex)) {
       return true;
     }
     if ((currentThumbnails == Configuration.THUMBNAILS_ON)
@@ -132,6 +151,7 @@ public final class SettingsScreen extends BaseForm {
     themeModeGroup =
         createChoiceGroup(
             "settings.theme_mode", Configuration.ALL_THEME_MODES, "settings.theme_mode_options.");
+    serviceGroup = createChoiceGroup("settings.service", Configuration.ALL_SERVICES, null);
     qualityGroup = createChoiceGroup("settings.audio_quality", Configuration.ALL_QUALITIES, null);
     playerMethodGroup =
         createChoiceGroup(
@@ -142,6 +162,7 @@ public final class SettingsScreen extends BaseForm {
     togglesGroup = new ChoiceGroup(Lang.tr("settings.options"), ChoiceGroup.MULTIPLE);
     autoUpdateIndex = togglesGroup.append(Lang.tr("settings.check_update"), null);
     saveLastSessionIndex = togglesGroup.append(Lang.tr("settings.save_last_session"), null);
+    mpgramAutoLoginIndex = togglesGroup.append(Lang.tr("settings.mpgram_auto_login"), null);
     thumbnailsIndex = togglesGroup.append(Lang.tr("settings.load_thumbnails"), null);
     if (Utils.isBlackberry) {
       blackberryWifiIndex = togglesGroup.append(Lang.tr("settings.use_wifi"), null);
@@ -156,9 +177,18 @@ public final class SettingsScreen extends BaseForm {
     append(languageGroup);
     append(themeModeGroup);
     append(themeColorGroup);
+    append(serviceGroup);
     append(qualityGroup);
     append(playerMethodGroup);
     append(togglesGroup);
+
+    downloadPathField =
+        new TextField(
+            Lang.tr("settings.download_path"),
+            settingsManager.getCurrentDownloadPath(),
+            256,
+            TextField.URL);
+    append(downloadPathField);
   }
 
   private ChoiceGroup createChoiceGroup(
@@ -175,12 +205,15 @@ public final class SettingsScreen extends BaseForm {
   private void loadSettings() {
     currentLanguage = settingsManager.getCurrentLanguage();
     currentThemeMode = settingsManager.getCurrentThemeMode();
+    currentService = settingsManager.getCurrentService();
     currentQuality = settingsManager.getCurrentQuality();
     currentAutoUpdate = settingsManager.getCurrentAutoUpdate();
     currentBlackberryWifi = settingsManager.getCurrentBlackberryWifi();
     currentSaveLastSession = settingsManager.getCurrentSaveLastSession();
+    currentMpgramAutoLogin = settingsManager.getCurrentMpgramAutoLogin();
     currentThumbnails = settingsManager.getCurrentThumbnails();
     currentPlayerMethod = settingsManager.getCurrentPlayerMethod();
+    currentDownloadPath = settingsManager.getCurrentDownloadPath();
     currentColorIndex = settingsManager.getSavedColorIndex();
     selectChoice(languageGroup, availableLanguages, currentLanguage);
     selectChoice(themeModeGroup, Configuration.ALL_THEME_MODES, currentThemeMode);
@@ -188,6 +221,7 @@ public final class SettingsScreen extends BaseForm {
         themeColorGroup,
         Configuration.THEME_COLOR_NAMES,
         Configuration.THEME_COLOR_NAMES[currentColorIndex]);
+    selectChoice(serviceGroup, Configuration.ALL_SERVICES, currentService);
     selectChoice(qualityGroup, Configuration.ALL_QUALITIES, currentQuality);
     selectChoice(playerMethodGroup, Configuration.ALL_PLAYER_METHODS, currentPlayerMethod);
     togglesGroup.setSelectedIndex(
@@ -195,11 +229,14 @@ public final class SettingsScreen extends BaseForm {
     togglesGroup.setSelectedIndex(
         saveLastSessionIndex, currentSaveLastSession == Configuration.SAVE_LAST_SESSION_ON);
     togglesGroup.setSelectedIndex(
+        mpgramAutoLoginIndex, currentMpgramAutoLogin == Configuration.MPGRAM_AUTO_LOGIN_ON);
+    togglesGroup.setSelectedIndex(
         thumbnailsIndex, currentThumbnails == Configuration.THUMBNAILS_ON);
     if (blackberryWifiIndex >= 0) {
       togglesGroup.setSelectedIndex(
           blackberryWifiIndex, currentBlackberryWifi == Configuration.BLACKBERRY_WIFI_ON);
     }
+    downloadPathField.setString(currentDownloadPath);
   }
 
   private void selectChoice(ChoiceGroup group, String[] values, String target) {
@@ -216,6 +253,8 @@ public final class SettingsScreen extends BaseForm {
       String selectedLang = getSelected(languageGroup, availableLanguages, "en");
       String selectedThemeMode =
           getSelected(themeModeGroup, Configuration.ALL_THEME_MODES, Configuration.THEME_LIGHT);
+      String selectedService =
+          getSelected(serviceGroup, Configuration.ALL_SERVICES, Configuration.SERVICE_NCT);
       String selectedQuality =
           getSelected(qualityGroup, Configuration.ALL_QUALITIES, Configuration.QUALITY_128);
       String selectedPlayerMethod =
@@ -231,6 +270,10 @@ public final class SettingsScreen extends BaseForm {
           togglesGroup.isSelected(saveLastSessionIndex)
               ? Configuration.SAVE_LAST_SESSION_ON
               : Configuration.SAVE_LAST_SESSION_OFF;
+      int selectedMpgramAutoLogin =
+          togglesGroup.isSelected(mpgramAutoLoginIndex)
+              ? Configuration.MPGRAM_AUTO_LOGIN_ON
+              : Configuration.MPGRAM_AUTO_LOGIN_OFF;
       int selectedThumbnails =
           togglesGroup.isSelected(thumbnailsIndex)
               ? Configuration.THUMBNAILS_ON
@@ -248,6 +291,10 @@ public final class SettingsScreen extends BaseForm {
       }
       boolean hasColorChange = currentColorIndex != selectedThemeColor;
       boolean hasModeChange = !currentThemeMode.equals(selectedThemeMode);
+      if (!currentService.equals(selectedService)) {
+        hasChanges = true;
+        settingsManager.saveService(selectedService);
+      }
       if (!currentQuality.equals(selectedQuality)) {
         hasChanges = true;
         settingsManager.saveQuality(selectedQuality);
@@ -260,6 +307,10 @@ public final class SettingsScreen extends BaseForm {
         hasChanges = true;
         settingsManager.saveSaveLastSession(selectedSaveLastSession);
       }
+      if (currentMpgramAutoLogin != selectedMpgramAutoLogin) {
+        hasChanges = true;
+        settingsManager.saveMpgramAutoLogin(selectedMpgramAutoLogin);
+      }
       if (currentThumbnails != selectedThumbnails) {
         hasChanges = true;
         settingsManager.saveThumbnails(selectedThumbnails);
@@ -271,6 +322,14 @@ public final class SettingsScreen extends BaseForm {
       if (!currentPlayerMethod.equals(selectedPlayerMethod)) {
         hasChanges = true;
         settingsManager.savePlayerMethod(selectedPlayerMethod);
+      }
+      String selectedDownloadPath = downloadPathField.getString().trim();
+      if (selectedDownloadPath.length() == 0) {
+        selectedDownloadPath = Configuration.DEFAULT_DOWNLOAD_PATH;
+      }
+      if (!currentDownloadPath.equals(selectedDownloadPath)) {
+        hasChanges = true;
+        settingsManager.saveDownloadPath(selectedDownloadPath);
       }
 
       if (hasColorChange || hasModeChange) {

@@ -4,7 +4,8 @@
     "cancel": "Cancel",
     "exit": "Exit",
     "ok": "OK",
-    "save": "Save"
+    "save": "Save",
+    "select": "Select"
   },
   "app": {
     "name": "MIDPlay"
@@ -26,12 +27,39 @@
       "removed": "Removed from favorites"
     }
   },
+  "files": {
+    "empty": "No files in this folder",
+    "not_audio": "Not an audio file",
+    "root": "Go to root",
+    "rename": "Rename file",
+    "search": "Search files",
+    "clear_search": "Clear file search",
+    "select_multiple": "Select files",
+    "delete": "Delete file",
+    "name": "File name",
+    "confirm": {
+      "delete": "Delete this file?",
+      "delete_selected": "Delete the selected files?"
+    }
+  },
+  "bulk": {
+    "select_empty": "Select at least one item",
+    "playlist_added": "Added {0} tracks to the playlist",
+    "playlist_result": "Added / already present / failed: {0}",
+    "tracks_deleted": "Deleted {0} downloads",
+    "files_deleted": "Deleted {0} files",
+    "tracks_removed": "Removed {0} tracks from the playlist",
+    "download_summary": "Download result: {0}",
+    "download_none": "No new tracks to download",
+    "notes_deleted": "Deleted {0} notes"
+  },
   "language": {
     "en": "English",
     "tr": "Türkçe",
     "vi": "Tiếng Việt",
     "he": "עברית",
-    "pl": "Polski"
+    "pl": "Polski",
+    "pt": "Português (Brasil)"
   },
   "media": {
     "album": "Album",
@@ -43,12 +71,71 @@
     "favorites": "Favorites",
     "now_playing": "Now Playing",
     "recent": "Recent",
+    "downloads": "Downloads",
+    "files": "File Explorer",
     "reorder": "Reorder Menu",
     "search": "Search",
     "settings": "Settings",
     "about": "About",
     "visibility": "Menu Visibility",
-    "equalizer": "Equalizer"
+    "equalizer": "Equalizer",
+    "notes": "Notepad",
+    "mpgram": "MPGram",
+    "github": "GitHub",
+    "open_uri": "Open..."
+  },
+  "mpgram": {
+    "send_note": "Send note",
+    "import_session_note": "Import session from note",
+    "session_code_note_title": "MPGram session code"
+  },
+  "github": {
+    "import_token_file": "Import token from file",
+    "import_token_note": "Import token from MIDPlay note",
+    "token_empty": "The token file/note is empty"
+  },
+  "note": {
+    "title": "Notepad",
+    "clear": "Clear",
+    "saved": "Note saved",
+    "save_from_mpgram": "Save note",
+    "save_failed": "Failed to save note",
+    "export": "Save to device",
+    "import": "Import file",
+    "exported": "Saved to {0}",
+    "imported": "Notes imported",
+    "save_here": "Save here",
+    "new": "New note",
+    "rename": "Rename",
+    "delete": "Delete",
+    "edit": "Edit",
+    "empty": "No notes",
+    "save_changes": "Save changes?",
+    "discard": "Discard",
+    "search": "Search notes",
+    "clear_search": "Clear search",
+    "no_search_results": "No matching notes",
+    "custom_title": "Set custom title",
+    "custom_title_field": "Title",
+    "toggle_pin": "Pin/unpin note",
+    "export_select": "Select notes to export",
+    "export_selected": "Export selected",
+    "select_all": "Select all",
+    "deselect_all": "Deselect all",
+    "select_at_least_one": "Select at least one note",
+    "export_filename": "Export file name",
+    "file_name": "File name",
+    "select_multiple": "Select notes",
+    "delete_selected": "Delete selected notes",
+    "delete_selected_confirm": "Delete the selected notes?",
+    "delete_confirm": "Delete {0}?"
+  },
+  "open_uri": {
+    "title": "Open...",
+    "history": "History",
+    "use": "Use",
+    "clear": "Clear history",
+    "empty": "Enter a URI."
   },
   "player": {
     "next": "Next",
@@ -65,7 +152,12 @@
       "stopped": "Stopped",
       "stopping": "Stopping...",
       "finished": "Finished",
-      "ready": "Ready"
+      "ready": "Ready",
+      "repeat_all": "Playlist repeat enabled",
+      "repeat_one": "Track repeat enabled",
+      "repeat_off": "Repeat disabled",
+      "shuffle_on": "Playlist shuffle enabled",
+      "shuffle_off": "Playlist shuffle disabled"
     },
     "stop": "Stop",
     "volume": "Volume"
@@ -84,13 +176,71 @@
     "unknown_duration": "Unknown Duration",
     "no_url": "No URL"
   },
+  "download": {
+    "action": "Download",
+    "downloading": "Downloading...",
+    "completed": "Download completed",
+    "already_downloaded": "Song already downloaded",
+    "in_progress": "Download already in progress",
+    "error": "Download failed: {0}",
+    "play": "Play",
+    "delete": "Delete",
+    "delete_all": "Delete All",
+    "queue": "In progress",
+    "queue_empty": "No downloads in progress or waiting",
+    "queue_active": "Downloading: {0}",
+    "queue_pending": "Waiting: {0}",
+    "queue_remaining": "{0} waiting",
+    "queue_waiting": "Starting {0} selected downloads",
+    "queue_finished": "Downloads finished (completed / failed): {0}",
+    "minimize": "Minimize",
+    "refresh": "Refresh",
+    "link": "Link Local File",
+    "link_url": "Track URL",
+    "link_thumb": "Thumbnail URL",
+    "link_name": "Track Name",
+    "link_artist": "Artist",
+    "link_no_files": "No local files found in the download folder",
+    "link_error_url": "Enter the track URL",
+    "link_error": "Could not link this file",
+    "link_status": "File linked successfully",
+    "link_manual": "Enter URL manually",
+    "status": {
+      "deleted": "Download deleted",
+      "cleared": "All downloads cleared"
+    },
+    "confirm": {
+      "delete": "Delete this downloaded song?",
+      "delete_selected": "Delete the selected downloaded songs?",
+      "clear": "Delete all downloaded songs?"
+    }
+  },
+  "cache": {
+    "listen": "Listen",
+    "delete": "Delete",
+    "delete_all": "Delete All",
+    "title": "Cached Songs",
+    "unknown": "Unknown Song",
+    "status": {
+      "removed": "Cached song removed",
+      "cleared": "Cache cleared"
+    },
+    "confirm": {
+      "delete_all": "Delete all cached songs?"
+    }
+  },
   "playlist": {
     "add_track": "Add to Playlist",
     "create": "Create Playlist",
     "confirm": {
-      "delete_with_tracks": "This playlist is not empty. Delete all?"
+      "delete_with_tracks": "This playlist is not empty. Delete all?",
+      "delete_all": "Delete all playlists and their tracks?",
+      "remove_selected": "Remove the selected tracks from this playlist?"
     },
+    "remove_selected": "Remove selected tracks",
     "view_tracks": "View Track List",
+    "delete_all": "Delete All Playlists",
+    "reorder_tracks": "Reorder Tracks",
     "error": {
       "add_track_failed": "Failed to add track to playlist",
       "track_already_exists": "Track already exists in playlist",
@@ -98,7 +248,8 @@
       "create_failed": "Failed to create playlist",
       "empty_name": "Playlist name cannot be empty",
       "remove_track_failed": "Failed to remove track from playlist",
-      "rename_failed": "Failed to rename playlist"
+      "rename_failed": "Failed to rename playlist",
+      "reorder_failed": "Failed to save playlist track order"
     },
     "name": "Playlist Name",
     "rename": "Rename Playlist",
@@ -147,6 +298,7 @@
     "auto_update": "Automatic Updates",
     "check_update": "Check for Updates",
     "save_last_session": "Save Last Session",
+    "mpgram_auto_login": "Prepare MPGram automatically",
     "options": "Options",
     "theme_mode": "Appearance",
     "theme_color": "Theme Color",
@@ -161,6 +313,7 @@
       "pass_inputstream": "Pass InputStream",
       "pass_url": "Pass URL"
     },
+    "download_path": "Download Path",
     "error": {
       "save_failed": "Failed to save settings",
       "save_theme": "Error saving theme: {0}",

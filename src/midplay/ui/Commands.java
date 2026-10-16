@@ -109,6 +109,10 @@ public class Commands {
     return get("queue.add_all_to_queue", Command.SCREEN, 7);
   }
 
+  public static Command filesRoot() {
+    return get("files.root", Command.SCREEN, 8);
+  }
+
   public static Command queueSort() {
     return get("queue.sort", Command.SCREEN, 5);
   }
@@ -137,6 +141,10 @@ public class Commands {
     return get("menu.now_playing", Command.SCREEN, 12);
   }
 
+  public static Command openUri() {
+    return get("menu.open_uri", Command.SCREEN, 0);
+  }
+
   public static Command menuSort() {
     return get("menu.reorder", Command.SCREEN, 1);
   }
@@ -151,6 +159,46 @@ public class Commands {
 
   public static Command details() {
     return get("details.title", Command.ITEM, 2);
+  }
+
+  public static Command download() {
+    return get("download.action", Command.SCREEN, 3);
+  }
+
+  public static Command downloadPlay() {
+    return get("download.play", Command.SCREEN, 2);
+  }
+
+  public static Command downloadDelete() {
+    return get("download.delete", Command.ITEM, 3);
+  }
+
+  public static Command downloadDeleteAll() {
+    return get("download.delete_all", Command.SCREEN, 4);
+  }
+
+  public static Command downloadRefresh() {
+    return get("download.refresh", Command.SCREEN, 5);
+  }
+
+  public static Command downloadLink() {
+    return get("download.link", Command.SCREEN, 6);
+  }
+
+  public static Command downloadLinkManual() {
+    return get("download.link_manual", Command.SCREEN, 7);
+  }
+
+  public static Command cacheListen() {
+    return get("cache.listen", Command.OK, 1);
+  }
+
+  public static Command cacheDelete() {
+    return get("cache.delete", Command.ITEM, 2);
+  }
+
+  public static Command cacheDeleteAll() {
+    return get("cache.delete_all", Command.SCREEN, 3);
   }
 
   private Commands() {}

@@ -15,14 +15,18 @@ import midplay.util.Lang;
 
 public final class PlaylistPickerScreen extends BaseList {
   private final FavoritesManager favoritesManager;
-  private final Track trackToAdd;
+  private final Track[] tracksToAdd;
   private final Displayable previousScreen;
   private Playlist[] customPlaylists = new Playlist[0];
 
   public PlaylistPickerScreen(Navigator navigator, Track trackToAdd, Displayable previousScreen) {
+    this(navigator, trackToAdd == null ? new Track[0] : new Track[] {trackToAdd}, previousScreen);
+  }
+
+  public PlaylistPickerScreen(Navigator navigator, Track[] tracksToAdd, Displayable previousScreen) {
     super(Lang.tr("playlist.select"), navigator);
     this.favoritesManager = FavoritesManager.getInstance();
-    this.trackToAdd = trackToAdd;
+    this.tracksToAdd = tracksToAdd == null ? new Track[0] : tracksToAdd;
     this.previousScreen = previousScreen;
     populateItems();
   }
@@ -54,15 +58,27 @@ public final class PlaylistPickerScreen extends BaseList {
       return;
     }
     Playlist selectedPlaylist = customPlaylists[selectedIndex];
-    int result = favoritesManager.addTrackToPlaylist(selectedPlaylist, trackToAdd);
-    if (result == FavoritesManager.SUCCESS) {
-      navigator.back();
-      navigator.showAlert(
-          Lang.tr("playlist.status.track_added"), AlertType.CONFIRMATION, previousScreen);
-    } else if (result == FavoritesManager.ALREADY_EXISTS) {
-      navigator.showAlert(Lang.tr("playlist.error.track_already_exists"), AlertType.INFO);
+    int added = 0;
+    int exists = 0;
+    int failed = 0;
+    for (int i = 0; i < tracksToAdd.length; i++) {
+      int result = favoritesManager.addTrackToPlaylist(selectedPlaylist, tracksToAdd[i]);
+      if (result == FavoritesManager.SUCCESS) added++;
+      else if (result == FavoritesManager.ALREADY_EXISTS) exists++;
+      else failed++;
+    }
+    navigator.back();
+    if (tracksToAdd.length == 1 && added == 1) {
+      navigator.showAlert(Lang.tr("playlist.status.track_added"), AlertType.CONFIRMATION, previousScreen);
+    } else if (tracksToAdd.length == 1 && exists == 1) {
+      navigator.showAlert(Lang.tr("playlist.error.track_already_exists"), AlertType.INFO, previousScreen);
+    } else if (tracksToAdd.length == 1) {
+      navigator.showAlert(Lang.tr("playlist.error.add_track_failed"), AlertType.ERROR, previousScreen);
     } else {
-      navigator.showAlert(Lang.tr("playlist.error.add_track_failed"), AlertType.ERROR);
+      navigator.showAlert(
+          Lang.tr("bulk.playlist_result", added + "/" + exists + "/" + failed),
+          failed == tracksToAdd.length ? AlertType.ERROR : AlertType.CONFIRMATION,
+          previousScreen);
     }
   }
 

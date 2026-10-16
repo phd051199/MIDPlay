@@ -19,6 +19,8 @@ public final class MainMenuScreen extends List implements CommandListener {
     void checkForUpdate();
 
     void openNowPlaying();
+
+    void openUri();
   }
 
   private final Navigator navigator;
@@ -46,9 +48,14 @@ public final class MainMenuScreen extends List implements CommandListener {
     iconMap.put(Configuration.MENU_FAVORITES, Configuration.favoriteIcon);
     iconMap.put(Configuration.MENU_DISCOVER_PLAYLISTS, Configuration.playlistIcon);
     iconMap.put(Configuration.MENU_RECENT, Configuration.recentIcon);
+    iconMap.put(Configuration.MENU_DOWNLOADS, Configuration.musicIcon);
+    iconMap.put(Configuration.MENU_FILES, Configuration.fileExplorerIcon);
     iconMap.put(Configuration.MENU_SETTINGS, Configuration.settingsIcon);
     iconMap.put(Configuration.MENU_ABOUT, Configuration.infoIcon);
     iconMap.put(Configuration.MENU_EQUALIZER, Configuration.equalizerIcon);
+    iconMap.put(Configuration.MENU_MPGRAM, Configuration.mpgramIcon);
+    iconMap.put(Configuration.MENU_GITHUB, Configuration.githubIcon);
+    iconMap.put(Configuration.MENU_NOTES, Configuration.notesIcon);
   }
 
   public void commandAction(Command c, Displayable d) {
@@ -69,6 +76,8 @@ public final class MainMenuScreen extends List implements CommandListener {
         handleCancel();
       } else if (c == Commands.playerNowPlaying()) {
         host.openNowPlaying();
+      } else if (c == Commands.openUri()) {
+        host.openUri();
       }
     } catch (Exception e) {
       navigator.showAlert(e.toString(), AlertType.ERROR);
@@ -101,6 +110,7 @@ public final class MainMenuScreen extends List implements CommandListener {
     addCommand(Commands.menuSort());
     addCommand(Commands.menuVisibility());
     addCommand(Commands.playerNowPlaying());
+    addCommand(Commands.openUri());
   }
 
   private void populateVisibilityMenu() {
@@ -262,6 +272,7 @@ public final class MainMenuScreen extends List implements CommandListener {
     removeCommand(Commands.menuSort());
     removeCommand(Commands.menuVisibility());
     removeCommand(Commands.playerNowPlaying());
+    removeCommand(Commands.openUri());
     addCommand(Commands.formSave());
     addCommand(Commands.formCancel());
   }

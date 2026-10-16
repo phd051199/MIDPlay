@@ -2,6 +2,8 @@ package midplay.player;
 
 import javax.microedition.lcdui.Image;
 import midplay.net.BinaryImageLoadOperation;
+import midplay.net.NetworkOperation;
+import midplay.net.SpriteSheetOperation;
 import midplay.util.Utils;
 
 public final class AlbumArtLoader {
@@ -13,7 +15,7 @@ public final class AlbumArtLoader {
   int lastScaledSize = -1;
   String albumArtUrl;
   boolean loadingAlbumArt, albumArtLoaded;
-  BinaryImageLoadOperation currentImageLoadOperation;
+  NetworkOperation currentImageLoadOperation;
   int artLoadKey = 0;
 
   AlbumArtLoader(PlayerScreen screen) {
@@ -21,12 +23,17 @@ public final class AlbumArtLoader {
   }
 
   void setAlbumArtUrl(String url) {
-    if (url != null && !url.equals(albumArtUrl)) {
-      stopCurrentImageLoad();
-      resetImageState(url);
-      if (screen.displayWidth > 0 && !screen.isLargeScreen) {
-        loadAlbumArt();
-      }
+    if (url != null && url.length() == 0) {
+      url = null;
+    }
+    boolean unchanged = url == null ? albumArtUrl == null : url.equals(albumArtUrl);
+    if (unchanged) {
+      return;
+    }
+    stopCurrentImageLoad();
+    resetImageState(url);
+    if (url != null && screen.displayWidth > 0 && !screen.isLargeScreen) {
+      loadAlbumArt();
     }
   }
 
@@ -42,10 +49,45 @@ public final class AlbumArtLoader {
         calculateAlbumArtSize(
             screen.displayWidth, screen.displayHeight, screen.isLandscape, screen.isLargeScreen);
     final int key = ++artLoadKey;
+    startSpriteLoad(imageUrl, targetSize, key);
+  }
 
-    currentImageLoadOperation =
-        new BinaryImageLoadOperation(imageUrl, targetSize, new ImageLoadCallback(key));
-    currentImageLoadOperation.start();
+  private void startSpriteLoad(final String imageUrl, final int size, final int key) {
+    SpriteSheetOperation operation =
+        new SpriteSheetOperation(
+            new String[] {Utils.withArtType(imageUrl, 1)},
+            size,
+            size,
+            1,
+            new SpriteSheetOperation.Listener() {
+              public void onSheet(Image[] cells) {
+                if (key != artLoadKey || !loadingAlbumArt) {
+                  return;
+                }
+                Image cell = cells != null && cells.length > 0 ? cells[0] : null;
+                if (cell == null) {
+                  startConvertLoad(imageUrl, size, key);
+                  return;
+                }
+                new ImageLoadCallback(key).onImageLoaded(cell);
+              }
+
+              public void onError(Exception e) {
+                startConvertLoad(imageUrl, size, key);
+              }
+            });
+    currentImageLoadOperation = operation;
+    operation.start();
+  }
+
+  private void startConvertLoad(String imageUrl, int size, int key) {
+    if (key != artLoadKey || !loadingAlbumArt) {
+      return;
+    }
+    BinaryImageLoadOperation operation =
+        new BinaryImageLoadOperation(imageUrl, size, new ImageLoadCallback(key));
+    currentImageLoadOperation = operation;
+    operation.start();
   }
 
   private static int calculateAlbumArtSize(
@@ -113,6 +155,7 @@ public final class AlbumArtLoader {
   void cancelImageLoads() {
     stopCurrentImageLoad();
     loadingAlbumArt = false;
+    artLoadKey++;
     screen.trackTextRenderer.trackNameTextImage.stop();
     screen.trackTextRenderer.artistTextImage.stop();
   }
@@ -170,6 +213,7 @@ public final class AlbumArtLoader {
               }
               albumArt = null;
               finishImageLoad();
+              albumArtLoaded = false;
             }
           });
     }

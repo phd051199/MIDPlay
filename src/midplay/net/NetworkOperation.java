@@ -12,7 +12,13 @@ public abstract class NetworkOperation {
     this.thread =
         new Thread() {
           public void run() {
-            execute();
+            try {
+              execute();
+            } catch (Throwable t) {
+              if (t instanceof Exception) {
+                onError((Exception) t);
+              }
+            }
           }
         };
     this.thread.start();

@@ -12,10 +12,12 @@ public class SettingsManager {
   private static final int SETTINGS_ID = 1;
   private static SettingsManager instance;
   private static String currentLanguage;
+  private static String currentService;
   private static String currentQuality;
   private static String currentSearchType;
   private static int currentAutoUpdate;
   private static String currentPlayerMethod;
+  private static String currentDownloadPath;
   private static String detectedDefaultMethod;
   private static boolean detectedDefaultMethodResolved;
   private static int currentRepeatMode;
@@ -24,10 +26,14 @@ public class SettingsManager {
   private static String currentThemeMode;
   private static int currentBlackberryWifi;
   private static int currentSaveLastSession;
+  private static int currentMpgramAutoLogin;
   private static int currentThumbnails;
   private static boolean currentEqEnabled;
   private static int currentEqPreset; // -1 = manual/custom levels
   private static int[] currentEqLevels;
+  private static int currentCacheEnabled;
+  private static String currentCacheStorage;
+  private static String currentCacheDirectory;
 
   public static SettingsManager getInstance() {
     if (instance == null) {
@@ -106,20 +112,28 @@ public class SettingsManager {
     JSONObject settings = settings();
     setCurrentLanguage(settings.getString("language", "en"));
     setCurrentThemeMode(settings.getString("themeMode", Configuration.THEME_LIGHT));
+    currentService = settings.getString("service", Configuration.SERVICE_NCT);
     currentQuality = settings.getString("quality", Configuration.QUALITY_128);
     currentSearchType = settings.getString("searchType", Configuration.SEARCH_PLAYLIST);
     currentAutoUpdate = settings.getInt("autoUpdate", Configuration.AUTO_UPDATE_ENABLED);
     currentPlayerMethod = settings.getString("playerMethod", getDefaultPlayerMethod());
+    currentDownloadPath =
+        settings.getString("downloadPath", Configuration.DEFAULT_DOWNLOAD_PATH);
     currentRepeatMode = settings.getInt("repeatMode", Configuration.PLAYER_REPEAT_ALL);
     currentShuffleMode = settings.getInt("shuffleMode", Configuration.PLAYER_SHUFFLE_OFF);
     currentVolumeLevel = settings.getInt("volumeLevel", Configuration.PLAYER_MAX_VOLUME);
     currentBlackberryWifi = settings.getInt("blackberryWifi", Configuration.BLACKBERRY_WIFI_ON);
     currentSaveLastSession =
         settings.getInt("saveLastSession", Configuration.SAVE_LAST_SESSION_OFF);
+    currentMpgramAutoLogin =
+        settings.getInt("mpgramAutoLogin", Configuration.MPGRAM_AUTO_LOGIN_OFF);
     currentThumbnails = settings.getInt("thumbnails", Configuration.THUMBNAILS_ON);
     currentEqEnabled = settings.getBoolean("eqEnabled", false);
     currentEqPreset = settings.getInt("eqPreset", -1);
     currentEqLevels = parseLevelsCsv(settings.getString("eqLevels", ""));
+    currentCacheEnabled = settings.getInt("cacheEnabled", Configuration.CACHE_OFF);
+    currentCacheStorage = settings.getString("cacheStorage", Configuration.CACHE_STORAGE_RMS);
+    currentCacheDirectory = settings.getString("cacheDirectory", Configuration.DEFAULT_CACHE_PATH);
   }
 
   private JSONObject getSettingsJSON() {
@@ -133,6 +147,7 @@ public class SettingsManager {
   private JSONObject createDefaultSettings() {
     JSONObject settings = new JSONObject();
     settings.put("language", "en");
+    settings.put("service", Configuration.SERVICE_NCT);
     settings.put("quality", Configuration.QUALITY_128);
     settings.put("repeatMode", Configuration.PLAYER_REPEAT_ALL);
     settings.put("shuffleMode", Configuration.PLAYER_SHUFFLE_OFF);
@@ -140,13 +155,18 @@ public class SettingsManager {
     settings.put("searchType", Configuration.SEARCH_PLAYLIST);
     settings.put("autoUpdate", Configuration.AUTO_UPDATE_ENABLED);
     settings.put("playerMethod", getDefaultPlayerMethod());
+    settings.put("downloadPath", Configuration.DEFAULT_DOWNLOAD_PATH);
     settings.put("themeMode", Configuration.THEME_LIGHT);
     settings.put("blackberryWifi", Configuration.BLACKBERRY_WIFI_ON);
     settings.put("saveLastSession", Configuration.SAVE_LAST_SESSION_OFF);
+    settings.put("mpgramAutoLogin", Configuration.MPGRAM_AUTO_LOGIN_OFF);
     settings.put("thumbnails", Configuration.THUMBNAILS_ON);
     settings.put("eqEnabled", false);
     settings.put("eqPreset", -1);
     settings.put("eqLevels", "");
+    settings.put("cacheEnabled", Configuration.CACHE_OFF);
+    settings.put("cacheStorage", Configuration.CACHE_STORAGE_RMS);
+    settings.put("cacheDirectory", Configuration.DEFAULT_CACHE_PATH);
     return settings;
   }
 
@@ -197,6 +217,11 @@ public class SettingsManager {
     setCurrentThemeMode(mode);
   }
 
+  public void saveService(String serviceCode) throws RecordStoreException {
+    saveSetting("service", serviceCode);
+    currentService = serviceCode;
+  }
+
   public void saveQuality(String qualityCode) throws RecordStoreException {
     saveSetting("quality", qualityCode);
     currentQuality = qualityCode;
@@ -217,9 +242,41 @@ public class SettingsManager {
     currentSaveLastSession = saveLastSession;
   }
 
+  public void saveMpgramAutoLogin(int mpgramAutoLogin) throws RecordStoreException {
+    saveSetting("mpgramAutoLogin", mpgramAutoLogin);
+    currentMpgramAutoLogin = mpgramAutoLogin;
+  }
+
   public void savePlayerMethod(String playerMethod) throws RecordStoreException {
     saveSetting("playerMethod", playerMethod);
     currentPlayerMethod = playerMethod;
+  }
+
+  public void saveDownloadPath(String downloadPath) throws RecordStoreException {
+    saveSetting("downloadPath", downloadPath);
+    currentDownloadPath = downloadPath;
+  }
+
+  public String getCurrentDownloadPath() {
+    if (currentDownloadPath == null || currentDownloadPath.length() == 0) {
+      currentDownloadPath = Configuration.DEFAULT_DOWNLOAD_PATH;
+    }
+    return currentDownloadPath;
+  }
+
+  public int getCurrentCacheEnabled() {
+    return currentCacheEnabled;
+  }
+
+  public String getCurrentCacheStorage() {
+    return currentCacheStorage;
+  }
+
+  public String getCurrentCacheDirectory() {
+    if (currentCacheDirectory == null || currentCacheDirectory.length() == 0) {
+      currentCacheDirectory = Configuration.DEFAULT_CACHE_PATH;
+    }
+    return currentCacheDirectory;
   }
 
   public void saveRepeatMode(int repeatMode) throws RecordStoreException {
@@ -298,6 +355,10 @@ public class SettingsManager {
     return currentThemeMode;
   }
 
+  public String getCurrentService() {
+    return currentService;
+  }
+
   public void setCurrentThemeMode(String mode) {
     currentThemeMode = mode;
     Theme.setDark(Configuration.THEME_DARK.equals(mode));
@@ -318,6 +379,10 @@ public class SettingsManager {
 
   public int getCurrentSaveLastSession() {
     return currentSaveLastSession;
+  }
+
+  public int getCurrentMpgramAutoLogin() {
+    return currentMpgramAutoLogin;
   }
 
   public String getCurrentPlayerMethod() {

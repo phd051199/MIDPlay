@@ -20,6 +20,7 @@ import midplay.util.Utils;
 public final class FavoritesScreen extends BaseList {
   private final FavoritesManager favoritesManager;
   private Playlists favorites;
+  private final Command deleteAllCommand;
 
   public FavoritesScreen(Navigator navigator) {
     super(Lang.tr("menu.favorites"), navigator);
@@ -28,6 +29,8 @@ public final class FavoritesScreen extends BaseList {
     addCommand(Commands.addAllToQueue());
     addCommand(Commands.playlistRemove());
     addCommand(Commands.playlistRename());
+    deleteAllCommand = new Command(Lang.tr("playlist.delete_all"), Command.SCREEN, 5);
+    addCommand(deleteAllCommand);
     populateItems();
   }
 
@@ -84,7 +87,25 @@ public final class FavoritesScreen extends BaseList {
       showRenamePlaylistForm();
     } else if (c == Commands.addAllToQueue()) {
       addAllToQueue();
+    } else if (c == deleteAllCommand) {
+      deleteAllPlaylists();
     }
+  }
+
+  private void deleteAllPlaylists() {
+    if (favorites == null || favorites.getPlaylists() == null || favorites.getPlaylists().length == 0) {
+      return;
+    }
+    navigator.showConfirmationAlert(
+        Lang.tr("playlist.confirm.delete_all"),
+        new Runnable() {
+          public void run() {
+            FavoritesManager.getInstance().removeAllPlaylists();
+            refresh();
+            navigator.dismissAlert();
+          }
+        },
+        AlertType.WARNING);
   }
 
   private void addAllToQueue() {

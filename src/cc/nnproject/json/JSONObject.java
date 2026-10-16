@@ -32,7 +32,7 @@ public class JSONObject extends AbstractJSON {
     table = new Hashtable();
   }
 
-  Object get(String name) throws JSONException {
+  public Object get(String name) throws JSONException {
     try {
       if (has(name)) {
         Object o = table.get(name);
@@ -51,7 +51,7 @@ public class JSONObject extends AbstractJSON {
     throw new JSONException("No value for name: " + name);
   }
 
-  Object get(String name, Object def) {
+  public Object get(String name, Object def) {
     if (!has(name)) {
       return def;
     }
@@ -113,7 +113,7 @@ public class JSONObject extends AbstractJSON {
     }
   }
 
-  long getLong(String name) throws JSONException {
+  public long getLong(String name) throws JSONException {
     return JSON.getLong(get(name));
   }
 
@@ -128,7 +128,7 @@ public class JSONObject extends AbstractJSON {
     }
   }
 
-  boolean getBoolean(String name) throws JSONException {
+  public boolean getBoolean(String name) throws JSONException {
     Object o = get(name);
     if (o == JSON.TRUE) {
       return true;
@@ -166,6 +166,51 @@ public class JSONObject extends AbstractJSON {
   // hasKey
   public boolean has(String name) {
     return table.containsKey(name);
+  }
+
+  public boolean isNull(String name) {
+    return has(name) && table.get(name) == JSON.json_null;
+  }
+
+  public void put(String name, Object value) {
+    table.put(name, value == null ? JSON.json_null : value);
+  }
+
+  public void remove(String name) {
+    table.remove(name);
+  }
+
+  public void clear() {
+    table.clear();
+  }
+
+  public boolean isEmpty() {
+    return table.isEmpty();
+  }
+
+  public static JSONObject parseObject(String text) {
+    return JSON.getObject(text);
+  }
+
+  public static Object parseJSON(String text) {
+    return JSON.parseJSON(text);
+  }
+
+  public static int getInt(Object value) {
+    return JSON.getInt(value);
+  }
+
+  public static long getLong(Object value) {
+    return JSON.getLong(value);
+  }
+
+  public String format(int indent) {
+    return build();
+  }
+
+  public static void writeString(java.io.OutputStream out, String value)
+      throws java.io.IOException {
+    out.write(JSON.escape_utf8(value).getBytes("UTF-8"));
   }
 
   public void put(String name, AbstractJSON json) {
