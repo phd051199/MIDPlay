@@ -50,7 +50,8 @@
     "files_deleted": "{0} arquivos excluídos",
     "tracks_removed": "{0} faixas removidas da playlist",
     "download_summary": "Resultado dos downloads: {0}",
-    "download_none": "Não há novas faixas para baixar"
+    "download_none": "Não há novas faixas para baixar",
+    "notes_deleted": "Notas excluídas: {0}"
   },
   "language": {
     "en": "English",
@@ -93,11 +94,6 @@
     "import_token_note": "Importar token de nota do MIDPlay",
     "token_empty": "O arquivo ou a nota não contém um token"
   },
-  "github": {
-    "import_token_file": "Importar token de arquivo",
-    "import_token_note": "Importar token de nota do MIDPlay",
-    "token_empty": "O arquivo ou a nota não contém um token"
-  },
   "note": {
     "title": "Bloco de notas",
     "clear": "Limpar",
@@ -128,7 +124,11 @@
     "deselect_all": "Desselecionar tudo",
     "select_at_least_one": "Selecione pelo menos uma nota",
     "export_filename": "Nome do arquivo exportado",
-    "file_name": "Nome do arquivo"
+    "file_name": "Nome do arquivo",
+    "select_multiple": "Selecionar notas",
+    "delete_selected": "Excluir notas selecionadas",
+    "delete_selected_confirm": "Excluir as notas selecionadas?",
+    "delete_confirm": "Excluir {0}?"
   },
   "open_uri": {
     "title": "Abrir...",
@@ -210,6 +210,8 @@
       "cleared": "Todos os downloads foram excluídos"
     },
     "confirm": {
+      "delete": "Excluir esta música baixada?",
+      "delete_selected": "Excluir as músicas baixadas selecionadas?",
       "clear": "Excluir todas as músicas baixadas?"
     }
   },

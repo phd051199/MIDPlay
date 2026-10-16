@@ -131,7 +131,18 @@ public final class DownloadsScreen extends BaseList {
         Lang.tr("menu.downloads"), all, index, 0L, navigator);
   }
 
-  private void deleteSelected(int index) {
+  private void deleteSelected(final int index) {
+    navigator.showConfirmationAlert(
+        Lang.tr("download.confirm.delete"),
+        new Runnable() {
+          public void run() {
+            performDelete(index);
+          }
+        },
+        AlertType.WARNING);
+  }
+
+  private void performDelete(int index) {
     Track track = tracks[index];
     if (downloadManager.removeDownload(track)) {
       navigator.showAlert(Lang.tr("download.status.deleted"), AlertType.CONFIRMATION);

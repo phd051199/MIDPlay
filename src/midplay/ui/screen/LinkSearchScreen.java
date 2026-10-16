@@ -22,11 +22,14 @@ public final class LinkSearchScreen extends BaseForm {
   private static final int MAX_KEYWORD_LENGTH = 150;
 
   private final DownloadManager downloadManager = DownloadManager.getInstance();
+  private final Displayable returnScreen;
   private final String path;
   private final TextField keywordField;
 
-  public LinkSearchScreen(Navigator navigator, String path, String keyword) {
+  public LinkSearchScreen(
+      Navigator navigator, Displayable returnScreen, String path, String keyword) {
     super(Lang.tr("download.link"), navigator);
+    this.returnScreen = returnScreen;
     this.path = path;
     this.append(new StringItem(null, downloadManager.fileNameForPath(path)));
     this.keywordField =
@@ -62,7 +65,8 @@ public final class LinkSearchScreen extends BaseForm {
             new AbstractListForwarder(navigator, "search.status.no_results") {
               public void onDataReceived(JsonListResult result) {
                 navigator.forward(
-                    new LinkTrackPickerScreen(title, (Tracks) result, navigator, path));
+                    new LinkTrackPickerScreen(
+                        title, (Tracks) result, navigator, path, returnScreen));
               }
             }));
   }
@@ -88,9 +92,12 @@ public final class LinkSearchScreen extends BaseForm {
         new FormHelpers.LinkSubmitHandler() {
           public void onSubmit(String linkUrl, String linkThumb, String linkName, String linkArtist) {
             if (downloadManager.linkLocalFile(path, linkUrl, linkThumb, linkName, linkArtist)) {
-              navigator.back();
-              navigator.back();
-              navigator.showAlert(Lang.tr("download.link_status"), AlertType.CONFIRMATION);
+              if (returnScreen instanceof LocalFileLinkScreen) {
+                ((LocalFileLinkScreen) returnScreen).onFileLinked();
+              }
+              navigator.popTo(returnScreen);
+              navigator.showAlert(
+                  Lang.tr("download.link_status"), AlertType.CONFIRMATION, returnScreen);
             } else {
               navigator.showAlert(Lang.tr("download.link_error"), AlertType.ERROR);
             }

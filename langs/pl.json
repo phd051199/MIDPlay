@@ -125,6 +125,8 @@
       "cleared": "Usunięto wszystkie pobrane pliki"
     },
     "confirm": {
+      "delete": "Usunąć ten pobrany utwór?",
+      "delete_selected": "Usunąć wybrane pobrane utwory?",
       "clear": "Usunąć wszystkie pobrane utwory?"
     }
   },
@@ -257,5 +259,13 @@
       "expired": "Koniec odliczania",
       "set": "Aktywowano odliczanie"
     }
+  },
+  "note": {
+    "select_multiple": "Wybierz notatki",
+    "delete_selected": "Usuń wybrane notatki",
+    "delete_selected_confirm": "Usunąć wybrane notatki?"
+  },
+  "bulk": {
+    "notes_deleted": "Usunięto {0} notatek"
   }
 }

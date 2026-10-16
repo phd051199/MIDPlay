@@ -107,6 +107,26 @@ public class Navigator {
     return (Displayable) navStack.peek();
   }
 
+  public void popTo(final Displayable target) {
+    if (target == null) {
+      return;
+    }
+    Display.getDisplay(this.midlet)
+        .callSerially(
+            new Runnable() {
+              public void run() {
+                while (!navStack.isEmpty() && navStack.peek() != target) {
+                  navStack.pop();
+                }
+                if (!navStack.isEmpty() && navStack.peek() == target) {
+                  navStack.pop();
+                }
+                beforeAlert = null;
+                Display.getDisplay(midlet).setCurrent(target);
+              }
+            });
+  }
+
   public void clear() {
     navStack.removeAllElements();
     beforeAlert = null;

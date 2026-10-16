@@ -125,6 +125,8 @@
       "cleared": "Tüm indirmeler silindi"
     },
     "confirm": {
+      "delete": "İndirilen bu şarkı silinsin mi?",
+      "delete_selected": "Seçilen indirilen şarkılar silinsin mi?",
       "clear": "İndirilen tüm şarkılar silinsin mi?"
     }
   },
@@ -265,5 +267,13 @@
     "manual": "Manuel",
     "band": "Band",
     "not_supported": "Ekolayzır bu cihazda desteklenmiyor"
+  },
+  "note": {
+    "select_multiple": "Notları seç",
+    "delete_selected": "Seçili notları sil",
+    "delete_selected_confirm": "Seçili notlar silinsin mi?"
+  },
+  "bulk": {
+    "notes_deleted": "{0} not silindi"
   }
 }

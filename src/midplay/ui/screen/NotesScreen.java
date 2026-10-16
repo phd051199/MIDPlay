@@ -1,56 +1,60 @@
 package midplay.ui.screen;
 
+import java.util.Vector;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
+import javax.microedition.lcdui.List;
 import javax.microedition.lcdui.TextBox;
 import javax.microedition.lcdui.TextField;
 import midplay.store.NotesManager;
 import midplay.store.NotesManager.Note;
-import midplay.ui.BaseList;
 import midplay.ui.Commands;
 import midplay.ui.Navigator;
 import midplay.util.Lang;
 import midplay.util.Utils;
 
-public final class NotesScreen extends BaseList {
+public final class NotesScreen extends List implements CommandListener {
+  private final Navigator navigator;
   private final Command newCommand;
-  private final Command deleteCommand;
-  private final Command exportCommand;
-  private final Command importCommand;
   private final Command searchCommand;
   private final Command clearSearchCommand;
   private final Command customTitleCommand;
   private final Command pinCommand;
+  private final Command deleteCommand;
+  private final Command selectMultipleCommand;
   private Note[] notes;
   private String searchQuery = "";
 
   public NotesScreen(Navigator navigator) {
-    super(Lang.tr("note.title"), navigator);
+    super(Lang.tr("note.title"), List.IMPLICIT);
+    this.navigator = navigator;
     newCommand = new Command(Lang.tr("note.new"), Command.SCREEN, 1);
-    deleteCommand = new Command(Lang.tr("note.delete"), Command.SCREEN, 2);
-    exportCommand = new Command(Lang.tr("note.export"), Command.SCREEN, 3);
-    importCommand = new Command(Lang.tr("note.import"), Command.SCREEN, 4);
     searchCommand = new Command(Lang.tr("note.search"), Command.SCREEN, 5);
     clearSearchCommand = new Command(Lang.tr("note.clear_search"), Command.SCREEN, 6);
     customTitleCommand = new Command(Lang.tr("note.custom_title"), Command.SCREEN, 7);
     pinCommand = new Command(Lang.tr("note.toggle_pin"), Command.SCREEN, 8);
+    deleteCommand = new Command(Lang.tr("note.delete"), Command.SCREEN, 9);
+    selectMultipleCommand = new Command(Lang.tr("action.select"), Command.SCREEN, 10);
     addCommand(newCommand);
-    addCommand(deleteCommand);
-    addCommand(exportCommand);
-    addCommand(importCommand);
     addCommand(searchCommand);
     addCommand(clearSearchCommand);
     addCommand(customTitleCommand);
     addCommand(pinCommand);
+    addCommand(deleteCommand);
+    addCommand(selectMultipleCommand);
+    addCommand(Commands.back());
+    addCommand(Commands.playerNowPlaying());
+    setCommandListener(this);
     populateItems();
   }
 
-  protected void populateItems() {
+  private void populateItems() {
+    deleteAll();
     Note[] all = NotesManager.getInstance().getNotes();
-    java.util.Vector visible = new java.util.Vector();
+    Vector visible = new Vector();
     for (int i = 0; i < all.length; i++) {
       if (matches(all[i])) visible.addElement(all[i]);
     }
@@ -62,27 +66,32 @@ public final class NotesScreen extends BaseList {
     if (notes.length == 0) append(searchQuery.length() == 0 ? Lang.tr("note.empty") : Lang.tr("note.no_search_results"), null);
   }
 
-  protected void handleSelection() {
-    Note note = selected();
-    if (note != null) navigator.forward(new NoteReaderScreen(note, navigator, refreshOnClose()));
-  }
-
-  protected void showNotify() {
-    super.showNotify();
+  public void showNotify() {
+    
     refresh();
   }
 
-  protected void handleCommand(Command command, Displayable displayable) {
-    if (command == newCommand) createNote();
-    else if (command == deleteCommand) deleteNote();
-    else if (command == exportCommand) exportNotes();
-    else if (command == importCommand) importNotes();
-    else if (command == searchCommand) searchNotes();
-    else if (command == clearSearchCommand) {
-      searchQuery = "";
-      refresh();
-    } else if (command == customTitleCommand) setCustomTitle();
-    else if (command == pinCommand) togglePin();
+  public void commandAction(Command command, Displayable displayable) {
+    try {
+      if (command == List.SELECT_COMMAND) {
+        Note note = selected();
+        if (note != null) navigator.forward(new NoteReaderScreen(note, navigator, refreshOnClose()));
+      } else if (command == Commands.back()) {
+        navigator.back();
+      } else if (command == Commands.playerNowPlaying()) {
+        midplay.ui.PlayerNavHelper.showNowPlaying(navigator);
+      } else if (command == newCommand) createNote();
+      else if (command == searchCommand) searchNotes();
+      else if (command == clearSearchCommand) {
+        searchQuery = "";
+        refresh();
+      } else if (command == customTitleCommand) setCustomTitle();
+      else if (command == pinCommand) togglePin();
+      else if (command == deleteCommand) deleteSelected();
+      else if (command == selectMultipleCommand) selectMultiple();
+    } catch (Exception e) {
+      navigator.showAlert(e.toString(), AlertType.ERROR);
+    }
   }
 
   private boolean matches(Note note) {
@@ -163,38 +172,31 @@ public final class NotesScreen extends BaseList {
     };
   }
 
-  private void deleteNote() {
+  private void deleteSelected() {
     final Note note = selected();
-    if (note == null) return;
-    navigator.showConfirmationAlert(Lang.tr("note.delete"), new Runnable() {
+    if (note == null) {
+      return;
+    }
+    navigator.showConfirmationAlert(Lang.tr("note.delete_confirm", note.title), new Runnable() {
       public void run() {
         try {
           NotesManager.getInstance().remove(note.id);
           refresh();
-          navigator.dismissAlert();
         } catch (Exception e) {
           navigator.showAlert(e.toString(), AlertType.ERROR);
         }
       }
-    }, AlertType.WARNING);
+    });
   }
 
-  private void exportNotes() {
-    navigator.forward(new NoteExportSelectionScreen(navigator));
+  private void selectMultiple() {
+    if (notes == null || notes.length == 0) {
+      return;
+    }
+    navigator.forward(new NotesMultiSelectScreen(navigator, notes, refreshOnClose()));
   }
 
-  private void importNotes() {
-    navigator.forward(new FileBrowserScreen(navigator, new FileBrowserScreen.FileSelectionListener() {
-      public void onFileSelected(String path) {
-        try {
-          NotesManager.getInstance().importFromDevice(path);
-          navigator.back();
-          refresh();
-          navigator.showAlert(Lang.tr("note.imported"), AlertType.CONFIRMATION);
-        } catch (Exception e) {
-          navigator.showAlert(e.toString(), AlertType.ERROR);
-        }
-      }
-    }));
+  private void refresh() {
+    populateItems();
   }
 }

@@ -83,10 +83,16 @@ public final class LocalFileLinkScreen extends BaseList {
     }
     String path = filePaths[index];
     navigator.forward(
-        new LinkSearchScreen(navigator, path, downloadManager.suggestedKeyword(path)));
+        new LinkSearchScreen(
+            navigator, this, path, downloadManager.suggestedKeyword(path)));
   }
 
   protected void handleCommand(Command c, Displayable d) {}
+
+  public void onFileLinked() {
+    downloadManager.invalidateListCaches();
+    refresh();
+  }
 
   protected void showNotify() {
     super.showNotify();

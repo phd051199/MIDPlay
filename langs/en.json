@@ -50,7 +50,8 @@
     "files_deleted": "Deleted {0} files",
     "tracks_removed": "Removed {0} tracks from the playlist",
     "download_summary": "Download result: {0}",
-    "download_none": "No new tracks to download"
+    "download_none": "No new tracks to download",
+    "notes_deleted": "Deleted {0} notes"
   },
   "language": {
     "en": "English",
@@ -91,11 +92,6 @@
   "github": {
     "import_token_file": "Import token from file",
     "import_token_note": "Import token from MIDPlay note",
-    "token_empty": "The file or note does not contain a token"
-  },
-  "github": {
-    "import_token_file": "Import token from file",
-    "import_token_note": "Import token from MIDPlay note",
     "token_empty": "The token file/note is empty"
   },
   "note": {
@@ -128,7 +124,11 @@
     "deselect_all": "Deselect all",
     "select_at_least_one": "Select at least one note",
     "export_filename": "Export file name",
-    "file_name": "File name"
+    "file_name": "File name",
+    "select_multiple": "Select notes",
+    "delete_selected": "Delete selected notes",
+    "delete_selected_confirm": "Delete the selected notes?",
+    "delete_confirm": "Delete {0}?"
   },
   "open_uri": {
     "title": "Open...",
@@ -210,6 +210,8 @@
       "cleared": "All downloads cleared"
     },
     "confirm": {
+      "delete": "Delete this downloaded song?",
+      "delete_selected": "Delete the selected downloaded songs?",
       "clear": "Delete all downloaded songs?"
     }
   },

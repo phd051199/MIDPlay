@@ -125,6 +125,8 @@
       "cleared": "Đã xóa toàn bộ bản tải xuống"
     },
     "confirm": {
+      "delete": "Xóa bài hát đã tải xuống này?",
+      "delete_selected": "Xóa các bài hát đã tải xuống đã chọn?",
       "clear": "Xóa tất cả bài hát đã tải xuống?"
     }
   },
@@ -265,5 +267,13 @@
     "manual": "Tùy chỉnh",
     "band": "Dải tần",
     "not_supported": "Thiết bị không hỗ trợ bộ chỉnh âm"
+  },
+  "note": {
+    "select_multiple": "Chọn ghi chú",
+    "delete_selected": "Xóa ghi chú đã chọn",
+    "delete_selected_confirm": "Xóa các ghi chú đã chọn?"
+  },
+  "bulk": {
+    "notes_deleted": "Đã xóa {0} ghi chú"
   }
 }
