@@ -9,6 +9,7 @@
 -microedition
 
 -keep public class * extends javax.microedition.midlet.MIDlet
+-keep public class midplay.** { *; }
 
 -dontoptimize
 

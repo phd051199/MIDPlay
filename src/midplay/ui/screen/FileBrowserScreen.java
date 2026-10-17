@@ -67,6 +67,7 @@ public final class FileBrowserScreen extends BaseList {
   private final Command searchCommand;
   private final Command clearSearchCommand;
   private final Command selectMultipleCommand;
+  private final Command gotoPathCommand;
 
   public FileBrowserScreen(Navigator navigator) {
     this(navigator, sessionStartPath(), null, null);
@@ -99,6 +100,7 @@ public final class FileBrowserScreen extends BaseList {
     searchCommand = new Command(Lang.tr("files.search"), Command.SCREEN, 5);
     clearSearchCommand = new Command(Lang.tr("files.clear_search"), Command.SCREEN, 8);
     selectMultipleCommand = new Command(Lang.tr("files.select_multiple"), Command.SCREEN, 9);
+    gotoPathCommand = new Command(Lang.tr("files.goto_path"), Command.SCREEN, 10);
     this.currentPath = normalizePath(path);
     lastSessionPath = this.currentPath;
     this.currentTitle = Lang.tr("menu.files");
@@ -115,6 +117,7 @@ public final class FileBrowserScreen extends BaseList {
     } else if (fileSelectionListener == null && directorySelectionListener == null) {
       addCommand(selectMultipleCommand);
     }
+    addCommand(gotoPathCommand);
     populateItems();
   }
 
@@ -618,4 +621,30 @@ public final class FileBrowserScreen extends BaseList {
       }
     }
   }
+
+  private void promptGotoPath() {
+    final TextBox box = new TextBox(Lang.tr("files.open_path"), currentPath, 1024, TextField.ANY);
+    box.addCommand(Commands.ok());
+    box.addCommand(Commands.cancel());
+    box.setCommandListener(
+        new CommandListener() {
+          public void commandAction(Command c, Displayable d) {
+            if (c == Commands.ok()) {
+              String value = box.getString();
+              value = value == null ? "" : value.trim();
+              if (value.length() == 0) {
+                navigator.showAlert(Lang.tr("files.open_path_required"), AlertType.ERROR);
+                return;
+              }
+              String path = normalizePath(value);
+              navigator.back();
+              navigateTo(path);
+            } else if (c == Commands.cancel()) {
+              navigator.back();
+            }
+          }
+        });
+    navigator.forward(box);
+  }
+
 }

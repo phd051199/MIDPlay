@@ -23,6 +23,7 @@ public class Configuration {
   public static final String STORAGE_CACHE = "storage.cache";
   public static final String STORAGE_CACHE_AUDIO = "storage.cache_audio";
   public static final String STORAGE_NOTES = "storage.notes";
+  public static final String STORAGE_TASKS = "storage.tasks";
 
   public static final String DEFAULT_DOWNLOAD_PATH = "file:///SDCard/MIDPlay/Downloads/";
   public static final String DEFAULT_CACHE_PATH = "file:///SDCard/MIDPlay/Cache/";
@@ -46,6 +47,7 @@ public class Configuration {
   public static final String MENU_GITHUB = "menu.github";
   public static final String MENU_OPEN_URI = "menu.open_uri";
   public static final String MENU_NOTES = "menu.notes";
+  public static final String MENU_TASKS = "menu.tasks";
   public static final String MENU_NOW_PLAYING = "menu.now_playing";
 
   public static final String SERVICE_NCT = "NCT";
@@ -127,6 +129,7 @@ public class Configuration {
   public static Image mpgramIcon;
   public static Image githubIcon;
   public static Image notesIcon;
+  public static Image tasksIcon;
   public static Image fileExplorerIcon;
   public static Image folderBadgeIcon;
   public static Image musicBadgeIcon;
@@ -164,6 +167,7 @@ public class Configuration {
     mpgramIcon = Utils.resizeImageToFit(Image.createImage("/m.png"), 36, 36);
     githubIcon = Utils.resizeImageToFit(Image.createImage("/g.png"), 36, 36);
     notesIcon = createNotesIcon();
+    tasksIcon = createTasksIcon();
     fileExplorerIcon = createFileExplorerIcon();
 
     folderBadgeIcon = Utils.resizeImageToFit(folderIcon, BADGE_SIZE, BADGE_SIZE);
@@ -198,6 +202,35 @@ public class Configuration {
     graphics.drawLine(20, 30, 30, 20);
     graphics.setColor(0xD37C35);
     graphics.drawLine(29, 19, 30, 20);
+    return image;
+  }
+
+  private static Image createTasksIcon() {
+    Image image = Image.createImage(36, 36);
+    Graphics graphics = image.getGraphics();
+    // Clipboard board with a rounded clip at the top.
+    graphics.setColor(0x243447);
+    graphics.fillRoundRect(6, 6, 25, 28, 4, 4);
+    graphics.setColor(0xF4F7FB);
+    graphics.fillRoundRect(4, 4, 25, 28, 4, 4);
+    graphics.setColor(0x52708F);
+    graphics.drawRoundRect(4, 4, 25, 28, 4, 4);
+    graphics.setColor(0x4B83B5);
+    graphics.fillRoundRect(11, 1, 11, 7, 3, 3);
+    graphics.setColor(0xF4F7FB);
+    graphics.fillRect(14, 3, 5, 3);
+    // Checklist rows with one ticked item.
+    graphics.setColor(0x52708F);
+    graphics.drawRect(8, 12, 6, 6);
+    graphics.drawRect(8, 19, 6, 6);
+    graphics.drawRect(8, 26, 6, 6);
+    graphics.setColor(0x43A047);
+    graphics.drawLine(9, 15, 10, 17);
+    graphics.drawLine(10, 17, 13, 13);
+    graphics.setColor(0x4B83B5);
+    graphics.fillRect(17, 14, 10, 2);
+    graphics.fillRect(17, 21, 8, 2);
+    graphics.fillRect(17, 28, 9, 2);
     return image;
   }
 

@@ -26,6 +26,7 @@ import midplay.store.LastSessionManager;
 import midplay.store.NotesManager;
 import midplay.store.RecentManager;
 import midplay.store.SettingsManager;
+import midplay.store.TasksManager;
 import midplay.ui.Commands;
 import midplay.ui.MainMenuScreen;
 import midplay.ui.MenuManager;
@@ -41,6 +42,7 @@ import midplay.ui.screen.DownloadsScreen;
 import midplay.ui.screen.FileBrowserScreen;
 import midplay.ui.screen.OpenUriScreen;
 import midplay.ui.screen.NotesScreen;
+import midplay.ui.screen.TasksScreen;
 import midplay.util.Lang;
 import midplay.util.Utils;
 import mpgram.MP;
@@ -181,6 +183,13 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost, MP.Host,
             goToNotesScreen();
           }
         });
+    menuManager.registerAction(
+        Configuration.MENU_TASKS,
+        new Runnable() {
+          public void run() {
+            goToTasksScreen();
+          }
+        });
   }
 
   public void openUri() {
@@ -309,21 +318,37 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost, MP.Host,
       return;
     }
     APP_VERSION = getAppProperty("MIDlet-Version");
-    settingsManager.loadSettings();
-    loadIcons();
+    try {
+      settingsManager.loadSettings();
+    } catch (Throwable t) {
+      // A corrupt settings record must never stop the MIDlet from starting.
+    }
+    try {
+      loadIcons();
+    } catch (Throwable t) {
+    }
     mainMenu = new MainMenuScreen(navigator, menuManager, this);
     navigator.forward(mainMenu);
-    maybeOfferResume();
-    if (settingsManager.getCurrentMpgramAutoLogin() == Configuration.MPGRAM_AUTO_LOGIN_ON
-        && MP.hasSavedSession()) {
-      navigator.callSerially(
-          new Runnable() {
-            public void run() {
-              MP.warmUp(MIDPlay.this);
-            }
-          });
+    try {
+      maybeOfferResume();
+    } catch (Throwable t) {
     }
-    autoCheckForUpdate();
+    try {
+      if (settingsManager.getCurrentMpgramAutoLogin() == Configuration.MPGRAM_AUTO_LOGIN_ON
+          && MP.hasSavedSession()) {
+        navigator.callSerially(
+            new Runnable() {
+              public void run() {
+                MP.warmUp(MIDPlay.this);
+              }
+            });
+      }
+    } catch (Throwable t) {
+    }
+    try {
+      autoCheckForUpdate();
+    } catch (Throwable t) {
+    }
     initialized = true;
   }
 
@@ -549,6 +574,10 @@ public class MIDPlay extends MIDlet implements MainMenuScreen.MenuHost, MP.Host,
 
   private void goToNotesScreen() {
     navigator.forward(new NotesScreen(navigator));
+  }
+
+  private void goToTasksScreen() {
+    navigator.forward(new TasksScreen(navigator));
   }
 
   private void showExitConfirmation() {

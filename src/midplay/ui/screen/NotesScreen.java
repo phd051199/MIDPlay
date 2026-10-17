@@ -182,8 +182,9 @@ public final class NotesScreen extends List implements CommandListener {
         try {
           NotesManager.getInstance().remove(note.id);
           refresh();
+          navigator.showAlert(Lang.tr("note.deleted"), AlertType.CONFIRMATION, NotesScreen.this);
         } catch (Exception e) {
-          navigator.showAlert(e.toString(), AlertType.ERROR);
+          navigator.showAlert(e.toString(), AlertType.ERROR, NotesScreen.this);
         }
       }
     });

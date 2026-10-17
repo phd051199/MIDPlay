@@ -116,9 +116,10 @@ public class MenuManager {
     defaultConfig.add(createMenuItem(Configuration.MENU_EQUALIZER, 7, true));
     defaultConfig.add(createMenuItem(Configuration.MENU_MPGRAM, 8, true));
     defaultConfig.add(createMenuItem(Configuration.MENU_NOTES, 9, true));
-    defaultConfig.add(createMenuItem(Configuration.MENU_SETTINGS, 10, true));
-    defaultConfig.add(createMenuItem(Configuration.MENU_GITHUB, 11, true));
-    defaultConfig.add(createMenuItem(Configuration.MENU_ABOUT, 12, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_TASKS, 10, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_SETTINGS, 11, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_GITHUB, 12, true));
+    defaultConfig.add(createMenuItem(Configuration.MENU_ABOUT, 13, true));
     return defaultConfig;
   }
 
